@@ -22,9 +22,10 @@
 | `core/session` | тип | 14-trust | `design/domains/14-trust.md:19` | 10-kernel (`by`) | TR-03 |
 | `core/snapshot` | тип | 21-compose | `design/domains/21-compose.md:25` | 12-ledger (индекс `snapshots`) | CP-02 |
 | `core/type` | тип | 10-kernel | `design/domains/10-kernel.md:117-155` | все домены | KR-08 |
-| `std/bench-plan` | тип | 23-bench | `design/domains/23-bench.md:15` | — | BN-02 |
-| `std/bench-run` | событие | 23-bench | `design/domains/23-bench.md:16` | — | BN-01 |
-| `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:14` | 30-adapters (source-warrant) | BN-01 |
+| `std/bench-plan` | событие | 23-bench | `design/domains/23-bench.md:20`, `design/domains/23-bench.md:26-37` | 22-run (гейт — `base`), 01-first-run (R3, R10) | BN-02, BN-07 · ADR-21 · D11 Q2 |
+| `std/bench-run` | событие | 23-bench | `design/domains/23-bench.md:21`, `design/domains/23-bench.md:38-40` | 22-run (`execution.bench`, гейт) | BN-01, BN-08 · D11 Q3 |
+| `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:19` | 30-adapters (source-warrant) | BN-01 |
+| `std/bench-item` | тип | 23-bench | `design/domains/23-bench.md:18`, `design/domains/23-bench.md:23-25`; T161 | 30-adapters (загрузка набора), 14-trust (`core/assert` разметчика) | BN-06 · D11 Q1 |
 | `std/ctx` | тип | 22-run | `design/domains/22-run.md:76-114` | 20-lens, 21-compose (стадии), 13-rules (контракт) | RN-02 |
 | `std/cue` | факт | 21-compose | `design/domains/21-compose.md:21,34-37` | 20-lens (LN-02, LN-10), 14-trust (п.7), 22-run (обучение) | CP-01 · 20-lens/И-9 · N-43 |
 | `std/distinct` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:138-146` | 21-compose (потребности), 22-run (обучение), `core/trust-policy.candidates` (память отказов) | CP-01 · T-8 · R6 Q4 |
@@ -91,14 +92,14 @@
 | стадии LENS (`std/stage.normalize` … `cut`), их `reads`/`writes` | способности | 20-lens | `design/domains/20-lens.md:69-98` | 22-run (конвейер `std/pipeline.solve`) | LN-03 · T-3 · D08 |
 | стадии compose (`frame`, `recall`, `recheck`, `select`, `self-search`, `check`), их `reads`/`writes`, параметры `recall` | способности | 21-compose | `design/domains/21-compose.md:101-117`, `:67-99` | 22-run (конвейер) | CP-05 · T-3 · D09 |
 | `core/session.purpose` | поле | 14-trust | `design/domains/14-trust.md:28` | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
-| копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`) | формат | 23-bench | `design/02-glossary.md` T138 | 12-ledger, 22-run | T-5 · R6 Q1 |
+| копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`), кампания | формат | 23-bench | `design/domains/23-bench.md:70-82`; T138, T162 | 12-ledger, 22-run | T-5 · R6 Q1 |
 | гейт обучения (`learning-gate`) | примитив | 13-rules | `design/domains/13-rules.md` §2 (ADR-29) | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
 | `core/trust-policy.candidates` | поле | 14-trust (форма) · 21-compose (значения `std`) | `design/domains/14-trust.md:110`; значения — `design/domains/21-compose.md:168-173` | 11-identity-grain, 21-compose | T-8 · R6 Q4 · N-40 · D09 Q6 |
 | `core/session.software` | поле | 14-trust | `design/domains/14-trust.md:31` | 30-adapters (хост, парсер) | 14-trust/И-4 · R4 Q5 · T148 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | 14-trust | `design/domains/14-trust.md:54-57,154-163` | 12-ledger (раздел `trust`), 20-lens, 23-bench | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
 | окно удаления членства | правило | 22-run | `design/domains/22-run.md:320-323` (ADR-20) | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
-| регрессионный план (`base`, δ, ротация `test`) | правило | 23-bench | `design/02-glossary.md` T143 | 22-run (гейт ADR-29) | 23-bench/И-14, И-15 · R6 Q9 |
+| регрессионный план (`base`, δ, ротация `test`) | правило | 23-bench | `design/domains/23-bench.md:28-32`, `design/domains/23-bench.md:109-116`, `design/domains/23-bench.md:121-123`; T143 | 22-run (гейт ADR-29) | 23-bench/И-14, И-15 · R6 Q9 |
 | `rows` (строки вызова), id новых у стадии | поле, правило | 22-run | `design/domains/22-run.md:105-112`; T156 | 20-lens (`pool`, `judge`), 21-compose (`recall`, `self-search`, `materialize`), 12-ledger (шаг 1 коммита) | RN-09 · D10a Q2, Q3 |
 | стадия `materialize` | способность | 21-compose | `design/domains/21-compose.md:115` | 22-run (конвейер) | RN-08 · D10a Q1 |
 | `describe()` (`Ident`) | метод портов LLM | 22-run | `design/domains/22-run.md:208,214-215`; T154 | 20-lens (`Judge`), 21-compose (`Composer`), 30-adapters | RN-10 · D10a Q5 |
@@ -113,6 +114,8 @@
 | правила обучения (таблица «вердикт → факты»), калибровка | правило | 22-run | `design/domains/22-run.md:303-329` | 14-trust (`calibration`), 21-compose (`recall`, `recheck`) | RN-05, RN-15 · D10b Q4 |
 | путь подсказки (рождение, подтверждение, recheck прежней ревизии) | правило | 22-run | `design/domains/22-run.md:331-340` | 20-lens (LN-10), 21-compose (`recheck`, `design/domains/21-compose.md:113`) | RN-16 · D10b Q5 |
 | `replay`, горизонт replay | операция, правило | 22-run | `design/domains/22-run.md:341-359`; T160 | 12-ledger (срок сегмента), 13-rules (`revalidate`, N-53), 20-lens (кэш) | RN-07, RN-17 · D10b Q6, Q7 |
+| сессия симулятора (`purpose: simulate`) | правило | 23-bench | `design/domains/23-bench.md:83-88`; T163 | 13-rules (`learning-gate`), 14-trust (`purpose`), 22-run (обучение), 30-adapters (хост), 01-first-run (R5, R8) | BN-04 · D11 Q5 |
+| метрики стенда, протокол калибровок | правило | 23-bench | `design/domains/23-bench.md:50-68`, `design/domains/23-bench.md:101-105` | 20-lens (`no_match`, `pool-recall`), 21-compose (`same_hi/lo`), 11-identity-grain (`min_p`), 01-first-run (замеры) | BN-03 · N-45, N-56, N-57 |
 
 ## 3. Без владельца
 
