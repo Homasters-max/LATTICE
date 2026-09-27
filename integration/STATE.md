@@ -5,26 +5,24 @@
 
 ## Сейчас
 
-- Фаза: **D** · последняя сессия: **D02** (2026-09-27) — `10-kernel` пройден целиком: «Операции», «Инварианты» (11),
-  «Решения» KR-01…KR-18, «Вопросы» (Q-10-1…5 закрыты), «Вне объёма» (`10-kernel.md:207-271`). Решено: порт
-  `clock`/`ids` — владелец 12-ledger, операции ядра чистые (`newId(namespace, ulid)`, `revision(input, at)`); резерв
-  шифруемых полей — маркер `{"$enc": …}`, v1 отклоняет (T145); `by` — сессия, независимость — группы (ADR-26).
-  Журнал `sessions/D02.md`.
-- **Следующая: D03 — `11-identity-grain`.** 38 строк реестра (открыт 16) + N-11 (поля `std/domain`, `project`),
-  N-16 (split — `core/alias {value: false}`), N-21 (`:44` no-op против `core/holds`, ADR-2). ADR — по
-  `grep -ln 11-identity-grain design/adr/*.md`: 2, 6, 7, 8, 13, 27. Бриф — субагент по `prompts/brief.md`, режим «D»;
-  интерфейсы выше по течению — только 10-kernel (пройден: §1–§8, KR-01…18).
+- Фаза: **D** · последняя сессия: **D03** (2026-09-27) — `11-identity-grain` пройден целиком (151 → 196 строк):
+  область зерна — пространство автора; `std/domain` без `project` (ADR-27 уточнён); `ensure` → `{id, created,
+  differs}` без upsert; `split` = `core/alias {value:false}`; канонический — меньший `seq`; `std/distinct {of:{a,b}}`;
+  GR-01…GR-15, вопросов нет. Журнал `sessions/D03.md`.
+- **Следующая: D04 — `13-rules`** (103 строки). 28 строк реестра (открыт 11) + N-9, N-25 (`regrain-plan` — любое
+  изменение зерна; `grain-unique` — в области, форма `{rule, with, diff}`). ADR — `grep -ln 13-rules design/adr/0*.md`:
+  2, 6, 9, 10, 11, 12, 17, 18, 27, 29. Бриф — субагент по `prompts/brief.md`, режим «D»; выше по течению — 10-kernel
+  (KR-01…18), 11-identity-grain (GR-01…15).
 - Ход D — `reference/phases.md` §D: бриф → раунд 0 (A/C/F) → B/D/E → правка → `set внесён --where` → закрытие.
   `внесён` — только когда пункт внесён целиком; ADR и T — после всех их файлов. Новая ADR — с 30.
-- Правки навыка и техники (последние): D02 — длинный текст правки — Write во scratchpad + python-файл, не два
-  heredoc в одном Bash (X-54); D01 — `ledger.mjs set … --files "a,b"`; бриф D берёт ADR по `grep -ln <файл>
-  design/adr/*.md` (X-52); вставка в последнюю ячейку — до `|` (X-53); правки md — Python `newline=''` (X-45).
+- Правки навыка и техники (последние): D03 — подстановка в шаблон задания — `assert count==1`, владельцы — из
+  `ownership.md`, опоры брифа сверяет главная сессия до раунда (X-55); D02 — длинный текст — Write во scratchpad +
+  python-файл (X-54); D01 — `ledger.mjs set … --files "a,b"`; бриф D берёт ADR по `grep -ln` (X-52).
 
 ## Реестр (ledger check, итог) · блокеров нет
 
-349 строк: открыт 141 · решён 165 · внесён 43 · сверен 0 · последний N — N-23. Lint: 0 ошибок, 11 предупреждений —
-`grounding` ×4, `import()` ×3, `lattice import` (план); типы без домена: `core/commit` (D05), `std/setup` (D10),
-`core/trust-policy.candidates` (D07).
+351 строка: открыт 127 · решён 161 · внесён 63 · сверен 0 · последний N — N-25. Lint: 0 ошибок, 10 предупреждений —
+`grounding` ×4, `import()` ×3, `lattice import` (план); типы без домена: `core/commit` (D05), `std/setup` (D10).
 
 ## Очередь сессий
 
@@ -33,8 +31,8 @@
 | S0–R6 | подготовка; волны 0–5 (T-1…-16; ADR-1…29; PF-01…06) — журналы `sessions/` | ✓ |
 | D01 | 10-kernel «Модель» + 02-glossary | ✓ |
 | D02 | 10-kernel: операции, инварианты, решения, Q-10 | ✓ |
-| D03 | 11-identity-grain | → |
-| D04 | 13-rules | |
+| D03 | 11-identity-grain | ✓ |
+| D04 | 13-rules | → |
 | D05 | 12-ledger | |
 | D06 | 15-catalog | |
 | D07 | 14-trust | |
@@ -52,5 +50,5 @@
 ## Где что
 
 `integration/PLAN.md` — карта и причины · `ledger.md` — реестр · `renames.md` · `ownership.md` (черновик, `?` —
-решают брифы D) · `lint-baseline.txt` · `sessions/` — журналы (S0, R1–R6, D01, D02) · `briefs/` — брифы (R1–R6 — образцы режима R) ·
+решают брифы D) · `lint-baseline.txt` · `sessions/` — журналы (S0, R1–R6, D01–D03) · `briefs/` — брифы (R1–R6 — образцы режима R) ·
 `design/adr/README.md` — индекс решений (ADR-1…29).

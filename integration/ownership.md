@@ -9,7 +9,7 @@
 | Понятие | Вид | Владелец (файл) | Определение (адрес) | Используют | Решение |
 |---|---|---|---|---|---|
 | `core/actor` | тип | 14-trust | `design/domains/14-trust.md:15` | 10-kernel (`by`), 15-catalog (owner) | TR-03 |
-| `core/alias` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:82` | 14-trust (п.7), 15-catalog | GR-05 |
+| `core/alias` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:102-116` | 14-trust (п.7), 15-catalog | GR-05 |
 | `core/assert` | тип | 14-trust | `design/domains/14-trust.md:23-24` | 23-bench (И-2) | TR-02 |
 | `core/deprecate` | факт | 15-catalog | `design/domains/15-catalog.md:69` | 11-identity-grain (п.4) | CT-05 |
 | `core/fact` | тип | 10-kernel | `design/domains/10-kernel.md:109-123` | все домены | KR-13 |
@@ -26,8 +26,8 @@
 | `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:14` | 30-adapters (source-warrant) | BN-01 |
 | `std/ctx` | тип | 22-run | `design/domains/22-run.md:45-59` | 20-lens, 21-compose (стадии), 13-rules (контракт) | RN-02 |
 | `std/cue` | факт | 21-compose | `design/domains/21-compose.md:15` | 20-lens (LN-02), 14-trust (п.7), 15-catalog (допуск) | — |
-| `std/distinct` | факт | 11-identity-grain | `design/02-glossary.md` T81 | 21-compose (потребности), 22-run (обучение), `core/trust-policy.candidates` (память отказов) | CP-01 · T-8 · R6 Q4 |
-| `std/domain` | тип | 11-identity-grain `?` (см. §4) | `design/domains/11-identity-grain.md:28-33` | 10-kernel (пример), 30-adapters (создание доменов) | GR-03 |
+| `std/distinct` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:138-146` | 21-compose (потребности), 22-run (обучение), `core/trust-policy.candidates` (память отказов) | CP-01 · T-8 · R6 Q4 |
+| `std/domain` | тип | 11-identity-grain | `design/domains/11-identity-grain.md:26-35` | 10-kernel (пример), 30-adapters (создание доменов) | GR-13 · D03 |
 | `std/gap` | событие | 21-compose | `design/domains/21-compose.md:21,64-68` | — | CP-07 |
 | `std/knowledge` | тип | 20-lens `?` | `design/domains/30-adapters.md:66` | 15-catalog (публикация) | `?` — карточка и поиск блока знания естественно у LENS; своей модели у `std/knowledge` нет |
 | `std/link` | факт | 21-compose | `design/domains/21-compose.md:19` | — | CP-04 |
@@ -64,7 +64,7 @@
 | `core/namespace.origin` | поле | 10-kernel | `design/domains/10-kernel.md:100-102` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
-| `std/alias-candidate` | тип | 11-identity-grain | `design/adr/0008-alias-candidate-type.md` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
+| `std/alias-candidate` | тип | 11-identity-grain | `design/domains/11-identity-grain.md:131-134` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
 | `core/type.grain_scope` | поле | 11-identity-grain | `design/adr/0027-grain-scope.md` | 12-ledger (индекс `grain`), 13-rules (`grain-unique`) | ADR-27 · R3 |
 | уровень `core/type.schema` | поле | 13-rules | `design/adr/0009-schema-field-as-rule.md` | 10-kernel (`core/type`) | ADR-9 · R3 |
 | `std/ctx.needs[].found` | поле | 22-run `?` | `research/analysis/arch-changes.md:258` | 21-compose | 21-compose/И-9 |
@@ -108,4 +108,4 @@ JSON-примеры внутри кода, которые индексатор l
 
 | Понятие | Адреса | Расхождение | Предложенный владелец |
 |---|---|---|---|
-| `std/domain` | `design/domains/10-kernel.md:19` (пример ревизии, тело: `name, code, language`) vs `design/domains/11-identity-grain.md:32-33` (пример сущности, тело: `project, name, language, code`) | у kernel-примера нет поля `project`, которое зерно типа (`identity-grain.md:29`) включает как измерение — тела двух примеров одного типа не совпадают по составу полей | 11-identity-grain (зерно и правила слияния определены здесь; kernel-пример — иллюстрация формата ревизии вообще, не модель `std/domain`); **D01:** 10-kernel — только иллюстрация, ссылка на [11] (N-11) |
+| `std/domain` | `design/domains/10-kernel.md:19` (пример ревизии, тело: `name, code, language`) vs `design/domains/11-identity-grain.md:32-33` (пример сущности, тело: `project, name, language, code`) | у kernel-примера нет поля `project`, которое зерно типа (`identity-grain.md:29`) включает как измерение — тела двух примеров одного типа не совпадают по составу полей | 11-identity-grain (зерно и правила слияния определены здесь; kernel-пример — иллюстрация формата ревизии вообще, не модель `std/domain`); **D01:** 10-kernel — только иллюстрация, ссылка на [11] (N-11); **D03:** закрыто — тело без `project`, область — пространство (GR-13) |
