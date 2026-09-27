@@ -42,7 +42,7 @@
 | `source` (порт) | порт | 21-compose `?` | `design/domains/30-adapters.md:30-35` — переезд | 22-run (deliver), 30-adapters (source-warrant) | `?` — self-search (compose) и deliver (run) оба прямые потребители; ADR-24 не называет |
 | `exec` (порт) | порт | 22-run `?` | `design/domains/30-adapters.md:14` — переезд | — | `?` — единственный потребитель (runtime), альтернатив нет |
 | `clock`, `ids` (порт) | порт | 10-kernel `?` | `design/domains/30-adapters.md:15` — переезд | 12-ledger (`at`, `seq`) | `?` — `newId`/`ulid` в операциях ядра (`10-kernel.md:144`) |
-| `Meta` | формат | `?` (используют judge и composer) | `design/domains/30-adapters.md:23` — переезд | 20-lens, 21-compose | `?` — общий для двух портов; ADR-24 явно не назначил (см. текст ADR-24: «владелец назначается картой владения») |
+| `Meta` | формат | 22-run | `design/domains/30-adapters.md:23` — переезд; `design/02-glossary.md` T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
 | `Scored` | формат | 20-lens | `design/domains/30-adapters.md:19` — переезд | — | ADR-24 (принадлежит `judge` → lens) |
 | `Chosen` | формат | 20-lens | `design/domains/30-adapters.md:21` — переезд | — | ADR-24 (принадлежит `judge` → lens) |
 | `id` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:25` | все домены | KR-01 |
@@ -75,6 +75,12 @@
 | `core/grant.value.declare` | поле | 15-catalog | `design/adr/0025-participant-registry.md` | 14-trust (`declared`) | ADR-25 · R2 |
 | `std/setup` | тип | 22-run | `design/adr/0028-setup-object.md` | 15-catalog, 30-adapters (модели), 23-bench и вызов (`setup@n`) | ADR-28 · R4 |
 | тело `core/namespace` (`name`, `owner`, `imports`, `policy`, `doc`) | тип (генезис) | 15-catalog | `design/domains/15-catalog.md:13-16` | 10-kernel (`origin` — поле 10-kernel, R1), 14-trust (`policy`) | ADR-28 · R4 (N-14) |
+| кортеж исполнения | правило | 22-run | `design/02-glossary.md` T131 | 10-kernel (`impl.pins`), 20-lens, 21-compose, 23-bench (план) | T-2 · R5 Q2 |
+| `reads` / `writes` способности стадии | поле | 13-rules | `design/02-glossary.md` T132 | 22-run, 20-lens, 21-compose | T-3 · R5 Q1 |
+| `Deps` (`view`) | формат | 22-run | `design/02-glossary.md` T133 | 20-lens, 21-compose, 30-adapters | T-3 · R5 Q1 |
+| проверки ядра | правило | 13-rules | `design/02-glossary.md` T134 | 10-kernel, 11-identity-grain (`split`/`merge`), 21-compose | T-16 · R5 Q3 |
+| `core/trust-policy.lens` (`exclude`, `mark`) | поле | 14-trust | `research/analysis/arch-changes.md:238` | 20-lens (`pool`, стадия `trust`) | 20-lens/И-6 · R5 Q5 |
+| `calibrated_for` порога | поле | 20-lens | `design/02-glossary.md` T136 | 21-compose (`same_hi/lo`), 22-run (отказ) | 20-lens/И-4, И-7 · R5 Q10 |
 
 ## 3. Без владельца
 

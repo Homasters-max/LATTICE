@@ -23,3 +23,7 @@
 | [28](0028-setup-object.md) | настройка исполнения — объект `std/setup`, один на пространство (конвейер + порты с точной моделью); генезис не меняется; уточняет PF-02 | принято | 15-catalog, 22-run, 30-adapters, 04-architecture, 10-kernel, 23-bench | 2 | R4 |
 | [4](0004-import-copies-closure.md) | импорт — копия неизменных строк с замыканием и сверкой полного хэша; CT-02 «без форка, копия неизменна» | принято | 15-catalog, 10-kernel, 12-ledger | 2 | R4 |
 | [10](0010-finding-report-or-fact.md) | находка — отчёт, если функция журнала на `seq`, иначе факт | принято | 13-rules, 30-adapters, 12-ledger | 2 | R4 |
+| [13](0013-score-decides-reversible.md) | балл решает только обратимое действие, ошибку которого ловит вердикт; `recall` — названное исключение; порог — `max(scores.judge)` | принято | 14-trust, 20-lens, 21-compose, 11-identity-grain, 23-bench, 02-glossary | 3 | R5 |
+| [15](0015-capability-retire-coordinated.md) | вывод старых версий способностей в v1 — согласованный переход; строгий `pin` + `retire` с датой — со второго проекта; CT-05 «вечны» — для данных | принято | 15-catalog, 10-kernel, 22-run | 3 | R5 |
+| [17](0017-form-explicit-field.md) | `form: set/graph` — явное поле с hard-согласованностью по `std/link` | принято | 21-compose, 13-rules | 3 | R5 |
+| [18](0018-two-graph-models.md) | цепочка стадий (`contract`) и граф решения (`acyclic`) — разные модели на v1; CP-04 без «одна модель» | принято | 21-compose, 13-rules, 22-run | 3 | R5 |
