@@ -64,7 +64,9 @@
 | `core/namespace.origin` | поле | 10-kernel | `research/analysis/arch-changes.md:126` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
-| `std/alias-candidate` | тип | 11-identity-grain | `research/analysis/arch-changes.md:348` (ADR-8) | 21-compose (И-2) | ADR-8 |
+| `std/alias-candidate` | тип | 11-identity-grain | `design/adr/0008-alias-candidate-type.md` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
+| `core/type.grain_scope` | поле | 11-identity-grain | `design/adr/0027-grain-scope.md` | 12-ledger (индекс `grain`), 13-rules (`grain-unique`) | ADR-27 · R3 |
+| уровень `core/type.schema` | поле | 13-rules | `design/adr/0009-schema-field-as-rule.md` | 10-kernel (`core/type`) | ADR-9 · R3 |
 | `std/ctx.needs[].found` | поле | 22-run `?` | `research/analysis/arch-changes.md:258` | 21-compose | 21-compose/И-9 |
 | `core/type.writers`, `core/type.inForce` | поле | 10-kernel | `design/adr/0006-control-fact-writers.md` | 13-rules (`owner`), 15-catalog, 14-trust, 11-identity-grain | ADR-6 · R2 |
 | реестр участников (`core/actor` пишет владелец) | правило | 14-trust | `design/adr/0025-participant-registry.md` | 15-catalog, 22-run, 30-adapters (хост) | ADR-25 · R2 |

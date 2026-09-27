@@ -14,3 +14,9 @@
 | [14](0014-trust-axis-basis.md) | ось `grounding` → `basis` | принято | 02-glossary, 14-trust, 12-ledger, 20-lens | 1 | R2 |
 | [5](0005-assert-latest-in-trust.md) | утверждения копятся; «последнее» выбирает 14-trust по `via ?? by`, для владельца и декларанта — по участнику; поле `via` | принято | 10-kernel, 14-trust, 22-run | 1 | R2 |
 | [26](0026-independence-groups.md) | группа независимости: участник для `human`/`machine`, `(kind, model)` для `agent`; `observed` — ≥ N групп, ≥ 1 не из группы автора | принято | 14-trust, 20-lens, 22-run, 23-bench, 05-slices, 01-first-run | 1 | R2 |
+| [9](0009-schema-field-as-rule.md) | схема тела — поле `schema`, компилируется в правило с уровнем (`hard` по умолчанию для `core`/`std`) | принято | 10-kernel, 13-rules | 1 | R3 |
+| [12](0012-extends-inherits-contract.md) | `extends` наследует правила, роли, `writers`/`inForce` только с сужением; карточка — нет; совместимость Р-4; закрытость по цепочке | принято | 10-kernel, 13-rules, 20-lens | 1 | R3 |
+| [2](0002-same-body-new-type-version.md) | то же тело под `type@n+1` — новая ревизия; no-op по `(type@n, hash)` | принято | 10-kernel, 12-ledger, 11-identity-grain, 15-catalog, 05-slices | 1 | R3 |
+| [8](0008-alias-candidate-type.md) | кандидат в алиас — `std/alias-candidate`; `core/alias` — подтверждение владельца | принято | 11-identity-grain, 14-trust, 21-compose, 30-adapters, 01-first-run, 12-ledger | 1 | R3 |
+| [27](0027-grain-scope.md) | область зерна — пространство автора; `grain_scope: store` для справочников `std` | принято | 11-identity-grain, 12-ledger, 10-kernel, 13-rules | 1 | R3 |
+| [7](0007-std-regrain-by-namespace.md) | смена зерна `std`-типа — перезерновка по пространствам с планами владельцев; принцип до первой смены | принято | 11-identity-grain, 15-catalog | 1 | R3 |
