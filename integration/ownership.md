@@ -117,7 +117,12 @@
 | сессия симулятора (`purpose: simulate`) | правило | 23-bench | `design/domains/23-bench.md:83-88`; T163 | 13-rules (`learning-gate`), 14-trust (`purpose`), 22-run (обучение), 30-adapters (хост), 01-first-run (R5, R8) | BN-04 · D11 Q5 |
 | метрики стенда, протокол калибровок | правило | 23-bench | `design/domains/23-bench.md:50-68`, `design/domains/23-bench.md:101-105` | 20-lens (`no_match`, `pool-recall`), 21-compose (`same_hi/lo`), 11-identity-grain (`min_p`), 01-first-run (замеры) | BN-03 · N-45, N-56, N-57 |
 | хост (T164), `purpose` команд хоста | правило | 30-adapters | `design/domains/30-adapters.md:67-92` | 14-trust, 15-catalog, 22-run, 23-bench | AD-10 · ADR-25 · D12 Q4 |
-| корень сборки `src/cli/wire.ts` (T166) | модуль | 30-adapters | `design/domains/30-adapters.md:40-43` | 04-architecture (матрица, тест структуры) | AD-01 · T-10 · D12 Q0 |
+| корень сборки `src/cli/wire.ts` (T166) | модуль | 30-adapters | `design/domains/30-adapters.md:40-43`; 04 — ссылкой `design/04-architecture.md:54-56` | 04-architecture (матрица, тест структуры, AR-07) | AD-01 · T-10 · D12 Q0 |
+| матрица зависимостей (T168), интерфейс домена `types.ts` (T167) | правило | 04-architecture | `design/04-architecture.md:16-39` | все домены («Зависит от»), 30-adapters (`design/domains/30-adapters.md:13`, :35-36) | AR-04, AR-06 · D13 Q1 |
+| тест структуры (T169) | правило | 04-architecture | `design/04-architecture.md:41-50` | 30-adapters (инв. 1), 05-slices (S0) | AR-04 · 30-adapters/И-3 |
+| проекция индекса `Projection` (T170) | формат | 12-ledger | `design/domains/12-ledger.md:90-93`; механизм — `design/04-architecture.md:58-60` | 14-trust (раздел `trust`), 30-adapters (корень сборки) | AR-08 · N-32 · D13 Q2 |
+| граница «журнал / проводка» | правило | 04-architecture | `design/04-architecture.md:62-71` | 22-run (`std/setup`), 30-adapters (проводка) | AR-09 · PF-01 |
+| срез, «Готово, когда», инвариант → срез (T171) | правило | 05-slices | `design/05-slices.md:7-45` | все домены («Инварианты»), 01-first-run | SL-01…04 · D13 |
 | проводка `bindings`, ссылка на секрет `$env` (T128, T127) | формат | 30-adapters | `design/domains/30-adapters.md:44-65` | 22-run (`std/setup` — «что лежит»), 04-architecture | AD-06, AD-08 · PF-03 · N-5 |
 | каталог данных `.lattice/` | формат | 30-adapters | `design/domains/30-adapters.md:94-109` | 12-ledger, 22-run, 23-bench, 01-first-run | D12 Q0 |
 | протокол режима агента (`pending`, `lattice answer`, `.lattice/answers/`) | правило | 30-adapters | `design/domains/30-adapters.md:144-161` | 21-compose, 22-run | AD-09 · ADR-19 · D12 Q2 |

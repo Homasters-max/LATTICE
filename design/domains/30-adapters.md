@@ -10,7 +10,7 @@
 участников, сессия, `purpose`, `software` ([14](14-trust.md) §1); обновление `std` ([15](15-catalog.md) §1); кампания
 стенда ([23](23-bench.md) §3); типы `std/knowledge`, `std/term` ([20](20-lens.md) §2), `std/domain`,
 `std/alias-candidate` ([11](11-identity-grain.md)), `std/bench-item`, `std/bench-set` ([23](23-bench.md) §1). Что кому
-можно импортировать — матрица [04](../04-architecture.md). **Используют:** никто — корень сборки единственный
+можно импортировать — матрица [04](../04-architecture.md) §2. **Используют:** никто — корень сборки единственный
 импортирует `adapters/*`.
 
 ## Модель
@@ -19,11 +19,11 @@
 
 | Порт | Контракт | Адаптеры | Фиктивный (тесты, срез S0) | Позже |
 |---|---|---|---|---|
-| `store` | `Store` — [12](12-ledger.md) §5 | `store-jsonl` | `store-memory` | SQLite, PostgreSQL (LG-09) |
-| `clock`, `ids` | `Clock`, `Ids` — [12](12-ledger.md) §5 | системные | фиксированные | — |
-| `judge` | `Judge`, `Scored`, `Chosen` — [20](20-lens.md) §5 | `judge-jev` (TypeSafe) | `judge-fixture` | любая модель оценки, локальный классификатор |
-| `composer` | `Composer` — [21](21-compose.md) §8 | `composer-claude` (API), `composer-caller` (агент) | `composer-fixture` | другие LLM |
-| `source` | `Source`, `Place` — [21](21-compose.md) §8 | `source-warrant`, `source-files` | `source-fixture` | адаптеры других проектов |
+| `store` | `Store` — [12](12-ledger.md) §5 | `store-jsonl` | `store-memory` — журнал в памяти | SQLite, PostgreSQL (LG-09) |
+| `clock`, `ids` | `Clock`, `Ids` — [12](12-ledger.md) §5 | системные | фиксированное время и счётчик ULID | — |
+| `judge` | `Judge`, `Scored`, `Chosen` — [20](20-lens.md) §5 | `judge-jev` (TypeSafe) | `judge-fixture` — баллы по пересечению слов + переопределения из фикстуры | любая модель оценки, локальный классификатор |
+| `composer` | `Composer` — [21](21-compose.md) §8 | `composer-claude` (API), `composer-caller` (агент) | `composer-fixture` — ответы из фикстуры по `(kind, hash входа)` | другие LLM |
+| `source` | `Source`, `Place` — [21](21-compose.md) §8 | `source-warrant`, `source-files` | `source-fixture` — каталог с 10–20 маленькими нормами | адаптеры других проектов |
 | `exec` | `Exec` — [22](22-run.md) §3 | — (не в первом запуске, RN-10) | — | способности проектов |
 
 - `Meta` и `describe(): Ident` портов LLM — [22](22-run.md) §3. Адаптер отдаёт в `Meta` цену, время, токены, своё —
@@ -32,8 +32,8 @@
   `Store` — [12](12-ledger.md) §5).
 - **Ошибка адаптера** — `{adapter, code, status?, retryable}`, без тела и заголовков ответа поставщика: в них бывают
   ключи и данные запроса. Рантайм кладёт её в `error` стадии ([22](22-run.md) §3).
-- **Код адаптера** (проверяет тест структуры; матрица — [04](../04-architecture.md)): адаптер импортирует контракт
-  своего порта и ядро, но не другие адаптеры и не домены конвейера. Пакеты из `dependencies` (SDK поставщика) и
+- **Код адаптера** (проверяет тест структуры; матрица — [04](../04-architecture.md) §2): адаптер импортирует интерфейс
+  своего порта и ядро, но не другие адаптеры и не реализации доменов (AR-06). Пакеты из `dependencies` (SDK поставщика) и
   встроенные модули ввода-вывода (`node:fs`, `fetch`, `process.env`) — только в `adapters/` и `cli/`.
 - Версия контракта — в экспорте адаптера (`contract: "source@1"`); корень сборки сверяет её при сборке.
 
