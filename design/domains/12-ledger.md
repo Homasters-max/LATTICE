@@ -79,7 +79,7 @@ commit(rows[], by, expect?, key?) →
 | `aliases` | алиас → канонический (сжатые цепочки); только `core/alias` в силе (ADR-8) |
 | `facts` | тип факта → ключ факта → текущий факт (последний по `seq`); накапливаемые — списком |
 | `consumers` | `id@version` / `id` → кто ссылается (обратные ссылки) |
-| `trust` | факт → результат `trust()`: `{basis, epistemic, support, sessions}` (вычисляет [14-trust](14-trust.md)) |
+| `trust` | цель (факт или ревизия) → результат `trust()`: `{basis, epistemic, support, groups, overruled?, policy}` (проекцию подключает [14-trust](14-trust.md)) |
 | `snapshots` | значение snapshot'а → статус (`fresh` / `stale` / `broken`); `stale` — и через отменённый алиас (GR-15) |
 | `keys` | ключ идемпотентности → `{commit, ids}` |
 

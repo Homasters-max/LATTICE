@@ -5,7 +5,10 @@
 
 | Было | Стало | Решение | Статус |
 |---|---|---|---|
-| `grounding` | `basis` | ADR-14 | план |
+| `grounding` | `basis` | ADR-14 | действует |
 | `import()` | `load()` | R4 Q11 (порт `source`) | план |
 | `lattice import` | `lattice load` | R4 Q11 | план |
 | `--mode` | поле `mode` плана стенда | R6 Q3 (23-bench/И-1) | план |
+| `sessions` | `groups` (поле `trust()`) | D07 Q4 | действует |
+| `observe_sessions` | `observe_groups` | D07 Q4 (следствие) | действует |
+| `remove_unused_sessions` | `removal_window` | ADR-20 | действует |

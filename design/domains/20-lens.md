@@ -77,7 +77,7 @@ Judge видит малую часть блока (замер черновико
 { "need": "…", "scope": "warrant/domain.lifecycle",
   "candidates": [
     { "ref": "warrant/REQ-VER-007@4", "card": "#9b1e…", "scores": {"judge": 0.91, "bm25": 0.40, "fused": 1.03},
-      "trust": {"grounding": "derived", "epistemic": "settled"}, "why": ["judge", "lexicon:waiver"] } ],
+      "trust": {"basis": "derived", "epistemic": "settled"}, "why": ["judge", "lexicon:waiver"] } ],
   "outcome": "candidates | no-match", "measurement": "warrant/MEA-01J8…" }
 ```
 

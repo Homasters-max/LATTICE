@@ -8,9 +8,9 @@
 
 | Понятие | Вид | Владелец (файл) | Определение (адрес) | Используют | Решение |
 |---|---|---|---|---|---|
-| `core/actor` | тип | 14-trust | `design/domains/14-trust.md:15` | 10-kernel (`by`), 15-catalog (owner) | TR-03 |
+| `core/actor` | тип | 14-trust | `design/domains/14-trust.md:18` | 10-kernel (`by`), 15-catalog (owner) | TR-03 |
 | `core/alias` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:102-116` | 14-trust (п.7), 15-catalog | GR-05 |
-| `core/assert` | тип | 14-trust | `design/domains/14-trust.md:23-24` | 23-bench (И-2) | TR-02 |
+| `core/assert` | тип | 14-trust | `design/domains/14-trust.md:40-58` | 23-bench (И-2) | TR-02 |
 | `core/deprecate` | факт | 15-catalog | `design/domains/15-catalog.md:100` | 11-identity-grain (п.4) | CT-05 |
 | `core/fact` | тип | 10-kernel | `design/domains/10-kernel.md:109-123` | все домены | KR-13 |
 | `core/grant` | факт | 15-catalog | `design/domains/15-catalog.md:59-63` | 14-trust (`declare`) | CT-03, CT-13, CT-14 |
@@ -18,7 +18,7 @@
 | `core/proposal` | событие | 15-catalog | `design/domains/15-catalog.md:73-75` | 14-trust (`core/assert` ±1) | CT-03, CT-11 |
 | `core/retire` | факт | 15-catalog | `design/domains/15-catalog.md:101` | 20-lens (не выдаёт) | CT-05 |
 | `core/rule` | тип | 13-rules | `design/domains/13-rules.md:14-22` | 10-kernel (`type.rules`), 12-ledger (коммит) | RL-01 |
-| `core/session` | тип | 14-trust | `design/domains/14-trust.md:16` | 10-kernel (`by`) | TR-03 |
+| `core/session` | тип | 14-trust | `design/domains/14-trust.md:19` | 10-kernel (`by`) | TR-03 |
 | `core/snapshot` | тип | 21-compose | `design/domains/21-compose.md:20` | 12-ledger (индекс `snapshots`) | CP-02 |
 | `core/type` | тип | 10-kernel | `design/domains/10-kernel.md:117-155` | все домены | KR-08 |
 | `std/bench-plan` | тип | 23-bench | `design/domains/23-bench.md:15` | — | BN-02 |
@@ -35,7 +35,7 @@
 | `std/need` | тип | 21-compose | `design/domains/21-compose.md:14` | 15-catalog (допуск), 20-lens (вход) | CP-01 |
 | `std/solution` | тип | 21-compose | `design/domains/21-compose.md:17` | 15-catalog (допуск) | CP-02 |
 | `std/term` | тип | 20-lens `?` | `design/domains/30-adapters.md:70` | — | `?` — термины питают стадию `lexicon` LENS; отдельного домена словаря нет |
-| `std/trust-policy` | экземпляр политики по умолчанию | 14-trust | `design/domains/14-trust.md:63` | 15-catalog (`namespace.policy`) | TR-05 |
+| `std/trust-policy` | экземпляр политики по умолчанию | 14-trust | `design/domains/14-trust.md:96-115` | 15-catalog (`namespace.policy`) | TR-05 |
 | `store` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:110-132` | 30-adapters (`store-jsonl`, `store-memory`) | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | 20-lens | `design/domains/30-adapters.md:18-22` — переезд | 21-compose (recall, select), 11-identity-grain (GR-06) | ADR-24 |
 | `composer` (порт) | порт | 21-compose | `design/domains/30-adapters.md:25-28` — переезд | 22-run (runtime) | ADR-24 |
@@ -62,7 +62,7 @@
 | `core/commit` | факт (маркер) | 12-ledger | `design/domains/12-ledger.md:30-32` | 10-kernel (генезис), 13-rules (`kernel`), 22-run | 12-ledger/И-9 · LG-12 (D05) |
 | `core/holds` | событие | 10-kernel | `design/domains/10-kernel.md:177-186` | 14-trust | 10-kernel/И-6 · R4 Q9, D01 Q3: событие генезиса, провенанс |
 | `core/namespace.origin` | поле | 10-kernel | `design/domains/10-kernel.md:100-102` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
-| `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
+| `core/assert.via` | поле | 14-trust | `design/domains/14-trust.md:50` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples`, `core/rule.when` | поле | 13-rules | `design/domains/13-rules.md` §1 | 21-compose (`form`, ADR-17) | 13-rules/И-1 · D04 Q5 |
 | нарушение (оболочка `{row, rule, message}`) | формат | 13-rules | `design/domains/13-rules.md` §2 | 11-identity-grain (`grain-unique`), 12-ledger (отказ коммита) | 13-rules/И-4 · D04 Q2 |
 | `impl.pins` | поле | 13-rules | `design/domains/13-rules.md` §3 | 22-run (кортеж, отказ рантайма), 15-catalog | 10-kernel/И-33 · T-2 |
@@ -71,9 +71,9 @@
 | уровень `core/type.schema` | поле | 13-rules | `design/adr/0009-schema-field-as-rule.md` | 10-kernel (`core/type`) | ADR-9 · R3 |
 | `std/ctx.needs[].found` | поле | 22-run `?` | `research/analysis/arch-changes.md:258` | 21-compose | 21-compose/И-9 |
 | `core/type.writers`, `core/type.inForce` | поле | 10-kernel | `design/adr/0006-control-fact-writers.md` | 13-rules (`owner`), 15-catalog, 14-trust, 11-identity-grain | ADR-6 · R2 |
-| реестр участников (`core/actor` пишет владелец) | правило | 14-trust | `design/adr/0025-participant-registry.md` | 15-catalog, 22-run, 30-adapters (хост) | ADR-25 · R2 |
-| группа независимости | правило | 14-trust | `design/adr/0026-independence-groups.md` | 20-lens, 22-run, 23-bench | ADR-26 · R2 |
-| `trust().overruled` | поле | 14-trust | `research/analysis/arch-changes.md:205` | 20-lens (исключает) | 14-trust/И-13 · R2 |
+| реестр участников (`core/actor` пишет владелец) | правило | 14-trust | `design/domains/14-trust.md:22` | 15-catalog, 22-run, 30-adapters (хост) | ADR-25 · R2 |
+| группа независимости | правило | 14-trust | `design/domains/14-trust.md:33` | 20-lens, 22-run, 23-bench | ADR-26 · R2 |
+| `trust().overruled` | поле | 14-trust | `design/domains/14-trust.md:91` | 20-lens (исключает) | 14-trust/И-13 · R2 |
 | `core/grant.value.declare`, `create`, `edit` | поле | 15-catalog | `design/domains/15-catalog.md:59-63` | 14-trust (`declared`) | ADR-25 · R2 |
 | `std/setup` | тип | 22-run | `design/adr/0028-setup-object.md` | 15-catalog, 30-adapters (модели), 23-bench и вызов (`setup@n`) | ADR-28 · R4 |
 | тело `core/namespace` (`name`, `owner`, `imports`, `policy`, `doc`) | тип (генезис) | 15-catalog | `design/domains/15-catalog.md:14-23` | 10-kernel (`origin` — поле 10-kernel, R1), 14-trust (`policy`) | ADR-28 · R4 (N-14) |
@@ -82,12 +82,14 @@
 | `reads` / `writes` способности стадии | поле | 13-rules | `design/02-glossary.md` T132 | 22-run, 20-lens, 21-compose | T-3 · R5 Q1 |
 | `Deps` (`view`) | формат | 22-run | `design/02-glossary.md` T133 | 20-lens, 21-compose, 30-adapters | T-3 · R5 Q1 |
 | проверки ядра | правило | 13-rules | `design/02-glossary.md` T134 | 10-kernel, 11-identity-grain (`split`/`merge`), 21-compose | T-16 · R5 Q3 |
-| `core/trust-policy.lens` (`exclude`, `mark`) | поле | 14-trust | `research/analysis/arch-changes.md:238` | 20-lens (`pool`, стадия `trust`) | 20-lens/И-6 · R5 Q5 |
+| `core/trust-policy.lens` (`exclude`, `mark`) | поле | 14-trust | `design/domains/14-trust.md:109` | 20-lens (`pool`, стадия `trust`) | 20-lens/И-6 · R5 Q5 |
 | `calibrated_for` порога | поле | 20-lens | `design/02-glossary.md` T136 | 21-compose (`same_hi/lo`), 22-run (отказ) | 20-lens/И-4, И-7 · R5 Q10 |
-| `core/session.purpose` | поле | 14-trust | `design/02-glossary.md` T137 | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
+| `core/session.purpose` | поле | 14-trust | `design/domains/14-trust.md:28` | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
 | копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`) | формат | 23-bench | `design/02-glossary.md` T138 | 12-ledger, 22-run | T-5 · R6 Q1 |
 | гейт обучения (`learning-gate`) | примитив | 13-rules | `design/domains/13-rules.md` §2 (ADR-29) | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
-| `core/trust-policy.candidates` | поле | 14-trust | `design/02-glossary.md` T142 | 11-identity-grain, 21-compose | T-8 · R6 Q4 |
+| `core/trust-policy.candidates` | поле | 14-trust | `design/domains/14-trust.md:110` | 11-identity-grain, 21-compose | T-8 · R6 Q4 |
+| `core/session.software` | поле | 14-trust | `design/domains/14-trust.md:31` | 30-adapters (хост, парсер) | 14-trust/И-4 · R4 Q5 · T148 |
+| голос группы; `trust().groups`, `trust().policy` | правило, поля | 14-trust | `design/domains/14-trust.md:54-57,154-163` | 12-ledger (раздел `trust`), 20-lens, 23-bench | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
 | окно удаления членства | правило | 22-run | `design/adr/0020-membership-removal-window.md` | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
 | регрессионный план (`base`, δ, ротация `test`) | правило | 23-bench | `design/02-glossary.md` T143 | 22-run (гейт ADR-29) | 23-bench/И-14, И-15 · R6 Q9 |
@@ -99,7 +101,7 @@ JSON-примеры внутри кода, которые индексатор l
 
 | Понятие | Упоминания (grep design/) | Предложенный владелец | Довод |
 |---|---|---|---|
-| `core/trust-policy` | `02-glossary.md:86`; `domains/14-trust.md:57` (тело в JSON-примере, не в прозе) | 14-trust | тело (`weights`, `observe_sessions`…) уже дано примером в 14-trust.md:57 |
+| `core/trust-policy` | закрыто D07 (N-7): `design/domains/14-trust.md` §4 | 14-trust | поля и кто переопределяет — таблица §4 (TR-05) |
 | `std/block` | — | нет типа (D01 Q0) | T66: блок — признак (`card`); тип убран из списка `std` (10-kernel/И-22); N-8 — только `std/card` |
 | `std/capability` | закрыто D04 (N-9): `design/domains/13-rules.md` §3 | 13-rules | тело в прозе «Модели» §3 |
 | `std/card` | `02-glossary.md:110`; `domains/20-lens.md:16-21` (тело в JSON-примере) | 20-lens | полное тело и назначение карточки описаны в 20-lens.md §1 |
