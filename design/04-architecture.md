@@ -9,8 +9,8 @@
 |---|---|---|
 | **замороженное ядро** (код) | генезис, форма ревизии, хэш и каноническая форма, ссылки, режимы идентичности, факты с ролями, примитивы и проверки ядра (T134, ADR-32; код проверок — `src/rules/kernel-checks/`) — единственный перечень периметра ядра: [10](domains/10-kernel.md) §8 (KR-11) и T21 ссылаются сюда | только версией ядра; слой задаётся версией, не каталогом; хэш генезиса — константа версии |
 | **код системы** | identity, ledger, rules (кроме примитивов и проверок ядра), trust, catalog, интерпретатор конвейера, bench, реализации стадий `builtin` | обычными релизами пакета; стадия исполняется, только если код совпадает с `impl.pins` ([13](domains/13-rules.md) §3) |
-| **библиотека `std`** (данные) | типы механизма, правила, политика доверия по умолчанию, способности, конвейер `solve`, шаблоны карточек, промпты стадий | ревизиями; в проект — копией при `init` / `update` ([15](domains/15-catalog.md) §1) |
-| **адаптеры и CLI** (код) | реализации портов, фиктивные адаптеры, корень сборки, хост, команды ([30](domains/30-adapters.md)) | релизами пакета; адаптеры вне пакета — позже (AD-14) |
+| **библиотека `std`** (данные) | типы механизма, правила, политика доверия по умолчанию, способности, конвейер `solve`, шаблоны карточек, промпты стадий Composer (`params` конвейера) | ревизиями; в проект — копией при `init` / `update` ([15](domains/15-catalog.md) §1) |
+| **адаптеры и CLI** (код) | реализации портов, фиктивные адаптеры, корень сборки, хост, команды ([30](domains/30-adapters.md)); шаблоны вопросов judge — код адаптера, идентичность — `prompt_hash` в кортеже ([20](domains/20-lens.md) LN-17) | релизами пакета; адаптеры вне пакета — позже (AD-14) |
 | **проект** (данные) | пространство имён, `std/setup`, типы проекта, объекты — журнал в `.lattice/`; проводка — `lattice.config.json` | ревизиями в журнале; проводка — правкой файла (§5) |
 
 **Что ядро читает вне `core`** (ADR-35) — часть версии ядра, как сами проверки. Новая версия `std`-типа отсюда не
@@ -97,7 +97,7 @@ LATTICE/
     identity/                   types.ts, grain.ts, ensure.ts, regrain.ts, alias.ts, resolve.ts
     rules/                      types.ts, validate.ts, primitives/*.ts, kernel-checks/*.ts, lint.ts, contract.ts
     ledger/                     types.ts (Store, Clock, Ids, LedgerView, Projection), commit.ts, open.ts, projections.ts, rebuild.ts, query.ts
-    catalog/                    types.ts, namespace.ts, publish.ts, consumers.ts, migrate.ts
+    catalog/                    types.ts, namespace.ts, publish.ts, referrers.ts, migrate.ts
     trust/                      types.ts, assert.ts, compute.ts, projection.ts, policy.ts, explain.ts
     lens/                       types.ts (Judge), stages/{normalize,route,id-lookup,lexicon,pool,bm25,judge,fuse,trust,threshold,cut}.ts, card.ts, aliases.ts
     compose/                    types.ts (Composer, Source), stages/{frame,recall,recheck,select,self-search,check}.ts, materialize.ts
@@ -106,7 +106,7 @@ LATTICE/
     adapters/                   store-jsonl/  store-memory/  judge-jev/  judge-fixture/  composer-claude/  composer-caller/
                                 composer-fixture/  source-warrant/  source-files/  source-fixture/  (clock, ids — 30 §1)
     cli/                        main.ts, wire.ts, commands/*.ts
-  std/                          *.json — библиотека (типы, правила, стадии, конвейер, промпты)
+  std/                          *.json — библиотека (типы, правила, стадии, конвейер, промпты стадий Composer)
   test/                         node:test; структура, контрактные наборы портов, срезы S0–S9, фикстуры
   design/                       этот каталог
 ```
@@ -156,6 +156,7 @@ LATTICE/
 | `std/bench-item` | тип | [23-bench](domains/23-bench.md) §1 | BN-06 · D11 Q1 |
 | `std/ctx` | тип | [22-run](domains/22-run.md) §2 | RN-02 |
 | `std/cue` | факт | [21-compose](domains/21-compose.md) §1 | CP-01 · 20-lens/И-9 · N-43 |
+| след сопоставления `match` (`std/cue`, T186) | поле | [21-compose](domains/21-compose.md) §1 | CP-25 · ADR-37 · CA-F61 |
 | `std/distinct` | факт | [11-identity-grain](domains/11-identity-grain.md) §6 | CP-01 · T-8 · R6 Q4 |
 | `std/domain` | тип | [11-identity-grain](domains/11-identity-grain.md) §1 | GR-13 · D03 |
 | `std/gap` | событие | [21-compose](domains/21-compose.md) §1 | CP-07 · D09 Q4 |
@@ -168,13 +169,13 @@ LATTICE/
 | `std/trust-policy` | экземпляр политики по умолчанию | [14-trust](domains/14-trust.md) §4 | TR-05 |
 | `std/policy` | тип политики доверия, `refs: pin` | [14-trust](domains/14-trust.md) §4 | TR-05 · ADR-35 · CT-16 |
 | `store` (порт) | порт | [12-ledger](domains/12-ledger.md) §5 | ADR-24 · LG-05 (D05) |
-| `judge` (порт) | порт | [20-lens](domains/20-lens.md) §5 | ADR-24 · LN-04 · D08 · C2a (N-79) |
+| `judge` (порт) | порт | [20-lens](domains/20-lens.md) §5 | ADR-24 · LN-04 · D08 · C2a (N-79) · LN-17: граница judge, `verify` — «то же ли» (ADR-37) |
 | `composer` (порт) | порт | [21-compose](domains/21-compose.md) §8 | ADR-24 · CP-14 |
 | `source` (порт) | порт | [21-compose](domains/21-compose.md) §8 | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
 | `exec` (порт) | порт | [22-run](domains/22-run.md) §3 | — |
 | `clock`, `ids` (порт) | порт | [12-ledger](domains/12-ledger.md) §5 | D02 Q2, ADR-24 |
 | `Meta` | формат | [22-run](domains/22-run.md) §3 | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 · RN-32: `model` — из ответа поставщика, сверяется с `setup` |
-| `Scored` | формат | [20-lens](domains/20-lens.md) §5 | ADR-24 · D08 |
+| `Scored` | формат | [20-lens](domains/20-lens.md) §5 | ADR-24 · D08 · LN-18: ключи = `items.id` |
 | `Chosen` | формат | [20-lens](domains/20-lens.md) §5 | ADR-24 · D08 |
 | `id` | поле заголовка | [10-kernel](domains/10-kernel.md) §1 | KR-01 |
 | `type` | поле заголовка | [10-kernel](domains/10-kernel.md) §1 | KR-01 |
@@ -268,6 +269,16 @@ LATTICE/
 | `Draft`, `Row` (строка до коммита и хранимая) | формат | [12-ledger](domains/12-ledger.md) §5 | LG-05 · C2c Q4 |
 | `determinism` способности (`deterministic`, `ports`) | поле | [13-rules](domains/13-rules.md) §3 | RL-07 · T-3 · C2c Q3 |
 | часть набора `subset` (T176) | поле | [23-bench](domains/23-bench.md) §1 | BN-06 · C2c Q6 |
+| роли видения (LATTICE, LENS, Composer, Runtime, judge, потребитель — T183), принцип P13 | правило | [00-vision](00-vision.md) | VI-07 · ADR-37 · CA-F62 |
+| маркер сегмента `std/segment-event` (T184) | тип | [12-ledger](domains/12-ledger.md) §1 | LG-21 · ADR-3 · CA-F51 |
+| кэш индекса `IndexBlob` (`tail`, `segments`) | формат | [12-ledger](domains/12-ledger.md) §4 | LG-22 · CA-F32 |
+| очередь владельца (T185), `queue(namespace)` | правило, операция | [15-catalog](domains/15-catalog.md) §6 | CT-17 · CA-F45 |
+| подлинность `std` (хэш пакета в ключе обновления) | правило | [15-catalog](domains/15-catalog.md) §1 | CT-18 · CA-F56 |
+| `emits` способности стадии (типы строк `rows`) | поле | [13-rules](domains/13-rules.md) §3 | RN-36 · RL-19 · CA-F48 |
+| брошенный `pending` (`abandoned`, `pending_ttl`) | правило | [22-run](domains/22-run.md) §3 | RN-37 · CA-F58 |
+| журнал открытий `.lattice/metrics/open.jsonl` | формат | [30-adapters](domains/30-adapters.md) §4 | AD-16 · CA-F57 |
+| `noise` плана (зашумлённый симулятор) | поле | [23-bench](domains/23-bench.md) §3 | BN-20 · CA-F54 |
+| сверка мест перед `coverage` | правило | [21-compose](domains/21-compose.md) §4 | CP-26 · BN-19 · CA-F27 |
 
 ## Решения
 
