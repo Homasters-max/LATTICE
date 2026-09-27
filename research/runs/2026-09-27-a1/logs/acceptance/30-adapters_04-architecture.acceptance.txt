@@ -1,0 +1,1 @@
+PASS research/analysis/arch/30-adapters_04-architecture.md · arch/30-adapters_04-architecture · пунктов 17 · входов 33 · 23.0 КБ

@@ -1,0 +1,7 @@
+# LATTICE — не в истории
+node_modules/
+*.tmp
+*.log
+.obsidian/workspace*
+# сырые транскрипты агентов (77 МБ): доказательства — в отчётах, не здесь
+research/runs/*/logs/transcripts/
