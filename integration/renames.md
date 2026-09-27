@@ -6,3 +6,5 @@
 | Было | Стало | Решение | Статус |
 |---|---|---|---|
 | `grounding` | `basis` | ADR-14 | план |
+| `import()` | `load()` | R4 Q11 (порт `source`) | план |
+| `lattice import` | `lattice load` | R4 Q11 | план |

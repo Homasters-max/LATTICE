@@ -20,3 +20,6 @@
 | [8](0008-alias-candidate-type.md) | кандидат в алиас — `std/alias-candidate`; `core/alias` — подтверждение владельца | принято | 11-identity-grain, 14-trust, 21-compose, 30-adapters, 01-first-run, 12-ledger | 1 | R3 |
 | [27](0027-grain-scope.md) | область зерна — пространство автора; `grain_scope: store` для справочников `std` | принято | 11-identity-grain, 12-ledger, 10-kernel, 13-rules | 1 | R3 |
 | [7](0007-std-regrain-by-namespace.md) | смена зерна `std`-типа — перезерновка по пространствам с планами владельцев; принцип до первой смены | принято | 11-identity-grain, 15-catalog | 1 | R3 |
+| [28](0028-setup-object.md) | настройка исполнения — объект `std/setup`, один на пространство (конвейер + порты с точной моделью); генезис не меняется; уточняет PF-02 | принято | 15-catalog, 22-run, 30-adapters, 04-architecture, 10-kernel, 23-bench | 2 | R4 |
+| [4](0004-import-copies-closure.md) | импорт — копия неизменных строк с замыканием и сверкой полного хэша; CT-02 «без форка, копия неизменна» | принято | 15-catalog, 10-kernel, 12-ledger | 2 | R4 |
+| [10](0010-finding-report-or-fact.md) | находка — отчёт, если функция журнала на `seq`, иначе факт | принято | 13-rules, 30-adapters, 12-ledger | 2 | R4 |

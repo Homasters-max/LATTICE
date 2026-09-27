@@ -60,7 +60,7 @@
 | Понятие | Вид | Владелец (файл) | Определение (адрес) | Используют | Решение |
 |---|---|---|---|---|---|
 | `core/commit` | факт (маркер) | 12-ledger | `research/analysis/arch-changes.md:166` (не в design/) | 10-kernel, 22-run | 12-ledger/И-9 |
-| `core/holds` | событие | 10-kernel | `research/analysis/arch-changes.md:105` | 14-trust | 10-kernel/И-6 |
+| `core/holds` | событие | 10-kernel | `research/analysis/arch-changes.md:105` | 14-trust | 10-kernel/И-6 · R4 Q9: событие генезиса |
 | `core/namespace.origin` | поле | 10-kernel | `research/analysis/arch-changes.md:126` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
@@ -73,6 +73,8 @@
 | группа независимости | правило | 14-trust | `design/adr/0026-independence-groups.md` | 20-lens, 22-run, 23-bench | ADR-26 · R2 |
 | `trust().overruled` | поле | 14-trust | `research/analysis/arch-changes.md:205` | 20-lens (исключает) | 14-trust/И-13 · R2 |
 | `core/grant.value.declare` | поле | 15-catalog | `design/adr/0025-participant-registry.md` | 14-trust (`declared`) | ADR-25 · R2 |
+| `std/setup` | тип | 22-run | `design/adr/0028-setup-object.md` | 15-catalog, 30-adapters (модели), 23-bench и вызов (`setup@n`) | ADR-28 · R4 |
+| тело `core/namespace` (`name`, `owner`, `imports`, `policy`, `doc`) | тип (генезис) | 15-catalog | `design/domains/15-catalog.md:13-16` | 10-kernel (`origin` — поле 10-kernel, R1), 14-trust (`policy`) | ADR-28 · R4 (N-14) |
 
 ## 3. Без владельца
 
