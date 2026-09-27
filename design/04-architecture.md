@@ -13,6 +13,18 @@
 | **адаптеры и CLI** (код) | реализации портов, фиктивные адаптеры, корень сборки, хост, команды ([30](domains/30-adapters.md)) | релизами пакета; адаптеры вне пакета — позже (AD-14) |
 | **проект** (данные) | пространство имён, `std/setup`, типы проекта, объекты — журнал в `.lattice/`; проводка — `lattice.config.json` | ревизиями в журнале; проводка — правкой файла (§5) |
 
+**Что ядро читает вне `core`** (ADR-35) — часть версии ядра, как сами проверки. Новая версия `std`-типа отсюда не
+меняет смысла прочитанных полей; новое значение, которое ядро читает, — новая версия ядра ([10](domains/10-kernel.md)
+KR-19, ADR-34). Код проекций отсюда — слой замороженного ядра по версии (ADR-32): проекция меняется только с `kernel`.
+
+| Читает | Что | Кто читает |
+|---|---|---|
+| поля `std` | `std/verdict.execution`; `std/execution` — кортеж (`setup@n`, `code`, `prompts`); `std/bench-run` — `plan`, `tuple`, `verdict`; `std/bench-plan` — `kind`, `base`, `setup` и кто писал регрессионный план; строка обучения — `from` | `learning-gate` ([13](domains/13-rules.md) §2, ADR-29) |
+| значения полей `core` | `core/session.purpose`: `bench`, `simulate` | `learning-gate` |
+| проекции индекса ([12](domains/12-ledger.md) §3) | `revisions`, `latest`, `grain`, `aliases`, `facts`, `executions` | проверки ядра и примитивы |
+
+Политику доверия ядро не читает: её тип — `std/policy` (ADR-35).
+
 ## 2. Матрица зависимостей
 
 Единственный источник правила зависимостей: по ней работает тест структуры (§3), с ней сверяются строки «Зависит от»
@@ -150,6 +162,7 @@ LATTICE/
 | `std/solution` | тип | [21-compose](domains/21-compose.md) §1 | CP-02, CP-04 |
 | `std/term` | тип | [20-lens](domains/20-lens.md) §2 | LN-14 · N-13 · D08 Q6 |
 | `std/trust-policy` | экземпляр политики по умолчанию | [14-trust](domains/14-trust.md) §4 | TR-05 |
+| `std/policy` | тип политики доверия | [14-trust](domains/14-trust.md) §4 | TR-05 · ADR-35 |
 | `store` (порт) | порт | [12-ledger](domains/12-ledger.md) §5 | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | [20-lens](domains/20-lens.md) §5 | ADR-24 · LN-04 · D08 · C2a (N-79) |
 | `composer` (порт) | порт | [21-compose](domains/21-compose.md) §8 | ADR-24 · CP-14 |
@@ -191,8 +204,10 @@ LATTICE/
 | `Deps` (`view`), `View` | формат | [22-run](domains/22-run.md) §2 | T-3 · R5 Q1 · C2a (N-83) |
 | `LedgerView` (чтения индекса на `seq`) | порт (чтение) | [12-ledger](domains/12-ledger.md) §5 | C2a (N-83) |
 | раздел индекса `executions` | формат | [12-ledger](domains/12-ledger.md) §3 | ADR-3 · C2a (N-75) |
-| проверки ядра | правило | [13-rules](domains/13-rules.md) §2 | T-16 · R5 Q3 |
-| `lens` (`core/trust-policy`: `exclude`, `mark`) | поле | [14-trust](domains/14-trust.md) §4 | 20-lens/И-6 · R5 Q5 · N-40 · D08 Q5 |
+| проверки ядра | правило | [13-rules](domains/13-rules.md) §2 | T-16 · R5 Q3 · RL-16 (`type-latest`) |
+| что ядро читает вне `core` (перечень) | правило | §1 | AR-14 · ADR-35 |
+| переход ядра (T177) | правило | [10-kernel](domains/10-kernel.md) §8 | KR-19 · ADR-34 |
+| `lens` (`std/policy`: `exclude`, `mark`) | поле | [14-trust](domains/14-trust.md) §4 | 20-lens/И-6 · R5 Q5 · N-40 · D08 Q5 |
 | `calibrated_for` порога | поле | [20-lens](domains/20-lens.md) §4 | 20-lens/И-4, И-7 · R5 Q10 · LN-07 · D08 Q4 |
 | `std/pool` | значение | [20-lens](domains/20-lens.md) §3 | LN-14 · И-14 · D08 Q7 |
 | шаблон `card` типа | поле | [20-lens](domains/20-lens.md) §1 | LN-09 · ADR-12 · D08 Q1 |
@@ -202,7 +217,8 @@ LATTICE/
 | `purpose` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | T-5 · R6 Q1 · C2b: `recall` — не читает (T137) |
 | копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`), кампания | формат | [23-bench](domains/23-bench.md) §3 | T-5 · R6 Q1 |
 | гейт обучения (`learning-gate`) | примитив | [13-rules](domains/13-rules.md) §2 | ADR-29 · R6 Q2 |
-| `candidates` (`core/trust-policy`) | поле | [14-trust](domains/14-trust.md) §4 | T-8 · R6 Q4 · N-40 · D09 Q6 |
+| `candidates` (`std/policy`) | поле | [14-trust](domains/14-trust.md) §4 | T-8 · R6 Q4 · N-40 · D09 Q6 |
+| `claimed_via`, `os_user` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | TR-11 · ADR-25 · CA-F01 |
 | `software` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | 14-trust/И-4 · R4 Q5 · T148 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | [14-trust](domains/14-trust.md) §2 | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | [21-compose](domains/21-compose.md) §6 | 21-compose/И-6 · R6 Q5 |
@@ -262,6 +278,7 @@ LATTICE/
 | AR-11 | `std` — JSON-файлы в репозитории; тест — они проходят правила ядра и свои `examples`; генезис, в отличие от `std`, порождается кодом | данные под ревью; генезис — корень доверия, его хэш — константа версии. v0.4 · Q-04-2 · T-10 |
 | AR-12 | Проверки ядра (T134) — слой замороженного ядра по версии `kernel`; код — `src/rules/kernel-checks/` (в том числе `owner`, прежде `catalog/owner.ts`) | валидатор не меняется посреди работы (P9); коммит (ledger) вызывает проверки через rules — catalog ему недоступен (AR-04). v0.4 · ADR-32 · C1 B9, E34 |
 | AR-13 | Карта владения (§8) — понятие → файл-владелец и раздел; новое понятие вносится строкой в том же изменении, что и его определение | у каждого понятия один владелец, остальные ссылаются — иначе определения расходятся молча (аудит C1); адреса строк хрупки — в карте только раздел. v0.4 · C2c Q8 |
+| AR-14 | Что ядро читает вне `core` — поля `std`, значения `purpose` и проекции индекса — перечень §1, часть версии ядра; тип политики доверия — `std/policy` | два канала релиза (ядро и `std`, ядро и ledger) не связываются неявно: новое значение, которое читает гейт, не проходит молча совместимостью схемы; ядро не несёт параметров верхних доменов. v0.5 · ADR-35 · CA-F13, CA-F49 |
 
 ## Вне объёма
 

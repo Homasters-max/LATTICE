@@ -20,7 +20,7 @@
 | потребность | `std/need` | сущность | `{scope: ref, label, terms: [ref]}` | — (ключ потребности — индекс) |
 | подсказка | `std/cue` | факт | `{of: {target: need \| блок@n \| term}, value: "текст", from?, policy?}` | ключ `[target, norm(value)]`; `any` |
 | решение | `std/solution` | сущность | `{need: ref, form: "set" \| "graph"}` | `[need]` — одно решение на потребность |
-| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок@n}, value: true \| false, reason, found_by, from?, policy?}` | ключ `[group, member]`; `grant` — владелец или допущенный |
+| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок}, value: true \| false, reason, found_by, from?, policy?}` | ключ `[group, member]`; `grant` — владелец или допущенный |
 | связь | `std/link` | факт | `{of: {group: solution, from: блок, to: блок}, value: true \| false}` | ключ `[group, from, to]`; как у `std/member` |
 | snapshot | `core/snapshot` | значение | `{of: solution, members: [ref@n], links: [[from@n, to@n]]}` | содержимое |
 | пробел | `std/gap` | событие | `{need, scope, kind: "absent" \| "coverage", places?: [Place], note?}` | — |
@@ -43,6 +43,11 @@
   доменов (`core/member`) пишет владелец; состав решений — Composer и обучение по допуску
   `core/grant {create: ["std/member"]}` ([15](15-catalog.md)). Допуск задаётся по типу — поэтому типы разные.
   `found_by: "lens" | "self-search" | "verdict"` — как член попал в решение (обучение читает, [22](22-run.md)).
+- **Роль `member` — ссылка по политике `refs` типа блока** ([15](15-catalog.md) §4): знание — следующая (`id`),
+  способность — закреплённая (`id@n`, правило `ref-policy`). Версию знания закрепляет только snapshot. Поэтому
+  правка нормы не заводит новый факт членства: ключ `[group, member]` тот же, доверие членства сохраняется, `count`
+  не видит норму дважды; устаревание ловит статус snapshot'а и `recheck` (CP-18). Новая версия способности —
+  перезакрепление потребителем, как везде (`pin`).
 - **Строки обучения** — `std/member` и `std/cue` с `from` (вердикт) и `policy@rev`; в `rules` обоих типов — гейт
   `learning-gate` по `from` ([13](13-rules.md) §2, [22](22-run.md) §6, ADR-29).
 - Членство — факты: состав калибруется вердиктами без новых версий решения (P4). Snapshot фиксирует, что именно
@@ -117,7 +122,7 @@ ADR-28). Повтор решения — названное исключение
 | `select` | Composer (`select`) | потребность + кандидаты (карточки, `trust`, `marks`) → 1…`max` членов с причиной-цитатой, или `none-fit`; при `threshold: uncalibrated` отказ — здесь | `norm`, `candidates`, `outcome`, `recall` | `selection` |
 | `self-search` | код + Composer (`self-search`) | при `none-fit` или `no-match`: расширить область до всех доменов пространства и `source.grep` — найденное код пишет в `found`, Composer выбирает только из него; перед `absent` — `judge.verify` против потребностей пространства с непустым решением (дубль → промах B, члены — в `found`); не нашлось — `source.find`: места → `coverage`, нет → `absent` | `norm`, `scope`, `outcome`, `selection` | `found`, `selection`, `rows` |
 | `check` | код | проверка выбора (§5) | `selection`, `candidates`, `found` | `findings`, `done` |
-| `materialize` | код | выбор без нарушений `check` → строки решения, `std/member`, `std/link`, snapshot (операция `materialize`) | `selection`, `findings`, `recall` | `rows`, `solution` (`{ref, snapshot}` — для `deliver`, [22](22-run.md) §4) |
+| `materialize` | код | выбор без нарушений `check` → строки решения, `std/member` (роль `member` — по `refs` типа блока, CP-18), `std/link`, snapshot с `@n` (операция `materialize`) | `selection`, `findings`, `recall` | `rows`, `solution` (`{ref, snapshot}` — для `deliver`, [22](22-run.md) §4) |
 
 Граф-форма исполняется (`exec`) только после `check`; первый запуск — без `exec` ([22](22-run.md), ADR-19).
 Коммит вызова собирает рантайм: стадия `materialize` кладёт строки в `rows`, сама не пишет (§ Операции).
@@ -208,7 +213,7 @@ interface Composer {
 }
 
 interface Source {
-  load(): AsyncIterable<RevisionInput>                          // первичная загрузка и обновление (T129)
+  load(): AsyncIterable<RevisionInput>                          // первичная загрузка и обновление (T129): все блоки источника
   text(ref: Ref): Promise<{ text: string; revision: string }>   // полный текст блока — для пакета
   locate(ref: Ref): Promise<{ places: Place[] }>                 // где блок в источнике
   grep(q: string, scope: Ref): Promise<Ref[]>                    // по тексту блоков области — self-search
@@ -217,6 +222,12 @@ interface Source {
 type Place = { kind: 'doc' | 'code' | 'test'; path: string; lines?: [number, number] }
 ```
 
+- **`load()` отдаёт полный перечень** блоков источника, не только изменённые: пишутся только изменённые (no-op), а
+  живой объект пространства из прежних загрузок, которого в перечне нет, получает находку `std/load-finding {kind:
+  missing}` ([30](30-adapters.md) §6); вывести его из обращения (`core/retire`) решает владелец. Вернулся в
+  источник — находка снимается (`value: false`).
+- **`id` блока — устойчивый якорь источника**: внешнее имя, которое не меняется от вставки соседей; порядковый номер
+  пункта якорем не бывает — у пункта без своего якоря блок — документ целиком (CP-19).
 - `Meta` — сводка ответа порта, общая с `judge` ([22](22-run.md), T135).
 - Выход Composer всегда проверяется схемой; невалидный выход — ошибка стадии, не «лучшее, что получилось».
 - `pending` — режим агента (`composer-caller`): задание уходит вызывающему, ответ приходит командой
@@ -271,6 +282,8 @@ type Place = { kind: 'doc' | 'code' | 'test'; path: string; lines?: [number, num
 | CP-15 | Граница, сказанная в промпте, дублируется кодом — таблица §5 | текст объясняет, код запрещает; граница без проверки — долг. v0.4 · PF-config п. 3.5 |
 | CP-16 | Альтернативных решений одной потребности нет | спор — через доверие членств, а не второе решение. v0.4 · v0.3 вопрос 2 |
 | CP-17 | Self-search v1 — расширение области до пространства + `source.grep`; инструменты агента — позже | закрытый мир держится кодом: найденное пишет код. v0.4 · v0.3 вопрос 3 · И-9 |
+| CP-18 | Роль `member` у `std/member` — ссылка по политике `refs` типа блока: знание — `id`, способность — `id@n`; версию знания закрепляет только snapshot | было два ответа: `member: блок@n` здесь и «решение ссылается на норму без версии» (15 §4); с версией в ключе правка нормы обнуляла доверие членства и удваивала `count` до отказа `solution-size`, без — запись новой версии была no-op и закрепление тихо терялось. Ключ факта — формат данных. v0.5 · CA-F03 |
+| CP-19 | `source.load()` отдаёт полный перечень блоков; отсутствующий — находка `missing`, решает владелец; `id` блока — устойчивый якорь источника, не порядковый номер | иначе удалённая в источнике норма жива в каталоге и выдаётся, а вставка пункта даёт `ADR-0012#3` текст бывшего `#2` — ссылки `follow` молча указывают на другое; вывод из обращения — управляющий факт владельца, ошибка парсера не выводит живые нормы. v0.5 · CA-F25 |
 
 ## Вопросы для grilling
 
