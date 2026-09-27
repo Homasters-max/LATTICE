@@ -26,7 +26,7 @@
 | `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:14` | 30-adapters (source-warrant) | BN-01 |
 | `std/ctx` | тип | 22-run | `design/domains/22-run.md:45-59` | 20-lens, 21-compose (стадии), 13-rules (контракт) | RN-02 |
 | `std/cue` | факт | 21-compose | `design/domains/21-compose.md:15` | 20-lens (LN-02), 14-trust (п.7), 15-catalog (допуск) | — |
-| `std/distinct` | факт | 21-compose | `design/domains/21-compose.md:16` | 22-run (обучение) | CP-01 |
+| `std/distinct` | факт | 11-identity-grain | `design/02-glossary.md` T81 | 21-compose (потребности), 22-run (обучение), `core/trust-policy.candidates` (память отказов) | CP-01 · T-8 · R6 Q4 |
 | `std/domain` | тип | 11-identity-grain `?` (см. §4) | `design/domains/11-identity-grain.md:28-33` | 10-kernel (пример), 30-adapters (создание доменов) | GR-03 |
 | `std/gap` | событие | 21-compose | `design/domains/21-compose.md:21,64-68` | — | CP-07 |
 | `std/knowledge` | тип | 20-lens `?` | `design/domains/30-adapters.md:66` | 15-catalog (публикация) | `?` — карточка и поиск блока знания естественно у LENS; своей модели у `std/knowledge` нет |
@@ -81,6 +81,13 @@
 | проверки ядра | правило | 13-rules | `design/02-glossary.md` T134 | 10-kernel, 11-identity-grain (`split`/`merge`), 21-compose | T-16 · R5 Q3 |
 | `core/trust-policy.lens` (`exclude`, `mark`) | поле | 14-trust | `research/analysis/arch-changes.md:238` | 20-lens (`pool`, стадия `trust`) | 20-lens/И-6 · R5 Q5 |
 | `calibrated_for` порога | поле | 20-lens | `design/02-glossary.md` T136 | 21-compose (`same_hi/lo`), 22-run (отказ) | 20-lens/И-4, И-7 · R5 Q10 |
+| `core/session.purpose` | поле | 14-trust | `design/02-glossary.md` T137 | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
+| копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`) | формат | 23-bench | `design/02-glossary.md` T138 | 12-ledger, 22-run | T-5 · R6 Q1 |
+| гейт обучения | правило | 13-rules | `design/adr/0029-learning-gate.md` | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
+| `core/trust-policy.candidates` | поле | 14-trust | `design/02-glossary.md` T142 | 11-identity-grain, 21-compose | T-8 · R6 Q4 |
+| `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
+| окно удаления членства | правило | 22-run | `design/adr/0020-membership-removal-window.md` | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
+| регрессионный план (`base`, δ, ротация `test`) | правило | 23-bench | `design/02-glossary.md` T143 | 22-run (гейт ADR-29) | 23-bench/И-14, И-15 · R6 Q9 |
 
 ## 3. Без владельца
 

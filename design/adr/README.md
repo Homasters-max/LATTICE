@@ -27,3 +27,10 @@
 | [15](0015-capability-retire-coordinated.md) | вывод старых версий способностей в v1 — согласованный переход; строгий `pin` + `retire` с датой — со второго проекта; CT-05 «вечны» — для данных | принято | 15-catalog, 10-kernel, 22-run | 3 | R5 |
 | [17](0017-form-explicit-field.md) | `form: set/graph` — явное поле с hard-согласованностью по `std/link` | принято | 21-compose, 13-rules | 3 | R5 |
 | [18](0018-two-graph-models.md) | цепочка стадий (`contract`) и граф решения (`acyclic`) — разные модели на v1; CP-04 без «одна модель» | принято | 21-compose, 13-rules, 22-run | 3 | R5 |
+| [29](0029-learning-gate.md) | барьер стенда — hard-правило на фактах обучения (`from: verdict` — не из сессии стенда, кортеж с `bench-run pass` или `simulate-consumer`); смена `setup` свободна, пакет без `pass` помечен; `lattice pin` нет; уточняет PF-05 | принято | 13-rules, 22-run, 23-bench, 14-trust, 04-architecture, 05-slices | 4 | R6 |
+| [20](0020-membership-removal-window.md) | удаление членства — `unused` в N из последних M выдач (3 из 5), по группам независимости, без сессий стенда; числа — в `core/trust-policy` | принято | 22-run, 14-trust, 05-slices | 4 | R6 |
+| [16](0016-fuse-linear-default.md) | слияние judge и BM25 — `linear` до стенда; порог — по judge; `rrf` — сравнение в S9 | принято | 20-lens, 23-bench | 4 | R6 |
+| [11](0011-soft-rule-capability.md) | правило вне примитивов ядра — только `soft`, способностью `check: capability@n` с `determinism`; `hard` — в ядре | принято | 13-rules, 15-catalog | 5 | R6 |
+| [23](0023-storage-review-trigger.md) | триггер пересмотра хранилища — время пересборки p95; число и порог SQLite — замером после первого запуска | принято | 12-ledger, 30-adapters, 01-first-run | 5 | R6 |
+| [21](0021-bench-plan-event.md) | все планы стенда — события; правка — новый план с `supersedes`; `test` пишет владелец (правило по `split`); `criteria[]` с ролью | принято | 23-bench, 10-kernel, 02-glossary | 4 | R6 |
+| [22](0022-single-pin-policy.md) | одна политика проверки смены `setup` до живого трафика — регрессионный план на `test`; раскатка — вне объёма | принято | 23-bench, 22-run | 5 | R6 |

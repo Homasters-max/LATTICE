@@ -8,3 +8,4 @@
 | `grounding` | `basis` | ADR-14 | план |
 | `import()` | `load()` | R4 Q11 (порт `source`) | план |
 | `lattice import` | `lattice load` | R4 Q11 | план |
+| `--mode` | поле `mode` плана стенда | R6 Q3 (23-bench/И-1) | план |
