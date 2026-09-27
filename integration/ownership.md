@@ -63,7 +63,9 @@
 | `core/holds` | событие | 10-kernel | `design/domains/10-kernel.md:177-186` | 14-trust | 10-kernel/И-6 · R4 Q9, D01 Q3: событие генезиса, провенанс |
 | `core/namespace.origin` | поле | 10-kernel | `design/domains/10-kernel.md:100-102` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
-| `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
+| `core/rule.examples`, `core/rule.when` | поле | 13-rules | `design/domains/13-rules.md` §1 | 21-compose (`form`, ADR-17) | 13-rules/И-1 · D04 Q5 |
+| нарушение (оболочка `{row, rule, message}`) | формат | 13-rules | `design/domains/13-rules.md` §2 | 11-identity-grain (`grain-unique`), 12-ledger (отказ коммита) | 13-rules/И-4 · D04 Q2 |
+| `impl.pins` | поле | 13-rules | `design/domains/13-rules.md` §3 | 22-run (кортеж, отказ рантайма), 15-catalog | 10-kernel/И-33 · T-2 |
 | `std/alias-candidate` | тип | 11-identity-grain | `design/domains/11-identity-grain.md:131-134` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
 | `core/type.grain_scope` | поле | 11-identity-grain | `design/adr/0027-grain-scope.md` | 12-ledger (индекс `grain`), 13-rules (`grain-unique`) | ADR-27 · R3 |
 | уровень `core/type.schema` | поле | 13-rules | `design/adr/0009-schema-field-as-rule.md` | 10-kernel (`core/type`) | ADR-9 · R3 |
@@ -83,7 +85,7 @@
 | `calibrated_for` порога | поле | 20-lens | `design/02-glossary.md` T136 | 21-compose (`same_hi/lo`), 22-run (отказ) | 20-lens/И-4, И-7 · R5 Q10 |
 | `core/session.purpose` | поле | 14-trust | `design/02-glossary.md` T137 | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
 | копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`) | формат | 23-bench | `design/02-glossary.md` T138 | 12-ledger, 22-run | T-5 · R6 Q1 |
-| гейт обучения | правило | 13-rules | `design/adr/0029-learning-gate.md` | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
+| гейт обучения (`learning-gate`) | примитив | 13-rules | `design/domains/13-rules.md` §2 (ADR-29) | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
 | `core/trust-policy.candidates` | поле | 14-trust | `design/02-glossary.md` T142 | 11-identity-grain, 21-compose | T-8 · R6 Q4 |
 | `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
 | окно удаления членства | правило | 22-run | `design/adr/0020-membership-removal-window.md` | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
@@ -98,7 +100,7 @@ JSON-примеры внутри кода, которые индексатор l
 |---|---|---|---|
 | `core/trust-policy` | `02-glossary.md:86`; `domains/14-trust.md:57` (тело в JSON-примере, не в прозе) | 14-trust | тело (`weights`, `observe_sessions`…) уже дано примером в 14-trust.md:57 |
 | `std/block` | — | нет типа (D01 Q0) | T66: блок — признак (`card`); тип убран из списка `std` (10-kernel/И-22); N-8 — только `std/card` |
-| `std/capability` | `02-glossary.md:107`; `domains/13-rules.md:54` (тело в JSON-примере) | 13-rules | контракт (`input`/`output`/`impl`) и правило `contract` — в 13-rules.md:44,54 |
+| `std/capability` | закрыто D04 (N-9): `design/domains/13-rules.md` §3 | 13-rules | тело в прозе «Модели» §3 |
 | `std/card` | `02-glossary.md:110`; `domains/20-lens.md:16-21` (тело в JSON-примере) | 20-lens | полное тело и назначение карточки описаны в 20-lens.md §1 |
 | `std/pipeline` | `02-glossary.md:134`; `04-architecture.md:86`; `domains/22-run.md:14-36` (тело в JSON-примере) | 22-run | конвейер определён и исполняется целиком в 22-run.md §1,3 |
 | `std/execution` | `02-glossary.md:137` (больше нигде, даже в JSON) | 22-run | событие вызова описано текстом в RN-06; формализация — предложение 22-run/И-18 (`std/execution@1`) |
