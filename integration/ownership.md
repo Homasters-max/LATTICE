@@ -20,7 +20,7 @@
 | `core/rule` | тип | 13-rules | `design/domains/13-rules.md:14-22` | 10-kernel (`type.rules`), 12-ledger (коммит) | RL-01 |
 | `core/session` | тип | 14-trust | `design/domains/14-trust.md:16` | 10-kernel (`by`) | TR-03 |
 | `core/snapshot` | тип | 21-compose | `design/domains/21-compose.md:20` | 12-ledger (индекс `snapshots`) | CP-02 |
-| `core/type` | тип | 10-kernel | `design/domains/10-kernel.md:78-107` | все домены | KR-08 |
+| `core/type` | тип | 10-kernel | `design/domains/10-kernel.md:117-155` | все домены | KR-08 |
 | `std/bench-plan` | тип | 23-bench | `design/domains/23-bench.md:15` | — | BN-02 |
 | `std/bench-run` | событие | 23-bench | `design/domains/23-bench.md:16` | — | BN-01 |
 | `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:14` | 30-adapters (source-warrant) | BN-01 |
@@ -51,7 +51,7 @@
 | `at` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:28` | 12-ledger (порядок) | LG-04 |
 | `by` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:29` | 14-trust (доверие) | TR-01 |
 | `body` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:30` | все домены | KR-02 |
-| ревизия (формат записи) | формат | 10-kernel | `design/domains/10-kernel.md:12-21` | все домены | KR-01 |
+| ревизия (формат записи) | формат | 10-kernel | `design/domains/10-kernel.md:12-48` | все домены | KR-01 |
 
 ## 2. Новые понятия из итогов
 
@@ -60,8 +60,8 @@
 | Понятие | Вид | Владелец (файл) | Определение (адрес) | Используют | Решение |
 |---|---|---|---|---|---|
 | `core/commit` | факт (маркер) | 12-ledger | `research/analysis/arch-changes.md:166` (не в design/) | 10-kernel, 22-run | 12-ledger/И-9 |
-| `core/holds` | событие | 10-kernel | `research/analysis/arch-changes.md:105` | 14-trust | 10-kernel/И-6 · R4 Q9: событие генезиса |
-| `core/namespace.origin` | поле | 10-kernel | `research/analysis/arch-changes.md:126` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
+| `core/holds` | событие | 10-kernel | `design/domains/10-kernel.md:177-186` | 14-trust | 10-kernel/И-6 · R4 Q9, D01 Q3: событие генезиса, провенанс |
+| `core/namespace.origin` | поле | 10-kernel | `design/domains/10-kernel.md:100-102` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
 | `std/alias-candidate` | тип | 11-identity-grain | `design/adr/0008-alias-candidate-type.md` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
@@ -97,7 +97,7 @@ JSON-примеры внутри кода, которые индексатор l
 | Понятие | Упоминания (grep design/) | Предложенный владелец | Довод |
 |---|---|---|---|
 | `core/trust-policy` | `02-glossary.md:86`; `domains/14-trust.md:57` (тело в JSON-примере, не в прозе) | 14-trust | тело (`weights`, `observe_sessions`…) уже дано примером в 14-trust.md:57 |
-| `std/block` | `02-glossary.md:105` (больше нигде) | 20-lens | T66: карточка и поиск определяют блок; ср. находку 10-kernel/И-22 (предлагает убрать `std/block` как обязательного родителя) |
+| `std/block` | — | нет типа (D01 Q0) | T66: блок — признак (`card`); тип убран из списка `std` (10-kernel/И-22); N-8 — только `std/card` |
 | `std/capability` | `02-glossary.md:107`; `domains/13-rules.md:54` (тело в JSON-примере) | 13-rules | контракт (`input`/`output`/`impl`) и правило `contract` — в 13-rules.md:44,54 |
 | `std/card` | `02-glossary.md:110`; `domains/20-lens.md:16-21` (тело в JSON-примере) | 20-lens | полное тело и назначение карточки описаны в 20-lens.md §1 |
 | `std/pipeline` | `02-glossary.md:134`; `04-architecture.md:86`; `domains/22-run.md:14-36` (тело в JSON-примере) | 22-run | конвейер определён и исполняется целиком в 22-run.md §1,3 |
@@ -108,4 +108,4 @@ JSON-примеры внутри кода, которые индексатор l
 
 | Понятие | Адреса | Расхождение | Предложенный владелец |
 |---|---|---|---|
-| `std/domain` | `design/domains/10-kernel.md:19` (пример ревизии, тело: `name, code, language`) vs `design/domains/11-identity-grain.md:32-33` (пример сущности, тело: `project, name, language, code`) | у kernel-примера нет поля `project`, которое зерно типа (`identity-grain.md:29`) включает как измерение — тела двух примеров одного типа не совпадают по составу полей | 11-identity-grain (зерно и правила слияния определены здесь; kernel-пример — иллюстрация формата ревизии вообще, не модель `std/domain`) |
+| `std/domain` | `design/domains/10-kernel.md:19` (пример ревизии, тело: `name, code, language`) vs `design/domains/11-identity-grain.md:32-33` (пример сущности, тело: `project, name, language, code`) | у kernel-примера нет поля `project`, которое зерно типа (`identity-grain.md:29`) включает как измерение — тела двух примеров одного типа не совпадают по составу полей | 11-identity-grain (зерно и правила слияния определены здесь; kernel-пример — иллюстрация формата ревизии вообще, не модель `std/domain`); **D01:** 10-kernel — только иллюстрация, ссылка на [11] (N-11) |
