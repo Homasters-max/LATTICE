@@ -1,7 +1,7 @@
 # CHANGELOG — design v0.4 → v0.5
 
-v0.5 вносит решения по находкам challenge-аудита design v0.4 (`../challenge-audit/REPORT.md`, F01–F59). Решения
-принимает пользователь по волнам; реестр — `../challenge-audit/FIX-STATE.md`. В «Почему» — опора
+v0.5 вносит решения по находкам challenge-аудита design v0.4 (`../arhived/challenge-audit/REPORT.md`, F01–F59). Решения
+принимает пользователь по волнам; реестр — `../arhived/challenge-audit/FIX-STATE.md`. В «Почему» — опора
 `v0.5 · CA-Fnn`. Базовая линия — тег `design-v0.4`; тег `design-v0.5` — после всех волн.
 
 До волн: определение системы различает v1 и цель — VI-05 ([00-vision](00-vision.md); F26, F46, F52 — текст видения).

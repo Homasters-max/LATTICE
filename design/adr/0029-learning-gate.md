@@ -41,5 +41,5 @@
 пакета, факты обучения читают `verdict.execution`), 23-bench (`bench-run pass` на кортеж; `setup: ref@n` в плане),
 14-trust (сессии стенда), 04-architecture (`:86` — закрепление ревизией `std/setup`, гейт на обучении), 05-slices,
 02-glossary (T139). Требует `purpose` (T-5, R6 Q1) и `std/verdict.execution` (22-run/И-11). Откат средний.
-**Опора:** Q-74 C-1, D-82; T-2; PF-05 (PF-config §3.4); сверка PF S0 (`integration/briefs/S0-pf.md` §2).
+**Опора:** Q-74 C-1, D-82; T-2; PF-05 (PF-config §3.4); сверка PF S0 (`arhived/integration/briefs/S0-pf.md` §2).
 **Реестр:** N-4, PF-05, PF-config:22-run, 23-bench/И-13.
