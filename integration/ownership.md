@@ -36,12 +36,12 @@
 | `std/solution` | тип | 21-compose | `design/domains/21-compose.md:17` | 15-catalog (допуск) | CP-02 |
 | `std/term` | тип | 20-lens `?` | `design/domains/30-adapters.md:70` | — | `?` — термины питают стадию `lexicon` LENS; отдельного домена словаря нет |
 | `std/trust-policy` | экземпляр политики по умолчанию | 14-trust | `design/domains/14-trust.md:63` | 15-catalog (`namespace.policy`) | TR-05 |
-| `store` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:58-64` | 30-adapters (`store-jsonl`) | ADR-24 (уже у потребителя) |
+| `store` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:110-132` | 30-adapters (`store-jsonl`, `store-memory`) | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | 20-lens | `design/domains/30-adapters.md:18-22` — переезд | 21-compose (recall, select), 11-identity-grain (GR-06) | ADR-24 |
 | `composer` (порт) | порт | 21-compose | `design/domains/30-adapters.md:25-28` — переезд | 22-run (runtime) | ADR-24 |
 | `source` (порт) | порт | 21-compose `?` | `design/domains/30-adapters.md:30-35` — переезд | 22-run (deliver), 30-adapters (source-warrant) | `?` — self-search (compose) и deliver (run) оба прямые потребители; ADR-24 не называет |
 | `exec` (порт) | порт | 22-run `?` | `design/domains/30-adapters.md:14` — переезд | — | `?` — единственный потребитель (runtime), альтернатив нет |
-| `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/30-adapters.md:15` — переезд (N-23, D05) | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
+| `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:120-121` (D05; 30-adapters:15 — ссылкой, N-23) | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
 | `Meta` | формат | 22-run | `design/domains/30-adapters.md:23` — переезд; `design/02-glossary.md` T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
 | `Scored` | формат | 20-lens | `design/domains/30-adapters.md:19` — переезд | — | ADR-24 (принадлежит `judge` → lens) |
 | `Chosen` | формат | 20-lens | `design/domains/30-adapters.md:21` — переезд | — | ADR-24 (принадлежит `judge` → lens) |
@@ -59,7 +59,7 @@
 
 | Понятие | Вид | Владелец (файл) | Определение (адрес) | Используют | Решение |
 |---|---|---|---|---|---|
-| `core/commit` | факт (маркер) | 12-ledger | `research/analysis/arch-changes.md:166` (не в design/) | 10-kernel, 22-run | 12-ledger/И-9 |
+| `core/commit` | факт (маркер) | 12-ledger | `design/domains/12-ledger.md:30-32` | 10-kernel (генезис), 13-rules (`kernel`), 22-run | 12-ledger/И-9 · LG-12 (D05) |
 | `core/holds` | событие | 10-kernel | `design/domains/10-kernel.md:177-186` | 14-trust | 10-kernel/И-6 · R4 Q9, D01 Q3: событие генезиса, провенанс |
 | `core/namespace.origin` | поле | 10-kernel | `design/domains/10-kernel.md:100-102` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
