@@ -62,10 +62,15 @@
 | `core/commit` | факт (маркер) | 12-ledger | `research/analysis/arch-changes.md:166` (не в design/) | 10-kernel, 22-run | 12-ledger/И-9 |
 | `core/holds` | событие | 10-kernel | `research/analysis/arch-changes.md:105` | 14-trust | 10-kernel/И-6 |
 | `core/namespace.origin` | поле | 10-kernel | `research/analysis/arch-changes.md:126` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
-| `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | — | 14-trust/И-7 |
+| `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | 22-run (`learn`) | 14-trust/И-7 · ADR-5 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
 | `std/alias-candidate` | тип | 11-identity-grain | `research/analysis/arch-changes.md:348` (ADR-8) | 21-compose (И-2) | ADR-8 |
 | `std/ctx.needs[].found` | поле | 22-run `?` | `research/analysis/arch-changes.md:258` | 21-compose | 21-compose/И-9 |
+| `core/type.writers`, `core/type.inForce` | поле | 10-kernel | `design/adr/0006-control-fact-writers.md` | 13-rules (`owner`), 15-catalog, 14-trust, 11-identity-grain | ADR-6 · R2 |
+| реестр участников (`core/actor` пишет владелец) | правило | 14-trust | `design/adr/0025-participant-registry.md` | 15-catalog, 22-run, 30-adapters (хост) | ADR-25 · R2 |
+| группа независимости | правило | 14-trust | `design/adr/0026-independence-groups.md` | 20-lens, 22-run, 23-bench | ADR-26 · R2 |
+| `trust().overruled` | поле | 14-trust | `research/analysis/arch-changes.md:205` | 20-lens (исключает) | 14-trust/И-13 · R2 |
+| `core/grant.value.declare` | поле | 15-catalog | `design/adr/0025-participant-registry.md` | 14-trust (`declared`) | ADR-25 · R2 |
 
 ## 3. Без владельца
 
