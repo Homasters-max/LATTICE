@@ -7,8 +7,8 @@
 
 | Слой | Что | Меняется |
 |---|---|---|
-| **замороженное ядро** (код) | генезис, форма ревизии, хэш и каноническая форма, ссылки, режимы идентичности, примитивы проверок ([10](domains/10-kernel.md) KR-11, T21) | только версией ядра; хэш генезиса — константа версии |
-| **код системы** | identity, ledger, rules (кроме примитивов), trust, catalog, интерпретатор конвейера, bench, реализации стадий `builtin` | обычными релизами пакета; стадия исполняется, только если код совпадает с `impl.pins` ([13](domains/13-rules.md) §3) |
+| **замороженное ядро** (код) | генезис, форма ревизии, хэш и каноническая форма, ссылки, режимы идентичности, примитивы и проверки ядра (T134, ADR-32; код проверок — `src/rules/kernel-checks/`) ([10](domains/10-kernel.md) KR-11, T21) | только версией ядра; слой задаётся версией, не каталогом; хэш генезиса — константа версии |
+| **код системы** | identity, ledger, rules (кроме примитивов и проверок ядра), trust, catalog, интерпретатор конвейера, bench, реализации стадий `builtin` | обычными релизами пакета; стадия исполняется, только если код совпадает с `impl.pins` ([13](domains/13-rules.md) §3) |
 | **библиотека `std`** (данные) | типы механизма, правила, политика доверия по умолчанию, способности, конвейер `solve`, шаблоны карточек, промпты стадий | ревизиями; в проект — копией при `init` / `update` ([15](domains/15-catalog.md) §1) |
 | **адаптеры и CLI** (код) | реализации портов, фиктивные адаптеры, корень сборки, хост, команды ([30](domains/30-adapters.md)) | релизами пакета; адаптеры вне пакета — позже (AD-14) |
 | **проект** (данные) | пространство имён, `std/setup`, типы проекта, объекты — журнал в `.lattice/`; проводка — `lattice.config.json` | ревизиями в журнале; проводка — правкой файла (§5) |
@@ -36,7 +36,7 @@
 **Интерфейс домена** (T167) — файл `src/<домен>/types.ts`: типы и интерфейсы портов, которые домен определяет
 (ADR-24). Матрица его не ограничивает: интерфейс импортирует только ядро и интерфейсы других доменов, и между файлами
 нет циклов. Так типы ходят в обе стороны (`Ctx` у run читает кандидатов lens, `Judge` у lens возвращает `Meta` run;
-rules получает `View` журнала), а вызовы — только по матрице. Адаптер импортирует ядро и интерфейс своего порта.
+rules получает `LedgerView` журнала), а вызовы — только по матрице. Адаптер импортирует ядро и интерфейс своего порта.
 
 ## 3. Тест структуры
 
@@ -78,13 +78,13 @@ LATTICE/
   src/
     kernel/                     types.ts, revision.ts, canonical.ts, hash.ts, ref.ts, ids.ts, genesis.ts
     identity/                   types.ts, grain.ts, ensure.ts, regrain.ts, alias.ts, resolve.ts
-    rules/                      types.ts, validate.ts, primitives/*.ts, lint.ts, contract.ts
-    ledger/                     types.ts (Store, Clock, Ids, View, Projection), commit.ts, open.ts, projections.ts, rebuild.ts, query.ts
-    catalog/                    types.ts, namespace.ts, owner.ts, publish.ts, consumers.ts, migrate.ts
+    rules/                      types.ts, validate.ts, primitives/*.ts, kernel-checks/*.ts, lint.ts, contract.ts
+    ledger/                     types.ts (Store, Clock, Ids, LedgerView, Projection), commit.ts, open.ts, projections.ts, rebuild.ts, query.ts
+    catalog/                    types.ts, namespace.ts, publish.ts, consumers.ts, migrate.ts
     trust/                      types.ts, assert.ts, compute.ts, projection.ts, policy.ts, explain.ts
-    lens/                       types.ts (Judge), stages/{normalize,route,id-lookup,lexicon,pool,bm25,judge,fuse,trust,threshold,cut}.ts, card.ts
+    lens/                       types.ts (Judge), stages/{normalize,route,id-lookup,lexicon,pool,bm25,judge,fuse,trust,threshold,cut}.ts, card.ts, aliases.ts
     compose/                    types.ts (Composer, Source), stages/{frame,recall,recheck,select,self-search,check}.ts, materialize.ts
-    run/                        types.ts (Ctx, Stage, Deps, Meta, Ident, Exec), interpreter.ts, registry.ts, deliver.ts, verdict.ts, learn.ts, replay.ts
+    run/                        types.ts (Ctx, Stage, Deps, View, Meta, Ident, Exec), interpreter.ts, registry.ts, deliver.ts, verdict.ts, learn.ts, replay.ts
     bench/                      plan.ts, metrics.ts, bootstrap.ts, report.ts
     adapters/                   store-jsonl/  store-memory/  judge-jev/  judge-fixture/  composer-claude/  composer-caller/
                                 composer-fixture/  source-warrant/  source-files/  source-fixture/  (clock, ids — 30 §1)
@@ -118,12 +118,13 @@ LATTICE/
 | AR-03 | TypeScript / Node ESM, `node:test`, без фреймворков. Фреймворк — код, который забирает управление (DI-контейнер, веб- или агентный фреймворк); библиотеки и SDK поставщика — только внутри своего адаптера | данные — канонический JSON, код заменим без миграции; просто: CLI и библиотека без инверсии управления. v0.4 · 30-adapters/И-11 · П-31 |
 | AR-04 | Правило зависимостей — матрица §2, единственный источник для теста структуры и строк «Зависит от»; тест проверяет пять пунктов §3 с первого среза | архитектура не расползается: эрозия структуры не даёт красных поведенческих тестов. v0.4 · T-10 · 30-adapters/И-2 · И-3 · П-30 |
 | AR-05 | Срезы — единица реализации и приёмки; первый — скелет S0 | каждый шаг даёт работающий результат; стыки слоёв видны с начала. v0.4 · 30-adapters/И-13 |
-| AR-06 | Интерфейс домена (`types.ts`) вне матрицы: импортирует только ядро и интерфейсы, без циклов; матрица ограничивает реализацию | типы нужны в обе стороны (`Ctx` ↔ `Judge`, `View` для rules), вызовы — только по направлению. v0.4 · D13 Q1 · ADR-24 |
+| AR-06 | Интерфейс домена (`types.ts`) вне матрицы: импортирует только ядро и интерфейсы, без циклов; матрица ограничивает реализацию | типы нужны в обе стороны (`Ctx` ↔ `Judge`, `LedgerView` для rules), вызовы — только по направлению. v0.4 · D13 Q1 · ADR-24 |
 | AR-07 | Корень сборки `src/cli/wire.ts` — единственный импортёр `adapters/*`; собирает адаптеры, `Deps` и список проекций | одна точка знает технологии; правило проверяемо тестом. v0.4 · 30-adapters/И-1 · AD-01 |
 | AR-08 | Раздел индекса вычисляет домен-владелец; проекцию выше журнала (`trust`) подключает корень сборки | индекс хранит результат `trust()`, но 12 от 14 не зависит. v0.4 · N-32 · D13 Q2 |
 | AR-09 | Меняет пакет или цену при том же журнале — журнал (`std/setup`), иначе — проводка | воспроизводимость по журналу; проводка не влияет на результат. v0.4 · PF-01 · ADR-28 |
 | AR-10 | Один пакет с каталогами; разделение (`@lattice/core`, `@lattice/adapters-*`) — когда адаптеры понадобятся отдельно | нет второго потребителя; матрица и тест держат границы и без пакетов. v0.4 · Q-04-1 · AD-14 |
 | AR-11 | `std` — JSON-файлы в репозитории; тест — они проходят правила ядра и свои `examples`; генезис, в отличие от `std`, порождается кодом | данные под ревью; генезис — корень доверия, его хэш — константа версии. v0.4 · Q-04-2 · T-10 |
+| AR-12 | Проверки ядра (T134) — слой замороженного ядра по версии `kernel`; код — `src/rules/kernel-checks/` (в том числе `owner`, прежде `catalog/owner.ts`) | валидатор не меняется посреди работы (P9); коммит (ledger) вызывает проверки через rules — catalog ему недоступен (AR-04). v0.4 · ADR-32 · C1 B9, E34 |
 
 ## Вне объёма
 
