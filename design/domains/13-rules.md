@@ -16,18 +16,18 @@
   "body": {
     "level": "hard",
     "check": "count",
-    "params": { "fact": "core/member", "role": "group", "max": 7 },
+    "params": { "fact": "std/member", "role": "group", "max": 7 },
     "message": "Решение — не больше 7 членов; больше — разбить потребность",
     "doc": "Размер группы решения: не больше 7 членов",
-    "examples": { "pass": [{ "facts": ["… 7 × core/member одной group"] }],
-                  "fail": [{ "facts": ["… 8 × core/member одной group"] }] }
+    "examples": { "pass": [{ "facts": ["… 7 × std/member одной group"] }],
+                  "fail": [{ "facts": ["… 8 × std/member одной group"] }] }
   } }
 ```
 
 Поля тела `core/rule`: `level` (`hard` / `soft`), `check` (примитив §2 или `capability`, п. 3), `params`, `message`,
 `doc`, `examples`, `when` — необязательны все, кроме `level` и `check`.
 
-- Тип закрепляет свои правила: `rules: [{"$ref": "std/rule.solution-size@1"}]` (пример — у типа факта `core/member`,
+- Тип закрепляет свои правила: `rules: [{"$ref": "std/rule.solution-size@1"}]` (пример — у типа факта `std/member`,
   [21](21-compose.md)).
 - **Наследование (ADR-12):** правила родителя берутся из закреплённой версии — `extends` у типа — ссылка `id@n`
   (у типов `refs: pin`, правило `ref-policy`, [15](15-catalog.md)); наследник только добавляет правила и сужает: его
@@ -71,7 +71,7 @@
 | `schema` | форма тела (подмножество JSON Schema: type, required, properties, enum, pattern, items, additionalProperties) | `schema` |
 | `ref-exists` | каждая `$ref` тела разрешается | `pinned?` — требовать `@n` |
 | `ref-type` | ссылка по пути указывает на объект нужного типа (или наследника) | `path`, `type` |
-| `acyclic` | граф по факту или по ссылкам без циклов (решение-граф, ADR-18) | `fact` / `path` |
+| `acyclic` | граф по факту или по ссылкам без циклов (решение-граф, ADR-18); с `role` — в пределах объекта этой роли у проверяемой строки | `fact` / `path`, `role?` |
 | `contract` | цепочка стадий согласована по контрактам (п. 3) | — |
 | `unique-within` | значение поля уникально в группе | `path`, `scope` |
 | `count` | число действующих фактов вида `fact`, где в роли `role` тот же объект, что у проверяемой строки (без `role` — в любой роли), в пределах | `fact`, `role?`, `min?`, `max?` |

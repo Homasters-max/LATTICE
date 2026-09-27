@@ -14,32 +14,33 @@
 | `core/deprecate` | факт | 15-catalog | `design/domains/15-catalog.md:100` | 11-identity-grain (п.4) | CT-05 |
 | `core/fact` | тип | 10-kernel | `design/domains/10-kernel.md:109-123` | все домены | KR-13 |
 | `core/grant` | факт | 15-catalog | `design/domains/15-catalog.md:59-63` | 14-trust (`declare`) | CT-03, CT-13, CT-14 |
-| `core/member` | факт | 21-compose | `design/domains/21-compose.md:18` | 13-rules (правило), 20-lens (пул) | CP-02 |
+| `core/member` | факт | 10-kernel | `design/domains/10-kernel.md:156-176` (факт); домены — 15-catalog | 20-lens (пул), 21-compose (наследник `std/member`) | KR-13 · D09 Q1 |
+| `std/member` | факт | 21-compose | `design/domains/21-compose.md:23,42-46,58` | 13-rules (`solution-size`), 14-trust (доверие членств), 15-catalog (допуск), 22-run (обучение) | CP-11 · T151 · D09 Q1 |
 | `core/proposal` | событие | 15-catalog | `design/domains/15-catalog.md:73-75` | 14-trust (`core/assert` ±1) | CT-03, CT-11 |
 | `core/retire` | факт | 15-catalog | `design/domains/15-catalog.md:101` | 20-lens (не выдаёт) | CT-05 |
 | `core/rule` | тип | 13-rules | `design/domains/13-rules.md:14-22` | 10-kernel (`type.rules`), 12-ledger (коммит) | RL-01 |
 | `core/session` | тип | 14-trust | `design/domains/14-trust.md:19` | 10-kernel (`by`) | TR-03 |
-| `core/snapshot` | тип | 21-compose | `design/domains/21-compose.md:20` | 12-ledger (индекс `snapshots`) | CP-02 |
+| `core/snapshot` | тип | 21-compose | `design/domains/21-compose.md:25` | 12-ledger (индекс `snapshots`) | CP-02 |
 | `core/type` | тип | 10-kernel | `design/domains/10-kernel.md:117-155` | все домены | KR-08 |
 | `std/bench-plan` | тип | 23-bench | `design/domains/23-bench.md:15` | — | BN-02 |
 | `std/bench-run` | событие | 23-bench | `design/domains/23-bench.md:16` | — | BN-01 |
 | `std/bench-set` | тип | 23-bench | `design/domains/23-bench.md:14` | 30-adapters (source-warrant) | BN-01 |
 | `std/ctx` | тип | 22-run | `design/domains/22-run.md:45-59` | 20-lens, 21-compose (стадии), 13-rules (контракт) | RN-02 |
-| `std/cue` | факт | 21-compose | `design/domains/21-compose.md:15` | 20-lens (LN-02), 14-trust (п.7), 15-catalog (допуск) | — |
+| `std/cue` | факт | 21-compose | `design/domains/21-compose.md:21,34-37` | 20-lens (LN-02, LN-10), 14-trust (п.7), 22-run (обучение) | CP-01 · 20-lens/И-9 · N-43 |
 | `std/distinct` | факт | 11-identity-grain | `design/domains/11-identity-grain.md:138-146` | 21-compose (потребности), 22-run (обучение), `core/trust-policy.candidates` (память отказов) | CP-01 · T-8 · R6 Q4 |
 | `std/domain` | тип | 11-identity-grain | `design/domains/11-identity-grain.md:26-35` | 10-kernel (пример), 30-adapters (создание доменов) | GR-13 · D03 |
-| `std/gap` | событие | 21-compose | `design/domains/21-compose.md:21,64-68` | — | CP-07 |
+| `std/gap` | событие | 21-compose | `design/domains/21-compose.md:26,62,154-155` | 22-run (пакет), 23-bench (E4) | CP-07 · D09 Q4 |
 | `std/knowledge` | тип | 20-lens | `design/domains/20-lens.md:50` | 15-catalog (публикация), 30-adapters (`warrant/norm` расширяет) | LN-14 · N-13 · D08 Q6 |
-| `std/link` | факт | 21-compose | `design/domains/21-compose.md:19` | — | CP-04 |
+| `std/link` | факт | 21-compose | `design/domains/21-compose.md:24,60-61` | 13-rules (`acyclic` с `role`) | CP-04 · ADR-17 |
 | `std/measurement` | событие | 20-lens | `design/domains/20-lens.md:129-143` | 14-trust (TR-06), 22-run (трасса, replay), 12-ledger (сегмент) | LN-08 · И-14 · T-4 |
-| `std/need` | тип | 21-compose | `design/domains/21-compose.md:14` | 15-catalog (допуск), 20-lens (вход) | CP-01 |
-| `std/solution` | тип | 21-compose | `design/domains/21-compose.md:17` | 15-catalog (допуск) | CP-02 |
+| `std/need` | тип | 21-compose | `design/domains/21-compose.md:20` | 15-catalog (допуск), 20-lens (вход) | CP-01 |
+| `std/solution` | тип | 21-compose | `design/domains/21-compose.md:22,59` | 15-catalog (допуск) | CP-02, CP-04 |
 | `std/term` | тип | 20-lens | `design/domains/20-lens.md:51` | 21-compose (ключ потребности, цель `std/cue`), 30-adapters (словарь WARRANT) | LN-14 · N-13 · D08 Q6 |
 | `std/trust-policy` | экземпляр политики по умолчанию | 14-trust | `design/domains/14-trust.md:96-115` | 15-catalog (`namespace.policy`) | TR-05 |
 | `store` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:110-132` | 30-adapters (`store-jsonl`, `store-memory`) | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | 20-lens | `design/domains/20-lens.md:100-126` | 21-compose (recall, select), 11-identity-grain (GR-06), 30-adapters (реализации) | ADR-24 · LN-04 · D08 |
-| `composer` (порт) | порт | 21-compose | `design/domains/30-adapters.md:25-28` — переезд | 22-run (runtime) | ADR-24 |
-| `source` (порт) | порт | 21-compose `?` | `design/domains/30-adapters.md:30-35` — переезд | 22-run (deliver), 30-adapters (source-warrant) | `?` — self-search (compose) и deliver (run) оба прямые потребители; ADR-24 не называет |
+| `composer` (порт) | порт | 21-compose | `design/domains/21-compose.md:192-217` (D09; 30-adapters:25-28 — снять, N-48) | 22-run (runtime) | ADR-24 · CP-14 |
+| `source` (порт) | порт | 21-compose | `design/domains/21-compose.md:200-207` (D09; 30-adapters:30-35 — снять, N-48) | 22-run (deliver), 30-adapters (source-warrant), 15-catalog (`load`) | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
 | `exec` (порт) | порт | 22-run `?` | `design/domains/30-adapters.md:14` — переезд | — | `?` — единственный потребитель (runtime), альтернатив нет |
 | `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:120-121` (D05; 30-adapters:15 — ссылкой, N-23) | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
 | `Meta` | формат | 22-run | `design/domains/30-adapters.md:23` — переезд; `design/02-glossary.md` T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
@@ -69,7 +70,7 @@
 | `std/alias-candidate` | тип | 11-identity-grain | `design/domains/11-identity-grain.md:131-134` | 21-compose (И-2), 20-lens, 30-adapters (импорт) | ADR-8 · R3 |
 | `core/type.grain_scope` | поле | 11-identity-grain | `design/adr/0027-grain-scope.md` | 12-ledger (индекс `grain`), 13-rules (`grain-unique`) | ADR-27 · R3 |
 | уровень `core/type.schema` | поле | 13-rules | `design/adr/0009-schema-field-as-rule.md` | 10-kernel (`core/type`) | ADR-9 · R3 |
-| `std/ctx.needs[].found` | поле | 22-run `?` | `research/analysis/arch-changes.md:258` | 21-compose | 21-compose/И-9 |
+| `std/ctx.needs[].found` | поле | 22-run | `design/domains/21-compose.md:108-117` (стадии, D09); `Ctx` — 22-run (N-47) | 21-compose | 21-compose/И-9 · T152 |
 | `core/type.writers`, `core/type.inForce` | поле | 10-kernel | `design/adr/0006-control-fact-writers.md` | 13-rules (`owner`), 15-catalog, 14-trust, 11-identity-grain | ADR-6 · R2 |
 | реестр участников (`core/actor` пишет владелец) | правило | 14-trust | `design/domains/14-trust.md:22` | 15-catalog, 22-run, 30-adapters (хост) | ADR-25 · R2 |
 | группа независимости | правило | 14-trust | `design/domains/14-trust.md:33` | 20-lens, 22-run, 23-bench | ADR-26 · R2 |
@@ -88,10 +89,11 @@
 | шаблон `card` типа | поле | 20-lens | `design/domains/20-lens.md:32-37` | 10-kernel (таблица полей `core/type`), 13-rules (`std/capability`) | LN-09 · ADR-12 · D08 Q1 |
 | кандидат (`candidates[]`), `marks`, `boosts` | формат, поля | 20-lens | `design/domains/20-lens.md:81,86,157-160` (T87, T149, T150) | 21-compose (`select`), 22-run (`Ctx`) | LN-06, LN-11 · D08 Q3, Q5 |
 | стадии LENS (`std/stage.normalize` … `cut`), их `reads`/`writes` | способности | 20-lens | `design/domains/20-lens.md:69-98` | 22-run (конвейер `std/pipeline.solve`) | LN-03 · T-3 · D08 |
+| стадии compose (`frame`, `recall`, `recheck`, `select`, `self-search`, `check`), их `reads`/`writes`, параметры `recall` | способности | 21-compose | `design/domains/21-compose.md:101-117`, `:67-99` | 22-run (конвейер) | CP-05 · T-3 · D09 |
 | `core/session.purpose` | поле | 14-trust | `design/domains/14-trust.md:28` | 22-run, 23-bench, 20-lens, 21-compose (`recall`), 30-adapters (хост) | T-5 · R6 Q1 |
 | копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`) | формат | 23-bench | `design/02-glossary.md` T138 | 12-ledger, 22-run | T-5 · R6 Q1 |
 | гейт обучения (`learning-gate`) | примитив | 13-rules | `design/domains/13-rules.md` §2 (ADR-29) | 22-run (`run`, факты обучения), 23-bench, 14-trust | ADR-29 · R6 Q2 |
-| `core/trust-policy.candidates` | поле | 14-trust | `design/domains/14-trust.md:110` | 11-identity-grain, 21-compose | T-8 · R6 Q4 |
+| `core/trust-policy.candidates` | поле | 14-trust (форма) · 21-compose (значения `std`) | `design/domains/14-trust.md:110`; значения — `design/domains/21-compose.md:168-173` | 11-identity-grain, 21-compose | T-8 · R6 Q4 · N-40 · D09 Q6 |
 | `core/session.software` | поле | 14-trust | `design/domains/14-trust.md:31` | 30-adapters (хост, парсер) | 14-trust/И-4 · R4 Q5 · T148 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | 14-trust | `design/domains/14-trust.md:54-57,154-163` | 12-ledger (раздел `trust`), 20-lens, 23-bench | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
