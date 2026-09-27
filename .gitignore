@@ -4,4 +4,6 @@ node_modules/
 *.log
 .obsidian/workspace*
 # сырые транскрипты агентов (77 МБ): доказательства — в отчётах, не здесь
-research/runs/*/logs/transcripts/
+arhived/research/runs/*/logs/transcripts/
+.warrant/evidence/**/raw/
+.warrant/runs/current

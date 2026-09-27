@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "warrant guard --frontend claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|NotebookEdit"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "warrant guard --frontend claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|NotebookEdit|Bash"
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Edit(/.warrant/changes/**)",
+      "Edit(/.warrant/evidence/**)",
+      "Edit(/.warrant/runs/**)",
+      "Edit(/openspec/specs/**)",
+      "Edit(/openspec/config.yaml)",
+      "Edit(/openspec/schemas/**)",
+      "Bash(git push origin main:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(openspec archive:*)"
+    ]
+  }
+}

@@ -15,5 +15,5 @@ CAS — только ключ зерна и ключ идемпотентнос�
 **Последствия:** 12-ledger (§2 шаги коммита, §5 контракт `Store` — `tail`, `locked`; выход `commit`), 11-identity-grain
 (гонка `ensure` — ссылкой сюда), 22-run (таблица «Сбой → что пишется» — `locked`), 30-adapters (`store-jsonl`, замок).
 Откат средний: контракт `Store` и контрактные тесты.
-**Опора:** T-9; C1 B7, E28, E29 (`integration/audit/README.md`).
+**Опора:** T-9; C1 B7, E28, E29 (`arhived/integration/audit/README.md`).
 **Реестр:** N-78, N-110, N-111.

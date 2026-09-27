@@ -1,8 +1,8 @@
 # CHANGELOG — design v0.3 → v0.4
 
-v0.4 вносит итоги архитектурного разбора (`research/analysis/arch-changes.md`: сквозные темы T-1…T-16, развилки,
+v0.4 вносит итоги архитектурного разбора (`arhived/research/analysis/arch-changes.md`: сквозные темы T-1…T-16, развилки,
 противоречия П-n и Ф-n) и принятые предложения PF-01…PF-06. Решения приняты через grilling: сессии S0, R1–R6,
-D01–D14, аудит C1, сверка C2a–C2c, финальное чтение F (журналы — `integration/sessions/`, реестр внедрения — `integration/ledger.md`).
+D01–D14, аудит C1, сверка C2a–C2c, финальное чтение F (журналы — `arhived/integration/sessions/`, реестр внедрения — `arhived/integration/ledger.md`).
 Базовая линия — тег `design-v0.3`.
 
 **Коротко.** 33 ADR, все приняты ([adr/](adr/README.md)). Решений в «Решениях» доменов и обзорных файлов было 97,

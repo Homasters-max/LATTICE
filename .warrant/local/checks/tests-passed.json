@@ -1,0 +1,22 @@
+{
+  "$schema": "warrant://check/1",
+  "id": "tests-passed",
+  "version": "1.0.0",
+  "overrides": "core-sdd:tests-passed",
+  "description": "Project test suite: node:test over TypeScript (Node 22, --experimental-strip-types) with a junit report; every test inside describe().",
+  "level": "L1",
+  "run": {
+    "command": [
+      "node",
+      "--experimental-strip-types",
+      "--test",
+      "--test-reporter=junit",
+      "--test-reporter-destination={out}/junit.xml",
+      "test/**/*.test.ts"
+    ]
+  },
+  "execution": {
+    "exclusive": true,
+    "timeout_s": 600
+  }
+}

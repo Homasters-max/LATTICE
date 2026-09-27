@@ -1,0 +1,39 @@
+{
+  "$schema": "warrant://areas/1",
+  "AD": {
+    "capability": "adapters"
+  },
+  "AR": {
+    "capability": "architecture"
+  },
+  "BN": {
+    "capability": "bench"
+  },
+  "CP": {
+    "capability": "compose"
+  },
+  "CT": {
+    "capability": "catalog"
+  },
+  "GR": {
+    "capability": "identity-grain"
+  },
+  "KR": {
+    "capability": "kernel"
+  },
+  "LG": {
+    "capability": "ledger"
+  },
+  "LN": {
+    "capability": "lens"
+  },
+  "RL": {
+    "capability": "rules"
+  },
+  "RN": {
+    "capability": "run"
+  },
+  "TR": {
+    "capability": "trust"
+  }
+}

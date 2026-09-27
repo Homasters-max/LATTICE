@@ -21,5 +21,5 @@
 `kernel` из заголовка тогда не повторяет проверку.
 **Последствия:** 04-architecture (§1 слои, §6 раскладка), 00-vision (абзац «Самоописание» — уточнение ADR-30),
 13-rules (§2 — ссылкой), 02-glossary (T134).
-**Опора:** T-10, T-16, ADR-30, KR-11; C1 B9, E34 (`integration/audit/README.md`).
+**Опора:** T-10, T-16, ADR-30, KR-11; C1 B9, E34 (`arhived/integration/audit/README.md`).
 **Реестр:** N-80, N-116.
