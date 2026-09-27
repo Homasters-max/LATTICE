@@ -1,0 +1,22 @@
+{
+  "$schema": "warrant://config/1",
+  "kernel": "0.8",
+  "openspec": "1.13.x",
+  "packs": {
+    "core-sdd": {
+      "version": "^0.3.4"
+    }
+  },
+  "paths": {
+    "tests": "test",
+    "src": "src"
+  },
+  "roles": {
+    "maintainer": [
+      "Homasters-max"
+    ]
+  },
+  "frontends": [
+    "claude"
+  ]
+}
