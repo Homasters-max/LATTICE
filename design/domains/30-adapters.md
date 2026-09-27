@@ -210,7 +210,8 @@ lattice answer <execution> <json|@файл>
 ## Операции (CLI)
 
 ```text
-lattice init                          .lattice/, генезис, core + std (update), пространство, реестр, <ns>/learner,
+lattice init                          .lattice/, генезис, core + std (update); пространство + владелец одним коммитом
+                                      (самоустановление, ADR-33); реестр, <ns>/learner,
                                       <ns>/setup@1 ([22] §1)
 lattice update                        коммит обновления std новой версии пакета ([15] §1)
 lattice load                          source.load() → коммиты сессий загрузки (§5) → aliasCandidates по

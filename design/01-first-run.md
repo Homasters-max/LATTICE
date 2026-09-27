@@ -53,7 +53,8 @@ R0  init                 .lattice/, core + std, пространство warrant
                          в реестре владельца — участники-симуляторы sim-1…k (machine), k ≥ removal_window.n
 R1  load                 нормы, домены, словарь, элементы и набор стенда                → S4
 R2  lint + rebuild       ноль нарушений hard; rebuild --check побайтно                  → E6 (часть)
-R2b калибровка           на dev ([23] §4 п. 8): пороги no_match, same_hi/same_lo, min_p кандидатов →
+R2b калибровка           кампания explore (subset: dev) на копии ([23] §4 п. 8): пороги no_match,
+                         same_hi/same_lo, min_p кандидатов →
                          ревизия warrant/setup@2 с calibrated_for (без неё no-match не выносится)  → S5
 R3  план                 регрессионный план владельца (kind: regression, subset: test,
                          mode: simulate-consumer — проходы A–C; кандидат R10 берёт его из base):

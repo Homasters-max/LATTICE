@@ -238,6 +238,7 @@ LATTICE/
 | `std/payload` (T175) | тип | [22-run](domains/22-run.md) §3 | RN-22 · C2b |
 | `Ctx.run`, `needs[].solution` | поля | [22-run](domains/22-run.md) §2 | RN-21 · C2b |
 | смена владельца, `transfer` | правило, операция | [15-catalog](domains/15-catalog.md) §2 | CT-03 · ADR-25 · C2b |
+| первый коммит пространства (самоустановление) | правило | [15-catalog](domains/15-catalog.md) §1 | CT-15 · ADR-33 · F Q2 |
 | `std/load-finding` (T165) | факт | [30-adapters](domains/30-adapters.md) §6 | AD-11 · ADR-10 · D12 Q3 |
 | `warrant/norm`, `warrant/summary` | типы проекта | [30-adapters](domains/30-adapters.md) §5 | AD-12 · D12 Q5, Q6 |
 | `Draft`, `Row` (строка до коммита и хранимая) | формат | [12-ledger](domains/12-ledger.md) §5 | LG-05 · C2c Q4 |

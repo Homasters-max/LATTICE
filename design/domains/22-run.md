@@ -78,7 +78,8 @@
   Пишется в вызов (§3) и целиком — в `std/bench-run` ([23](23-bench.md) §1). **Совпадение** `bench-run pass` с вызовом —
   по `setup@n`, `code` и `prompts`; `kernel` записан, но не сравнивается: ядро заморожено, его смену покрывают векторы
   S1 ([05](../05-slices.md)).
-- Порт `exec` в `ports` появится вместе со способностями проектов — не в первом запуске (RN-10).
+- Порт `exec` в `ports` появится вместе со способностями проектов — не в первом запуске (RN-10); до того поля
+  `deps.exec` нет.
 
 ### 2. Контекст конвейера (`std/ctx`) и стадия
 
@@ -93,11 +94,11 @@ type Ctx = {
     recall?: { solution: Ref; snapshot: Id; status: 'fresh' | 'stale' | 'broken';
                by: 'exact' | 'judge' | 'composer'; p?: number }
     candidates?: Candidate[]; pool?: Id; measurement?: Ref                    // id-lookup … cut
-    scores?: Record<Id, { bm25?: number; judge?: number; fused?: number }>
+    scores?: { bm25?: Record<Id, number>; judge?: Record<Id, number>; fused?: Record<Id, number> }  // пути scores.bm25 …
     outcome?: 'candidates' | 'no-match'                                       // threshold
     selection?: Selection; found?: Ref[]                                      // select, self-search
     solution?: { ref: Ref; snapshot: Id }                                     // materialize
-    rows?: Row[]; done?: boolean
+    rows?: Draft[]; done?: boolean
   }>
   pack?: Pack                                                                 // deliver
   notes?: string[]
@@ -110,7 +111,7 @@ type Ctx = {
   его только читают — путь `run` в `writes` запрещён (проверка `contract`, [13](13-rules.md) §3).
 - Типы полей — у владельцев: `Candidate` (T87: `ref`, `card`, `scores`, `trust`, `marks`, `why`) — [20](20-lens.md) §7;
   `Selection` с собственным `outcome` (`selected` · `none-fit` · `absent` · `coverage`) — [21](21-compose.md) §7;
-  `Finding` (T44) — [13](13-rules.md); `Row` — [12](12-ledger.md); `Pack` — §4. `needs[].outcome` — вывод порога LENS;
+  `Finding` (T44) — [13](13-rules.md); `Draft` — [12](12-ledger.md) §5; `Pack` — §4. `needs[].outcome` — вывод порога LENS;
   исход выбора — `selection.outcome`.
 - `found` (T152) пишет код по ответу `source.grep`, `found_by` членов ставит код ([21](21-compose.md) §5).
 - **`rows`** (T156) — строки журнала, которые стадия готовит для коммита вызова (RN-03): значения `std/pool` и
@@ -127,7 +128,7 @@ type Ctx = {
 
 ```ts
 type Stage = (ctx: Readonly<Ctx>, params: Json, deps: Deps) => Promise<Ctx>
-type Deps  = { judge: Judge; composer: Composer; source: Source; exec: Exec; ids: Ids; view: View }   // clock стадиям не нужен: at ставит коммит
+type Deps  = { judge: Judge; composer: Composer; source: Source; exec?: Exec; ids: Ids; view: View }   // clock стадиям не нужен: at ставит коммит
 interface View extends LedgerView { trust(target: Ref): Json }   // LedgerView — [12] §5; trust() — [14] «Операции»
 ```
 
@@ -156,7 +157,7 @@ run(request, session) → pack:                           // сессию отк
       сумма Meta ≤ request.budget — иначе ошибка
       ctx = out
   vals = std/payload входа, выхода и calls[] вызова                        // пишет рантайм, не стадия
-  commit([execution x] ∪ vals ∪ needs[].rows, session, expect из rows, key = x)   // один коммит (RN-03)
+  commit([execution x] ∪ vals ∪ needs[].rows, session, key = x)   // один коммит (RN-03); expect — в Draft строк
   удалить файл хода; return ctx.pack
 ```
 
@@ -423,7 +424,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 |---|---|---|
 | RN-01 | Конвейер — объект LATTICE, стадии — закреплённые способности; действующие конвейер и модели — ревизия `std/setup` пространства | самоописание; замена стадии — версия со стендом; смена модели и конвейера — одна обратимая ревизия. v0.4 · ADR-28 · PF-config |
 | RN-02 | Стадия — `(ctx, params, deps) → Promise<ctx>`, объявляет `reads`/`writes` и `determinism`; внешнее — только через порты `Deps`, журнал — `view` на `seq` старта | одна сигнатура вместо трёх; «чистая функция» не описывала стадии с LLM; все стадии видят одно состояние. v0.4 · T-3 · И-1, И-2 · П-29 · Q-64 C-2, C-3 |
-| RN-03 | Один коммит на вызов: `execution` ∪ `needs[].rows`, ключ — id вызова; `materialize` внутри вызова строк не пишет | вызов виден целиком или не виден вовсе — пока вызов короткий и без `exec`, полный переигрыш идёт из кэша; появился `exec` или вызовы дольше нескольких минут → запись частями с завершающим фактом ([12](12-ledger.md) вопрос 1). v0.4 · ADR-19 · T-9 · И-5, И-6 · Ф-4 · Q-65 C-1, C-2 |
+| RN-03 | Один коммит на вызов: `execution` ∪ значения `std/payload` ∪ `needs[].rows`, ключ — id вызова; `materialize` внутри вызова строк не пишет | вызов виден целиком или не виден вовсе — пока вызов короткий и без `exec`, полный переигрыш идёт из кэша; появился `exec` или вызовы дольше нескольких минут → запись частями с завершающим фактом ([12](12-ledger.md) вопрос 1). v0.4 · ADR-19 · T-9 · И-5, И-6 · Ф-4 · Q-65 C-1, C-2 |
 | RN-04 | Вердикт — событие `std/verdict@1` на каждое выданное решение: `execution`, диагноз `complete · incomplete · wrong · none · unsure`, член вне `used`/`unused` — нет сигнала; один на `(execution, solution)` — ключ коммита; `add[]` — существование `ref@n` и цитата | обучение различает ошибки; основание факта восстанавливается по вызову; повтор не удваивает обучение. v0.4 · И-10, И-11 · N-10 · Q-66 C-2, C-3 · D10b Q3 |
 | RN-05 | Правила обучения — данные политики (`calibration`: `verdict_weights`, `add_min_verdicts`, `removal_window`); асимметрия: добавить — один вердикт с причиной, удалить — `unused` в 3 из последних 5 выдач по группам | нехватка дороже лишнего; вечное вето «ни разу не `used`» закрепляло ошибку; смена весов — ревизия, её проверяет стенд. v0.4 · ADR-20 · T-15 · И-14, И-15 · П-28 · Q-67 C-1, C-2 |
 | RN-06 | Вызов — одно событие на вызов, трасса стадий — в его теле по схеме `std/execution@1`; оценки judge — отдельные события | событие — на исход вызова, а не на технический шаг; объём журнала дают оценки judge (~200 карточек на потребность), их срок — сегменты хранения ([12](12-ledger.md) §1). v0.4 · ADR-3 · И-17, И-18 · Q-68 C-1, C-3 |

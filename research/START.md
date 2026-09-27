@@ -17,8 +17,8 @@
   журнал `runs/2026-09-27-a1/RUN.md`. **Б →** `research/analysis/arch-changes.md`: 16 сквозных тем, 186 изменений по
   доменам, 23 ADR-развилки, 32 противоречия дизайна, порядок внедрения (волны 0–5, срезы S0–S9). **А →**
   `research/analysis/kb-method.md`: карточки партиями, пакет правок, поиск, методика, eval. Фрагменты — `analysis/arch|kb/`.
-- **Следующий этап — внедрение в `design/` v0.4: навык `/arch-integrate`, точка входа `integration/STATE.md`**
-  (план — `integration/PLAN.md`: S0 → R1–R6 решения → D01–D14 домены → C1–C2 сверка → F). Поток А — `kb-method.md`.
+- **Внедрение завершено — `design/` v0.4, тег `design-v0.4` (2026-09-27):** 33 ADR, 194 решения, реестр
+  `integration/ledger.md` — все строки `сверен` (журналы — `integration/sessions/`, F — последняя). Поток А — `kb-method.md`.
 
 ## Сделано (одна строка на вопрос)
 
