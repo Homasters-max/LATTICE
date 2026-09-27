@@ -152,7 +152,7 @@ type Chosen = { p: Record<Id, number>; meta: Meta }
 { "need": "…", "scope": "warrant/domain.lifecycle",
   "candidates": [
     { "ref": "warrant/REQ-VER-007@4", "card": "#9b1e…", "scores": {"judge": 0.91, "bm25": 0.40, "fused": 1.03},
-      "trust": { "basis": "derived", "epistemic": "settled", "support": {"plus": 0, "minus": 0}, "groups": 0,
+      "trust": { "basis": "derived", "epistemic": "unresolved", "support": {"plus": 0, "minus": 0}, "groups": 0,
                  "policy": "std/trust-policy@1" },
       "marks": [], "why": ["judge", "lexicon:waiver"] } ],
   "outcome": "candidates | no-match", "measurement": "warrant/MEA-01J8…" }
@@ -160,8 +160,9 @@ type Chosen = { p: Record<Id, number>; meta: Meta }
 
 - **Кандидат** (T87): `ref`, `card`, `scores`, `trust` — выход `trust()` как есть ([14](14-trust.md), без
   `overruled`: перекрытое в пул не входит), `marks` — пометки `[{kind, replaced_by?}]` (T150), `why` — причины.
-- **Значения `policy.lens`** в `std/trust-policy`: `{exclude: ["overruled"], mark: ["inferred", "contested"]}`; словарь
-  состояний — значения `basis`, `epistemic` и `overruled`. Проект переопределяет ([14](14-trust.md) §4).
+- **Значения `policy.lens`** в `std/trust-policy`: `{exclude: ["overruled"], mark: ["inferred", "contested", "rejected"]}`;
+  словарь состояний — значения `basis`, `epistemic` (с `rejected`, [14](14-trust.md) TR-14) и `overruled`. То же
+  правило выдачи применяют `recall`, `add[]` и `materialize` ([14](14-trust.md) §7, TR-15). Проект переопределяет ([14](14-trust.md) §4).
   `deprecated` — статус каталога, помечается всегда, вне политики; выведенное из обращения в пул не входит.
 
 ## Операции

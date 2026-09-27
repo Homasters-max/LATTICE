@@ -220,6 +220,7 @@ LATTICE/
 | `candidates` (`std/policy`) | поле | [14-trust](domains/14-trust.md) §4 | T-8 · R6 Q4 · N-40 · D09 Q6 |
 | `claimed_via`, `os_user` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | TR-11 · ADR-25 · CA-F01 |
 | `software` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | 14-trust/И-4 · R4 Q5 · T148 |
+| правило выдачи (T179), `rejected` (T56) | правило | [14-trust](domains/14-trust.md) §7, §3 | TR-14, TR-15 · CA-F15, CA-F16 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | [14-trust](domains/14-trust.md) §2 | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | [21-compose](domains/21-compose.md) §6 | 21-compose/И-6 · R6 Q5 |
 | окно удаления членства | правило | [22-run](domains/22-run.md) §6 | ADR-20 · R6 Q6 |

@@ -95,7 +95,7 @@ commit(rows: Draft[], by, key?) →                        // Draft, Row — §5
 | `facts` | тип факта → ключ факта → текущий факт (последний по `seq`); накапливаемые — списком |
 | `consumers` | `id@version` / `id` → кто ссылается (обратные ссылки) |
 | `trust` | цель (факт или ревизия) → результат `trust()`: `{basis, epistemic, support, groups, overruled?, policy}` (проекцию подключает [14-trust](14-trust.md)) |
-| `snapshots` | значение snapshot'а → статус (`fresh` / `stale` / `broken`); `stale` — и через отменённый алиас (GR-15) |
+| `snapshots` | значение snapshot'а → статус (`fresh` / `stale` / `broken`); `stale` — и через отменённый алиас (GR-15), и когда действующий состав решения ≠ `members`/`links` snapshot'а ([21](21-compose.md) CP-20) |
 | `keys` | ключ идемпотентности → `{commit, ids}` |
 | `executions` | id вызова → `{кортеж исполнения ([22](22-run.md) §1), status, seq}` — только живые сегменты; читают только проверки коммита (`ref-exists`, `learning-gate`, [13](13-rules.md) §2), не проекции доменов (ADR-3) |
 
