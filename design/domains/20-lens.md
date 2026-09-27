@@ -79,9 +79,9 @@ bench (метрики поиска).
 | `route` | область не задана вызывающим → сначала термины словаря, при неоднозначности `judge.choose` по описаниям доменов; два домена выше порога → находка «составная задача» (сигнал, не ветвление) | `norm`, `scope` | `scope`, `findings` |
 | `id-lookup` | явные ID блоков в тексте (`REQ-…`, `ADR-…`) → прямые кандидаты с причиной `id` | `text` | `candidates` |
 | `lexicon` | подсказки терминов → id терминов (ключ потребности, [21](21-compose.md)); **буст** — блоки, ссылающиеся на термин (индекс потребителей, [15](15-catalog.md) §4) | `norm`, `scope` | `terms`, `boosts` |
-| `pool` | собрать пул (§3), отрисовать карточки; параметры `pool_max`, `cues_max` | `scope`, `norm`, `boosts`, `candidates` | `pool` |
+| `pool` | собрать пул (§3), отрисовать карточки; параметры `pool_max`, `cues_max` | `scope`, `norm`, `boosts`, `candidates` | `pool`, `rows` (значения `std/pool`, `std/card`) |
 | `bm25` | лексический балл по карточкам | `norm`, `pool` | `scores.bm25` |
-| `judge` | `judge.score(state = словарь + описание области, query = потребность, items = карточки)` → событие `std/measurement` (§6) | `norm`, `terms`, `pool` | `scores.judge`, `measurement` |
+| `judge` | `judge.score(state = словарь + описание области, query = потребность, items = карточки)` → событие `std/measurement` (§6) | `norm`, `terms`, `pool` | `scores.judge`, `measurement` (ссылка), `rows` (`std/measurement`) |
 | `fuse` | порядок: `linear` (judge + 0,3 · bm25/max, ADR-16) или `rrf`; кандидаты по `id` — впереди | `scores`, `candidates` | `scores.fused`, `candidates` |
 | `trust` | `trust()` каждого кандидата; пометки `marks` по `policy.lens.mark` и устаревание `deprecated {replaced_by}`; балл не меняет | `candidates` | `candidates` |
 | `threshold` | `max(scores.judge)` < `no_match` и нет кандидатов по `id` → кандидатов нет | `scores.judge`, `candidates` | `outcome` |
@@ -104,6 +104,7 @@ interface Judge {
   score(r: { state: Json; query: string; items: { id: Id; text: string }[] }): Promise<Scored>
   verify(r: { state: Json; statements: string[] }): Promise<{ p: number[]; meta: Meta }>
   choose(r: { state: Json; query: string; options: { id: Id; text: string }[] }): Promise<Chosen>
+  describe(): Ident                    // adapter, model, prompts: {score, verify, choose} — [22](22-run.md) §3
 }
 type Scored = { scores: Record<Id, number>; meta: Meta }
 type Chosen = { p: Record<Id, number>; meta: Meta }

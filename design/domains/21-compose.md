@@ -112,9 +112,10 @@ ADR-28). Повтор решения — названное исключение
 | `select` | Composer (`select`) | потребность + кандидаты (карточки, `trust`, `marks`) → 1…`max` членов с причиной-цитатой, или `none-fit`; при `threshold: uncalibrated` отказ — здесь | `norm`, `candidates`, `outcome`, `recall` | `selection` |
 | `self-search` | код + Composer (`self-search`) | при `none-fit` или `no-match`: расширить область до всех доменов пространства и `source.grep` — найденное код пишет в `found`, Composer выбирает только из него; перед `absent` — `judge.verify` против потребностей пространства с непустым решением (дубль → промах B, члены — в `found`); не нашлось — `source.find`: места → `coverage`, нет → `absent` | `norm`, `scope`, `outcome`, `selection` | `found`, `selection`, `rows` |
 | `check` | код | проверка выбора (§5) | `selection`, `candidates`, `found` | `findings`, `done` |
+| `materialize` | код | выбор без нарушений `check` → строки решения, `std/member`, `std/link`, snapshot (операция `materialize`) | `selection`, `findings`, `recall` | `rows` |
 
 Граф-форма исполняется (`exec`) только после `check`; первый запуск — без `exec` ([22](22-run.md), ADR-19).
-Коммит прогона собирает рантайм: `materialize` внутри прогона строк не пишет (§ Операции).
+Коммит прогона собирает рантайм: стадия `materialize` кладёт строки в `rows`, сама не пишет (§ Операции).
 
 ### 5. Закрытый мир (P6) и проверка выбора
 
@@ -195,6 +196,7 @@ Composer получает кандидатов и может сослаться 
 interface Composer {
   run<T>(t: { kind: 'frame' | 'confirm-same' | 'select' | 'recheck' | 'self-search';
              input: Json; schema: JsonSchema }): Promise<{ output: T; meta: Meta } | { pending: Id }>
+  describe(): Ident                    // adapter, model — [22](22-run.md) §3
 }
 
 interface Source {
