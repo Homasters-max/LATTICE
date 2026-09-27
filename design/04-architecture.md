@@ -19,8 +19,8 @@ KR-19, ADR-34). Код проекций отсюда — слой заморож
 
 | Читает | Что | Кто читает |
 |---|---|---|
-| поля `std` | `std/verdict.execution`; `std/execution` — кортеж (`setup@n`, `code`, `prompts`); `std/bench-run` — `plan`, `tuple`, `verdict`; `std/bench-plan` — `kind`, `base`, `setup` и кто писал регрессионный план; строка обучения — `from` | `learning-gate` ([13](domains/13-rules.md) §2, ADR-29) |
-| значения полей `core` | `core/session.purpose`: `bench`, `simulate` | `learning-gate` |
+| поля `std` | `std/verdict.execution`; `std/execution` — кортеж (`setup@n`, `code`, `prompts`, `policy`); `std/bench-run` — `plan`, `tuple`, `verdict`; `std/bench-plan` — `kind`, `base`, `setup` и кто писал регрессионный план (владелец на `seq` записи); строка обучения — `from`, `bench`; наличие события `std/bench-copy` | `learning-gate` ([13](domains/13-rules.md) §2, RL-18, ADR-29) |
+| значения полей `core` | `core/session.purpose` — перечень разрешённых: `verdict`, `simulate` (прочие — отказ) | `learning-gate` |
 | проекции индекса ([12](domains/12-ledger.md) §3) | `revisions`, `latest`, `grain`, `aliases`, `facts`, `executions` | проверки ядра и примитивы |
 
 Политику доверия ядро не читает: её тип — `std/policy` (ADR-35).
@@ -66,7 +66,7 @@ rules получает `LedgerView` журнала), а вызовы — тол�
 ## 4. Корень сборки и проекции
 
 **Корень сборки** `src/cli/wire.ts` (T166) — единственный модуль, который импортирует `adapters/*`: читает проводку,
-открывает хранилище, берёт `std/setup` из журнала, создаёт адаптеры по `setup.ports` и собирает `Deps` (T133);
+открывает хранилище, берёт `<пространство>/setup` из журнала, создаёт адаптеры по `setup.ports` и собирает `Deps` (T133);
 подробно — [30](domains/30-adapters.md) §2.
 
 **Проекции индекса подключаемые** (T170, N-32). Каждый раздел индекса — проекция ([12](domains/12-ledger.md) §3). Разделы
@@ -77,8 +77,8 @@ rules получает `LedgerView` журнала), а вызовы — тол�
 
 Признак (PF-01): что меняет пакет или цену при том же журнале — в журнале, остальное — в проводке.
 
-- **Журнал:** конвейер, адаптеры портов и точные версии моделей — ревизия `std/setup`, одна на пространство
-  ([22](domains/22-run.md) §1, ADR-28). Смена — новая ревизия, откат — ещё одна; отдельного закрепления нет, барьер
+- **Журнал:** конвейер, адаптеры портов и точные версии моделей — ревизия `std/setup`: действующая — объект
+  `<пространство>/setup`, прочие `std/setup` — базовые линии стенда ([22](domains/22-run.md) §1, RN-29, ADR-28). Смена — новая ревизия, откат — ещё одна; отдельного закрепления нет, барьер
   стенда — на фактах обучения (ADR-29). `imports` — только в `core/namespace` ([15](domains/15-catalog.md) §1).
 - **Проводка** `lattice.config.json` (`config/2`, T128) — где лежит: каталог данных, эндпоинты, корни источников,
   ссылки на секреты `{"$env"}`; строгая схема, запасного адаптера нет — [30](domains/30-adapters.md) §2.
@@ -148,6 +148,7 @@ LATTICE/
 | `core/type` | тип | [10-kernel](domains/10-kernel.md) §6 | KR-08 |
 | `std/bench-plan` | событие | [23-bench](domains/23-bench.md) §1 | BN-02, BN-07 · ADR-21 · D11 Q2 |
 | `std/bench-run` | событие | [23-bench](domains/23-bench.md) §1 | BN-01, BN-08 · D11 Q3 |
+| `std/bench-copy` (метка копии кампании) | событие | [23-bench](domains/23-bench.md) §3 | BN-14 · ADR-29 · v0.5 · CA-F08 |
 | `std/bench-set` | тип | [23-bench](domains/23-bench.md) §1 | BN-01 |
 | `std/bench-item` | тип | [23-bench](domains/23-bench.md) §1 | BN-06 · D11 Q1 |
 | `std/ctx` | тип | [22-run](domains/22-run.md) §2 | RN-02 |
@@ -162,7 +163,7 @@ LATTICE/
 | `std/solution` | тип | [21-compose](domains/21-compose.md) §1 | CP-02, CP-04 |
 | `std/term` | тип | [20-lens](domains/20-lens.md) §2 | LN-14 · N-13 · D08 Q6 |
 | `std/trust-policy` | экземпляр политики по умолчанию | [14-trust](domains/14-trust.md) §4 | TR-05 |
-| `std/policy` | тип политики доверия | [14-trust](domains/14-trust.md) §4 | TR-05 · ADR-35 |
+| `std/policy` | тип политики доверия, `refs: pin` | [14-trust](domains/14-trust.md) §4 | TR-05 · ADR-35 · CT-16 |
 | `store` (порт) | порт | [12-ledger](domains/12-ledger.md) §5 | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | [20-lens](domains/20-lens.md) §5 | ADR-24 · LN-04 · D08 · C2a (N-79) |
 | `composer` (порт) | порт | [21-compose](domains/21-compose.md) §8 | ADR-24 · CP-14 |
@@ -196,11 +197,11 @@ LATTICE/
 | группа независимости | правило | [14-trust](domains/14-trust.md) §1 | ADR-26 · R2 |
 | `trust().overruled` | поле | [14-trust](domains/14-trust.md) §3 | 14-trust/И-13 · R2 |
 | `declare`, `create`, `edit` (`core/grant`) | поле | [15-catalog](domains/15-catalog.md) §2 | ADR-25 · R2 |
-| `std/setup` | тип | [22-run](domains/22-run.md) §1 | ADR-28 · R4 |
+| `std/setup` | тип | [22-run](domains/22-run.md) §1 | ADR-28 · R4 · RN-29 |
 | тело `core/namespace` (`name`, `owner`, `imports`, `policy`, `doc`) | тип (генезис) | [15-catalog](domains/15-catalog.md) §1 | ADR-28 · R4 (N-14) |
-| кортеж исполнения | правило | [22-run](domains/22-run.md) §1 | T-2 · R5 Q2 · C2a (N-74, N-108) · RN-20 |
+| кортеж исполнения | правило | [22-run](domains/22-run.md) §1 | T-2 · R5 Q2 · C2a (N-74, N-108) · RN-20 · RN-24 (`policy`) |
 | обновление `std` (`update(package)`, коммит импорта) | операция | [15-catalog](domains/15-catalog.md) §1 | CT-10 · D06 Q1 |
-| `reads` / `writes` способности стадии | поле | [13-rules](domains/13-rules.md) §3 | T-3 · R5 Q1 |
+| `reads` / `writes` / `uses` способности стадии | поле | [13-rules](domains/13-rules.md) §3 | T-3 · R5 Q1 · RN-27 (`uses`) |
 | `Deps` (`view`), `View` | формат | [22-run](domains/22-run.md) §2 | T-3 · R5 Q1 · C2a (N-83) |
 | `LedgerView` (чтения индекса на `seq`) | порт (чтение) | [12-ledger](domains/12-ledger.md) §5 | C2a (N-83) |
 | раздел индекса `executions` | формат | [12-ledger](domains/12-ledger.md) §3 | ADR-3 · C2a (N-75) |
@@ -213,17 +214,17 @@ LATTICE/
 | шаблон `card` типа | поле | [20-lens](domains/20-lens.md) §1 | LN-09 · ADR-12 · D08 Q1 |
 | кандидат (`candidates[]`), `marks`, `boosts` | формат, поля | [20-lens](domains/20-lens.md) §4 | LN-06, LN-11 · D08 Q3, Q5 |
 | стадии LENS (`normalize` … `cut`), их `reads`/`writes` | способности | [20-lens](domains/20-lens.md) §4 | LN-03 · T-3 · D08 |
-| стадии compose (`frame`, `recall`, `recheck`, `select`, `self-search`, `check`), их `reads`/`writes`, параметры `recall` | способности | [21-compose](domains/21-compose.md) §4 | CP-05 · T-3 · D09 |
-| `purpose` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | T-5 · R6 Q1 · C2b: `recall` — не читает (T137) |
+| стадии compose (`frame`, `frame.single` — CP-22, `recall`, `recheck`, `select`, `self-search`, `check`), их `reads`/`writes`, параметры `recall` | способности | [21-compose](domains/21-compose.md) §4 | CP-05 · T-3 · D09 |
+| `purpose` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | T-5 · R6 Q1 · C2b: `recall` — не читает (T137) · v0.5 · закрытый перечень, чтение перечнем разрешённых (TR-12, AD-15) |
 | копия кампании (`.lattice/bench/<run>`, хэш в `bench-run`), кампания | формат | [23-bench](domains/23-bench.md) §3 | T-5 · R6 Q1 |
-| гейт обучения (`learning-gate`) | примитив | [13-rules](domains/13-rules.md) §2 | ADR-29 · R6 Q2 |
+| гейт обучения (`learning-gate`) | примитив | [13-rules](domains/13-rules.md) §2 | ADR-29 · R6 Q2 · RL-18 · BN-13 |
 | `candidates` (`std/policy`) | поле | [14-trust](domains/14-trust.md) §4 | T-8 · R6 Q4 · N-40 · D09 Q6 |
 | `claimed_via`, `os_user` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | TR-11 · ADR-25 · CA-F01 |
 | `software` (`core/session`) | поле | [14-trust](domains/14-trust.md) §1 | 14-trust/И-4 · R4 Q5 · T148 |
 | правило выдачи (T179), `rejected` (T56) | правило | [14-trust](domains/14-trust.md) §7, §3 | TR-14, TR-15 · CA-F15, CA-F16 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | [14-trust](domains/14-trust.md) §2 | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | [21-compose](domains/21-compose.md) §6 | 21-compose/И-6 · R6 Q5 |
-| окно удаления членства | правило | [22-run](domains/22-run.md) §6 | ADR-20 · R6 Q6 |
+| окно удаления членства | правило | [22-run](domains/22-run.md) §6 | ADR-20 · R6 Q6 · RN-25, RN-26 |
 | регрессионный план (`base`, δ, ротация `test`) | правило | [23-bench](domains/23-bench.md) §1 | 23-bench/И-14, И-15 · R6 Q9 |
 | `rows` (строки вызова), id новых у стадии | поле, правило | [22-run](domains/22-run.md) §2 | RN-09 · D10a Q2, Q3 |
 | стадия `materialize` | способность | [21-compose](domains/21-compose.md) §4 | RN-08 · D10a Q1 |
@@ -232,8 +233,8 @@ LATTICE/
 | файл хода `.lattice/runs/<id>.log` | формат | [22-run](domains/22-run.md) §3 | RN-12 · D10a Q6 |
 | `std/pipeline`, конвейер `solve@1` | тип, объект | [22-run](domains/22-run.md) §1 | RN-01, RN-08 · N-10 |
 | `std/execution@1` | событие | [22-run](domains/22-run.md) §3 | RN-06 · И-18 · N-10 |
-| `std/verdict@1` | событие | [22-run](domains/22-run.md) §5 | RN-04, RN-18 · D10b Q3 |
-| строка обучения (`from`, `policy`) | правило, поля | [22-run](domains/22-run.md) §6 | RN-14 · D10b Q1 |
+| `std/verdict@1` | событие | [22-run](domains/22-run.md) §5 | RN-04, RN-18 · D10b Q3 · RN-28 (`evidence`) |
+| строка обучения (`from`, `policy`, `bench`) | правило, поля | [22-run](domains/22-run.md) §6 | RN-14 · D10b Q1 · RN-24 |
 | `std/learned-assert` | тип | [22-run](domains/22-run.md) §6 | RN-14 · D10b Q1 |
 | сессия `learn` (`purpose: learn`), поток `verdict → learn` | правило, операция | [22-run](domains/22-run.md) §6 | RN-13 · D10b Q2 |
 | правила обучения (таблица «вердикт → факты»), калибровка | правило | [22-run](domains/22-run.md) §6 | RN-05, RN-15 · D10b Q4 |

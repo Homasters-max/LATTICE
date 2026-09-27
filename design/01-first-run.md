@@ -49,7 +49,8 @@ BN-07 [23](domains/23-bench.md)).
 ## Протокол прогона
 
 ```text
-R0  init                 .lattice/, core + std, пространство warrant, политика доверия, warrant/setup@1;
+R0  init                 .lattice/, core + std, пространство warrant, политика доверия (@n), warrant/setup@1;
+                         базовые линии — отдельные объекты std/setup ([23] §1, BN-15);
                          в реестре владельца — участники-симуляторы sim-1…k (machine), k ≥ removal_window.n
 R1  load                 нормы, домены, словарь, элементы и набор стенда                → S4
 R2  lint + rebuild       ноль нарушений hard; rebuild --check побайтно                  → E6 (часть)
@@ -58,11 +59,12 @@ R2b калибровка           кампания explore (subset: dev) на �
                          ревизия warrant/setup@2 с calibrated_for (без неё no-match не выносится)  → S5
 R3  план                 регрессионный план владельца (kind: regression, subset: test,
                          mode: simulate-consumer — проходы A–C; кандидат R10 берёт его из base):
-                         набор@n, setup@2, базовые линии, критерии, δ, n                → записан до прогона
+                         набор@n, setup@2, базовые линии, критерии, δ, n, seed          → записан до прогона
 ═══ кампания — копия журнала до plan.state ([23] §3) ══════════════════════════════════
 ─── проход A (холодный) ────────────────────────────────────────────────────────────────
 R4  solve × контроль     все вопросы test через конвейер; базовые линии:
-                         (a) BM25 по документам целиком, (b) BM25 в домене, (c) LENS без recall,
+                         (a) BM25 по документам целиком (frame.single → normalize → bm25.doc),
+                         (b) BM25 в домене (frame.single → … → bm25, без judge), (c) LENS без recall,
                          (d) по полному тексту блока в домене                           → E1, E4
 R5  вердикты             режим simulate-consumer (сессии purpose: simulate): вердикт по эталону
                          (выбор = эталон → complete; не хватает → incomplete + add; лишнее → unused;
