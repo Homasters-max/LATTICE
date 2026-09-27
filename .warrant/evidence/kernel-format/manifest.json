@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://evidence-manifest/1",
+  "change": "kernel-format",
+  "commit": "ff1d1e6f3f4388a7ed73e58791cb15a1ac4046b5",
+  "versions": {
+    "warrant": "0.8.0",
+    "openspec": "1.13.1",
+    "lock_hash": "sha256:4f648b03ba7ad3685c26c514fc51102c13a2b0bf878c2bbc1bec45e048fb8cab",
+    "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72"
+  },
+  "evidence": [
+    "EVID-01M3JHV12SMRHDT34WPQXC7QE3"
+  ]
+}

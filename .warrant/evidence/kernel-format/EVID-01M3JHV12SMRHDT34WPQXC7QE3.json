@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3JHV12SMRHDT34WPQXC7QE3",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of kernel-format: 1 BLOCKER, 10 MAJOR, 10 MINOR, 3 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "NOT_PROVEN",
+  "subject": {
+    "commit": "ff1d1e6f3f4388a7ed73e58791cb15a1ac4046b5",
+    "spec_revision": "openspec/changes/kernel-format@ff1d1e6f3f4388a7ed73e58791cb15a1ac4046b5",
+    "spec_tree": "sha256:66bcd5ce6295292a5b830e753ca9fc4707ec2692e34ea3c7ac62f8a89678e22d",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3JFXWM0TB5HBX3GGBM9APSM"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:6d3b8771fd2f485762a95656ef134264434730db03a39084b442a2822048c36e",
+  "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+  "created_at": "2026-09-27T23:05:12.026Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3JFXWM0TB5HBX3GGBM9APSM.result.json",
+      "sha256": "sha256:db917b29bb1753059922ed819acda04c3b24fcd7884b004f4759de07e0a26e96"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 1,
+    "INFO": 3,
+    "MAJOR": 10,
+    "MINOR": 10
+  }
+}

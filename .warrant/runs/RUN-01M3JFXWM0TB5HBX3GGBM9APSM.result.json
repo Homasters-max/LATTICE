@@ -1,0 +1,303 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3JFXWM0TB5HBX3GGBM9APSM",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "REQ-KR-002: не JSON-текст — syntax, и он единственный элемент errors; SCN-KR-005: 100 000 незакрытых [ (не JSON-текст) — too-deep, не syntax. Приоритет too-deep/syntax и судьба ранее собранных отказов не заданы: [-0, + 65 уровней; 65 уровней + лишняя ] дают [syntax], [too-deep] или [negative-zero, too-deep].",
+      "targets": [
+        "REQ-KR-002",
+        "SCN-KR-005"
+      ],
+      "recommendation": "Задать: разбор прекращается на первом контейнере уровня 65, errors — too-deep (с ранее собранными или без), текст дальше не проверяется; исключить too-deep из правила «syntax единственный»; добавить эти два сценария."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Число подпадает под несколько кодов: 1e400 — целое значение вне ±(2^53−1), по тексту и unsafe-integer (SCN-KR-003 ждёт только non-finite); -1e-400 округляется к -0 — negative-zero или успех не сказано; non-finite — «запись вне диапазона», а не «ближайшее double — бесконечность».",
+      "targets": [
+        "REQ-KR-002",
+        "SCN-KR-003"
+      ],
+      "recommendation": "Один код на число, приоритет negative-zero > non-finite > unsafe-integer, коды по ближайшему double; в SCN-KR-003: -1e-400 → negative-zero, 1e-400 → успех 0, 1.7976931348623159e308 → non-finite; у 1e400 ровно один отказ."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "path в REQ-KR-002 задан лишь для syntax, duplicate-key, too-deep; для остальных кодов выводится из примеров, для суррогата в ключе не определён. «Порядок места в тексте» неоднозначен для отказов уровня объекта: {a: -0, $enc: 1} — reserved-enc первым, если место — скобка объекта, вторым, если ключ $enc; то же {a: 1, a: -0}. Не сказано, проверяются ли значения внутри объекта с $enc/$ref и второго дубля.",
+      "targets": [
+        "REQ-KR-002",
+        "SCN-KR-004"
+      ],
+      "recommendation": "Для каждого кода задать path и позицию в тексте; правило для ключа с суррогатом; проверка продолжается внутри отклонённых поддеревьев; сценарии {a: -0, $enc: 1} и {a: 1, a: -0}."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Не задан порядок NFC и проверки значения $ref: U+212A (знак Кельвина) по NFC становится K, поэтому $ref warrant/ + U+212A + ey — bad-ref до NFC и успех warrant/Key после. Для ключей порядок задан (SCN-KR-004), для значений — нет.",
+      "targets": [
+        "REQ-KR-002",
+        "REQ-KR-005"
+      ],
+      "recommendation": "Все проверки, кроме lone-surrogate, и все пути — по форме после NFC; сценарий с U+212A."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "Детерминизм «на любой машине» и межверсионный формат v1 молча предполагают одинаковую NFC во всех Node. Стабильность нормализации Unicode гарантирована лишь для назначенных кодовых точек: строка с точкой, не назначенной в ICU одного Node и назначенной комбинирующим знаком в другом, нормализуется иначе — расходятся тело, hash, #id.",
+      "targets": [
+        "REQ-KR-001",
+        "REQ-KR-002"
+      ],
+      "recommendation": "Решение maintainer: зафиксировать версию Unicode формата v1 и отклонять неназначенные в ней точки (новый код) либо записать расхождение как принятое допущение."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-KR-001 требует от каждой функции, включая refsOf, отказ с кодом своего требования, SCN-KR-001 — вызов каждой с недопустимым входом; у refsOf нет ни кодов, ни такого входа, только предусловие. Поведение на построенных в коде {$ref: 5}, {$ref: x/y, k: 1}, цикле не определено.",
+      "targets": [
+        "REQ-KR-001",
+        "REQ-KR-006",
+        "SCN-KR-001"
+      ],
+      "recommendation": "Перечень отказов refsOf (bad-ref, not-json) и сценарий, либо явно исключить refsOf из требования отказа и SCN-KR-001, оставив запрет исключения."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "Нет кодов для аргументов неверного JS-типа или формы: checkInput(123), parseRef(null), formatRef с версией-строкой или null, newId с числом, revision(null, at), input без body или с лишними ключами; тест не знает, какой код ждать.",
+      "targets": [
+        "REQ-KR-001",
+        "REQ-KR-002",
+        "REQ-KR-005",
+        "REQ-KR-007"
+      ],
+      "recommendation": "Общее правило: неверный тип — код поля (syntax, bad-ref, bad-id, bad-version, bad-namespace…) с тем же path; для revision — код для не-объекта input, явное решение по body и лишним ключам; сценарий."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "not-json path — «первое место в порядке обхода», но порядок обхода canonical не задан (в REQ-KR-006 задан). {b: undefined, a: undefined} — /a или /b.",
+      "targets": [
+        "REQ-KR-003",
+        "SCN-KR-007"
+      ],
+      "recommendation": "Обход в порядке ключей канонической формы; вход в SCN-KR-007 с ожиданием /a."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "Общий нециклический подобъект ({a: x, b: x} с одним x) — не цикл и должен дать успех; множество посещённых без снятия при возврате (design D-2) отклонит его. Сценария нет.",
+      "targets": [
+        "REQ-KR-003",
+        "SCN-KR-007"
+      ],
+      "recommendation": "Цикл — только объект на текущем пути обхода; сценарий: успех {a:{},b:{}}."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "canonical не определяет ключи-символы, неперечислимые свойства, аксессоры (геттер исполняет чужой код — против чистоты REQ-KR-001), неиндексные свойства массива, Proxy: пропуск или not-json.",
+      "targets": [
+        "REQ-KR-003"
+      ],
+      "recommendation": "Учитывать только собственные перечислимые строковые свойства-данные; прочее — not-json с путём (или явно игнор); сценарий."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-AR-001 — единственная проверка «ядро без ввода-вывода», но ловит лишь импорты, import(), require, process, fetch, Deno, Bun. Не ловятся Date.now и new Date() без аргументов, Math.random, performance, console, setTimeout, globalThis, eval, new Function и randomBytes/randomUUID/getRandomValues из разрешённого node:crypto — запреты REQ-KR-001 на часы и случайность не проверяются.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-KR-001"
+      ],
+      "recommendation": "Добавить эти глобалы, импорт node:crypto — только createHash; нарушения — в фикстуру SCN-AR-002."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-001: граница «вне src/kernel/» при запуске на фикстуре, подкаталоги, голый crypto и node:crypto/..., x.process или локальная process не определены; имена правил в отказе не заданы, а SCN-AR-002 их проверяет.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "Граница — корень проверяемого каталога, рекурсивно; ровно спецификатор node:crypto; глобал — свободный идентификатор; перечень идентификаторов правил."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-002 не говорит о test.skip/only/todo, it.skip, переименованном импорте, импорте пространства, suite (синоним describe), describe.skip, подтестах t.test.",
+      "targets": [
+        "REQ-AR-002",
+        "SCN-AR-003"
+      ],
+      "recommendation": "Перечислить формы вызова и синонимы; в SCN-AR-003 — test.skip на верхнем уровне и обёртка suite."
+    },
+    {
+      "id": "F-14",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "path — «место во входе», но для функций с несколькими аргументами соглашение разное: hash bad-type-id — пустой путь, formatRef — /id, /version, newId — /namespace, /ulid, revision — /at для аргумента вне input.",
+      "targets": [
+        "REQ-KR-001",
+        "REQ-KR-004",
+        "REQ-KR-005",
+        "REQ-KR-007"
+      ],
+      "recommendation": "Вход с несколькими аргументами — объект с именами параметров; hash — /typeId."
+    },
+    {
+      "id": "F-15",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "formatRef: путь reserved-scheme не указан; revision с id #g1:ab — bad-id, formatRef — reserved-scheme: разные коды одного случая; хвост #label:… не определён (10-kernel п. 4 — hex): #z:, #z:xyz.",
+      "targets": [
+        "REQ-KR-005",
+        "REQ-KR-007",
+        "SCN-KR-011"
+      ],
+      "recommendation": "reserved-scheme в formatRef — /id; одинаковый код в revision; хвост — hex+, иначе bad-ref; сценарий #z:."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Полнота и порядок отказов при нескольких неверных аргументах заданы только для revision; для hash, formatRef, newId — все или первый — не сказано.",
+      "targets": [
+        "REQ-KR-004",
+        "REQ-KR-005"
+      ],
+      "recommendation": "Все отказы в порядке параметров, как в REQ-KR-007; сценарии."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Нет граничных векторов: local ровно 128 символов — успех; ожидаемые объекты parseRef даны для 2 из 8 строк SCN-KR-010; экранирование JSON Pointer (~1, ~0) для ключей с / и ~; namespace acme. и acme..tools.",
+      "targets": [
+        "SCN-KR-010",
+        "SCN-KR-011",
+        "SCN-KR-004"
+      ],
+      "recommendation": "Добавить с явными ожиданиями."
+    },
+    {
+      "id": "F-18",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-KR-008 задаёт хэш вычислением, а не литералом: тест повторяет реализацию, вектор хэша не закреплён в формате v1 (10-kernel п. 3).",
+      "targets": [
+        "SCN-KR-008"
+      ],
+      "recommendation": "Вписать литеральные 64 hex и valueId."
+    },
+    {
+      "id": "F-19",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "revision: body «без изменений» — та же ссылка или копия, замораживается ли ревизия (04 §7) — не сказано; freeze результата с общим body изменит аргумент незаметно для снимка по содержимому SCN-KR-001.",
+      "targets": [
+        "REQ-KR-007",
+        "SCN-KR-001"
+      ],
+      "recommendation": "Указать: та же ссылка без заморозки (или глубокая копия)."
+    },
+    {
+      "id": "F-20",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "SCN-KR-001 требует снимок лишь для canonical и revision, хотя объекты получают и hash, valueId, refsOf; набор недопустимых входов не перечислен.",
+      "targets": [
+        "SCN-KR-001"
+      ],
+      "recommendation": "Снимок — для всех функций с объектными аргументами; входы — все отказные входы SCN-KR-003…015."
+    },
+    {
+      "id": "F-21",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "lone-surrogate: escape верхнего суррогата и непосредственный нижний за ним образуют пару по кодовым единицам, но escape одиночен — два прочтения.",
+      "targets": [
+        "REQ-KR-002"
+      ],
+      "recommendation": "Проверка по кодовым единицам после декодирования; сценарий."
+    },
+    {
+      "id": "F-22",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "Решения UNK-KR-001…004 не отражены в design/domains/10-kernel.md: п. 3 «вне ±2^53» против ±(2^53−1), нет NFC ключей и предела 64; п. 4 #label:hex против #label:…. Решения не оспариваются.",
+      "targets": [
+        "design/domains/10-kernel.md"
+      ],
+      "recommendation": "Синхронизировать 10-kernel при архивировании."
+    },
+    {
+      "id": "F-23",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "implementation-leakage",
+      "statement": "SCN-KR-006 предписывает расположение фикстуры test/fixtures/ — деталь реализации.",
+      "targets": [
+        "SCN-KR-006"
+      ],
+      "recommendation": "Перенести в tasks.md/design."
+    },
+    {
+      "id": "F-24",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Векторы RFC 8785 (1E30, большие целые приложения B) checkInput отклоняет unsafe-integer: canonical шире входной проверки, векторы подаются в обход неё.",
+      "targets": [
+        "REQ-KR-003",
+        "SCN-KR-006"
+      ],
+      "recommendation": "Отметить это в spec."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:6d3b8771fd2f485762a95656ef134264434730db03a39084b442a2822048c36e",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-28T10:00:00Z",
+    "finished_at": "2026-09-28T10:45:00Z"
+  }
+}
