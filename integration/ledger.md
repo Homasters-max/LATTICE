@@ -398,10 +398,65 @@
 | N-62 | N | 23-bench: базовая линия «карточка с summary units (warrant/summary)» против первого абзаца — после первого запуска; перенос в карточку — по замеру | 23-bench | — | D12 Q6 | открыт |  |  |
 | N-63 | N | 04-architecture от D12: раскладка без src/ports (контракты у доменов, ADR-24), cli/ = main, wire, commands; конфигурация → проводка 30 §2; .lattice/ … | 04-architecture | — | D12 Q0 | внесён:принять | `design/04-architecture.md:73-98`, `design/04-architecture.md:62-71` | 30-adapters.md §2 проводка (lattice.config.json, config/2), §4 .lattice/, §1 фиктивные адаптеры store-memory, *-fixture; source-files; reports/; хост T164, корень сборки T166 |
 | N-64 | N | 05-slices от D12: инварианты 30-adapters 1–7 — тесты срезов: структура и контрактные наборы (S0/S1), grep секретов по .lattice/, pending → answer → к… | 05-slices | — | D12 | внесён:принять | `design/05-slices.md:29-45`, SL-03 `design/05-slices.md:65` |  |
-| N-65 | N | Тип View (чтения индекса для стадий и правил, T133) нигде не определён; 04 кладёт его в ledger/types.ts — владелец 12 §5, сверить в C | 12-ledger | — | D13 · довод агента | открыт |  |  |
+| N-65 | N | Тип View (чтения индекса для стадий и правил, T133) нигде не определён; 04 кладёт его в ledger/types.ts — владелец 12 §5, сверить в C | 12-ledger | — | D13 · довод агента | открыт |  | C1: подтверждено, E1 = N-83 |
 | N-66 | N | README:18 — описание 04 «карта доменов, порты» → «матрица зависимостей, тест структуры, корень сборки, раскладка»; README:51 порядок чтения | README | — | D13 | внесён:принять | `design/README.md:18`, `design/README.md:48-53` | D14 Q0, Q4: порядок чтения по матрице 04 §2 |
 | N-67 | N | 00-vision:56 роль Runtime «не меняет каталог — только через факты» → прогон пишет вызов, решение, членство одним коммитом через правила (ADR-19, ADR-… | 00-vision | — | D14 | внесён:принять | `design/00-vision.md:56` | D14 Q0 |
 | N-68 | N | 03-python-lessons: PY-Q1 (структурная совместимость) не в реестре — закрыт RL-05; :15 no-op → по (type@n, hash), ADR-2 | 03-python-lessons | — | D14 | внесён:принять | `design/03-python-lessons.md:19`, `design/03-python-lessons.md:15` | D14 Q0: раздел вопросов 03 снят, PY-Q1 → RL-05 |
 | N-69 | N | README: версия v0.3 → v0.4, «Статус»; нет строки adr/ в «Как читать»; :35 30 «порты» → реализации (ADR-24); конвенция ADR в «Почему» | README | — | D14 | внесён:принять | `design/README.md:1`, `design/README.md:20`, `design/README.md:36`, `design/README.md:41-43`, `design/README.md:55-58` | D14 Q0 |
 | N-70 | N | 00-vision: закрытые V-Q1, V-Q2 и уточнения P4/P9 — раздел «Решения» VI-nn вместо «Вопросов для grilling» (правило 6) | 00-vision | — | D14 | внесён:принять | `design/00-vision.md:100-107` | D14 Q5: «Решения» VI-01…04 |
-| N-71 | N | 05-slices S1: тестовые векторы JCS (ADR-1 «векторы — в срезе S1») не названы; ADR-1 остаётся решён | 05-slices | — | D14 | открыт |  |  |
+| N-71 | N | 05-slices S1: тестовые векторы JCS (ADR-1 «векторы — в срезе S1») не названы; ADR-1 остаётся решён | 05-slices | — | D14 | открыт |  | C1: E20 = N-102 — субагенты расходятся (инв. 11 → S1) |
+| N-72 | N | C1 B1: ADR-21 и индекс ADR: план test — «правило по split»; 23-bench (D11 Q2) — отчёт, правила нет | adr, 23-bench | — | C1 audit/README.md B1 | открыт |  |  |
+| N-73 | N | C1 B2: E6/R10 «вердикты v2 учат только при pass» протоколом не проверяется; simulate в копии учит без pass | 01-first-run, 23-bench | — | C1 audit/README.md B2 | открыт |  |  |
+| N-74 | N | C1 B3: Совпадение bench-run pass «на кортеж»: в bench-run только setup@n; prompt_hash judge и версия ядра не закреплены | 22-run, 23-bench | — | C1 audit/README.md B3 | открыт |  |  |
+| N-75 | N | C1 B4: Гейт обучения и ref-exists при коммите читают std/execution из сегмента — индекс сегментов не знает | 12-ledger, 13-rules | — | C1 audit/README.md B4 | открыт |  |  |
+| N-76 | N | C1 B5: Попадание в кэш judge / pending / ошибка: оценки не попадают в журнал, replay падает | 20-lens, 22-run, 30-adapters | — | C1 audit/README.md B5 | открыт |  |  |
+| N-77 | N | C1 B6: Replay: judge.verify, judge.choose, source (deliver) не записываются — replay кончается ошибкой | 22-run, 20-lens, 21-compose | — | C1 audit/README.md B6 | открыт |  |  |
+| N-78 | N | C1 B7: Гонку двух ensure одного ключа зерна expect не ловит; шаги коммита 0–5 вне замка | 12-ledger, 11-identity-grain | — | C1 audit/README.md B7 | открыт |  |  |
+| N-79 | N | C1 B8: identity вызывает judge.verify при ensure — по матрице identity импортирует только kernel | 11-identity-grain, 20-lens, 04-architecture | — | C1 audit/README.md B8 | открыт |  |  |
+| N-80 | N | C1 B9: Проверки ядра T134: 13-rules — часть ядра (версия kernel), 04 §1 — код системы | 13-rules, 04-architecture, 00-vision | — | C1 audit/README.md B9 | открыт |  |  |
+| N-81 | N | C1 B10: ADR-12: закрытость схемы по объединению цепочки extends не внесена — закрытая std-схема отклонит поля наследника | 13-rules, 10-kernel | — | C1 audit/README.md B10 | открыт |  |  |
+| N-82 | N | C1 B11: 30-adapters: хэши в Meta.detail; 22-run / T135: «хэшей в Meta нет» | 30-adapters, 22-run, 02-glossary | — | C1 audit/README.md B11 | открыт |  |  |
+| N-83 | N | C1 E1: View не определён (N-65): чтение на прошлом seq, view.seq, trust() в View vs AR-08 | 12-ledger, 22-run, 04-architecture | — | C1 audit/README.md E1 | открыт |  |  |
+| N-84 | N | C1 E2: «Отзыв версии» без механизма; core/retire {object} убил бы новую версию (ADR-15) | 15-catalog, 10-kernel, 22-run, 00-vision | — | C1 audit/README.md E2 | открыт |  |  |
+| N-85 | N | C1 E3: 30-adapters:77 «одна сессия на команду» vs таблица команд (load, verdict, bench — несколько) | 30-adapters | — | C1 audit/README.md E3 | открыт |  |  |
+| N-86 | N | C1 E4: Ссылки строкой "#…" в телах measurement, execution, verdict vs {"$ref"} (P12, 10-kernel §5) | 20-lens, 22-run, 10-kernel | — | C1 audit/README.md E4 | открыт |  |  |
+| N-87 | N | C1 E5: Значения input/output/calls: кто пишет, каким типом, в коммите с ошибкой | 22-run, 12-ledger | — | C1 audit/README.md E5 | открыт |  |  |
+| N-88 | N | C1 E6: T137: сессии стенда «не питают recall» vs 23-bench «в копии recall как обычно» (E2) | 02-glossary, 23-bench | — | C1 audit/README.md E6 | открыт |  |  |
+| N-89 | N | C1 E7: S8 E3 «симуляторы одного агента — одна группа» — формулировка до D11; ADR-26 последствие | 05-slices, adr | — | C1 audit/README.md E7 | открыт |  |  |
+| N-90 | N | C1 E8: R10: где пишутся setup@2 и план кандидата относительно копии кампании | 01-first-run, 23-bench | — | C1 audit/README.md E8 | открыт |  |  |
+| N-91 | N | C1 E9: Протокол 01: нет шага калибровки порогов на dev до R3 | 01-first-run | — | C1 audit/README.md E9 | открыт |  |  |
+| N-92 | N | C1 E10: Кандидат-дубль потребности: порог same_hi vs candidates.min_p; форма candidates без calibrated_for | 21-compose, 14-trust | — | C1 audit/README.md E10 | открыт |  |  |
+| N-93 | N | C1 E11: «Вывод не выше входов» — входы не определены; выученное не поднимется выше inferred | 14-trust, 22-run | — | C1 audit/README.md E11 | открыт |  |  |
+| N-94 | N | C1 E12: Форма значений writers / inForce (для ⊆ и «не слабее»); writers core/member | 10-kernel, 13-rules | — | C1 audit/README.md E12 | открыт |  |  |
+| N-95 | N | C1 E13: Роль цели у многоролевого факта — чьё право проверяет owner | 10-kernel, 15-catalog | — | C1 audit/README.md E13 | открыт |  |  |
+| N-96 | N | C1 E14: Декларант любого вида даёт решающее «−» (T-1: только человек); T122, T55 | 14-trust, 02-glossary, 15-catalog | — | C1 audit/README.md E14 | открыт |  |  |
+| N-97 | N | C1 E15: by ревизии core/session; участник вне реестра — на что ссылается session.actor | 14-trust | — | C1 audit/README.md E15 | открыт |  |  |
+| N-98 | N | C1 E16: Смена владельца: механизм принятия и действующий owner между шагами | 15-catalog, adr | — | C1 audit/README.md E16 | открыт |  |  |
+| N-99 | N | C1 E17: S3 «−» владельца отзывает» — без вида владельца | 05-slices | — | C1 audit/README.md E17 | открыт |  |  |
+| N-100 | N | C1 E18: Импорт std: «только следующая версия» vs копии с той же version через пропуск | 15-catalog, 10-kernel | — | C1 audit/README.md E18 | открыт |  |  |
+| N-101 | N | C1 E19: Проект — одно пространство или несколько; чья namespace.policy считает доверие | 15-catalog, 14-trust, 12-ledger | — | C1 audit/README.md E19 | открыт |  |  |
+| N-102 | N | C1 E20: N-71: векторы JCS в S1 — субагенты расходятся (отнесение инв. 11 → S1 закрывает или нет) | 05-slices | — | C1 audit/README.md E20 | открыт |  |  |
+| N-103 | N | C1 E21: «Формат v1» частями; версия формата vs kernel | 10-kernel, 12-ledger | — | C1 audit/README.md E21 | открыт |  |  |
+| N-104 | N | C1 E22: 05: «первый запуск требует S0–S8» — E6, R10–R11 требуют S9 | 05-slices | — | C1 audit/README.md E22 | открыт |  |  |
+| N-105 | N | C1 E23: 30-adapters инв. 6 (simulate в копии) отнесён к S1 | 05-slices | — | C1 audit/README.md E23 | открыт |  |  |
+| N-106 | N | C1 E24: S9 «расхождение code / source» vs 22-run §7 отказ; source в replay не задан | 05-slices, 22-run | — | C1 audit/README.md E24 | открыт |  |  |
+| N-107 | N | C1 E25: S9 «тот же setup@n» vs candidate — тот же set@n, split, state | 05-slices | — | C1 audit/README.md E25 | открыт |  |  |
+| N-108 | N | C1 E26: Кортеж исполнения — два состава в 22-run (impl.pins vs code; ядро «в вызов» vs «не в теле») | 22-run, 02-glossary | — | C1 audit/README.md E26 | открыт |  |  |
+| N-109 | N | C1 E27: S9 «кортеж + кэши → replay» vs RN-07 «кэш — только ускорение» | 05-slices | — | C1 audit/README.md E27 | открыт |  |  |
+| N-110 | N | C1 E28: Ключ идемпотентности проверяется не атомарно (verdict + learn параллельно) | 12-ledger | — | C1 audit/README.md E28 | открыт |  |  |
+| N-111 | N | C1 E29: Отказ locked — нет в контракте Store, выходе commit, таблице сбоев | 12-ledger, 22-run | — | C1 audit/README.md E29 | открыт |  |  |
+| N-112 | N | C1 E30: ADR-19 «ответ ложится в кэш composer» vs AD-09 «кэша нет» | adr | — | C1 audit/README.md E30 | открыт |  |  |
+| N-113 | N | C1 E31: deliver читает request.task, setup@n, bench, id вызова — нет в reads / Ctx | 22-run | — | C1 audit/README.md E31 | открыт |  |  |
+| N-114 | N | C1 E32: «Накопительный» — два смысла (пустой key / пишет любой); «подсказки» в примере пустого ключа | 10-kernel, 11-identity-grain, 02-glossary | — | C1 audit/README.md E32 | открыт |  |  |
+| N-115 | N | C1 E33: «Открытый» кандидат и value кандидата не определены — бюджет не вычислить | 11-identity-grain | — | C1 audit/README.md E33 | открыт |  |  |
+| N-116 | N | C1 E34: catalog/owner.ts — ledger (коммит) не может вызвать проверку owner | 04-architecture | — | C1 audit/README.md E34 | открыт |  |  |
+| N-117 | N | C1 E35: PII: шаг коммита проверяет только секреты | 10-kernel, 12-ledger | — | C1 audit/README.md E35 | открыт |  |  |
+| N-118 | N | C1 E36: «Общий тип» не определён; soft → hard при обязательном hard | 13-rules, 10-kernel | — | C1 audit/README.md E36 | открыт |  |  |
+| N-119 | N | C1 E37: ADR-9 «hard по умолчанию» vs RL-02 «hard» обязателен | 13-rules, adr, 02-glossary | — | C1 audit/README.md E37 | открыт |  |  |
+| N-120 | N | C1 E38: 03:17 «схема — добровольное правило» (v0.3) | 03-python-lessons | — | C1 audit/README.md E38 | открыт |  |  |
+| N-121 | N | C1 E39: Проверки ядра T134 без закреплённых ссылок content, вида объекта, ацикличности extends | 13-rules, 02-glossary | — | C1 audit/README.md E39 | открыт |  |  |
+| N-122 | N | C1 E40: materialize вне прогона — чем держится закрытый мир без ctx | 21-compose | — | C1 audit/README.md E40 | открыт |  |  |
+| N-123 | N | C1 E41: 04:102 «стадии — чистые» vs RN-02 | 04-architecture | — | C1 audit/README.md E41 | открыт |  |  |
+| N-124 | N | C1 E42: T43: grain-unique — пример примитива, а это проверка ядра | 02-glossary | — | C1 audit/README.md E42 | открыт |  |  |
+| N-125 | N | C1 E43: Нарушения check — в findings, а T44 «находка — результат soft» | 02-glossary, 13-rules, 21-compose | — | C1 audit/README.md E43 | открыт |  |  |
+| N-126 | N | C1 M: Мелочи аудита C1 (38): текстовые правки — integration/audit/README.md «Мелочи» | 02-glossary, 05-slices, 10-kernel, 11-identity-grain, 12-ledger, 13-rules, 14-trust, 15-catalog, 20-lens, 21-compose, 22-run, 23-bench, 30-adapters, 01-first-run, 03-python-lessons, adr | — | C1 audit/README.md M | открыт |  |  |
