@@ -56,7 +56,9 @@ R1  load                 нормы, домены, словарь, элемен�
 R2  lint + rebuild       ноль нарушений hard; rebuild --check побайтно                  → E6 (часть)
 R2b калибровка           кампания explore (subset: dev) на копии ([23] §4 п. 8): пороги no_match,
                          same_hi/same_lo, min_p кандидатов →
-                         ревизия warrant/setup@2 с calibrated_for (без неё no-match не выносится)  → S5
+                         warrant/pipeline.solve@1 с порогами и calibrated_for {…, bench},
+                         warrant/setup@2 на него, min_p — ревизия политики пространства
+                         (без calibrated_for no-match не выносится)                    → S5
 R3  план                 регрессионный план владельца (kind: regression, subset: test,
                          mode: simulate-consumer — проходы A–C; кандидат R10 берёт его из base):
                          набор@n, setup@2, базовые линии, критерии, δ, n, seed          → записан до прогона
@@ -109,12 +111,12 @@ R14 отчёт                .lattice/reports/first-run.md + std/bench-run в �
 | Что | Где задано | Чем меряется |
 |---|---|---|
 | триггер пересмотра хранилища — p95 пересборки индексов | [12](domains/12-ledger.md) LG-09, ADR-23 | R2, R14 |
-| горизонт replay — срок сегмента исполнения | [12](domains/12-ledger.md) LG-15, [22](domains/22-run.md) RN-17 | не меньше окна обучения R8 |
+| горизонт replay — срок сегмента исполнения, не дальше установленного кода стадий | [12](domains/12-ledger.md) LG-15, [22](domains/22-run.md) RN-17, RN-34 | не меньше окна обучения R8 |
 | K кандидатов для Composer | [20](domains/20-lens.md) LN-13 | `in-K` ≥ 0,95 |
 | `cues_max` в карточке | [20](domains/20-lens.md) LN-10 | `hit@3` по виду блока |
 | `max` членов решения | [21](domains/21-compose.md) §2 | `select-F1`, находки «разбить» |
 | окно удаления `removal_window` | ADR-20 | E3 |
-| пороги `no_match`, `same_hi`/`same_lo`, `min_p` кандидатов | [23](domains/23-bench.md) §4 п. 8 | калибровка на `dev` |
+| пороги `no_match`, `same_hi`/`same_lo`, `min_p` кандидатов | [23](domains/23-bench.md) §4 п. 8; где лежат — [22](domains/22-run.md) RN-35 | калибровка на `dev`; устаревание — находка BN-18 |
 
 ## Отчёт (что будет в `first-run.md`)
 

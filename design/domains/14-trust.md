@@ -137,7 +137,7 @@
 | `observe_groups` | порог `observed` | да |
 | `contest_min`, `resolve_min`, `oscillation_cycles` | пороги спора | да |
 | `lens` | `{exclude, mark}` — какие состояния доверия LENS исключает до judge и какие помечает ([20](20-lens.md)) | да |
-| `candidates` | политика кандидатов в алиас: порог (ADR-13) и `calibrated_for` — под какую версию judge он подобран (T136), бюджет на владельца, кластер — одно решение, память отказов `std/distinct` ([11](11-identity-grain.md) GR-12) | да |
+| `candidates` | политика кандидатов в алиас: порог (ADR-13) и `calibrated_for` — под какую версию judge и каким прогоном он подобран (T136; расходится с judge из `setup` — кандидаты как без калибровки, [22](22-run.md) RN-35), бюджет — размер очереди владельца, не предел записи ([11](11-identity-grain.md) GR-17), кластер — одно решение, память отказов `std/distinct` (GR-12) | да |
 | `calibration` | правила обучения ([22](22-run.md) RN-05): `add_min_verdicts`, `verdict_weights`, окно удаления членства `removal_window` (ADR-20) | только `std` |
 
 - Значения `lens`, `candidates`, `verdict_weights` задают их потребители — [20](20-lens.md), [21](21-compose.md),

@@ -82,6 +82,9 @@ rules получает `LedgerView` журнала), а вызовы — тол�
   стенда — на фактах обучения (ADR-29). `imports` — только в `core/namespace` ([15](domains/15-catalog.md) §1).
 - **Проводка** `lattice.config.json` (`config/2`, T128) — где лежит: каталог данных, эндпоинты, корни источников,
   ссылки на секреты `{"$env"}`; строгая схема, запасного адаптера нет — [30](domains/30-adapters.md) §2.
+  Эндпоинт, способный сменить фактическую модель, — допущение «обслуживает модель из `setup`»: его ловит сверка
+  `Meta.model` из ответа поставщика с `setup` ([22](domains/22-run.md) RN-32); корень источника — сверка
+  `text_hash` при выдаче и `invalid` кампании с разной ревизией источника (ADR-36).
 - Каталог данных `.lattice/` и его писатели — [30](domains/30-adapters.md) §4.
 
 ## 6. Раскладка репозитория (TypeScript / Node, ESM)
@@ -170,7 +173,7 @@ LATTICE/
 | `source` (порт) | порт | [21-compose](domains/21-compose.md) §8 | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
 | `exec` (порт) | порт | [22-run](domains/22-run.md) §3 | — |
 | `clock`, `ids` (порт) | порт | [12-ledger](domains/12-ledger.md) §5 | D02 Q2, ADR-24 |
-| `Meta` | формат | [22-run](domains/22-run.md) §3 | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
+| `Meta` | формат | [22-run](domains/22-run.md) §3 | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 · RN-32: `model` — из ответа поставщика, сверяется с `setup` |
 | `Scored` | формат | [20-lens](domains/20-lens.md) §5 | ADR-24 · D08 |
 | `Chosen` | формат | [20-lens](domains/20-lens.md) §5 | ADR-24 · D08 |
 | `id` | поле заголовка | [10-kernel](domains/10-kernel.md) §1 | KR-01 |
@@ -186,8 +189,9 @@ LATTICE/
 | `via` (`core/assert`) | поле | [14-trust](domains/14-trust.md) §2 | 14-trust/И-7 · ADR-5 |
 | `examples`, `when` (`core/rule`) | поле | [13-rules](domains/13-rules.md) §1 | 13-rules/И-1 · D04 Q5 |
 | нарушение (оболочка `{row, rule, message}`) | формат | [13-rules](domains/13-rules.md) §2 | 13-rules/И-4 · D04 Q2 |
-| `impl.pins` | поле | [13-rules](domains/13-rules.md) §3 | 10-kernel/И-33 · T-2 |
-| `std/alias-candidate` | тип | [11-identity-grain](domains/11-identity-grain.md) §6 | ADR-8 · R3 |
+| `impl.pins` | поле | [13-rules](domains/13-rules.md) §3 | 10-kernel/И-33 · T-2 · RN-34: решает хэш модуля, версия — справочно |
+| `std/alias-candidate` | тип | [11-identity-grain](domains/11-identity-grain.md) §6 | ADR-8 · R3 · GR-17: бюджет — размер очереди, не предел записи |
+| `text_hash` (T181) — хэш текста блока, сверка при выдаче | поле, правило | [21-compose](domains/21-compose.md) §8; сверка — [22-run](domains/22-run.md) §4 | CP-23 · RN-30 · ADR-36 · CA-F11 |
 | `grain_scope` (`core/type`) | поле | [11-identity-grain](domains/11-identity-grain.md) §1 | ADR-27 · R3 |
 | уровень поля `schema` (`core/type`) | поле | [13-rules](domains/13-rules.md) §1 | ADR-9 · R3 |
 | `std/ctx.needs[].found` | поле | [22-run](domains/22-run.md) §2 | 21-compose/И-9 · T152 |
@@ -209,7 +213,7 @@ LATTICE/
 | что ядро читает вне `core` (перечень) | правило | §1 | AR-14 · ADR-35 |
 | переход ядра (T177) | правило | [10-kernel](domains/10-kernel.md) §8 | KR-19 · ADR-34 |
 | `lens` (`std/policy`: `exclude`, `mark`) | поле | [14-trust](domains/14-trust.md) §4 | 20-lens/И-6 · R5 Q5 · N-40 · D08 Q5 |
-| `calibrated_for` порога | поле | [20-lens](domains/20-lens.md) §4 | 20-lens/И-4, И-7 · R5 Q10 · LN-07 · D08 Q4 |
+| `calibrated_for` порога | поле | [20-lens](domains/20-lens.md) §4 | 20-lens/И-4, И-7 · R5 Q10 · LN-07 · D08 Q4 · BN-17 (`bench`, конвейер проекта) · CA-F18, CA-F40 |
 | `std/pool` | значение | [20-lens](domains/20-lens.md) §3 | LN-14 · И-14 · D08 Q7 |
 | шаблон `card` типа | поле | [20-lens](domains/20-lens.md) §1 | LN-09 · ADR-12 · D08 Q1 |
 | кандидат (`candidates[]`), `marks`, `boosts` | формат, поля | [20-lens](domains/20-lens.md) §4 | LN-06, LN-11 · D08 Q3, Q5 |
@@ -226,20 +230,22 @@ LATTICE/
 | `divide(need, parts, by)` | операция | [21-compose](domains/21-compose.md) §6 | 21-compose/И-6 · R6 Q5 |
 | окно удаления членства | правило | [22-run](domains/22-run.md) §6 | ADR-20 · R6 Q6 · RN-25, RN-26 |
 | регрессионный план (`base`, δ, ротация `test`) | правило | [23-bench](domains/23-bench.md) §1 | 23-bench/И-14, И-15 · R6 Q9 |
+| находка «калибровка устарела», `recheck_every` регрессионного плана | правило, поле | [23-bench](domains/23-bench.md) §5, §1 | BN-18 · CA-F18 |
 | `rows` (строки вызова), id новых у стадии | поле, правило | [22-run](domains/22-run.md) §2 | RN-09 · D10a Q2, Q3 |
 | стадия `materialize` | способность | [21-compose](domains/21-compose.md) §4 | RN-08 · D10a Q1 |
 | `describe()` (`Ident`) | метод портов LLM | [22-run](domains/22-run.md) §3 | RN-10 · D10a Q5 |
 | таблица сбоев вызова | правило | [22-run](domains/22-run.md) §3 | RN-11 · D10a Q4 |
+| ключ идемпотентности: сверка содержимого, отказ `differs` | правило | [12-ledger](domains/12-ledger.md) §2 | LG-13 · LG-20 · CA-F20 |
 | файл хода `.lattice/runs/<id>.log` | формат | [22-run](domains/22-run.md) §3 | RN-12 · D10a Q6 |
-| `std/pipeline`, конвейер `solve@1` | тип, объект | [22-run](domains/22-run.md) §1 | RN-01, RN-08 · N-10 |
-| `std/execution@1` | событие | [22-run](domains/22-run.md) §3 | RN-06 · И-18 · N-10 |
-| `std/verdict@1` | событие | [22-run](domains/22-run.md) §5 | RN-04, RN-18 · D10b Q3 · RN-28 (`evidence`) |
+| `std/pipeline`, конвейер `solve@1` | тип, объект | [22-run](domains/22-run.md) §1 | RN-01, RN-08 · N-10 · RN-35: пороги — `params` конвейера проекта `<пространство>/pipeline.solve` |
+| `std/execution@1` | событие | [22-run](domains/22-run.md) §3 | RN-06 · И-18 · N-10 · RN-31 (`env`) |
+| `std/verdict@1` | событие | [22-run](domains/22-run.md) §5 | RN-04, RN-18 · D10b Q3 · RN-28 (`evidence`) · RN-33 (автор) · CP-24 (цитата `add[]`) |
 | строка обучения (`from`, `policy`, `bench`) | правило, поля | [22-run](domains/22-run.md) §6 | RN-14 · D10b Q1 · RN-24 |
 | `std/learned-assert` | тип | [22-run](domains/22-run.md) §6 | RN-14 · D10b Q1 |
 | сессия `learn` (`purpose: learn`), поток `verdict → learn` | правило, операция | [22-run](domains/22-run.md) §6 | RN-13 · D10b Q2 |
 | правила обучения (таблица «вердикт → факты»), калибровка | правило | [22-run](domains/22-run.md) §6 | RN-05, RN-15 · D10b Q4 |
 | путь подсказки (рождение, подтверждение, recheck прежней ревизии) | правило | [22-run](domains/22-run.md) §6 | RN-16 · D10b Q5 |
-| `replay`, горизонт replay | операция, правило | [22-run](domains/22-run.md) §7 | RN-07, RN-17 · D10b Q6, Q7 |
+| `replay`, горизонт replay | операция, правило | [22-run](domains/22-run.md) §7 | RN-07, RN-17 · D10b Q6, Q7 · RN-34 (код стадий, `code-changed`) |
 | сессия симулятора (`purpose: simulate`) | правило | [23-bench](domains/23-bench.md) §3 | BN-04 · D11 Q5 |
 | метрики стенда, протокол калибровок | правило | [23-bench](domains/23-bench.md) §2 | BN-03 · N-45, N-56, N-57 |
 | хост (T164), `purpose` команд хоста | правило | [30-adapters](domains/30-adapters.md) §3 | AD-10 · ADR-25 · D12 Q4 |
@@ -275,7 +281,7 @@ LATTICE/
 | AR-06 | Интерфейс домена (`types.ts`) вне матрицы: импортирует только ядро и интерфейсы, без циклов; матрица ограничивает реализацию | типы нужны в обе стороны (`Ctx` ↔ `Judge`, `LedgerView` для rules), вызовы — только по направлению. v0.4 · D13 Q1 · ADR-24 |
 | AR-07 | Корень сборки `src/cli/wire.ts` — единственный импортёр `adapters/*`; собирает адаптеры, `Deps` и список проекций | одна точка знает технологии; правило проверяемо тестом. v0.4 · 30-adapters/И-1 · AD-01 |
 | AR-08 | Раздел индекса вычисляет домен-владелец; проекцию выше журнала (`trust`) подключает корень сборки | индекс хранит результат `trust()`, но 12 от 14 не зависит. v0.4 · N-32 · D13 Q2 |
-| AR-09 | Меняет пакет или цену при том же журнале — журнал (`std/setup`), иначе — проводка | воспроизводимость по журналу; проводка не влияет на результат. v0.4 · PF-01 · ADR-28 |
+| AR-09 | Меняет пакет или цену при том же журнале — журнал (`std/setup`), иначе — проводка; эндпоинт и корень источника — допущения, которые ловят сверки (`Meta.model`, `text_hash`) | воспроизводимость по журналу; проводка не влияет на результат, пока допущения держат сверки. v0.4 · PF-01 · ADR-28 · v0.5 · CA-F19: «проводка не влияет» противоречило PF-01 — эндпоинт выбирал модель вне журнала |
 | AR-10 | Один пакет с каталогами; разделение (`@lattice/core`, `@lattice/adapters-*`) — когда адаптеры понадобятся отдельно | нет второго потребителя; матрица и тест держат границы и без пакетов. v0.4 · Q-04-1 · AD-14 |
 | AR-11 | `std` — JSON-файлы в репозитории; тест — они проходят правила ядра и свои `examples`; генезис, в отличие от `std`, порождается кодом | данные под ревью; генезис — корень доверия, его хэш — константа версии. v0.4 · Q-04-2 · T-10 |
 | AR-12 | Проверки ядра (T134) — слой замороженного ядра по версии `kernel`; код — `src/rules/kernel-checks/` (в том числе `owner`, прежде `catalog/owner.ts`) | валидатор не меняется посреди работы (P9); коммит (ledger) вызывает проверки через rules — catalog ему недоступен (AR-04). v0.4 · ADR-32 · C1 B9, E34 |
