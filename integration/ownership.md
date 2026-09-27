@@ -61,7 +61,7 @@
 |---|---|---|---|---|---|
 | `core/commit` | факт (маркер) | 12-ledger | `research/analysis/arch-changes.md:166` (не в design/) | 10-kernel, 22-run | 12-ledger/И-9 |
 | `core/holds` | событие | 10-kernel | `research/analysis/arch-changes.md:105` | 14-trust | 10-kernel/И-6 |
-| `core/namespace.origin` | поле | 15-catalog | `research/analysis/arch-changes.md:126` | 10-kernel | 10-kernel/И-27 |
+| `core/namespace.origin` | поле | 10-kernel | `research/analysis/arch-changes.md:126` | 15-catalog (импорт) | 10-kernel/И-27 · R1: владелец 10-kernel (`core/namespace` — тип генезиса) |
 | `core/assert.via` | поле | 14-trust | `research/analysis/arch-changes.md:199` | — | 14-trust/И-7 |
 | `core/rule.examples` | поле | 13-rules | `research/analysis/arch-changes.md:180` | — | 13-rules/И-1 |
 | `std/alias-candidate` | тип | 11-identity-grain | `research/analysis/arch-changes.md:348` (ADR-8) | 21-compose (И-2) | ADR-8 |

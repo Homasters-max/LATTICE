@@ -6,3 +6,6 @@
 | ADR | Решение | Статус | Затрагивает | Волна | Сессия |
 |---|---|---|---|---|---|
 | [24](0024-port-contract-at-consumer.md) | контракт порта — у домена-потребителя; `30-adapters` — реализации | принято | 30-adapters, 12-ledger, 20-lens, 21-compose, 22-run, 15-catalog, 04-architecture | — | S0 |
+| [1](0001-canonical-form-jcs.md) | каноническая форма — JCS целиком, NFC на входе | принято | 10-kernel, 12-ledger, 02-glossary | 0 | R1 |
+| [3](0003-execution-segments.md) | события исполнения — сегменты журнала со сроком, истекают целиком | принято | 10-kernel, 12-ledger, 22-run | 0 | R1 |
+| [19](0019-run-commit-boundary.md) | один коммит на прогон (короткий, без `exec`); `materialize` в двух режимах; агент — перезапуск после `lattice answer`; триггер (б) — `exec` / долгие прогоны | принято | 22-run, 21-compose, 12-ledger, 30-adapters | 0 | R1 |
