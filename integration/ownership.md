@@ -40,11 +40,11 @@
 | `std/trust-policy` | экземпляр политики по умолчанию | 14-trust | `design/domains/14-trust.md:96-115` | 15-catalog (`namespace.policy`) | TR-05 |
 | `store` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:110-132` | 30-adapters (`store-jsonl`, `store-memory`) | ADR-24 · LG-05 (D05) |
 | `judge` (порт) | порт | 20-lens | `design/domains/20-lens.md:100-126` | 21-compose (recall, select), 11-identity-grain (GR-06), 30-adapters (реализации) | ADR-24 · LN-04 · D08 |
-| `composer` (порт) | порт | 21-compose | `design/domains/21-compose.md:192-217` (D09; 30-adapters:25-28 — снять, N-48) | 22-run (runtime) | ADR-24 · CP-14 |
-| `source` (порт) | порт | 21-compose | `design/domains/21-compose.md:200-207` (D09; 30-adapters:30-35 — снять, N-48) | 22-run (deliver), 30-adapters (source-warrant), 15-catalog (`load`) | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
-| `exec` (порт) | порт | 22-run | `design/domains/22-run.md:209,216-217` (D10a; 30-adapters:14 — снять, N-51) | — | ADR-24 · D10a Q0
-| `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:120-121` (D05; 30-adapters:15 — ссылкой, N-23) | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
-| `Meta` | формат | 22-run | `design/domains/22-run.md:203-213` (D10a; 30-adapters:23 — снять, N-51); T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
+| `composer` (порт) | порт | 21-compose | `design/domains/21-compose.md:192-217` (D09); 30 — ссылкой `design/domains/30-adapters.md:25` | 22-run (runtime) | ADR-24 · CP-14 |
+| `source` (порт) | порт | 21-compose | `design/domains/21-compose.md:200-207` (D09); 30 — ссылкой `design/domains/30-adapters.md:26`, реализации `design/domains/30-adapters.md:163-193` | 22-run (deliver), 30-adapters (source-warrant), 15-catalog (`load`) | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
+| `exec` (порт) | порт | 22-run | `design/domains/22-run.md:209,216-217` (D10a); 30 — ссылкой `design/domains/30-adapters.md:27` | — | ADR-24 · D10a Q0
+| `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:120-121` (D05); 30 — ссылкой `design/domains/30-adapters.md:23` | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
+| `Meta` | формат | 22-run | `design/domains/22-run.md:203-213` (D10a); 30 — ссылкой `design/domains/30-adapters.md:29-30`; T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
 | `Scored` | формат | 20-lens | `design/domains/20-lens.md:108` | 30-adapters (реализации) | ADR-24 · D08 |
 | `Chosen` | формат | 20-lens | `design/domains/20-lens.md:109` | 30-adapters (реализации) | ADR-24 · D08 |
 | `id` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:25` | все домены | KR-01 |
@@ -116,6 +116,13 @@
 | `replay`, горизонт replay | операция, правило | 22-run | `design/domains/22-run.md:341-359`; T160 | 12-ledger (срок сегмента), 13-rules (`revalidate`, N-53), 20-lens (кэш) | RN-07, RN-17 · D10b Q6, Q7 |
 | сессия симулятора (`purpose: simulate`) | правило | 23-bench | `design/domains/23-bench.md:83-88`; T163 | 13-rules (`learning-gate`), 14-trust (`purpose`), 22-run (обучение), 30-adapters (хост), 01-first-run (R5, R8) | BN-04 · D11 Q5 |
 | метрики стенда, протокол калибровок | правило | 23-bench | `design/domains/23-bench.md:50-68`, `design/domains/23-bench.md:101-105` | 20-lens (`no_match`, `pool-recall`), 21-compose (`same_hi/lo`), 11-identity-grain (`min_p`), 01-first-run (замеры) | BN-03 · N-45, N-56, N-57 |
+| хост (T164), `purpose` команд хоста | правило | 30-adapters | `design/domains/30-adapters.md:67-92` | 14-trust, 15-catalog, 22-run, 23-bench | AD-10 · ADR-25 · D12 Q4 |
+| корень сборки `src/cli/wire.ts` (T166) | модуль | 30-adapters | `design/domains/30-adapters.md:40-43` | 04-architecture (матрица, тест структуры) | AD-01 · T-10 · D12 Q0 |
+| проводка `bindings`, ссылка на секрет `$env` (T128, T127) | формат | 30-adapters | `design/domains/30-adapters.md:44-65` | 22-run (`std/setup` — «что лежит»), 04-architecture | AD-06, AD-08 · PF-03 · N-5 |
+| каталог данных `.lattice/` | формат | 30-adapters | `design/domains/30-adapters.md:94-109` | 12-ledger, 22-run, 23-bench, 01-first-run | D12 Q0 |
+| протокол режима агента (`pending`, `lattice answer`, `.lattice/answers/`) | правило | 30-adapters | `design/domains/30-adapters.md:144-161` | 21-compose, 22-run | AD-09 · ADR-19 · D12 Q2 |
+| `std/load-finding` (T165) | факт | 30-adapters | `design/domains/30-adapters.md:195-206` | 13-rules (RL-06) | AD-11 · ADR-10 · D12 Q3 |
+| `warrant/norm`, `warrant/summary` | типы проекта | 30-adapters (`source-warrant`) | `design/domains/30-adapters.md:166-173` | 20-lens (шаблон), 14-trust (TR-09) | AD-12 · D12 Q5, Q6 |
 
 ## 3. Без владельца
 

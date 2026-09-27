@@ -7,8 +7,8 @@
 сегменты), [13-rules](13-rules.md) (способности, `reads`/`writes`, `impl.pins`), [14-trust](14-trust.md) (`trust()`,
 `policy.lens`), [15-catalog](15-catalog.md) (живость, устаревание, индекс потребителей); контракт стадий и `Ctx` —
 [22](22-run.md). Порт `judge` определяет этот домен (ADR-24); реализации — [30](30-adapters.md).
-**Используют:** compose (кандидаты, `judge.verify`), identity-grain (`judge.verify` по карточкам), run (стадии),
-bench (метрики поиска).
+**Используют:** adapters (реализации `judge`), compose (кандидаты, `judge.verify`), identity-grain (`judge.verify` по
+карточкам), run (стадии), bench (метрики поиска).
 
 ## Модель
 
