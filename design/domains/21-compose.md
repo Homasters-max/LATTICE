@@ -18,9 +18,9 @@
 | Объект | Тип | Вид | Тело / роли | Зерно, ключ, `writers` |
 |---|---|---|---|---|
 | потребность | `std/need` | сущность | `{scope: ref, label, terms: [ref]}` | — (ключ потребности — индекс) |
-| подсказка | `std/cue` | факт | `{of: {target: need \| блок@n \| term}, value: "текст"}` | ключ `[target, norm(value)]`; любой |
+| подсказка | `std/cue` | факт | `{of: {target: need \| блок@n \| term}, value: "текст", from?, policy?}` | ключ `[target, norm(value)]`; любой |
 | решение | `std/solution` | сущность | `{need: ref, form: "set" \| "graph"}` | `[need]` — одно решение на потребность |
-| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок@n}, value: true \| false, reason, found_by}` | ключ `[group, member]`; владелец или допущенный |
+| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок@n}, value: true \| false, reason, found_by, from?, policy?}` | ключ `[group, member]`; владелец или допущенный |
 | связь | `std/link` | факт | `{of: {group: solution, from: блок, to: блок}, value: true \| false}` | ключ `[group, from, to]`; как у `std/member` |
 | snapshot | `core/snapshot` | значение | `{of: solution, members: [ref@n], links: [[from@n, to@n]]}` | содержимое |
 | пробел | `std/gap` | событие | `{need, scope, kind: "absent" \| "coverage", places?: [Place], note?}` | — |
@@ -43,6 +43,8 @@
   доменов (`core/member`) пишет владелец; состав решений — Composer и обучение по допуску
   `core/grant {create: ["std/member"]}` ([15](15-catalog.md)). Допуск задаётся по типу — поэтому типы разные.
   `found_by: "lens" | "self-search" | "verdict"` — как член попал в решение (обучение читает, [22](22-run.md)).
+- **Строки обучения** — `std/member` и `std/cue` с `from` (вердикт) и `policy@rev`; в `rules` обоих типов — гейт
+  `learning-gate` по `from` ([13](13-rules.md) §2, [22](22-run.md) §6, ADR-29).
 - Членство — факты: состав калибруется вердиктами без новых версий решения (P4). Snapshot фиксирует, что именно
   было выдано; его статус (`fresh` / `stale` / `broken`) вычисляет индекс `snapshots` ([12](12-ledger.md)).
 - **Форма** — явное поле (ADR-17): `set` — знания, набор без связей; `graph` — способности, связи ацикличны. Граф
@@ -79,7 +81,7 @@ frame ─► recall ─┬─ fresh, доверие ок ───────�
 ```
 
 **Повтор решения (`recall`).** Кандидаты в «ту же потребность» — потребности области с тем же ключом (кроме
-отказанных `std/distinct`) ∪ top-N (5) потребностей области по BM25 над их подсказками. Ключ — индекс, не фильтр:
+отказанных `std/distinct` и тех, чью подсказку с этой формулировкой отверг вердикт — [22](22-run.md) §6) ∪ top-N (5) потребностей области по BM25 над их подсказками. Ключ — индекс, не фильтр:
 перефраз, для которого `lexicon` вывел другие термины, тоже доходит до сравнения (T-8).
 
 1. Точный повтор нормализованного текста подсказки кандидата → та же (`by: exact`).
@@ -94,7 +96,7 @@ frame ─► recall ─┬─ fresh, доверие ок ───────�
 с трудными отрицательными примерами проекта, обе ошибки, `dev`; [23](23-bench.md)); `top_n` 5; `calibrated_for`
 `{adapter, model, prompt_hash}` — рантайм отказывает при расхождении с judge из `std/setup` ([22](22-run.md),
 ADR-28). Повтор решения — названное исключение ADR-13: выдача без поиска обратима, ошибку ловит вердикт
-(`same_need: false` → `std/distinct`). Доверие решения при повторе — [14](14-trust.md) §5, §7: `settled` и
+(`same_need: false` → утверждение −1 на подсказку-формулировку, [22](22-run.md) §6). Доверие решения при повторе — [14](14-trust.md) §5, §7: `settled` и
 ≥ `observed` — выдать; `inferred` — выдать с пометкой; `contested` или `overruled` — заново через LENS.
 Формулировка, признанная той же, — подсказка к потребности (`inferred`); новая потребность — сущность и подсказка.
 
@@ -108,7 +110,7 @@ ADR-28). Повтор решения — названное исключение
 |---|---|---|---|---|
 | `frame` | Composer (`frame`) | задача → 1…`max_needs` (5) атомарных потребностей: одна потребность — одна область; междоменная задача → несколько | `request.task`, `request.scope` | `text`, `scope` |
 | `recall` | код + judge (+ Composer `confirm-same`) | §3 | `norm`, `scope`, `terms` | `key`, `need`, `recall` (`solution`, `snapshot`, `status`, `by`, `p`), `rows`, `done` |
-| `recheck` | Composer (`recheck`) + код | `stale`: только изменённые члены — «всё ещё отвечает?»; для `graph` — затем `acyclic` и совместимость концов связей (выход `from` → вход `to`, [13](13-rules.md) §3) на новом snapshot'е | `recall` | `recall`, `selection`, `done` |
+| `recheck` | Composer (`recheck`) + код | `stale`: только изменённые члены — «всё ещё отвечает?»; для `graph` — затем `acyclic` и совместимость концов связей (выход `from` → вход `to`, [13](13-rules.md) §3) на новом snapshot'е; подсказки в силе прежней ревизии этих членов — «верна для `@n`?», «да» → `std/cue` на `блок@n` ([22](22-run.md) §6) | `recall` | `recall`, `selection`, `done`, `rows` |
 | `select` | Composer (`select`) | потребность + кандидаты (карточки, `trust`, `marks`) → 1…`max` членов с причиной-цитатой, или `none-fit`; при `threshold: uncalibrated` отказ — здесь | `norm`, `candidates`, `outcome`, `recall` | `selection` |
 | `self-search` | код + Composer (`self-search`) | при `none-fit` или `no-match`: расширить область до всех доменов пространства и `source.grep` — найденное код пишет в `found`, Composer выбирает только из него; перед `absent` — `judge.verify` против потребностей пространства с непустым решением (дубль → промах B, члены — в `found`); не нашлось — `source.find`: места → `coverage`, нет → `absent` | `norm`, `scope`, `outcome`, `selection` | `found`, `selection`, `rows` |
 | `check` | код | проверка выбора (§5) | `selection`, `candidates`, `found` | `findings`, `done` |
@@ -129,9 +131,9 @@ Composer получает кандидатов и может сослаться 
    [20](20-lens.md)) подстрока текста карточки `ref@n`: `title` и `summary`, без подсказок — их писали потребители;
 5. число членов ≤ `max` правила `solution-size`; для `graph` — `acyclic` и совместимость концов.
 
-Нарушение отклоняет выбор целиком: строк решения нет, нарушения — в `findings` (оболочка RL-11) и трассе. Те же
-проверки 3–4 — для `add[]` вердикта при обучении ([22](22-run.md)): закрытый мир и цитата — для всех писателей
-(T-16).
+Нарушение отклоняет выбор целиком: строк решения нет, нарушения — в `findings` (оболочка RL-11) и трассе. Для `add[]`
+вердикта ([22](22-run.md) §5) — проверка 4 и существование `ref@n` в области решения (не п. 3: вердикт добавляет
+то, что LENS не нашёл); закрытый мир и цитата — для всех писателей (T-16).
 
 `check` доказывает **существование и происхождение** ссылки, не уместность выбора: «правдоподобный, но неверный»
 член пройдёт. Уместность защищают вердикт потребителя, доверие ([14](14-trust.md)) и честный отказ `none-fit`.

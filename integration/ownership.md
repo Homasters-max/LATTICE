@@ -41,9 +41,9 @@
 | `judge` (порт) | порт | 20-lens | `design/domains/20-lens.md:100-126` | 21-compose (recall, select), 11-identity-grain (GR-06), 30-adapters (реализации) | ADR-24 · LN-04 · D08 |
 | `composer` (порт) | порт | 21-compose | `design/domains/21-compose.md:192-217` (D09; 30-adapters:25-28 — снять, N-48) | 22-run (runtime) | ADR-24 · CP-14 |
 | `source` (порт) | порт | 21-compose | `design/domains/21-compose.md:200-207` (D09; 30-adapters:30-35 — снять, N-48) | 22-run (deliver), 30-adapters (source-warrant), 15-catalog (`load`) | ADR-24 · CP-14 · 30-adapters/И-9 (R4 Q7) |
-| `exec` (порт) | порт | 22-run | `design/domains/22-run.md:207,214-215` (D10a; 30-adapters:14 — снять, N-51) | — | ADR-24 · D10a Q0
+| `exec` (порт) | порт | 22-run | `design/domains/22-run.md:209,216-217` (D10a; 30-adapters:14 — снять, N-51) | — | ADR-24 · D10a Q0
 | `clock`, `ids` (порт) | порт | 12-ledger | `design/domains/12-ledger.md:120-121` (D05; 30-adapters:15 — ссылкой, N-23) | 10-kernel (`newId(namespace, ulid)`, `revision(input, at)` — аргументами), 22-run (`Deps`, T133) | D02 Q2, ADR-24 |
-| `Meta` | формат | 22-run | `design/domains/22-run.md:201-211` (D10a; 30-adapters:23 — снять, N-51); T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
+| `Meta` | формат | 22-run | `design/domains/22-run.md:203-213` (D10a; 30-adapters:23 — снять, N-51); T135 | 20-lens, 21-compose, 30-adapters (адаптеры отдают) | N-12 · R5 Q7: основной потребитель — рантайм (бюджет, трасса), ADR-24 |
 | `Scored` | формат | 20-lens | `design/domains/20-lens.md:108` | 30-adapters (реализации) | ADR-24 · D08 |
 | `Chosen` | формат | 20-lens | `design/domains/20-lens.md:109` | 30-adapters (реализации) | ADR-24 · D08 |
 | `id` | поле заголовка | 10-kernel | `design/domains/10-kernel.md:25` | все домены | KR-01 |
@@ -97,15 +97,22 @@
 | `core/session.software` | поле | 14-trust | `design/domains/14-trust.md:31` | 30-adapters (хост, парсер) | 14-trust/И-4 · R4 Q5 · T148 |
 | голос группы; `trust().groups`, `trust().policy` | правило, поля | 14-trust | `design/domains/14-trust.md:54-57,154-163` | 12-ledger (раздел `trust`), 20-lens, 23-bench | D07 Q3, Q4 · T147 |
 | `divide(need, parts, by)` | операция | 21-compose | `design/02-glossary.md` T140 | 11-identity-grain (`core/deprecate`) | 21-compose/И-6 · R6 Q5 |
-| окно удаления членства | правило | 22-run | `design/adr/0020-membership-removal-window.md` | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
+| окно удаления членства | правило | 22-run | `design/domains/22-run.md:320-323` (ADR-20) | 14-trust (числа в политике) | ADR-20 · R6 Q6 |
 | регрессионный план (`base`, δ, ротация `test`) | правило | 23-bench | `design/02-glossary.md` T143 | 22-run (гейт ADR-29) | 23-bench/И-14, И-15 · R6 Q9 |
 | `rows` (строки вызова), id новых у стадии | поле, правило | 22-run | `design/domains/22-run.md:105-112`; T156 | 20-lens (`pool`, `judge`), 21-compose (`recall`, `self-search`, `materialize`), 12-ledger (шаг 1 коммита) | RN-09 · D10a Q2, Q3 |
 | стадия `materialize` | способность | 21-compose | `design/domains/21-compose.md:115` | 22-run (конвейер) | RN-08 · D10a Q1 |
-| `describe()` (`Ident`) | метод портов LLM | 22-run | `design/domains/22-run.md:206,212-213`; T154 | 20-lens (`Judge`), 21-compose (`Composer`), 30-adapters | RN-10 · D10a Q5 |
-| таблица сбоев вызова | правило | 22-run | `design/domains/22-run.md:161-169` | 12-ledger (`open()`), 30-adapters (CLI) | RN-11 · D10a Q4 |
-| файл хода `.lattice/runs/<id>.log` | формат | 22-run | `design/domains/22-run.md:171-174`; T155 | 30-adapters (каталог `.lattice/`) | RN-12 · D10a Q6 |
+| `describe()` (`Ident`) | метод портов LLM | 22-run | `design/domains/22-run.md:208,214-215`; T154 | 20-lens (`Judge`), 21-compose (`Composer`), 30-adapters | RN-10 · D10a Q5 |
+| таблица сбоев вызова | правило | 22-run | `design/domains/22-run.md:162-170` | 12-ledger (`open()`), 30-adapters (CLI) | RN-11 · D10a Q4 |
+| файл хода `.lattice/runs/<id>.log` | формат | 22-run | `design/domains/22-run.md:172-175`; T155 | 30-adapters (каталог `.lattice/`) | RN-12 · D10a Q6 |
 | `std/pipeline`, стадии `std/pipeline.solve@1` | тип, объект | 22-run | `design/domains/22-run.md:12-56` | 13-rules (`contract`), 23-bench (регрессия) | RN-01, RN-08 · N-10 |
-| `std/execution@1` | событие | 22-run | `design/domains/22-run.md:176-199`; T98 | 12-ledger (сегмент), 20-lens (`measurement.execution`), 23-bench, 14-trust (гейт — через вердикт) | RN-06 · И-18 · N-10 |
+| `std/execution@1` | событие | 22-run | `design/domains/22-run.md:177-201`; T98 | 12-ledger (сегмент), 20-lens (`measurement.execution`), 23-bench, 14-trust (гейт — через вердикт) | RN-06 · И-18 · N-10 |
+| `std/verdict@1` | событие | 22-run | `design/domains/22-run.md:243-271`; T100 | 14-trust (голос через `via`), 13-rules (`learning-gate`), 30-adapters (`lattice verdict`), 23-bench (`simulate-consumer`) | RN-04, RN-18 · D10b Q3 |
+| строка обучения (`from`, `policy`) | правило, поля | 22-run | `design/domains/22-run.md:275-284`; T157 | 21-compose (`std/member`, `std/cue` — поля `design/domains/21-compose.md:21,23,46`), 14-trust (автор — сессия вердикта, `design/domains/14-trust.md:78`), 13-rules (гейт) | RN-14 · D10b Q1 |
+| `std/learned-assert` | тип | 22-run | `design/domains/22-run.md:276-278`; T158 | 14-trust (утверждения и наследники, `design/domains/14-trust.md:51`) | RN-14 · D10b Q1 |
+| сессия `learn` (`purpose: learn`), поток `verdict → learn` | правило, операция | 22-run | `design/domains/22-run.md:285-299`; T159 | 14-trust (`purpose`), 30-adapters (хост), 15-catalog (допуск) | RN-13 · D10b Q2 |
+| правила обучения (таблица «вердикт → факты»), калибровка | правило | 22-run | `design/domains/22-run.md:303-329` | 14-trust (`calibration`), 21-compose (`recall`, `recheck`) | RN-05, RN-15 · D10b Q4 |
+| путь подсказки (рождение, подтверждение, recheck прежней ревизии) | правило | 22-run | `design/domains/22-run.md:331-340` | 20-lens (LN-10), 21-compose (`recheck`, `design/domains/21-compose.md:113`) | RN-16 · D10b Q5 |
+| `replay`, горизонт replay | операция, правило | 22-run | `design/domains/22-run.md:341-359`; T160 | 12-ledger (срок сегмента), 13-rules (`revalidate`, N-53), 20-lens (кэш) | RN-07, RN-17 · D10b Q6, Q7 |
 
 ## 3. Без владельца
 
@@ -119,8 +126,8 @@ JSON-примеры внутри кода, которые индексатор l
 | `std/capability` | закрыто D04 (N-9): `design/domains/13-rules.md` §3 | 13-rules | тело в прозе «Модели» §3 |
 | `std/card` | закрыто D08 (N-8): `design/domains/20-lens.md` §1 | 20-lens | тело `{of, title, summary, cues}` и шаблон типа `card` — §1, LN-09 |
 | `std/pipeline` | закрыто D10a (N-10): `design/domains/22-run.md:12-56`; `04-architecture.md:86`; `domains/22-run.md:14-36` (тело в JSON-примере) | 22-run | конвейер определён и исполняется целиком в 22-run.md §1,3 |
-| `std/execution` | закрыто D10a (N-10): `design/domains/22-run.md:176-199` | 22-run | событие вызова описано текстом в RN-06; формализация — предложение 22-run/И-18 (`std/execution@1`) |
-| `std/verdict` | `02-glossary.md:139`; `domains/22-run.md:100-105` (тело в JSON-примере) | 22-run | вердикт и цикл обучения — 22-run.md §5-6 (RN-04) |
+| `std/execution` | закрыто D10a (N-10): `design/domains/22-run.md:177-201` | 22-run | событие вызова описано текстом в RN-06; формализация — предложение 22-run/И-18 (`std/execution@1`) |
+| `std/verdict` | закрыто D10b (N-10): `design/domains/22-run.md:243-271` | 22-run | вердикт и цикл обучения — 22-run.md §5-6 (RN-04) |
 
 ## 4. Два определения
 
