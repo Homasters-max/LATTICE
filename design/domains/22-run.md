@@ -4,8 +4,8 @@
 его в факты и утверждения — замкнуть цикл.
 
 **Зависит от:** все домены выше; порты `judge` ([20](20-lens.md) §5), `composer`, `source` ([21](21-compose.md) §8),
-`clock`, `ids` ([12](12-ledger.md) §5) — контракты у владельцев (ADR-24); порт `exec` и формат `Meta` определяет этот
-домен (§3). **Используют:** bench, CLI и хост ([30](30-adapters.md)), адаптеры проектов.
+`ids` ([12](12-ledger.md) §5) — контракты у владельцев (ADR-24); порт `exec` и формат `Meta` определяет этот
+домен (§3). **Используют:** bench, CLI и хост ([30](30-adapters.md)).
 
 ## Модель
 
@@ -127,7 +127,7 @@ type Ctx = {
 
 ```ts
 type Stage = (ctx: Readonly<Ctx>, params: Json, deps: Deps) => Promise<Ctx>
-type Deps  = { judge: Judge; composer: Composer; source: Source; exec: Exec; clock: Clock; ids: Ids; view: View }
+type Deps  = { judge: Judge; composer: Composer; source: Source; exec: Exec; ids: Ids; view: View }   // clock стадиям не нужен: at ставит коммит
 interface View extends LedgerView { trust(target: Ref): Json }   // LedgerView — [12] §5; trust() — [14] «Операции»
 ```
 
@@ -144,7 +144,8 @@ interface View extends LedgerView { trust(target: Ref): Json }   // LedgerView �
 ```text
 run(request, session) → pack:                           // сессию открыл хост (ADR-25)
   setup = view.get(<пространство>/setup)                  // ревизия setup@n
-  x     = newId(namespace, ids.ulid()); seq = view.seq    // id вызова: ключ коммита, файл хода, lattice answer
+  x     = answer ? answer.execution : newId(namespace, ids.ulid())  // id вызова: ключ коммита, файл хода, lattice answer
+  seq   = view.seq                                        // хвост на старте; при перезапуске — на перезапуске
   старт: request по схеме std/ctx; describe() портов, impl.pins, calibrated_for, exec — отказы (RN-10)
   bench = bench-run pass на кортеж исполнения (§1) или null // null → пакет «не проверено стендом» (ADR-29)
   ctx = {request, run: {execution: x, setup, bench}, needs: []}
@@ -171,9 +172,10 @@ run(request, session) → pack:                           // сессию отк
   `execution.bench: null`. Запрет обучения держит коммит (примитив `learning-gate`, [13](13-rules.md) §2), а не рантайм.
 - **Бюджет:** `request.budget` сверяется после каждой стадии по сумме `Meta` вызовов портов; у `std/setup` бюджета
   нет — он в плане стенда ([23](23-bench.md)).
-- **Режим агента** (`composer-caller`, ADR-19): `pending` от Composer останавливает вызов; `answer(x, json)` отдаёт
-  ответ адаптеру (он хранит его до перезапуска, [30](30-adapters.md)) и перезапускает вызов с тем же id; истина —
-  трасса вызова, не хранилище адаптера (Ф-3).
+- **Режим агента** (`composer-caller`, ADR-19): `pending` от Composer останавливает вызов; `answer(x, json)` — хост
+  дописывает ответ в `.lattice/answers/<x>.jsonl` ([30](30-adapters.md) AD-09) и перезапускает вызов с тем же `x` на
+  новом `view` (хвост на перезапуске, `seq` вызова — его); `composer-caller` отдаёт записанные ответы по ключу
+  `(kind, хэш input)`, изменился вход — снова `pending`. Истина — трасса вызова, не файл ответов (Ф-3).
 
 **Сбой → что пишется** (RN-11):
 
@@ -298,11 +300,12 @@ interface Exec { invoke(impl: Impl, r: { ctx: Json; params: Json }): Promise<{ c
 
 **Строки обучения** (T157) — одна форма для всего, что пишет обучение (RN-14):
 
-- Тело несёт `from` — вердикт — и `policy` — `core/trust-policy@rev`, по которой строка выведена (T-15). Типы:
-  `std/member`, `std/cue` ([21](21-compose.md) §2) и утверждение обучения `std/learned-assert` (T158, `extends
-  core/assert@1`): `via` — сессия вердикта, обязательно (ADR-5); `writers` сужены до `grant`.
+- Тело несёт `from` — вердикт — и `policy` — ревизию политики доверия (`std/trust-policy@n` или политика
+  пространства), по которой строка выведена (T-15). Типы: `std/member`, `std/cue` ([21](21-compose.md) §2) и
+  утверждение обучения `std/learned-assert` (T158, `extends core/assert@1`): `via` — сессия вердикта, обязательно (ADR-5); `writers` сужены до `grant`.
 - В `rules` этих типов — примитив `learning-gate` с путём `from` ([13](13-rules.md) §2, ADR-29): строка принимается,
-  только если вердикт не из сессии стенда и у кортежа `verdict.execution` есть `bench-run pass`, или вердикт из сессии
+  только если вердикт не из сессии стенда и у кортежа `verdict.execution` есть `bench-run pass` по плану с `base`
+  на регрессионный план владельца и тем же кортежем (§1), или вердикт из сессии
   `purpose: simulate` (режим `simulate-consumer`, только в копии кампании — [23](23-bench.md) §3).
 - Для доверия автор строки с `from` — сессия вердикта (у утверждения — `via`); основание — по таблице
   [14](14-trust.md) §3 с этим автором (подтверждения других групп дают `observed`), не `derived`.
@@ -323,7 +326,7 @@ learn(verdict)         → строки по таблице ниже → commit(
   `learn` отказывает «вызов истёк», вердикт остаётся неучтённым.
 - Вердикты сессий стенда (`purpose: bench`) не обучают (T-5): `learn` их не берёт, гейт отклонит; сессии
   `purpose: simulate` учат только в копии кампании. Кандидаты в эталоны из решений, выученных вердиктами, — только
-  `split: dev` ([23](23-bench.md), T-5).
+  `subset: dev` ([23](23-bench.md), T-5).
 
 | Вердикт | Диагноз | Что пишется (веса — `calibration.verdict_weights`; утверждения — `std/learned-assert` с `via`) |
 |---|---|---|
@@ -367,7 +370,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 
 `replay(execution)` повторяет вызов на записанном (T-4):
 
-- `view` — на `scan(0, execution.seq)` ([12](12-ledger.md) §5); `clock` — `at` вызова; `ids` — id, выданные
+- `view` — на `scan(0, execution.seq)` ([12](12-ledger.md) §5); `ids` — id, выданные
   стадиями исходного вызова, по порядку (`stages[].ids`, §3).
 - Порты: `judge.score` — баллы из `std/measurement` вызова ([20](20-lens.md) §6); composer, `judge.verify`,
   `judge.choose`, `source.*` — ответы из `calls` трассы (вход и выход — значения по хэшу, §3). Записи нет — ошибка
@@ -424,7 +427,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 | RN-04 | Вердикт — событие `std/verdict@1` на каждое выданное решение: `execution`, диагноз `complete · incomplete · wrong · none · unsure`, член вне `used`/`unused` — нет сигнала; один на `(execution, solution)` — ключ коммита; `add[]` — существование `ref@n` и цитата | обучение различает ошибки; основание факта восстанавливается по вызову; повтор не удваивает обучение. v0.4 · И-10, И-11 · N-10 · Q-66 C-2, C-3 · D10b Q3 |
 | RN-05 | Правила обучения — данные политики (`calibration`: `verdict_weights`, `add_min_verdicts`, `removal_window`); асимметрия: добавить — один вердикт с причиной, удалить — `unused` в 3 из последних 5 выдач по группам | нехватка дороже лишнего; вечное вето «ни разу не `used`» закрепляло ошибку; смена весов — ревизия, её проверяет стенд. v0.4 · ADR-20 · T-15 · И-14, И-15 · П-28 · Q-67 C-1, C-2 |
 | RN-06 | Вызов — одно событие на вызов, трасса стадий — в его теле по схеме `std/execution@1`; оценки judge — отдельные события | событие — на исход вызова, а не на технический шаг; объём журнала дают оценки judge (~200 карточек на потребность), их срок — сегменты хранения ([12](12-ledger.md) §1). v0.4 · ADR-3 · И-17, И-18 · Q-68 C-1, C-3 |
-| RN-07 | Воспроизведение читает журнал: `view` на `seq` вызова, `judge.score` — `std/measurement` вызова, остальные вызовы портов (composer, `judge.verify`, `judge.choose`, `source.*`) — `calls` трассы, `ids` и `clock` — из записи; вызов пишет их и при попадании в кэш; кэш — только ускорение; журнал не пишет | регрессия и аудит без повторной оплаты и без потерь при утрате кэша; доказывает детерминизм кода вокруг LLM, поведение моделей — стенд повторами. v0.4 · T-4 · И-8, И-20, И-21, И-22, И-23 · Ф-3 · Q-69 C-1…C-4 · D10b Q6 · C1 B5, B6 |
+| RN-07 | Воспроизведение читает журнал: `view` на `seq` вызова, `judge.score` — `std/measurement` вызова, остальные вызовы портов (composer, `judge.verify`, `judge.choose`, `source.*`) — `calls` трассы, `ids` — из записи (часов у стадий нет, `at` ставит коммит); вызов пишет их и при попадании в кэш; кэш — только ускорение; журнал не пишет | регрессия и аудит без повторной оплаты и без потерь при утрате кэша; доказывает детерминизм кода вокруг LLM, поведение моделей — стенд повторами. v0.4 · T-4 · И-8, И-20, И-21, И-22, И-23 · Ф-3 · Q-69 C-1…C-4 · D10b Q6 · C1 B5, B6 · C2c Q5 |
 | RN-08 | Список стадий v1 линейный, без условий и возвратов; `intake` нет, `materialize` — стадия | `contract` проверяет чтения по порядку; граф — новой версией интерпретатора. v0.4 · ADR-18 · 10-kernel/И-31 · И-4 · D10a Q1 |
 | RN-09 | Строки коммита готовят стадии (`rows` в `writes`), id новых объектов — у стадии, `expect` — из `view`; рантайм сверяет изменённые пути с `writes` | коммит собирается без знания типов; строки коммита ссылаются друг на друга; граница контракта держится кодом, не честностью объявления. v0.4 · T-3 · T-9 · D10a Q2, Q3, Q7 |
 | RN-10 | Отказ на старте: модель порта ≠ `setup`, код ≠ `impl.pins` или версия отозвана, `calibrated_for` ≠ `describe()` judge, стадия `exec`; нет `bench-run pass` — пакет помечен, вызов разрешён | исполняется ровно закреплённый кортеж; способности проектов — после первого запуска; барьер — на обучении, не на вызове. v0.4 · T-2 · ADR-15 · ADR-19 · ADR-28 · ADR-29 · 20-lens/И-7 · v0.3 вопрос 3 · D10a Q5 |

@@ -14,3 +14,5 @@
 | `remove_unused_sessions` | `removal_window` | ADR-20 | действует |
 | `score.bm25` (стадия) | `bm25` (`std/stage.bm25`) | D08 Q0 (по 22-run, 13-rules) | действует |
 | `score.judge` (стадия) | `judge` (`std/stage.judge`) | D08 Q0 | действует |
+| `split: dev` | `subset: dev` (поле стенда, T176) | C2c Q6 (PF Н-13): `split` — T32 | действует |
+| `split: test` | `subset: test` | C2c Q6 | действует |
