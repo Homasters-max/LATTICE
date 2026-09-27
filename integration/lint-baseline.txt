@@ -1,4 +1,3 @@
-02-glossary.md: T89 — нет в глоссарии
 domains/14-trust.md зависит от domains/12-ledger.md, а в «Используют» у domains/12-ledger.md нет «trust»
 domains/14-trust.md зависит от domains/15-catalog.md, а в «Используют» у domains/15-catalog.md нет «trust»
 domains/20-lens.md зависит от domains/12-ledger.md, а в «Используют» у domains/12-ledger.md нет «lens»
