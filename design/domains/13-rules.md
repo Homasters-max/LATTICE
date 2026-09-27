@@ -91,7 +91,7 @@
 { "id": "std/stage.bm25", "type": "std/capability@1",
   "body": { "title": "BM25 по карточкам пула",
             "input": {"$ref": "std/ctx@1"}, "output": {"$ref": "std/ctx@1"},
-            "reads": ["query", "pool"], "writes": ["ranked"],
+            "reads": ["needs[].norm", "needs[].pool"], "writes": ["needs[].scores.bm25"],
             "impl": { "adapter": "builtin", "name": "lens.bm25",
                       "pins": { "package": "lattice-lens@0.4.0", "hash": "sha256:…" } },
             "determinism": "deterministic" } }

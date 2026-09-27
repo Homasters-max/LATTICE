@@ -12,3 +12,5 @@
 | `sessions` | `groups` (поле `trust()`) | D07 Q4 | действует |
 | `observe_sessions` | `observe_groups` | D07 Q4 (следствие) | действует |
 | `remove_unused_sessions` | `removal_window` | ADR-20 | действует |
+| `score.bm25` (стадия) | `bm25` (`std/stage.bm25`) | D08 Q0 (по 22-run, 13-rules) | действует |
+| `score.judge` (стадия) | `judge` (`std/stage.judge`) | D08 Q0 | действует |
