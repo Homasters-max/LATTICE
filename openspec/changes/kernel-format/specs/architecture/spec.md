@@ -13,10 +13,11 @@
 Тест структуры SHALL разбирать файлы проверяемого каталога ядра рекурсивно, с подкаталогами: `src/kernel/` проекта
 или каталога-фикстуры. Корень проверяемого каталога — граница ядра. Файл SHALL отклоняться по правилам:
 - `non-ts-file` — файл каталога ядра, имя которого не оканчивается на `.ts`;
-- `import-outside-kernel` — статический `import`, `import type` или `export … from` модуля, который не является файлом
-  `*.ts` внутри корня проверяемого каталога, кроме спецификатора ровно `node:crypto` (`crypto`, `node:crypto/…`,
-  пакеты, прочие встроенные модули и файлы с другим расширением — нарушение); импорт внутри корня решается по пути,
-  существование файла не требуется;
+- `import-outside-kernel` — статический `import`, `import type`, `export … from`, `import x = require(…)` или
+  `import("…")` в позиции типа модуля, который не является файлом `*.ts` внутри корня проверяемого каталога, кроме
+  спецификатора ровно `node:crypto` (`crypto`, `node:crypto/…`, пакеты, прочие встроенные модули и файлы с другим
+  расширением — нарушение); импорт внутри корня решается по пути, существование файла не требуется; директива
+  `/// <reference …>` — нарушение;
 - `crypto-import` — импорт из `node:crypto` чего-либо, кроме именованного импорта значения `createHash` (в том числе с
   переименованием `import { createHash as h }`): импорт по умолчанию, пространства имён, без привязок, `import type`,
   реэкспорт и прочие имена (`randomBytes`, `randomUUID`, `getRandomValues`) — нарушение;
@@ -26,23 +27,30 @@
   `TypeError`, `RangeError`, `ArrayBuffer`, `DataView`, `Uint8Array`, `Date`, `undefined`, `NaN`, `Infinity`
   (`Math` и `Date` — с ограничениями `nondeterminism`); выражение `import.meta`; расширение списка — только правкой
   этого требования;
-- `nondeterminism` — свободный идентификатор `Date` где-либо, кроме вызываемого выражения `new Date(x, …)` с первым
-  аргументом не spread (вызов `Date(…)`, `Date.now`, `new Date()`, передача `Date` значением —
-  `Reflect.construct(Date, [])` — нарушение); свободный идентификатор `Math` где-либо, кроме доступа к свойству через
-  точку `Math.<имя>` с именем не `random` (`Math.random`, `Math["random"]`, `const { random } = Math`, передача `Math`
-  значением — нарушение); вызов метода, зависящего от локали или часового пояса, по имени независимо от объекта: имя
-  с префиксом `toLocale`, `localeCompare`, `getTimezoneOffset`, `toDateString`, `toTimeString` и локальные геттеры
-  `Date` — `getFullYear`, `getMonth`, `getDate`, `getDay`, `getHours`, `getMinutes`, `getSeconds`,
-  `getMilliseconds`.
+- `nondeterminism` — свободный идентификатор `Date` где-либо, кроме закрытого перечня форм: `new Date(x)` ровно с
+  одним аргументом, не spread и не строковым литералом, и только как объект доступа через точку к `toISOString`,
+  `getTime`, `valueOf` или `getUTC…` сразу за ним (`new Date(x).toISOString()`); прочее — вызов `Date(…)`, `Date.now`,
+  `new Date()`, `new Date(y, m, …)`, `new Date("…")`, `new Date(x)` в переменной или аргументе, передача `Date`
+  значением (`Reflect.construct(Date, [])`) — нарушение; свободный идентификатор `Math` где-либо, кроме доступа через
+  точку к точной функции `Math.floor`, `Math.ceil`, `Math.trunc`, `Math.abs`, `Math.min`, `Math.max`, `Math.sign`
+  (`Math.random`, `Math.sin`, `Math["random"]`, `const { random } = Math`, передача `Math` значением — нарушение);
+  доступ к методу, зависящему от локали или часового пояса, по имени независимо от объекта, через точку или
+  вычисляемым доступом `x["<имя>"]`: имя с префиксом `toLocale`, `localeCompare`, `getTimezoneOffset`,
+  `toDateString`, `toTimeString`, местные геттеры и сеттеры `Date` — `getFullYear`, `getMonth`, `getDate`, `getDay`,
+  `getHours`, `getMinutes`, `getSeconds`, `getMilliseconds`, `setFullYear`, `setMonth`, `setDate`, `setHours`,
+  `setMinutes`, `setSeconds`, `setMilliseconds`, `getYear`, `setYear`.
 
 Свободный идентификатор — идентификатор в позиции значения, не связанный ни в одной объемлющей области видимости файла
 (модуль, функция, блок, класс, `catch`, параметры, импорты). Сокращённое свойство `{ process }` — ссылка на значение.
 Имя свойства после точки, ключ литерала объекта (кроме сокращённого), имя члена класса, имя члена интерфейса или
-типа, любая позиция типа и метка — не свободные идентификаторы.
+типа, любая позиция типа и метка — не свободные идентификаторы. Амбиентные объявления (`declare …`, `declare global`,
+`declare module`) имя в позиции значения не связывают; `arguments` — свободный идентификатор. Тест ловит случайное
+нарушение, а не намеренный обход (`Object.constructor(…)`): от намеренного защищает ревью.
 
-Сама проверка SHALL отказывать, если проверяемого каталога нет или в нём нет файлов `*.ts` (`no-kernel`), и на файле,
-разбор которого даёт синтаксическую ошибку TypeScript (`parse-error`). Отказ теста SHALL называть файл, строку и
-идентификатор правила. Проверка SHALL работать по разбору исходного текста, без исполнения проверяемых файлов.
+Сама проверка SHALL отказывать, если проверяемого каталога нет или в нём нет файлов `*.ts` (`no-kernel`, отказ
+называет каталог), и на файле, разбор которого даёт синтаксическую ошибку TypeScript (`parse-error`, отказ называет
+файл и строку первой диагностики; остальные файлы проверяются, их нарушения выдаются вместе). Прочие отказы теста
+SHALL называть файл, строку и идентификатор правила. Проверка SHALL работать по разбору исходного текста, без исполнения проверяемых файлов.
 
 #### Scenario: Ядро проекта проходит тест структуры
 <!-- id: SCN-AR-001 -->
@@ -64,7 +72,13 @@
   (`forbidden-global`); файл, где `function f(console) { return console }` и `function g() { return console }`
   (`forbidden-global` — только строка в `g`); `new WebSocket("…")` (`forbidden-global`); `import.meta.url`
   (`forbidden-global`); `structuredClone(x)` (`forbidden-global`); `s.localeCompare(t)` (`nondeterminism`);
-  `new Date(0).getHours()` (`nondeterminism`); `n.toLocaleString()` (`nondeterminism`); `Date.now()` (`nondeterminism`); `new Date()` (`nondeterminism`);
+  `new Date(0).getHours()` (`nondeterminism`); `n.toLocaleString()` (`nondeterminism`); `Date.now()` (`nondeterminism`);
+  `new Date(2026, 0, 1)` (`nondeterminism`); `new Date(0).setHours(1)` (`nondeterminism`); `String(new Date(0))`
+  (`nondeterminism`); `new Date(0)["getHours"]()` (`nondeterminism`); `const d = new Date(0)` (`nondeterminism`);
+  `Math.sin(1)` (`nondeterminism`); `declare const process: any; process.env.HOME` (`forbidden-global`);
+  `arguments.length` (`forbidden-global`); `import fs = require("node:fs")` (`import-outside-kernel`);
+  `let t: import("../ledger/types.ts").T` (`import-outside-kernel`); `/// <reference path="../x.ts" />`
+  (`import-outside-kernel`); `new Date()` (`nondeterminism`);
   `Date(0)` (`nondeterminism`); `Reflect.construct(Date, [])` (`nondeterminism`); `Math.random()` (`nondeterminism`);
   `Math["random"]()` (`nondeterminism`); `const { random } = Math` (`nondeterminism`); и файлами без нарушений:
   импорт `{ createHash as h }` из `node:crypto` и `./hash.ts` с вызовом `new Date(0).toISOString()`,
@@ -85,15 +99,17 @@
 Вызов теста — `test`, `it` и их формы `.skip`, `.only`, `.todo`; вызов набора — `describe`, `suite` и их формы
 `.skip`, `.only`, `.todo`. Имена распознаются по импорту из `node:test`: именованному, в том числе с переименованием
 (`import { test as t }`), по умолчанию (`import t from "node:test"` — это `test`) и через пространство имён
-(`import * as nt` — `nt.test`, `nt.describe`). Подтест `t.test(…)` через контекст теста — не вызов теста этого
-правила. Отказ SHALL называть файл и строку вызова.
+(`import * as nt` — `nt.test`, `nt.describe`). Функция набора — функциональное выражение или стрелочная функция прямо в аргументе вызова
+набора; функция, переданная ссылкой (`describe("x", body)`), — не функция набора. Имя, затенённое локальной
+привязкой, — не вызов теста. Подтест `t.test(…)` через контекст теста — не вызов теста этого правила. Отказ SHALL называть файл и строку вызова.
 
 #### Scenario: Тест вне describe найден
 <!-- id: SCN-AR-003 -->
 - **WHEN** тест структуры запускается на фикстуре с файлом, где на верхнем уровне модуля стоят `test(…)`, `test.skip(…)`,
   `t2(…)` при `import { test as t2 } from "node:test"` и `nt.it(…)` при `import * as nt from "node:test"`, один
   `it(…)` — внутри обычной функции вне набора, а внутри наборов — `test(…)` в `describe(…)`, `it(…)` в `suite(…)`,
-  `test(…)` в `describe.skip(…)` и подтест `t.test(…)` внутри `test(…)` в `describe(…)`; затем на каталоге `test/`
-  проекта
-- **THEN** на фикстуре найдены ровно пять нарушений — `test`, `test.skip`, `t2`, `nt.it` верхнего уровня и `it` вне
-  набора — с номерами строк; в каталоге `test/` проекта нарушений нет
+  `test(…)` в `describe.skip(…)` и подтест `t.test(…)` внутри `test(…)` в `describe(…)`; `test(…)` внутри функции
+  `body` уровня модуля при `describe("x", body)`; вызов `test()` внутри `function f(test) { … }`; затем на каталоге
+  `test/` проекта
+- **THEN** на фикстуре найдены ровно шесть нарушений — `test`, `test.skip`, `t2`, `nt.it` верхнего уровня, `it` вне
+  набора и `test` в `body` — с номерами строк; в каталоге `test/` проекта нарушений нет

@@ -194,6 +194,28 @@ maintainer'а; D-1, D-2 reviewer'а и F-27 — `UNK-KR-006`…`UNK-KR-008`.
 | F-27 | `namespace` ≤ 64 символов (`UNK-KR-008`) | REQ-KR-005, SCN-KR-010, SCN-KR-011, SCN-KR-012 |
 | P-1 | Задача 3.2 отделена от 3.1 | tasks.md |
 
+## Решения по ходу реализации
+
+Review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0, `PROVEN`: MAJOR 3, MINOR 5, INFO 3) — строками здесь, без раунда 4 (решение
+maintainer'а в чате, R-L0-07). I-1 — решение maintainer'а
+([PR #2](https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867606665), D-1 — вариант A); I-2…I-11 — по
+рекомендациям находок; правка delta spec — под waiver `spec-approved`, который активирует maintainer.
+
+| # | Решение | Где |
+|---|---|---|
+| I-1 | F-1: `Date` — закрытый перечень форм: `new Date(x)` ровно с одним аргументом (не spread, не строковый литерал), и только как объект доступа `.toISOString`, `.getTime`, `.valueOf`, `.getUTC*` сразу за ним (`new Date(x).toISOString()`); прочее употребление `new Date(x)` (в том числе в переменную) — `nondeterminism`. Методы по имени — плюс местные сеттеры (`setFullYear`, `setMonth`, `setDate`, `setHours`, `setMinutes`, `setSeconds`, `setMilliseconds`), `getYear`, `setYear`, и вычисляемый доступ `x["<имя>"]` к любому имени перечня | REQ-AR-001, SCN-AR-002 |
+| I-2 | F-2: амбиентные объявления (`declare …`, `declare global`, `declare module`) имя в позиции значения не связывают; `arguments` — свободный идентификатор вне списка, `forbidden-global` | REQ-AR-001, SCN-AR-002 |
+| I-3 | F-3: значение первого `$ref`, отклонённое по `lone-surrogate` или `unassigned`, — не ссылка: объект получает `bad-ref`; `{"$ref":"<D800>"}` — `bad-ref` `""`, `lone-surrogate` `/$ref` | REQ-KR-002, SCN-KR-017 |
+| I-4 | F-4: `import x = require(…)`, `import("…")` в позиции типа — `import-outside-kernel` (для `node:crypto` — `crypto-import`) по тому же правилу пути; директива `/// <reference …>` — `import-outside-kernel` | REQ-AR-001, SCN-AR-002 |
+| I-5 | F-5: функция набора — функциональное выражение или стрелочная функция прямо в аргументе вызова набора; функция, переданная ссылкой, — не набор; затенённое локальной привязкой имя теста — не вызов теста | REQ-AR-002, SCN-AR-003 |
+| I-6 | F-6: `no-kernel` называет каталог; `parse-error` — файл и строку первой диагностики, остальные файлы проверяются, их нарушения выдаются вместе | REQ-AR-001 |
+| I-7 | F-7: массив — `Array.isArray` и прототип `Array.prototype`, иначе `not-json` с `path` значения; неперечислимый индекс — `not-json` `/i` | REQ-KR-003, SCN-KR-019 |
+| I-8 | F-8: векторы `valueId` — отказы в SCN-KR-009, неверный тип в SCN-KR-020 | SCN-KR-009, SCN-KR-020 |
+| I-9 | F-9: тест структуры ловит случайное нарушение, не намеренный обход (`Object.constructor(…)`, `new Error().stack`); защита от намеренного — ревью | этот design, D-5 |
+| I-10 | F-10: `Math.<имя>` — только точные функции `floor`, `ceil`, `trunc`, `abs`, `min`, `max`, `sign`; прочие — `nondeterminism` | REQ-AR-001, SCN-AR-002 |
+| I-11 | F-11: проверка предусловия Unicode ≥ 16.0 в среде потребителя ядра — задача Change, который вводит исполнение вне тестов (`ledger-commit`); здесь — тест среды проекта | этот design, D-7 |
+| I-12 | D-6: корневые `package.json`, `package-lock.json`, `tsconfig.json` вне `write_scope` Run `implement` (guard `deny`) — патч во временном каталоге вне проекта, `git apply` — акт maintainer'а, как pin-v0-8-1 D-2; агент проверяет `git diff` и коммитит | tasks 1.1 |
+
 ## Open Questions
 
 Нет. `UNK-KR-001`…`UNK-KR-004` решены maintainer'ом по рекомендациям (proposal.md); `UNK-KR-005` — вариант A по

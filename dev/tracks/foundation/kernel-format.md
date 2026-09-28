@@ -5,7 +5,7 @@ change: kernel-format
 branch: impl/kernel-format
 pr: null
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 17
+focus: 19
 waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
@@ -24,13 +24,15 @@ steps:
   - {id: 14, actor: human, do: "одобрение spec-PR #2 и решение D-1 review 3 (формы Date: закрытый перечень или запреты) — для I-N impl-PR", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867606665"}
   - {id: 15, actor: agent, do: "verify заново и transition SPECIFIED последним коммитом (без коммитов между ними)", done: "коммит «kernel-format: transition SPECIFIED» в PR #2"}
   - {id: 16, actor: human, do: "merge spec-PR #2", done: "3776ea7 (merge PR #2, после зелёного job)"}
-  - {id: 17, actor: agent, do: "impl-PR: verify, APPROVED --ref PR #2 --by Homasters-max, IMPLEMENTING — первый коммит", done: null}
-  - {id: 18, actor: agent, do: "Run implement: I-N по review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0, D-1 — вариант A) и правка delta spec; waiver spec-approved (PROPOSED); код и тесты по tasks.md", done: null}
-  - {id: 19, actor: human, do: "активация waiver spec-approved — команду присылает агент", done: null}
-  - {id: 20, actor: agent, do: "verify, VERIFYING последним коммитом; локальный warrant ci; push, impl-PR", done: null}
-  - {id: 21, actor: human, do: "merge impl-PR после зелёного job", done: null}
-  - {id: 22, actor: agent, do: "archive-PR: ci fetch, MERGED, archive; W-003 verified", done: null}
-  - {id: 23, actor: human, do: "merge archive-PR", done: null}
+  - {id: 17, actor: agent, do: "impl-PR: verify, APPROVED --ref PR #2 --by Homasters-max, IMPLEMENTING — первый коммит", done: "244a91e"}
+  - {id: 18, actor: agent, do: "Run implement: I-N по review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0, D-1 — вариант A) и правка delta spec; waiver spec-approved (PROPOSED); код и тесты по tasks.md", done: "RUN-01M3KQ7AGCEBR2PRG98QRPHCA2; WAV-2026-001 (PROPOSED); коммит «kernel-format: implement — ядро формата v1…»"}
+  - {id: 19, actor: human, do: "git apply патча корневых файлов (I-12: package.json, package-lock.json, tsconfig.json) — команду присылает агент", done: null}
+  - {id: 20, actor: agent, do: "коммит патча; npm ci; Run implement: tests-passed со SCN-AR, typecheck, отметки tasks.md; push, impl-PR (draft)", done: null}
+  - {id: 21, actor: human, do: "активация WAV-2026-001 после чтения diff delta spec в impl-PR и коммит в ветку — команду присылает агент", done: null}
+  - {id: 22, actor: agent, do: "verify, VERIFYING последним коммитом; локальный warrant ci; PR ready", done: null}
+  - {id: 23, actor: human, do: "merge impl-PR после зелёного job", done: null}
+  - {id: 24, actor: agent, do: "archive-PR: ci fetch, MERGED, archive; W-003 verified", done: null}
+  - {id: 25, actor: human, do: "merge archive-PR", done: null}
 rules:
   - id: R-KF-01
     text: F-5 сам не решать — только blocking UNK к maintainer'у
@@ -60,3 +62,6 @@ spec-PR #2, risk HIGH. Review 1 — NOT_PROVEN: BLOCKER 1, MAJOR 10, MINOR 10, I
 - 2026-09-28 — одобрение spec — комментарием, не `gh pr review --approve`: автор PR — аккаунт maintainer'а, свой PR
   GitHub одобрить не даёт. D-1 review 3 — вариант A (закрытый перечень форм `Date`) — вход для `I-N` impl-PR вместе с
   F-2, F-3 review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0).
+- 2026-09-28 — корневые `package.json`, `package-lock.json`, `tsconfig.json` — вне `write_scope` Run implement (guard
+  `deny`), `npm install` в корне — обход `deny`: патч maintainer'а (design I-12). `typescript` 5.9.3, не 7.x: 7.0 —
+  нативный компилятор без прежнего JS API (`ts.createSourceFile`, design D-5).
