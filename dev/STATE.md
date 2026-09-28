@@ -85,7 +85,7 @@ rules:
   - id: R-L0-08
     text: Каждый тест node:test — внутри describe() (CI на v0.8.0 не видит тестов вне describe)
     force: advisory
-    status: active
+    status: retired
     source: W-003
     owner: human:Homasters-max
     when: {operation: implement}
@@ -112,3 +112,5 @@ rules:
 - 2026-09-28 — R-L0-08 `until` → W-003 verified: junit 0.8.1 проверяется в impl-PR kernel-format, не archive
   pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
 - 2026-09-28 — pin-v0-8-1 ARCHIVED (286829b, PR #7); switch при archive — T1, T2 не наступили; фокус → foundation.
+- 2026-09-28 — kernel-format ARCHIVED (archive-PR #10); switch при archive — T1, T2 не наступили; R-L0-08 retired —
+  «тест внутри describe» теперь норма REQ-AR-002, её держит тест структуры.
