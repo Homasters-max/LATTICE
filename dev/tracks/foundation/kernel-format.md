@@ -5,7 +5,7 @@ change: kernel-format
 branch: spec/kernel-format
 pr: 2
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 12
+focus: 13
 waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
@@ -19,8 +19,11 @@ steps:
   - {id: 9, actor: agent, do: "раунд 3: D-1, D-2 review 2 — blocking UNK-KR-006, UNK-KR-007 (+ UNK-KR-008, F-27), вопрос в PR #2", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867300653, #issuecomment-5867318422"}
   - {id: 10, actor: human, do: "решение UNK-KR-006, UNK-KR-007, UNK-KR-008 комментарием в PR #2", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215"}
   - {id: 11, actor: agent, do: "Run specify: F-1…F-27 review 2 (EVID-01M3KNFKZ2PE3AEHC569ZTF3B7), P-1 (tasks.md 3.2), решения UNK-KR-006…008", done: "RUN-01M3KNZAC5S8G0CNPJG4TV6AS4, RUN-01M3KP9D1RXYQY32HZAHP9PFC1; карта — design.md «Решения по review 2»"}
-  - {id: 12, actor: agent, do: "review 3; MAJOR review 3 — I-N в impl-PR (R-L0-07), без раунда 4", done: null}
-  - {id: 13, actor: agent, do: "warrant verify, PR ready; далее transition SPECIFIED после одобрения", done: null}
+  - {id: 12, actor: agent, do: "review 3; MAJOR review 3 — I-N в impl-PR (R-L0-07), без раунда 4", done: "EVID-01M3KPSTHCHC1K4G92MZS2PBK0 (PROVEN: MAJOR 3, MINOR 5, INFO 3)"}
+  - {id: 13, actor: agent, do: "warrant verify, PR #2 ready, итог и план I-N по review 3 в PR", done: null}
+  - {id: 14, actor: human, do: "одобрение spec-PR #2 и решение D-1 review 3 (формы Date: закрытый перечень или запреты) — для I-N impl-PR", done: null}
+  - {id: 15, actor: agent, do: "verify заново и transition SPECIFIED последним коммитом (без коммитов между ними)", done: null}
+  - {id: 16, actor: human, do: "merge spec-PR #2", done: null}
 rules:
   - id: R-KF-01
     text: F-5 сам не решать — только blocking UNK к maintainer'у
