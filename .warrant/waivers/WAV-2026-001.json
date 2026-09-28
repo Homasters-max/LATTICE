@@ -1,0 +1,16 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-001",
+  "change": "kernel-format",
+  "gate": "spec-approved",
+  "reason": "I-1…I-11 (design.md, «Решения по ходу реализации»): правка delta spec после approval по review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0): формы Date — закрытый перечень (I-1, решение maintainer'а PR #2 issuecomment-5867606665), амбиентные объявления и arguments (I-2), bad-ref при отклонённом значении $ref (I-3), формы импорта (I-4), функция набора и затенение (I-5), отказы самой проверки (I-6), массив и неперечислимый индекс (I-7), векторы valueId (I-8), точные функции Math (I-10)",
+  "risk": "MEDIUM",
+  "compensating_controls": [
+    "maintainer читает diff delta spec в impl-PR до активации",
+    "каждая правка — строка I-N в design.md и вектор сценария, проверенный тестом"
+  ],
+  "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
+  "expires_at": "2026-10-12",
+  "waiver_state": "ACTIVE"
+}

@@ -1,0 +1,1412 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3KQ7AGCEBR2PRG98QRPHCA2",
+  "change": "kernel-format",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/kernel-format/tasks.md",
+    "openspec/changes/kernel-format/design.md",
+    "openspec/changes/kernel-format/specs/**"
+  ],
+  "scope": [],
+  "branch": "impl/kernel-format",
+  "started_at": "2026-09-28T09:58:32.248Z",
+  "finished_at": "2026-09-28T10:17:29.330Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:e33ef2a7e1654eef1b815ac4459e096357846ffb4d2c88c11832081a717b40e1",
+  "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+  "guard_events": [
+    {
+      "at": "2026-09-28T09:58:33.301Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "package.json"
+      ],
+      "decision": "deny",
+      "reason": "package.json outside the Run RUN-01M3KQ7AGCEBR2PRG98QRPHCA2 of kernel-format: write_scope: src/**, test/**, openspec/changes/kernel-format/tasks.md, openspec/changes/kernel-format/design.md, openspec/changes/kernel-format/specs/**",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:34.331Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "tsconfig.json"
+      ],
+      "decision": "deny",
+      "reason": "tsconfig.json outside the Run RUN-01M3KQ7AGCEBR2PRG98QRPHCA2 of kernel-format: write_scope: src/**, test/**, openspec/changes/kernel-format/tasks.md, openspec/changes/kernel-format/design.md, openspec/changes/kernel-format/specs/**",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:35.322Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:36.286Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:37.225Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:38.160Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:39.078Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/index.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:58:55.223Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:28.502Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:29.519Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "maintainer-acts",
+        "process",
+        "session-start"
+      ]
+    },
+    {
+      "at": "2026-09-28T09:59:40.646Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:41.659Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:47.884Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:48.913Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:52.412Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:53.478Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:55.976Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:56.998Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:58.175Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:59:59.193Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:07.965Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:09.023Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:16.146Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:17.212Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:18.138Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:19.150Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:20.088Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:21.144Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:22.068Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:23.117Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:24.034Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:25.073Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:25.982Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:26.999Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:27.932Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:28.969Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:30.565Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:31.595Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/specs/kernel/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:00:36.689Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:02:18.848Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:36.436Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/unicode16.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:37.408Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/unicode16.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:45.270Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/types.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:46.284Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/types.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:54.221Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/ref.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:03:55.248Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/ref.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:02.518Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/ids.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:03.486Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/ids.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:42.846Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/canonical.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:43.831Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/canonical.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:55.295Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/hash.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:04:56.332Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/hash.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:05:05.528Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/refs.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:05:06.488Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/refs.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:05:19.562Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/revision.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:05:20.590Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/revision.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:28.298Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/input.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:29.289Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/input.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:42.744Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "src/kernel/index.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:43.756Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "src/kernel/index.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:51.955Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:54.839Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:55.831Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:06:56.865Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`node --experimental-strip-types --test test/kernel/x.test.ts` runs check tests-passed directly (prefix `node {--experimental-strip-types, --test}`, execution.exclusive: true): it runs only through warrant check",
+      "findings": [],
+      "rules_shown": [],
+      "argv": [
+        "node",
+        "--experimental-strip-types",
+        "--test",
+        "test/kernel/x.test.ts"
+      ]
+    },
+    {
+      "at": "2026-09-28T10:07:12.156Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:07:59.506Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:08:14.617Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:08:29.382Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/jcs-vectors.json"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:08:30.439Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/jcs-vectors.json"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:08:36.892Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/jcs-vectors.json"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:08:37.903Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/jcs-vectors.json"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:10:48.782Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:10:49.813Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [
+        "ID_DANGLING"
+      ],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:10:59.562Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:00.576Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:01.524Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:02.503Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:03.428Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:04.405Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/vectors.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:35.576Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/scenarios.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:36.577Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/scenarios.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:53.863Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/contract.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:54.870Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/contract.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:58.165Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/environment.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:11:59.188Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/environment.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:12:06.200Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:12:26.160Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:12:38.068Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:12:50.283Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:13:02.242Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:15:37.949Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:15:38.961Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:15:55.275Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:01.497Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/imports.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:02.536Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/imports.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:03.452Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/reference.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:04.490Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/reference.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:05.497Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/sub/outside.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:06.477Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/sub/outside.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:07.413Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/helper.js"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:08.449Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/helper.js"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:09.367Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/crypto.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:10.356Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/crypto.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:11.289Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/globals.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:12.264Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/globals.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:13.188Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/shadow.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:14.167Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/shadow.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:15.076Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/declare.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:16.045Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/declare.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:16.996Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/time.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:17.980Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/time.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:18.876Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/clean.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:19.840Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/clean.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:20.811Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/sub/inside.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:21.776Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/sub/inside.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:22.749Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/local.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:23.746Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/kernel/local.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:34.998Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/broken/broken.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:35.997Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/broken/broken.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:36.919Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/broken/other.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:37.897Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/broken/other.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:38.807Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/tests/describe.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:39.786Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/fixtures/structure/tests/describe.fixture.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:52.426Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:16:53.422Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:17:00.778Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:17:01.732Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/architecture/structure.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:17:12.039Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T10:17:25.687Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
