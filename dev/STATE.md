@@ -89,7 +89,7 @@ rules:
     source: W-003
     owner: human:Homasters-max
     when: {operation: implement}
-    until: pin-v0-8-1 ARCHIVED
+    until: W-003 verified
     review_by: 2026-10-12
   - id: R-L0-09
     text: Правка с кириллицей в шаблоне — Edit; perl — только ASCII-шаблоны или perl -Mutf8 -CSD
@@ -109,3 +109,5 @@ rules:
 ## Журнал
 
 - 2026-09-28 — автопамять заменена dev/ (grilling Q1–Q29); фокус — infra/dev-state.
+- 2026-09-28 — R-L0-08 `until` → W-003 verified: junit 0.8.1 проверяется в impl-PR kernel-format, не archive
+  pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
