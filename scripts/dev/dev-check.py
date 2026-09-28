@@ -4,6 +4,9 @@
     python scripts/dev/dev-check.py            ошибки формы и ссылок (код 1) и сигналы
     python scripts/dev/dev-check.py --start    цепочка focus, следующий шаг, сигналы, очередь человека, сессии
     python scripts/dev/dev-check.py --sessions транскрипты без SES и SES без разбора
+    python scripts/dev/dev-check.py --rules env активные правила стандарта или узла — текстом
+    python scripts/dev/dev-check.py --brief review  всё применимое к операции — текстом для промпта субагента (RUL-013)
+    python scripts/dev/dev-check.py --footprint    след dev/: строки, объекты по типам, правила, на один ARCHIVED Change
 
 Только чтение; зависимость — Python 3.10+ и PyYAML. `--start` вызывает `warrant status <change>` для Change в фокусе.
 """
@@ -41,6 +44,10 @@ LOCAL_RE = re.compile(r"\b((?:ISS|RUL|IDEA|RPT|PRP)-\d{3}|SES-[0-9a-f]{8})\b")
 CHECK_RE = re.compile(r"^- \[( |x)\] (.*)$")
 STEP_RE = re.compile(r"^(\d+) · (agent|human) · (.+)$")
 REF_TAIL_RE = re.compile(r" — (\S.*)$")
+BRIEF = {  # операция → стандарты сверх env, process и ловушек STATE
+    "specify": ["docs"], "review": [], "implement": ["code", "quality", "tests"], "archive": [],
+    "audit": ["reports", "output"], "any": [],
+}
 FORBIDDEN_FM = {"dev/work+change": ["steps", "done_when", "focus"], "dev/issue": ["close_when", "affects"],
                 "dev/track": ["done_when"], "dev/work": ["steps", "done_when", "focus"]}
 
@@ -337,16 +344,61 @@ def start(objs, rules, signals):
     print(f"| Сессии    | {'; '.join(sess) if sess else 'все разобраны'} |")
 
 
+def footprint(objs, rules):
+    lines = {}
+    for path in glob.glob(os.path.join(DEV, "**", "*.md"), recursive=True):
+        part = os.path.relpath(path, DEV).replace(os.sep, "/").split("/")[0]
+        part = part if part.endswith(".md") is False else "(корень)"
+        lines[part] = lines.get(part, 0) + sum(1 for _ in open(path, encoding="utf-8"))
+    archived = [d for d in glob.glob(os.path.join(ROOT, "openspec", "changes", "archive", "*")) if os.path.isdir(d)]
+    by_type = {}
+    for o in objs.values():
+        by_type[o.type] = by_type.get(o.type, 0) + 1
+    total = sum(lines.values())
+    process = total - sum(v for k, v in lines.items() if k in ("issues", "reports", "sessions"))
+    active = sum(1 for _, r in rules.values() if r.get("status") == "active")
+    print(f"dev/: строк {total} (без issues/reports/sessions — {process}); ARCHIVED Change: {len(archived)}; "
+          f"на Change — {process // max(1, len(archived))} строк процесса")
+    print("строки: " + ", ".join(f"{k} {v}" for k, v in sorted(lines.items())))
+    print("объекты: " + ", ".join(f"{k.split('/')[1]} {v}" for k, v in sorted(by_type.items())))
+    print(f"правил: {len(rules)}, активных {active}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--start", action="store_true")
     ap.add_argument("--sessions", action="store_true")
+    ap.add_argument("--rules", metavar="ID", help="id стандарта или узла")
+    ap.add_argument("--footprint", action="store_true")
+    ap.add_argument("--brief", metavar="OPERATION", choices=sorted(BRIEF), help="правила для промпта субагента")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     objs, errors = load()
     rules = rules_of(objs)
     signals = []
     check(objs, rules, errors, signals)
+    if a.footprint:
+        footprint(objs, rules)
+        return 0
+    if a.brief:
+        print(f"Правила для операции {a.brief} (dev/, RUL-013) — соблюдай их:")
+        for src in ["state", "env", "process"] + BRIEF[a.brief]:
+            o = objs.get(src)
+            for r in (o.fm.get("rules") or []) if o else []:
+                op = (r.get("when") or {}).get("operation")
+                if r.get("status") == "active" and (op is None or op == a.brief):
+                    print(f"- {r['id']}: {' '.join(str(r['text']).split())}")
+        return 0
+    if a.rules:
+        o = objs.get(a.rules)
+        if o is None:
+            print(f"нет объекта {a.rules}")
+            return 1
+        for r in o.fm.get("rules") or []:
+            if r.get("status") == "active":
+                when = f" (когда: {r['when']})" if r.get("when") else ""
+                print(f"- {r['id']}: {' '.join(str(r['text']).split())}{when}")
+        return 0
     if a.sessions:
         missing, unaudited = sessions_report(objs)
         for t0, sid in missing:

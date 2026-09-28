@@ -46,27 +46,9 @@ rules:
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило в .warrant/local/rules/)
     review_by: 2026-10-12
-  - id: RUL-003
-    aliases: [R-L0-03]
-    text: Edit/Write превращают \uXXXX в символы — литеральный escape писать perl с \x5c
-    force: advisory
-    status: active
-    source: ISS-014
-    owner: human:Homasters-max
-    until: ISS-014 verified
-    review_by: 2026-10-12
-  - id: RUL-004
-    aliases: [R-L0-04]
-    text: Команду длиннее ~7 тыс. символов (сообщение коммита, тело PR, JSON) — файлом (-F/--body-file/--file), не heredoc
-    force: advisory
-    status: active
-    source: ISS-015
-    owner: human:Homasters-max
-    until: ISS-015 verified
-    review_by: 2026-10-12
   - id: RUL-005
     aliases: [R-L0-05]
-    text: В Run review — только warrant run submit (сначала --dry-run, envelope файлом вне репозитория); status и git смотреть до run start
+    text: В Run review — только warrant run submit; status и git смотреть до run start (сдача --file — в инструкции warrant-reviewer 0.8.1)
     force: advisory
     status: active
     source: ISS-007
@@ -103,15 +85,6 @@ rules:
     when: {operation: implement}
     until: ISS-003 verified
     review_by: 2026-10-12
-  - id: RUL-009
-    aliases: [R-L0-09]
-    text: Правка с кириллицей в шаблоне — Edit; perl — только ASCII-шаблоны или perl -Mutf8 -CSD
-    force: advisory
-    status: active
-    source: ISS-017
-    owner: human:Homasters-max
-    until: ISS-017 verified
-    review_by: 2026-10-12
 ---
 
 # state — Состояние разработки LATTICE
@@ -134,3 +107,5 @@ rules:
   session-audit.
 - 2026-09-28 — RUL-012, RUL-013 перенесены в стандарт `process` (8 активных правил > 7 на уровне): это правила
   процедуры Change, не ловушки проекта.
+- 2026-09-28 — RUL-003, RUL-004, RUL-009 (ловушки среды и техники) перенесены в стандарт `env` — их получают и субагенты
+  (RPT-004: аналитики упирались в ISS-015, ISS-028); в STATE остались ловушки WARRANT.

@@ -20,7 +20,8 @@ argument-hint: "[id сессии …] [--synthesis]"
 1. Для каждой сессии: `python scripts/dev/session-digest.py <id> --out <scratchpad>/digest-<id8>.md`.
 2. Зарезервировать номера `RPT-NNN` подряд (следующий свободный в `dev/reports/`, `main` и открытых ветках).
 3. Запустить аналитиков в фоне — до 5 одновременно, модель sonnet: промпт — [analyst.md](analyst.md) с подставленными
-   `{session}`, `{digest}`, `{transcript}`, `{rpt}`, `{out}`. Ждать уведомлений, не опрашивать.
+   `{root}`, `{session}`, `{session8}`, `{digest}`, `{transcript}`, `{rpt}`, `{out}`, `{traps}`
+   (`python scripts/dev/dev-check.py --brief audit`). Ждать уведомлений, не опрашивать.
 4. По каждому ответу: прочитать черновик `rpt`, `new-issues`, `session` в `{out}`; сверить `NEW-k` с `dev/issues/`
    (дубль → ссылка на существующую, повтор — в `refs` отчёта); новым — следующие номера `ISS-NNN`, файлы по README.
 5. Записать `dev/sessions/SES-<id8>.md` (`links`, `audit: RPT-NNN`) и `dev/reports/RPT-NNN.md` (NEW-k → ISS-…); в

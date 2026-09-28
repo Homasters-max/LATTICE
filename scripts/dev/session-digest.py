@@ -67,11 +67,13 @@ def tool_brief(name, inp):
 def scan(path):
     """Один проход по JSONL: события в порядке файла."""
     ev = {"t0": None, "t1": None, "branches": Counter(), "cwd": set(), "user": [], "calls": Counter(), "errors": [],
-          "commits": [], "prs": [], "warrant": [], "bash": [], "hooks": Counter(), "n_calls": 0}
+          "commits": [], "prs": [], "warrant": [], "bash": [], "hooks": Counter(), "n_calls": 0,
+          "outcomes": [], "run_hints": 0, "json_parse": 0}
     pending = {}
     idx = 0
     with open(path, encoding="utf-8", errors="replace") as fh:
         for line in fh:
+            ev["run_hints"] += line.count("start a Run first")
             try:
                 d = json.loads(line)
             except ValueError:
@@ -101,6 +103,8 @@ def scan(path):
                             for m in re.findall(r"(PreToolUse|PostToolUse)[^:]*:?\s*([^\n]{0,60})", body):
                                 ev["hooks"][short(m[0] + " " + m[1], 80)] += 1
                         bad = part.get("is_error") or ERROR_RE.search(body or "")
+                        if call:
+                            ev["outcomes"].append((call[0], call[1], bool(bad)))
                         if call and bad:
                             m = ERROR_RE.search(body or "")
                             at = max(0, (m.start() if m else 0) - 60)
@@ -132,6 +136,8 @@ def scan(path):
                         pending[part.get("id")] = (idx, tool_brief(name, inp), name, cmd)
                         if name == "Bash":
                             ev["bash"].append((idx, cmd, False))
+                            if "warrant" in cmd and "JSON.parse" in cmd:
+                                ev["json_parse"] += 1
     return ev
 
 
@@ -158,6 +164,21 @@ def commit_messages(cmd):
     return out
 
 
+def streaks(outcomes):
+    """Серии неудач подряд (по порядку результатов), длина ≥ 3: (№ первого, длина)."""
+    out, run = [], []
+    for i, _, bad in sorted(outcomes):
+        if bad:
+            run.append(i)
+        else:
+            if len(run) >= 3:
+                out.append((run[0], len(run)))
+            run = []
+    if len(run) >= 3:
+        out.append((run[0], len(run)))
+    return out
+
+
 def repeats(bash):
     """Команда, повторённая после неудачи с тем же началом (первые 40 символов)."""
     out = []
@@ -179,6 +200,12 @@ def render(path, limit_kb):
     w(f"- ветки: {', '.join(b for b, _ in ev['branches'].most_common())}\n")
     w(f"- вызовов: {ev['n_calls']} — " + ", ".join(f"{k} {v}" for k, v in ev["calls"].most_common()) + "\n")
     w(f"- ошибок и отказов: {len(ev['errors'])}; повторов после неудачи: {len(repeats(ev['bash']))}\n")
+    dev_commits = sum(1 for _, msg, _ in ev["commits"] if msg.startswith("dev-"))
+    from_file = sum(1 for _, msg, _ in ev["commits"] if msg == "(сообщение из файла)")
+    w(f"- метрики: серий ≥3 неудач подряд {len(streaks(ev['outcomes']))} "
+      f"({', '.join(f'#{a}×{n}' for a, n in streaks(ev['outcomes'])) or '—'}); вхождений «start a Run first» в JSONL "
+      f"{ev['run_hints']} (одна подсказка — 1–3 вхождения); ручной JSON.parse вокруг warrant {ev['json_parse']}; "
+      f"коммитов dev- {dev_commits} из {len(ev['commits'])} (сообщение из файла — {from_file})\n")
     w(f"- созданы PR: {', '.join(ev['prs']) or 'нет'}\n\n")
     w("## Реплики человека\n\n")
     for ts, t in ev["user"]:

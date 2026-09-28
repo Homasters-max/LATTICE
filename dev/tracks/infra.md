@@ -23,3 +23,4 @@ LATTICE подготовлен. Не закрывается.
 - 2026-09-28 — добавлены dev-model, session-audit (IDEA-002); фокус остаётся pin-v0-8-1, dev-model мержится после его
   archive (перенос файлов конфликтовал бы с веткой impl).
 - 2026-09-28 — pin-v0-8-1 ARCHIVED (gh/7); фокус → dev-model (gh/8), затем session-audit.
+- 2026-09-28 — dev-model и session-audit готовы в `gh/8`: модель, реестр сессий, разборы RPT-001…005; дальше — срез s0.

@@ -6,8 +6,8 @@ paths: ["**"]
 rules:
   - {id: RUL-039, text: "Закрепление новой версии WARRANT — по процедуре «Pin WARRANT» ниже, не разведкой в чужих репозиториях", force: advisory, status: active, source: RPT-001, owner: "human:Homasters-max"}
   - {id: RUL-040, text: "Повторяющаяся работа, найденная в отчёте дважды, получает процедуру здесь; до повтора — строка журнала", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
-  - {id: RUL-052, text: "Change ведётся по AGENTS.md с тонкостями процедуры «Change» ниже — они из разборов RPT-001…003", force: advisory, status: active, source: [RPT-001, RPT-002, RPT-003], owner: "human:Homasters-max"}
-  - {id: RUL-053, text: "Разработка — циклом: работа → разбор сессий → исправление LATTICE сразу, WARRANT — передачей → следующий шаг (README «Цикл разработки»)", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
+  - {id: RUL-052, text: "Change ведётся по AGENTS.md с тонкостями процедуры «Change» ниже — они из разборов RPT-001…003", force: advisory, status: retired, source: [RPT-001, RPT-002, RPT-003], owner: "human:Homasters-max"}
+  - {id: RUL-053, text: "Разработка — циклом: работа → разбор сессий → исправление LATTICE сразу, WARRANT — передачей → следующий шаг (README «Цикл разработки»)", force: advisory, status: retired, source: IDEA-002, owner: "human:Homasters-max"}
   - id: RUL-012
     text: >-
       warrant verify и transition — одной командой на одном HEAD (`warrant verify <c> && warrant transition <c> …`);
@@ -19,7 +19,7 @@ rules:
     until: ISS-018 verified
     review_by: 2026-10-12
   - id: RUL-013
-    text: "Субагенту (warrant-reviewer и др.) применимые ловушки и правила — в промпте Agent: dev/ он не читает"
+    text: "Субагенту (warrant-reviewer и др.) применимые правила — текстом в промпте Agent: python scripts/dev/dev-check.py --brief <операция>; dev/ он не читает"
     force: advisory
     status: active
     source: ISS-023
@@ -63,7 +63,8 @@ rules:
   коммитом (ISS-025).
 - Merge impl-PR — только после зелёного job `warrant` (pin-v0-8-1, журнал); одобрение spec-PR — комментарием: свой PR
   GitHub одобрить не даёт (kernel-format, журнал).
-- Субагенту `warrant-reviewer` — применимые ловушки в промпте (RUL-013); сдача — `--file` (ISS-006).
+- Субагенту `warrant-reviewer` — вывод `python scripts/dev/dev-check.py --brief review` в промпте (RUL-013); сдача —
+  `--file` (ISS-006).
 - Долгий субагент — в фоне; при 3 неудачах подряд — статус человеку (RUL-051).
 
 ## Проверка

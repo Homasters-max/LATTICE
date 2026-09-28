@@ -7,8 +7,8 @@ rules:
   - {id: RUL-047, text: "Ход, после которого агент останавливается, заканчивается блоком по шаблону: ⏸️ — нужен человек, ✅ — работа или Change закрыты; старт сессии — блок ▶️ первым сообщением", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
   - {id: RUL-048, text: "«Шаг N из M» не выдумывается: Change — этап warrant status (1 PROPOSED … 7 ARCHIVED) и задачи tasks.md x/y; работа без Change — шаги x/y", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
   - {id: RUL-049, text: "В блоке — только таблица и ссылки (PR — URL); проблемы: ⚠ сработавшая ISS, 🆕 новая; прозы до и после блока — не больше 3 строк", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
-  - {id: RUL-050, text: "Действие человека — одна команда в конце блока ⏸️ под строкой «❗ Выполнить — <что>:» (правило WARRANT maintainer-acts)", force: advisory, status: active, source: IDEA-002, owner: "human:Homasters-max"}
-  - {id: RUL-051, text: "После 3 неудач подряд одного действия или субагента дольше ~5 минут в foreground — строка статуса «▶️ <что, почему, что дальше>» до следующей попытки", force: advisory, status: active, source: ISS-027, owner: "human:Homasters-max"}
+  - {id: RUL-050, text: "Действие человека — одна команда в конце блока ⏸️ под строкой «❗ Выполнить — <что>:» (правило WARRANT maintainer-acts)", force: advisory, status: retired, source: IDEA-002, owner: "human:Homasters-max"}
+  - {id: RUL-051, text: "После 2 неудач одного действия — стоп: прочитать целиком (схему, --help, функцию) и сменить подход; после 3 или субагента дольше ~5 минут в foreground — строка статуса «▶️ <что, почему, что дальше>»", force: advisory, status: active, source: [ISS-027, ISS-029], owner: "human:Homasters-max"}
 ---
 
 # output — Вывод агента человеку
