@@ -329,11 +329,13 @@ def md_wrap_check(errors, signals):
         for f in x.get("findings", []):
             by.setdefault(f["cls"], []).append(f["line"])
         for cls, what, err in (("A", "перенос по ширине", True), ("L", "метка **X:** слита с абзацем", True),
+                               ("N", "нумерованный список спрятан в абзаце", True),
                                ("R", "адрес строки — ссылка на id или раздел (RUL-038)", True),
+                               ("T", "строки таблицы без разделителя внутри абзаца", False),
                                ("B", "спорный перенос", False), ("C", "жёсткий разрыв строки", False)):
             if cls in by:
                 msg = f"{path}: {what}, строки {', '.join(map(str, by[cls][:8]))}" + (
-                    f" — node {MD_WRAP} --fix {path}" if cls in "AL" else "")
+                    f" — node {MD_WRAP} --fix {path}" if cls in "ALN" else "")
                 (errors if err else signals).append(msg)
     for x in (links or {}).get("broken", []):
         errors.append(f"{x['file'].replace(chr(92), '/')}:{x['line']}: битая ссылка {x['link']} — {x['why']} (RUL-038)")
