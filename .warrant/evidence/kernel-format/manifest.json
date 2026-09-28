@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "kernel-format",
-  "commit": "c3a7268c181589432bddf772d08d153f5248d0d2",
+  "commit": "3167ddec6fa798e2d76a963803321468db52bcad",
   "versions": {
     "warrant": "0.8.1",
     "openspec": "1.13.1",
@@ -20,7 +20,10 @@
     "EVID-01M3KRGH2BD307TCKY5YAYKZ56",
     "EVID-01M3KRXGWH665SBM4SHGZHQSPJ",
     "EVID-01M3KRY47MW3K64RJCKVVY6WRP",
-    "EVID-01M3KRYPX4RBATJRY0VZ3MSQSC"
+    "EVID-01M3KRYPX4RBATJRY0VZ3MSQSC",
+    "EVID-01M3KS0Q0G2F3YYJY8J46QPGFJ",
+    "EVID-01M3KS6CK6ATJ8HS7ZXQEK91SZ",
+    "EVID-01M3KS6QXR42BS7Y0BFWZP2KQJ"
   ],
   "gates": {
     "adversarial-review": "PASS",
@@ -28,13 +31,13 @@
     "blocking-unknowns-resolved": "PASS",
     "branch-isolated": "PASS",
     "evidence-complete": "PASS",
-    "factory-golden-passed": "BLOCKED",
-    "human-approval": "BLOCKED",
+    "factory-golden-passed": "PASS",
+    "human-approval": "PASS",
     "ids-valid": "PASS",
     "required-artifacts-present": "PASS",
     "scope-valid": "PASS",
     "spec-approved": "WAIVED",
     "spec-valid": "PASS",
-    "tests-passed": "BLOCKED"
+    "tests-passed": "PASS"
   }
 }
