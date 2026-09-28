@@ -2,10 +2,10 @@
 schema: lattice-dev/node@1
 kind: change
 change: pin-v0-8-1
-branch: impl/pin-v0-8-1
-pr: null
+branch: archive/pin-v0-8-1
+pr: 7
 done_when: Change ARCHIVED; job warrant на теге v0.8.1; `warrant sync --check` без GENERATED_DRIFT и LOCK_MISMATCH
-focus: 9
+focus: 12
 waits: []
 steps:
   - {id: 1, actor: agent, do: "spec-PR: init change (chore + factory-change, skip_specs), review 1, verify", done: "https://github.com/Homasters-max/LATTICE/pull/5"}
@@ -16,9 +16,9 @@ steps:
   - {id: 6, actor: human, do: "git apply патча (тег v0.8.1, правила maintainer-acts, session-start, CLAUDE.md) — команду присылает агент", done: "4ba948f"}
   - {id: 7, actor: agent, do: "коммит патча; warrant sync CLI 0.8.1 (FRONTEND_RESTART_REQUIRED); коммит", done: "ae75067"}
   - {id: 8, actor: human, do: "перезапуск сессии Claude Code (design I-4): правила и субагент warrant-reviewer читаются при старте", done: "сессия 2026-09-28: warrant-reviewer со сдачей --file, правила в Context Pack RUN-01M3KJMVZF9J0NMESHM4HG4WJ4"}
-  - {id: 9, actor: agent, do: "новая сессия: старт по dev/STATE.md; Run implement — warrant check tests-passed, отметки tasks.md; verify, VERIFYING, локальный warrant ci (задача 3.2); push, PR", done: null}
-  - {id: 10, actor: human, do: "merge impl-PR", done: null}
-  - {id: 11, actor: agent, do: "archive-PR: ci fetch, MERGED --by, archive; dev/: R-L0-01, R-L0-02 retired", done: null}
+  - {id: 9, actor: agent, do: "новая сессия: старт по dev/STATE.md; Run implement — warrant check tests-passed, отметки tasks.md; verify, VERIFYING, локальный warrant ci (задача 3.2); push, PR", done: "https://github.com/Homasters-max/LATTICE/pull/6"}
+  - {id: 10, actor: human, do: "merge impl-PR", done: "f4660fb (merge PR #6); job warrant SUCCESS https://github.com/Homasters-max/LATTICE/actions/runs/36398894214"}
+  - {id: 11, actor: agent, do: "archive-PR: ci fetch, MERGED --by, archive; dev/: R-L0-01, R-L0-02 retired", done: "EVID-01M3KJVKMVMESG1VPA46Q3J8RN (ci fetch), EVID-01M3KJYNKFMM436XFZXT1FVXX1 (MERGED), EVID-01M3KJZ7D4SNH9QX6NKGJ57RDR (archive)"}
   - {id: 12, actor: human, do: "merge archive-PR", done: null}
 rules: []
 ---
@@ -44,3 +44,8 @@ CLI на машине — 0.8.1, CI и lock — 0.8.0. В 0.8.1 закрыты W
   зелёный, `tests-passed` `PROVEN` 3/3.
 - 2026-09-28 — перезапуск сессии выделен шагом человека (I-4); проверки задач 1.1, 1.2 пройдены (`git diff` — только
   строка тега; `validate`, `sync --check` зелёные).
+- 2026-09-28 — задачи 3.1, 3.2 не отмечены в `tasks.md`: проверки идут после `run finish` и коммита `VERIFYING`;
+  результаты — в теле PR #6, `archive` отметок не требует. Локальный `warrant ci` — исход D-1 (код 1,
+  `ATTESTATION_REQUIRED` на `tests-passed` и `factory-golden-passed`, `human-approval` в `deferred[]`).
+- 2026-09-28 — merge PR #6 в 08:42:03 — до конца job `warrant` (08:42:18, `SUCCESS`); база та же (07c90ef), evidence
+  CI не `STALE`, `MERGED` — все gates `PASS`. Порядок: merge — после зелёного job.

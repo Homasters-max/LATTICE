@@ -19,7 +19,7 @@ switch:
       then: точка расширения — LATTICE предлагает retire/promote/revise правил, решает maintainer
 env:
   warrant_cli: 0.8.1
-  warrant_ci: v0.8.0
+  warrant_ci: v0.8.1
   node: 22.17.0
 rules:
   - id: R-L0-01
@@ -27,7 +27,7 @@ rules:
       Акты maintainer'а (решение UNK комментарием, merge, активация waiver) агент не выполняет — присылает
       «❗ Выполнить — <что>:» и одну команду в блоке bash, без &&; результат проверяет сам (gh pr view)
     force: normative
-    status: active
+    status: retired
     source: W-010; https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило переносится в .warrant/local/rules/)
@@ -35,7 +35,7 @@ rules:
   - id: R-L0-02
     text: Старт основной сессии — протокол dev/README.md «Протокол основной сессии»
     force: normative
-    status: active
+    status: retired
     source: https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило переносится в .warrant/local/rules/)
