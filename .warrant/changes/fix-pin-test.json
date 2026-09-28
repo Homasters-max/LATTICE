@@ -1,0 +1,39 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "fix-pin-test",
+  "change_state": "PROPOSED",
+  "classification": {
+    "profiles": [
+      "chore"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "LOCAL",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "COMPATIBLE",
+        "from": "proposer"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-09-28T22:20:06.257Z",
+      "by": "cli:local"
+    }
+  ]
+}
