@@ -1,0 +1,104 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3KFSC35SJX7VHKTYW34SD99",
+  "change": "pin-v0-8-1",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/pin-v0-8-1/**"
+  ],
+  "scope": [],
+  "branch": "spec/pin-v0-8-1",
+  "started_at": "2026-09-28T07:48:35.089Z",
+  "finished_at": "2026-09-28T07:50:06.490Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:a0c7c4da06d655ab333f4fa38f56101f17d8fc72473b7d6117bf3101522ffdf5",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-09-28T07:49:25.065Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:49:26.002Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "process"
+      ]
+    },
+    {
+      "at": "2026-09-28T07:49:50.494Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:49:51.443Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:49:55.598Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:49:56.503Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:49:57.379Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:50:04.057Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

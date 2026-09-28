@@ -1,7 +1,7 @@
 ---
 schema: lattice-dev/node@1
 kind: infra
-focus: dev-state
+focus: pin-v0-8-1
 rules: []
 ---
 
@@ -13,3 +13,4 @@ rules: []
 ## Журнал
 
 - 2026-09-28 — дорожка открыта: dev-state, затем pin-v0-8-1; заготовки T1, T2.
+- 2026-09-28 — dev-state закрыт (новая сессия стартовала по STATE.md); фокус → pin-v0-8-1.
