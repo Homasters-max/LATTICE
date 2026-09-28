@@ -7,23 +7,26 @@ from: null
 change: null
 branch: null
 pr: null
-focus: null
 waits: []
-done_when:
-  - {check: "типы dev/state, idea, track, work, issue, rule, report, proposal — проектные типы LATTICE", via: cmd}
-  - {check: "lattice lint dev/ — без hard", via: cmd}
-steps: []
 rules: []
 ---
 
 # lattice2lattice-t1 — Форма dev/ в типах LATTICE
 
-Заготовка: фокус сюда переводит `switch` T1-freeze (s2 ARCHIVED); отдельный Change по AGENTS.md, шаги — при старте.
+Заготовка: фокус сюда переводит `switch` T1-freeze (s2 ARCHIVED); отдельный Change по AGENTS.md — тогда задачи уйдут в
+его `tasks.md`.
 
 ## Контекст
 
-Вход — README dev/ (типы, поля, связи) и проблемы с `close_when` на T2. Решить здесь: правило — отдельный объект или
-блок стандарта (`rules/*.md` — один `knowledge`).
+Вход — README dev/ (типы, поля, связи) и проблемы, закрываемые переходом. Решить здесь: правило — отдельный объект или
+блок стандарта (`rules/*.md` — один `knowledge`); списки отметок в теле — поле типа или разметка.
+
+## Шаги
+
+## Приёмка
+
+- [ ] типы dev/state, idea, track, work, issue, rule, guide, session, report, proposal — проектные типы LATTICE · cmd
+- [ ] lattice lint dev/ — без hard · cmd
 
 ## Решения
 

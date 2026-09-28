@@ -1,0 +1,43 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3KJVKMVMESG1VPA46Q3J8RN",
+  "claim": {
+    "text": "tests-passed passed for pin-v0-8-1",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "46568307a8860c84602f00a86ab179a92467c507",
+    "base_commit": "07c90efa3225229dc24613fa7213f31452d2fff7",
+    "spec_revision": "openspec/changes/pin-v0-8-1@46568307a8860c84602f00a86ab179a92467c507",
+    "tree": "e0d1b09432b179c2ab7a0bb3e30b9f1b5cca2359",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "ci",
+    "ref": "https://github.com/Homasters-max/LATTICE/actions/runs/36398894214/attempts/1"
+  },
+  "context_hash": "sha256:f2f1ec3005a043cad5f8b2575ac02d2b513ed6e17c95704c2d418f67f0669b51",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-09-28T08:42:14.043Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/pin-v0-8-1/raw/tests-passed/junit.xml",
+      "sha256": "sha256:2c2038ae032179c66eed9f66c4b76d987842bb6f471cd77836fdf8fc984d1324"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 3
+  }
+}

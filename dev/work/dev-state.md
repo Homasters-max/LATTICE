@@ -7,30 +7,33 @@ from: IDEA-001
 change: null
 branch: null
 pr: 4
-focus: null
 waits: []
-done_when:
-  - {check: "gh/3 и gh/4 слиты", via: human}
-  - {check: "каталог автопамяти LATTICE пуст, autoMemoryEnabled: false", via: cmd}
-  - {check: "новая сессия стартовала по dev/STATE.md без MEMORY.md", via: human}
-steps:
-  - {n: 1, actor: agent, do: "PR chore/dev-state: dev/, CLAUDE.md, .gitignore, предложение для WARRANT", done: gh/3}
-  - {n: 2, actor: human, do: "комментарий-решение в PR: grilling Q1–Q29, R-L0-01, R-L0-02, E7 в приёмке S4", done: gh/3#issuecomment-5865372587}
-  - {n: 3, actor: agent, do: "source R-L0-01, R-L0-02 → URL комментария, status active", done: git/8b38160}
-  - {n: 4, actor: human, do: "merge PR chore/dev-state", done: git/7a1570d}
-  - {n: 5, actor: agent, do: "показать перенос памяти → после подтверждения удалить файлы автопамяти", done: gh/4}
-  - {n: 6, actor: agent, do: "новая сессия: память не загружается, старт по dev/STATE.md", done: git/b8afc4f}
 rules: []
 ---
 
 # dev-state — Состояние разработки в репозитории
 
-Автопамять Claude Code заменена каталогом dev/: состояние, ловушки, проблемы и правила — в git. Закрыт.
+Автопамять Claude Code заменена каталогом dev/: состояние, ловушки, проблемы и правила — в git; закрыт.
 
 ## Контекст
 
 Работа без Change: PR только с dev/, `CLAUDE.md`, `.gitignore` (CI — вид `none`). Автопамять выключена
 `.claude/settings.local.json` (`autoMemoryEnabled: false`, файл локальный).
+
+## Шаги
+
+- [x] 1 · agent · PR chore/dev-state: dev/, CLAUDE.md, .gitignore, предложение для WARRANT — gh/3
+- [x] 2 · human · комментарий-решение в PR: grilling Q1–Q29, R-L0-01, R-L0-02, E7 в приёмке S4 — gh/3#issuecomment-5865372587
+- [x] 3 · agent · source R-L0-01, R-L0-02 → URL комментария, status active — git/8b38160
+- [x] 4 · human · merge PR chore/dev-state — git/7a1570d
+- [x] 5 · agent · показать перенос памяти → после подтверждения удалить файлы автопамяти — gh/4
+- [x] 6 · agent · новая сессия: память не загружается, старт по dev/STATE.md — git/b8afc4f
+
+## Приёмка
+
+- [x] gh/3 и gh/4 слиты · human — git/85e2b53
+- [x] каталог автопамяти LATTICE пуст, autoMemoryEnabled: false · cmd — gh/4
+- [x] новая сессия стартовала по dev/STATE.md без MEMORY.md · human — RPT-001
 
 ## Решения
 
@@ -49,4 +52,4 @@ rules: []
   `.kb-search/` (индекс, генерирует kb-search), `.claude/launch.json` (абсолютные пути машины); файлы на диске остались.
 - 2026-09-28 — новая сессия: `memory/` проекта пуст, автопамять не загружена, старт по STATE.md — `done_when`
   выполнен; фокус дорожки — pin-v0-8-1.
-- 2026-09-28 — перенос в модель объектов LATTICE (dev-model): ссылки шагов приведены к `git/`, `gh/`.
+- 2026-09-28 — перенос в модель объектов LATTICE (dev-model): шаги и приёмка — списком с отметками, ссылки — `git/`, `gh/`.

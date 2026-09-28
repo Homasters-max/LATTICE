@@ -7,12 +7,7 @@ from: null
 change: null
 branch: null
 pr: null
-focus: null
 waits: [lattice2lattice-t1]
-done_when:
-  - {check: "lattice load dev/ (source-files) и WARRANT (source-warrant) — lint без hard", via: cmd}
-  - {check: "сессия стартует по lattice explain", via: human}
-steps: []
 rules: []
 ---
 
@@ -23,7 +18,14 @@ rules: []
 ## Контекст
 
 Отдельный Change по AGENTS.md. Ссылки dev/ уже в грамматике `пространство/local` — загрузчик разрешает их без
-переписывания.
+переписывания; реестр сессий и отчёты — первые данные для обучения (T3).
+
+## Шаги
+
+## Приёмка
+
+- [ ] lattice load dev/ (source-files) и WARRANT (source-warrant) — lint без hard · cmd
+- [ ] сессия стартует по lattice explain · human
 
 ## Решения
 

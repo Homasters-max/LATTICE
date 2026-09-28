@@ -2,10 +2,8 @@
 id: foundation
 type: dev/track@1
 title: Общие контракты срезов
-focus: kernel-format
+focus: null
 depends_on: []
-done_when:
-  - {check: "каноническая форма и коммит (ADR-1) — норма в openspec/specs/: lattice/kernel-format ARCHIVED", via: warrant}
 rules:
   - id: RUL-010
     aliases: [R-FD-01]
@@ -27,3 +25,5 @@ Change, чей контракт нужен нескольким срезам, а
 ## Журнал
 
 - 2026-09-28 — kernel-format отнесён сюда (grilling: область действия контракта).
+- 2026-09-28 — kernel-format ARCHIVED (gh/10): нормы `openspec/specs/kernel`, `openspec/specs/architecture`; дорожка без
+  работы в фокусе, новые общие контракты — сюда.

@@ -1,0 +1,195 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "kernel-format",
+  "change_state": "ARCHIVED",
+  "classification": {
+    "profiles": [
+      "chore",
+      "factory-change",
+      "feature"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "record"
+      },
+      "reversibility": {
+        "value": "MODERATE",
+        "from": "record"
+      },
+      "blast_radius": {
+        "value": "SYSTEM",
+        "from": "floor:core-sdd:2"
+      },
+      "security_impact": {
+        "value": "LOW",
+        "from": "record"
+      },
+      "compatibility": {
+        "value": "COMPATIBLE",
+        "from": "record"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-09-27T22:14:00.485Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-09-28T09:55:22.603Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3KQ14WFY9WRM9PKGDCQD098"
+      ]
+    },
+    {
+      "to": "APPROVED",
+      "at": "2026-09-28T09:57:52.835Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+      "gates": {
+        "adversarial-review": "PASS",
+        "blocking-unknowns-resolved": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3KPSTHCHC1K4G92MZS2PBK0",
+        "EVID-01M3KQ5QKNZCYEARQZHHX12ZMC",
+        "EVID-01M3KQ625S1ZNQ9FNXSDJ52ZRW"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2"
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-09-28T09:57:55.860Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+      "gates": {
+        "branch-isolated": "PASS"
+      },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-09-28T10:24:15.281Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+      "gates": {},
+      "evidence": []
+    },
+    {
+      "to": "MERGED",
+      "at": "2026-09-28T10:33:01.328Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "analyze-clean": "PASS",
+        "evidence-complete": "PASS",
+        "factory-golden-passed": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "scope-valid": "PASS",
+        "spec-approved": "WAIVED",
+        "tests-passed": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3KS0Q0G2F3YYJY8J46QPGFJ",
+        "EVID-01M3KS6CK6ATJ8HS7ZXQEK91SZ"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/9"
+    },
+    {
+      "to": "ARCHIVED",
+      "at": "2026-09-28T10:33:13.624Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "analyze-clean": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3KS6QXR42BS7Y0BFWZP2KQJ"
+      ]
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "UNK-KR-001",
+      "text": "NFC на входе (KR-06, ADR-1): приводить к NFC только строковые значения или также ключи объектов? Рекомендация: и ключи; два ключа, совпавшие после NFC, — отказ «дубль ключа».",
+      "blocking": true,
+      "resolution": "Принято по рекомендации: к NFC приводятся строковые значения и ключи объектов; ключи, совпавшие после NFC, — отказ duplicate-key.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"
+    },
+    {
+      "id": "UNK-KR-002",
+      "text": "Входная проверка «целые вне ±2^53» (10-kernel п. 3): что считать целым и где граница? Рекомендация: целое — число с целым значением независимо от записи (1, 1.0, 1e3); допустимо от -(2^53-1) до 2^53-1 (I-JSON, RFC 7493 §2.2), иначе отказ — значит и 1e300 отказ; дробные конечные числа — без предела.",
+      "blocking": true,
+      "resolution": "Принято по рекомендации: целое — число с целым значением независимо от записи; допустимо от -(2^53-1) до 2^53-1 (RFC 7493 §2.2), иначе unsafe-integer; дробные конечные числа — без предела.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"
+    },
+    {
+      "id": "UNK-KR-003",
+      "text": "Грамматика локальной части id (10-kernel п. 4 даёт только примеры: ULID, REQ-KRN-011, rule.type-shape; id блоков source-files приходят из front matter). Рекомендация: local = [A-Za-z0-9][A-Za-z0-9._-]{0,127} — без «/», «@», «#», «:» и пробелов; регистр значим; иное — отказ.",
+      "blocking": true,
+      "resolution": "Принято по рекомендации: local = [A-Za-z0-9][A-Za-z0-9._-]{0,127}, регистр значим; иное — отказ.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"
+    },
+    {
+      "id": "UNK-KR-004",
+      "text": "Глубина вложенности тела (формат v1; в design предела нет, а обход ядра рекурсивный). Рекомендация: не больше 64 уровней вложенности массивов и объектов (скаляр верхнего уровня — глубина 0); глубже — отказ входной проверки too-deep. Предел — часть формата v1: поднять его можно новой версией ядра, опустить нельзя.",
+      "blocking": true,
+      "resolution": "Принято по рекомендации: не больше 64 уровней вложенности (скаляр верхнего уровня — 0, контейнер — 1); глубже — too-deep; предел — часть формата v1.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"
+    },
+    {
+      "id": "UNK-KR-005",
+      "text": "Версия Unicode для NFC (review 1 F-5): детерминизм формата v1 «на любой машине» предполагает одинаковую NFC во всех Node, но стабильность нормализации гарантирована только для назначенных кодовых точек — точка, не назначенная в Unicode одного Node и назначенная (комбинирующий знак, знак с разложением) в другом, нормализуется по-разному: расходятся тело, hash, #id. Варианты: (A) формат v1 фиксирует версию Unicode (16.0 — Node 22.17, ICU 77.1); checkInput отклоняет кодовую точку, не назначенную в ней, новым кодом unassigned; в ядре — таблица назначенных диапазонов, сгенерированная из UCD 16.0, вектор теста; (B) принятое допущение: расхождение возможно только для точек, не назначенных в Unicode Node, записавшего журнал; смягчение — версия Node в среде проекта; spec называет допущение. Рекомендация: A — формат v1 заморожен (ADR-1), #id должен воспроизводиться на будущих Node; цена — таблица около нескольких КБ и один код.",
+      "blocking": true,
+      "resolution": "Вариант A по рекомендации: формат v1 фиксирует Unicode 16.0; checkInput отклоняет кодовые точки, не назначенные в Unicode 16.0, кодом unassigned.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5866978072"
+    },
+    {
+      "id": "UNK-KR-006",
+      "text": "Среда NFC Unicode 16.0 (review 2 F-1, D-1): ядро нормализует строки normalize движка; на Node с Unicode ниже 16.0 строки с точками, назначенными в 16.0, получат другую форму и хэш. Варианты: (A) предусловие формата v1 — среда с Unicode не ниже 16.0: требование и сценарий теста среды (тест падает ниже 16.0), engines >=22.17; ядро среду не читает (process запрещён); (B) собственные таблицы NFC Unicode 16.0 в ядре без normalize движка — независимость от среды, цена — десятки КБ данных и алгоритм нормализации; (C) checkInput сам определяет версию Unicode движка пробой нормализации и отказывает ниже 16.0 — эвристика. Рекомендация: A — среда проекта закреплена (engines, CI Node 22), unassigned проверяется до NFC (F-2), а NFC назначенных в 16.0 точек стабилен в следующих версиях.",
+      "blocking": true,
+      "resolution": "Вариант A по рекомендации: предусловие формата v1 — среда исполнения с Unicode не ниже 16.0; требование и сценарий теста среды, engines >=22.17; ядро среду не читает.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215"
+    },
+    {
+      "id": "UNK-KR-007",
+      "text": "Глобальные имена ядра (review 2 F-12, D-2): список запретов forbidden-global не закрывает ввод-вывод и недетерминизм (WebSocket, navigator, Intl и toLocale*, WeakRef, SharedArrayBuffer, import.meta и др.). Варианты: (A) закрытый список разрешённых свободных идентификаторов ядра — Object, Array, String, Number, Boolean, Symbol, BigInt, Math (без random), JSON, Reflect, Map, Set, WeakMap, Error, TypeError, RangeError, ArrayBuffer, DataView, Uint8Array, Date (только new Date с аргументом), undefined, NaN, Infinity; остальное — forbidden-global; дополнительно запрещены import.meta и вызовы toLocale*, localeCompare; расширение списка — правкой spec; (B) расширить список запретов перечисленными именами. Рекомендация: A — закрытый список полон по построению, список запретов устаревает с каждой версией Node.",
+      "blocking": true,
+      "resolution": "Вариант A по рекомендации: закрытый список разрешённых свободных идентификаторов ядра, прочее — forbidden-global; запрещены import.meta и вызовы toLocale*, localeCompare; расширение списка — правкой spec.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215"
+    },
+    {
+      "id": "UNK-KR-008",
+      "text": "Предел длины namespace (review 2 F-27): длина local ограничена 128 символами (UNK-KR-003), длина namespace и число его частей — нет, идентификатор неограниченной длины допустим в замороженном формате v1. Варианты: (A) namespace — не длиннее 64 символов целиком, без предела числа частей; (B) без предела в формате v1. Рекомендация: A — предел, как у local, закрывает неограниченные id в журнале; 64 символов хватает для доменных имён вида acme.tools.x.",
+      "blocking": true,
+      "resolution": "Вариант A по рекомендации: namespace — не длиннее 64 символов целиком, без предела числа частей.",
+      "resolved_as": "decision",
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215"
+    }
+  ]
+}

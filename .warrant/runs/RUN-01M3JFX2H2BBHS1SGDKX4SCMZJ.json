@@ -1,0 +1,73 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3JFX2H2BBHS1SGDKX4SCMZJ",
+  "change": "kernel-format",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/kernel-format/**"
+  ],
+  "scope": [],
+  "branch": "spec/kernel-format",
+  "started_at": "2026-09-27T22:31:21.952Z",
+  "finished_at": "2026-09-27T22:31:46.295Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:e65e32ccafd1704e92a4c71dedfe0b7586725275919ca38a3f532b728f49bcde",
+  "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+  "guard_events": [
+    {
+      "at": "2026-09-27T22:31:32.265Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-27T22:31:33.104Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "process"
+      ]
+    },
+    {
+      "at": "2026-09-27T22:31:34.049Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-27T22:31:34.903Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/kernel-format/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-27T22:31:43.021Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

@@ -22,8 +22,9 @@ switch:
       then: точка расширения — LATTICE предлагает retire/promote/revise правил, решает maintainer
 env:
   warrant_cli: 0.8.1
-  warrant_ci: v0.8.0
+  warrant_ci: v0.8.1
   node: 22.17.0
+  sessions_since: "2026-09-27T21:45"
 rules:
   - id: RUL-001
     aliases: [R-L0-01]
@@ -31,7 +32,7 @@ rules:
       Акты maintainer'а (решение UNK комментарием, merge, активация waiver) агент не выполняет — присылает
       «❗ Выполнить — <что>:» и одну команду в блоке bash, без &&; результат проверяет сам (gh pr view)
     force: normative
-    status: active
+    status: retired
     source: [ISS-010, gh/3#issuecomment-5865372587]
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило в .warrant/local/rules/)
@@ -40,7 +41,7 @@ rules:
     aliases: [R-L0-02]
     text: Старт основной сессии — протокол dev/README.md «Протокол основной сессии», отчёт первым сообщением
     force: normative
-    status: active
+    status: retired
     source: gh/3#issuecomment-5865372587
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило в .warrant/local/rules/)
@@ -96,7 +97,7 @@ rules:
     aliases: [R-L0-08]
     text: Каждый тест node:test — внутри describe() (CI на v0.8.0 не видит тестов вне describe)
     force: advisory
-    status: active
+    status: retired
     source: ISS-003
     owner: human:Homasters-max
     when: {operation: implement}
@@ -111,30 +112,12 @@ rules:
     owner: human:Homasters-max
     until: ISS-017 verified
     review_by: 2026-10-12
-  - id: RUL-012
-    text: >-
-      warrant verify и transition — одной командой на одном HEAD (`warrant verify <c> && warrant transition <c> …`);
-      любой коммит между ними делает spec-report STALE
-    force: advisory
-    status: active
-    source: ISS-018
-    owner: human:Homasters-max
-    until: ISS-018 verified
-    review_by: 2026-10-12
-  - id: RUL-013
-    text: "Субагенту (warrant-reviewer и др.) применимые ловушки и правила — в промпте Agent: dev/ он не читает"
-    force: advisory
-    status: active
-    source: ISS-023
-    owner: human:Homasters-max
-    until: ISS-023 verified
-    review_by: 2026-10-12
 ---
 
 # state — Состояние разработки LATTICE
 
 Корень цепочки `focus`: дорожка в работе, переключатель lattice2lattice, ловушки проекта; порядок — `infra`
-(pin-v0-8-1, dev-model, session-audit) → `foundation` (kernel-format).
+(dev-model, session-audit) → срез `s0` (скелет, design/05-slices.md).
 
 ## Журнал
 
@@ -143,3 +126,11 @@ rules:
   pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
 - 2026-09-28 — модель объектов LATTICE (IDEA-002): id по типу, старые — в `aliases` (W-/E-/A- → ISS, R-… → RUL);
   раскладка `tracks/`, `work/`, `ideas/`, `rules/`, `reports/`; `done_when` — проверки (`gh/…`, dev-model).
+- 2026-09-28 — pin-v0-8-1 ARCHIVED (286829b, PR #7); switch при archive — T1, T2 не наступили; фокус → foundation.
+- 2026-09-28 — kernel-format ARCHIVED (archive-PR #10); switch при archive — T1, T2 не наступили; R-L0-08 retired —
+  «тест внутри describe» теперь норма REQ-AR-002, её держит тест структуры.
+- 2026-09-28 — RUL-001, RUL-002 retired: правила в WARRANT `maintainer-acts`, `session-start` (git/1be0734); RUL-008
+  retired (git/2f15f83). Фокус → infra (dev-model): foundation закрыт, следующий срез s0 — после dev-model и
+  session-audit.
+- 2026-09-28 — RUL-012, RUL-013 перенесены в стандарт `process` (8 активных правил > 7 на уровне): это правила
+  процедуры Change, не ловушки проекта.

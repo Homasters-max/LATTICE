@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3KR09QCF0D6245A9TNEXG41",
+  "claim": {
+    "text": "tests-passed passed for kernel-format",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "244a91e8964da2c5d67e761980c5db6289b3a7e9",
+    "base_commit": "07c90efa3225229dc24613fa7213f31452d2fff7",
+    "spec_revision": "openspec/changes/kernel-format@244a91e8964da2c5d67e761980c5db6289b3a7e9",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:06abfc84b0db679ebfb1a608b3c8d6967beaf02856740ed7532fe7dfb0171ede",
+  "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+  "created_at": "2026-09-28T10:12:10.605Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/kernel-format/raw/tests-passed/junit.xml",
+      "sha256": "sha256:38dfbd70a955352e56cffb699d97b81321f99e96b670ef461ec4ba83745056fe"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 385
+  }
+}

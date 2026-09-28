@@ -2,9 +2,8 @@
 id: infra
 type: dev/track@1
 title: Процесс и инструменты разработки
-focus: pin-v0-8-1
+focus: dev-model
 depends_on: []
-done_when: null
 rules: []
 ---
 
@@ -15,7 +14,7 @@ rules: []
 ## Цель
 
 Держать процесс разработки видимым и проверяемым: WARRANT закреплён, dev/ мал и точен, сессии разобраны, переход на
-LATTICE подготовлен. Не закрывается — `done_when` нет.
+LATTICE подготовлен. Не закрывается.
 
 ## Журнал
 
@@ -23,3 +22,4 @@ LATTICE подготовлен. Не закрывается — `done_when` не
 - 2026-09-28 — dev-state закрыт (новая сессия стартовала по STATE.md); фокус → pin-v0-8-1.
 - 2026-09-28 — добавлены dev-model, session-audit (IDEA-002); фокус остаётся pin-v0-8-1, dev-model мержится после его
   archive (перенос файлов конфликтовал бы с веткой impl).
+- 2026-09-28 — pin-v0-8-1 ARCHIVED (gh/7); фокус → dev-model (gh/8), затем session-audit.

@@ -91,7 +91,7 @@ jobs:
       - name: Install warrant (pinned)
         working-directory: ${{ runner.temp }}
         run: |
-          tgz=$(npm pack github:Homasters-max/SRA#v0.8.0 | tail -1)
+          tgz=$(npm pack github:Homasters-max/SRA#v0.8.1 | tail -1)
           npm i -g "./$tgz"
 
       - name: warrant --version
