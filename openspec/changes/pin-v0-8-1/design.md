@@ -96,3 +96,22 @@ parser 0.8.1 даёт `INCONCLUSIVE` («no <testcase> or <testsuite>»); Node 22
 3. archive-PR — `ci fetch`, `MERGED --ref <URL impl-PR> --by <maintainer>` (D-5), `archive`; в `dev/` ловушки R-L0-01,
    R-L0-02, R-L0-08 — `retired`.
 4. Откат — pin-Change обратно на `v0.8.0` (D-5).
+
+## Решения по ходу реализации
+
+По находкам review 1 (EVID-01M3KG6KKJPEA3FPFA8D600J8Q, `PROVEN`: MAJOR F-1, F-2, MINOR F-3…F-8, INFO F-9) — строками
+здесь, не новым раундом. I-1 — решение maintainer'а
+([PR #5](https://github.com/Homasters-max/LATTICE/pull/5#issuecomment-5865888855)); I-2…I-9 уточняют исполнение D-1…D-3
+и решений spec не меняют.
+
+| # | Решение | Где |
+|---|---|---|
+| I-1 | F-1: приёмка этого Change из ADR-0042 — пин `v0.8.1` и W-005 (`FRONTEND_RESTART_REQUIRED` от `sync`, задача 1.2); W-003 (junit по `<testcase>`) и W-006 (сдача review файлом) принимает `kernel-format`. Migration Plan п. 3: ловушка R-L0-08 (`describe()`) снимается при проверке W-003, не с archive этого Change | `dev/STATE.md` R-L0-08 `until` |
+| I-2 | F-2: отказ CLI 0.8.1 на базе lock 0.8.0 (D-1) — остановка, `W-NNN` и, если нужен новый тег фабрики, строка `I-N` с решением maintainer'а и waiver `spec-approved` (тег назван в proposal). Исход `warrant ci` с кодом 3 — сначала `gh auth status`: `FORGE_UNAVAILABLE` без авторизации — не отказ CLI, повтор после входа | задача 3.2 |
+| I-3 | F-3: правка policy-путей (`git apply` патча D-2) — акт maintainer'а; правило `maintainer-acts` называет её в перечне актов; канал — чат, а где правило `process` велит просить в PR — и PR | `.warrant/local/rules/maintainer-acts.json` |
+| I-4 | F-4: перезапуск сессии Claude Code после `sync` (D-1 п. 3) — акт maintainer'а в приложении; агент до него записывает шаг в `dev/` и просит перезапуск | `dev/tracks/infra/pin-v0-8-1.md` |
+| I-5 | F-5: «kernel тот же» в Context и D-1 — диапазон `kernel: "0.8"` в `warrant.json` и версия pack; `kernel` в lock — версия CLI, записавшего lock (`0.8.0` → `0.8.1`) | — |
+| I-6 | F-6: тесты пина — `it()` внутри `describe()`; задача 2.1 сверяет число `it()` с числом тестов в evidence | `test/process/pin.test.ts` |
+| I-7 | F-7: `git apply` не прошёл или `git diff` задачи 1.1 называет лишние строки — `git checkout -- <пути>`, новый патч от текущего дерева, повтор акта; коммит — только после чистой проверки 1.1 | задача 1.1 |
+| I-8 | F-8: текст правил — дословно в патче D-2 и в diff impl-PR, который одобряет maintainer; смысл — proposal, «What Changes» | `.warrant/local/rules/*.json` |
+| I-9 | F-9: `maintainer-acts` — обход W-010 (BL-83 фабрики); при закрытии W-010 правило пересматривается — строкой в `close_when` W-010 | `dev/issues/W-010.md` |
