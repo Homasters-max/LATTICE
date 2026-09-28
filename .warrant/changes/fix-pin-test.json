@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "fix-pin-test",
-  "change_state": "VERIFYING",
+  "change_state": "ARCHIVED",
   "classification": {
     "profiles": [
       "chore"
@@ -83,6 +83,36 @@
       "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
       "gates": {},
       "evidence": []
+    },
+    {
+      "to": "MERGED",
+      "at": "2026-09-28T22:33:25.236Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+      "gates": {
+        "ids-valid": "PASS",
+        "scope-valid": "PASS",
+        "spec-approved": "PASS",
+        "tests-passed": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3N2ABXZPXMW2KGHVERES016"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/25"
+    },
+    {
+      "to": "ARCHIVED",
+      "at": "2026-09-28T22:33:30.269Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3N2DKRYDJD4QYW1KYX3695W"
+      ]
     }
   ]
 }
