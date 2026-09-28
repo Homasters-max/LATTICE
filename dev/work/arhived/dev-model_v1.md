@@ -1,7 +1,7 @@
 ---
 id: dev-model
 type: dev/work@1
-version: 2
+version: 1
 title: Модель dev/ на объектах LATTICE
 track: infra
 from: IDEA-002
@@ -72,5 +72,3 @@ rules: []
   среды — стандарт `env`; IDEA-003…006 сделаны (`--brief`, метрики, `--footprint`, стандарты кода в разборе).
 - 2026-09-28 — промах агента, повтор ISS-029: патч `session-digest.py` через heredoc с `\n` снова дал SyntaxError; по
   RUL-051 — после первой неудачи Read и одна замена Edit.
-- 2026-09-28 — версии документов (IDEA-007): базовая линия v1 — git/4dd6bbe; первая правка после неё — этот узел,
-  снимок `work/arhived/dev-model_v1.md` (проверка snapshot.py).

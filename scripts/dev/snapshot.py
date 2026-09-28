@@ -19,6 +19,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCOPE = ("dev/", "design/")
 ARCHIVE = "arhived"
+BASELINE = "4dd6bbe"  # коммит базовой линии v1 (IDEA-007): правки до него снимков не требуют
 VERSION_RE = re.compile(r"^version: (\d+)$", re.M)
 
 
@@ -92,11 +93,20 @@ def snapshot():
 
 def check():
     errors = []
+    pending = {p for p, _ in changed()}
     for full in glob.glob(os.path.join(ROOT, "**", "*.md"), recursive=True):
         path = os.path.relpath(full, ROOT).replace(os.sep, "/")
         if not in_scope(path):
             continue
         nums = snapshots(path)
+        edits = git("log", "--no-merges", "--diff-filter=M", "--format=%h", f"{BASELINE}..HEAD", "--", path).split()
+        if len(edits) > len(nums):
+            errors.append(f"{path}: правок после базовой линии {len(edits)}, снимков {len(nums)} — коммит без snapshot.py")
+        if path in pending:
+            head = git("show", f"HEAD:{path}")
+            last = open(snap_path(path, nums[-1]), encoding="utf-8").read() if nums else None
+            if head and last != head:
+                errors.append(f"{path}: изменён, снимка прежней версии нет — python scripts/dev/snapshot.py")
         if nums and nums != list(range(1, len(nums) + 1)):
             errors.append(f"{path}: снимки не подряд {nums}")
         m = VERSION_RE.search(read(path))
