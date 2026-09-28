@@ -5,4 +5,4 @@
 - Проект системы — [`design/`](design/README.md): источник требований (заморожен, v0.5 + VI-08).
 - Норма — `openspec/specs/` (REQ/SCN); каждое изменение кода и spec — Change OpenSpec под WARRANT, процесс — [`AGENTS.md`](AGENTS.md).
 - Стек — TypeScript / Node.js 22 (ESM), тесты — `node:test`.
-- История исследования, внедрения и аудита — `arhived/`.
+- История исследования, внедрения и аудита — git (`git log`).
