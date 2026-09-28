@@ -89,14 +89,30 @@ types (04 §7). Исключения внутри ядра не бросаютс
 
 ### D-6. Заготовка проекта
 
-- `package.json`: `"type": "module"`, `"engines": { "node": ">=22.6" }` (минимальная версия с
-  `--experimental-strip-types`), `devDependencies`: `typescript` точной версией, `@types/node`; скрипты `test` (та же
+- `package.json`: `"type": "module"`, `"engines": { "node": ">=22.17" }` (`--experimental-strip-types` — с 22.6;
+  Unicode 16.0 в ICU проверен на 22.17, D-7), `devDependencies`: `typescript` точной версией, `@types/node`; скрипты `test` (та же
   команда, что check `tests-passed`, без junit) и `typecheck` (`tsc --noEmit`). `package-lock.json` — в репозитории
   (workflow ставит зависимости `npm ci`).
 - `tsconfig.json`: `strict`, `noEmit`, `module`/`moduleResolution` `nodenext`, `allowImportingTsExtensions`,
   `erasableSyntaxOnly` (запрещает `enum`, `namespace`, parameter properties — то, что `strip-types` не исполняет),
   `verbatimModuleSyntax`; `include`: `src`, `test`; `exclude`: `test/fixtures`.
 - Импорты между файлами — с расширением `.ts`.
+
+### D-7. Unicode 16.0 — таблица в ядре (`UNK-KR-005`)
+
+`\p{Cn}` в регулярном выражении и `normalize` берут версию Unicode движка — поэтому ядро не проверяет назначенность
+через движок. `src/kernel/unicode16.ts` — отсортированный массив диапазонов `[начало, конец]` назначенных кодовых точек
+Unicode 16.0 (дополнение `Cn`, суррогаты — отдельный код), поиск — двоичный. Таблица генерируется один раз из
+`\p{Cn}` на Node с `process.versions.unicode` `16.0` и коммитится как исходный код; тест таблицы на такой же среде
+сверяет её с `\p{Cn}` по всем кодовым точкам, на другой версии — пропуск с причиной (`skip`).
+
+NFC назначенных точек Unicode 16.0 не меняется в следующих версиях (политика стабильности нормализации), поэтому
+Node с Unicode 16.0 и новее даёт те же байты; нижняя граница — `engines` (D-6), тест среды проверяет
+`process.versions.unicode` ≥ 16.0.
+
+Отвергнуто:
+- Разбор UCD `DerivedGeneralCategory.txt` 16.0: загрузка файла — ввод-вывод вне ядра и сети CI; `\p{Cn}` Node 22.17 —
+  тот же источник (ICU 77.1, Unicode 16.0), проверяемый тестом.
 
 ## Risks / Trade-offs
 
@@ -124,7 +140,7 @@ Review 1 (EVID-01M3JHV12SMRHDT34WPQXC7QE3, `NOT_PROVEN`) — правкой spec
 | F-2 | Код числа — по ближайшему double, один на число: `negative-zero` > `non-finite` > `unsafe-integer` | REQ-KR-002, SCN-KR-003 |
 | F-3 | У каждого кода `path` и позиция; ключ с суррогатом — `path` объекта; проверка внутри отклонённых поддеревьев | REQ-KR-002, SCN-KR-017 |
 | F-4, F-21 | Проверки и пути — после NFC; `lone-surrogate` — по кодовым единицам после декодирования | REQ-KR-002, SCN-KR-018 |
-| F-5 | Вопрос maintainer'у — `UNK-KR-005` | Open Questions |
+| F-5 | `UNK-KR-005` — решение maintainer'а: Unicode 16.0, отказ `unassigned` | REQ-KR-002, SCN-KR-023, D-7 |
 | F-6 | У `refsOf` отказы `not-json`, `bad-ref` | REQ-KR-006, SCN-KR-022 |
 | F-7, F-14, F-16 | Вход с несколькими параметрами — объект имён; неверный тип — код параметра; отказы всех параметров по порядку; `revision`: `bad-input`, `bad-body` | REQ-KR-001, REQ-KR-004, REQ-KR-007, SCN-KR-020, SCN-KR-021 |
 | F-8, F-9, F-10 | Обход в порядке канонических ключей; цикл — только на текущем пути; только собственные перечислимые свойства-данные | REQ-KR-003, SCN-KR-019, D-2 |
@@ -141,8 +157,6 @@ Review 1 (EVID-01M3JHV12SMRHDT34WPQXC7QE3, `NOT_PROVEN`) — правкой spec
 
 ## Open Questions
 
-- `UNK-KR-005` (blocking, review 1 F-5) — версия Unicode для NFC формата v1: зафиксировать Unicode 16.0 и отклонять
-  неназначенные кодовые точки (рекомендация) или записать расхождение NFC между версиями Node как допущение. До
-  решения spec этот вопрос не решает.
-
-`UNK-KR-001`…`UNK-KR-004` решены maintainer'ом по рекомендациям (proposal.md); spec им соответствует.
+Нет. `UNK-KR-001`…`UNK-KR-004` решены maintainer'ом по рекомендациям (proposal.md); `UNK-KR-005` — вариант A по
+рекомендации ([PR #2](https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5866978072)): формат v1 фиксирует
+Unicode 16.0, неназначенные в нём кодовые точки — отказ `unassigned`. Spec им соответствует.
