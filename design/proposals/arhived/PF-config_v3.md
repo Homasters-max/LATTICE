@@ -149,6 +149,6 @@ OpenClaw разделяет **проводку** (`openclaw.json`: адреса,
 
 ## 9. Источники
 
-**База знаний `D:\kb`:** TERM-077 — `kb/TERM-077#Значение для фабрики` (версионировать всю конфигурацию, порождающую поведение); PAT-102 — `kb/PAT-102#Решение` (граничные правила — машинной проверкой); PAT-101 — `kb/PAT-101#Решение`; DEC-022 — `kb/DEC-022#Рекомендация автора`. Проверка решений PF-01…PF-06 — [PF-config-kb](PF-config-kb.md) (PAT-195, ANT-109, PAT-129, TERM-368, ANT-036, PAT-106, TERM-133, TERM-206, PAT-049, PAT-113, PAT-095, ANT-004, TERM-109 — с адресами до строк).
+**База знаний `D:\kb`:** TERM-077 — `glossary/term-077-llmops.md#Значение для фабрики` (версионировать всю конфигурацию, порождающую поведение); PAT-102 — `patterns/pat-102-harness-ablation-on-model-change.md#Решение` (граничные правила — машинной проверкой); PAT-101 — `patterns/pat-101-context-as-supply-chain.md#Решение`; DEC-022 — `decisions/dec-022-knowledge-delivery.md#Рекомендация автора`. Проверка решений PF-01…PF-06 — [PF-config-kb](PF-config-kb.md) (PAT-195, ANT-109, PAT-129, TERM-368, ANT-036, PAT-106, TERM-133, TERM-206, PAT-049, PAT-113, PAT-095, ANT-004, TERM-109 — с адресами до строк).
 
 **OpenClaw** (сверено 2026-09-27): https://docs.openclaw.ai/gateway/configuration (строгая схема, отказ стартовать), https://docs.openclaw.ai/start/why-openclaw (политика не зависит от послушания модели), https://docs.openclaw.ai/gateway/config-tools/tool-policy, https://github.com/openclaw/openclaw/blob/main/docs/tools/skills.md (отложенное: список навыков, тело по запросу).
