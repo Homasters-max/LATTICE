@@ -1,0 +1,58 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3N28510EVVENXT9R8GS3V3E",
+  "change": "fix-pin-test",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/fix-pin-test/tasks.md",
+    "openspec/changes/fix-pin-test/design.md",
+    "openspec/changes/fix-pin-test/specs/**"
+  ],
+  "scope": [],
+  "branch": "impl/fix-pin-test",
+  "started_at": "2026-09-28T22:30:28.175Z",
+  "finished_at": "2026-09-28T22:30:40.495Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:4521e062cfac7e248df7ed907cd12a977f32404004581533a165fdc0fbf55feb",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "guard_events": [
+    {
+      "at": "2026-09-28T22:30:32.175Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:30:33.595Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-09-28T22:30:35.156Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

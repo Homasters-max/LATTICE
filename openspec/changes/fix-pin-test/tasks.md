@@ -10,4 +10,4 @@
 
 - [x] 2.1 `warrant check fix-pin-test tests-passed`; проверка — `PROVEN`, число тестов в evidence равно числу тестов
   прогона
-- [ ] 2.2 `warrant verify fix-pin-test`; проверка — завершается успешно
+- [x] 2.2 `warrant verify fix-pin-test`; проверка — завершается успешно
