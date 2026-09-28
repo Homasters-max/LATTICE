@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "kernel-format",
-  "change_state": "PROPOSED",
+  "change_state": "SPECIFIED",
   "classification": {
     "profiles": [
       "feature"
@@ -34,6 +34,20 @@
       "to": "PROPOSED",
       "at": "2026-09-27T22:14:00.485Z",
       "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-09-28T09:55:22.603Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3KQ14WFY9WRM9PKGDCQD098"
+      ]
     }
   ],
   "unknowns": [
