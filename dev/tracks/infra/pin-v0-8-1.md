@@ -5,7 +5,7 @@ change: pin-v0-8-1
 branch: archive/pin-v0-8-1
 pr: 7
 done_when: Change ARCHIVED; job warrant на теге v0.8.1; `warrant sync --check` без GENERATED_DRIFT и LOCK_MISMATCH
-focus: 12
+focus: null
 waits: []
 steps:
   - {id: 1, actor: agent, do: "spec-PR: init change (chore + factory-change, skip_specs), review 1, verify", done: "https://github.com/Homasters-max/LATTICE/pull/5"}
@@ -19,7 +19,7 @@ steps:
   - {id: 9, actor: agent, do: "новая сессия: старт по dev/STATE.md; Run implement — warrant check tests-passed, отметки tasks.md; verify, VERIFYING, локальный warrant ci (задача 3.2); push, PR", done: "https://github.com/Homasters-max/LATTICE/pull/6"}
   - {id: 10, actor: human, do: "merge impl-PR", done: "f4660fb (merge PR #6); job warrant SUCCESS https://github.com/Homasters-max/LATTICE/actions/runs/36398894214"}
   - {id: 11, actor: agent, do: "archive-PR: ci fetch, MERGED --by, archive; dev/: R-L0-01, R-L0-02 retired", done: "EVID-01M3KJVKMVMESG1VPA46Q3J8RN (ci fetch), EVID-01M3KJYNKFMM436XFZXT1FVXX1 (MERGED), EVID-01M3KJZ7D4SNH9QX6NKGJ57RDR (archive)"}
-  - {id: 12, actor: human, do: "merge archive-PR", done: null}
+  - {id: 12, actor: human, do: "merge archive-PR", done: "286829b (merge PR #7, после зелёного job)"}
 rules: []
 ---
 

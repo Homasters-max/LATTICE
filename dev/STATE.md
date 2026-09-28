@@ -1,6 +1,6 @@
 ---
 schema: lattice-dev/node@1
-focus: infra
+focus: foundation
 switch:
   id: lattice2lattice
   note: переключатель фокуса, не состояние и не workflow; проверяется на старте сессии и при archive Change
@@ -103,7 +103,7 @@ rules:
 
 # Состояние разработки LATTICE
 
-Порядок: `infra/dev-state` (закрыт) → `infra/pin-v0-8-1` → `foundation/kernel-format`. Правила полей и протокол —
+Порядок: `infra/dev-state` (закрыт) → `infra/pin-v0-8-1` (закрыт) → `foundation/kernel-format`. Правила полей и протокол —
 [README](README.md).
 
 ## Журнал
@@ -111,3 +111,4 @@ rules:
 - 2026-09-28 — автопамять заменена dev/ (grilling Q1–Q29); фокус — infra/dev-state.
 - 2026-09-28 — R-L0-08 `until` → W-003 verified: junit 0.8.1 проверяется в impl-PR kernel-format, не archive
   pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
+- 2026-09-28 — pin-v0-8-1 ARCHIVED (286829b, PR #7); switch при archive — T1, T2 не наступили; фокус → foundation.

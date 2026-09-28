@@ -5,12 +5,12 @@ change: kernel-format
 branch: spec/kernel-format
 pr: 2
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 3
-waits: [pin-v0-8-1]
+focus: 4
+waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
   - {id: 2, actor: agent, do: "review 1", done: "EVID-01M3JHV12SMRHDT34WPQXC7QE3"}
-  - {id: 3, actor: agent, do: "подтянуть main в spec/kernel-format (после pin-v0-8-1)", done: null}
+  - {id: 3, actor: agent, do: "подтянуть main в spec/kernel-format (после pin-v0-8-1)", done: "3aa7323"}
   - {id: 4, actor: agent, do: "Run specify: правка spec по F-1…F-24 (находки — в EVID-01M3JHV12SMRHDT34WPQXC7QE3)", done: null}
   - {id: 5, actor: agent, do: "F-5 (версия Unicode для NFC) — blocking UNK, вопрос в PR #2", done: null}
   - {id: 6, actor: agent, do: "review 2 субагентом warrant-reviewer, сдача --file", done: null}
