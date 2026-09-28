@@ -14,11 +14,16 @@ hooks:
 
 # Adversarial review спецификации
 
-Схема: **Author → Draft → Reviewer (отдельный Run, отдельный контекст) → Revised** ([06 §7](../../../../docs/06-verification.md)). Достаточно двух ролей; «совет из 10 моделей» не используется — это шум. Ты — Reviewer: ищешь дефекты spec, которые автор не видит, и не исправляешь их сам.
+Схема: **Author → Draft → Reviewer (отдельный Run, отдельный контекст) → Revised** ([06 §7](../../../../docs/06-verification.md)).
+Достаточно двух ролей; «совет из 10 моделей» не используется — это шум. Ты — Reviewer: ищешь дефекты spec, которые
+автор не видит, и не исправляешь их сам.
 
 ## Запрет правки
 
-Skill только читает и рассуждает (READ + REASON + PROPOSE, [07 §5](../../../../docs/07-skills.md)). Skill MUST NOT править, создавать и удалять файлы — ни spec, ни код, ни состояние `.warrant/`; не запускает команды, меняющие репозиторий (`git commit`, `warrant transition`, `openspec archive` и т. п.). Исправление — `proposals[]` в envelope: его делает автор в следующем Draft. Guard Run `review` запрещает любую правку (`write_scope` пуст).
+Skill только читает и рассуждает (READ + REASON + PROPOSE, [07 §5](../../../../docs/07-skills.md)). Skill MUST NOT
+править, создавать и удалять файлы — ни spec, ни код, ни состояние `.warrant/`; не запускает команды, меняющие
+репозиторий (`git commit`, `warrant transition`, `openspec archive` и т. п.). Исправление — `proposals[]` в envelope:
+его делает автор в следующем Draft. Guard Run `review` запрещает любую правку (`write_scope` пуст).
 
 ## Вход
 
@@ -27,15 +32,21 @@ Context Pack Run `review` (`warrant run start <change> --operation review`, REQ-
 - `run` — id Run (`RUN-<ULID>`), `change` — id Change, `context_hash` — hash контекста;
 - `items[]` — `proposal.md`, `specs/**`, `design.md`, `tasks.md` каталога `openspec/changes/<change>/`.
 
-Предмет review — контракт Change: `proposal.md` и delta specs (`specs/**`, требования `REQ-…` и сценарии `SCN-…`). `design.md` и `tasks.md` — контекст: по ним видно, что автор имел в виду, но находка всегда о spec. Main specs (`openspec/specs/**`), ADR и `docs/` читаются, чтобы найти противоречие с уже принятым.
+Предмет review — контракт Change: `proposal.md` и delta specs (`specs/**`, требования `REQ-…` и сценарии `SCN-…`).
+`design.md` и `tasks.md` — контекст: по ним видно, что автор имел в виду, но находка всегда о spec. Main specs
+(`openspec/specs/**`), ADR и `docs/` читаются, чтобы найти противоречие с уже принятым.
 
 ## Процедура
 
-1. Прочитай все `items[]` целиком. Выпиши каждое требование `REQ-…` delta specs (`ADDED`, `MODIFIED`, `REMOVED`) и его сценарии `SCN-…`.
-2. Пройди каждое требование по семи категориям ниже, по порядку. Для каждой категории спроси: «какой вход, актор или отказ здесь не описан?», «можно ли написать тест на это утверждение?».
+1. Прочитай все `items[]` целиком. Выпиши каждое требование `REQ-…` delta specs (`ADDED`, `MODIFIED`, `REMOVED`) и его
+   сценарии `SCN-…`.
+2. Пройди каждое требование по семи категориям ниже, по порядку. Для каждой категории спроси: «какой вход, актор или
+   отказ здесь не описан?», «можно ли написать тест на это утверждение?».
 3. Сверь требования между собой и с main specs: одно понятие — одно определение, одни коды ошибок, одни имена.
-4. Каждый дефект — одна находка (`finding`) с категорией, `severity`, `marker`, `targets` и `recommendation`. Не дроби один дефект на несколько находок и не склеивай разные.
-5. Вопрос, на который ответ даёт только человек, — `unknowns[]` (`blocking: true`, если без ответа реализация неверна) или `decisions_required[]` с вариантами; то, что ты принял без проверки, — `assumptions[]`.
+4. Каждый дефект — одна находка (`finding`) с категорией, `severity`, `marker`, `targets` и `recommendation`.
+   Не дроби один дефект на несколько находок и не склеивай разные.
+5. Вопрос, на который ответ даёт только человек, — `unknowns[]` (`blocking: true`, если без ответа реализация неверна) или
+   `decisions_required[]` с вариантами; то, что ты принял без проверки, — `assumptions[]`.
 6. Собери envelope и перечитай каждую находку `BLOCKER` по критерию ниже.
 
 ## Семь категорий
@@ -61,17 +72,23 @@ Context Pack Run `review` (`warrant run start <change> --operation review`, REQ-
 | `MINOR` | Локальная неточность формулировки, имени, ссылки; поведение однозначно |
 | `INFO` | Наблюдение без дефекта: риск, вопрос стиля, связь с другим Change |
 
-`BLOCKER` делает evidence review `NOT_PROVEN`, и gate `adversarial-review` не пропускает переход `SPECIFIED->APPROVED` ([ADR-0036](../../../../docs/adr/WARRANT-ADR-0036-phase-4b-producers.md) п. 4); `MAJOR` информирует maintainer'а и не блокирует. Поэтому `BLOCKER` ставится только по критерию, а сомнение — `MAJOR` с `marker: INFERENCE`.
+`BLOCKER` делает evidence review `NOT_PROVEN`, и gate `adversarial-review` не пропускает переход `SPECIFIED->APPROVED`
+([ADR-0036](../../../../docs/adr/WARRANT-ADR-0036-phase-4b-producers.md) п. 4); `MAJOR` информирует maintainer'а и не блокирует.
+Поэтому `BLOCKER` ставится только по критерию, а сомнение — `MAJOR` с `marker: INFERENCE`.
 
-Каждая находка имеет `marker`: `FACT` — дефект виден из текста дословно (цитата, два несовместимых утверждения); `INFERENCE` — вывод из отсутствия или толкования. `INFERENCE` не выдаётся за `FACT`.
+Каждая находка имеет `marker`: `FACT` — дефект виден из текста дословно (цитата, два несовместимых утверждения);
+`INFERENCE` — вывод из отсутствия или толкования. `INFERENCE` не выдаётся за `FACT`.
 
 ## Результат
 
-Результат — один envelope `warrant://skill-result/1` ([07 §4](../../../../docs/07-skills.md), схема `packages/cli/schemas/skill-result.1.schema.json`); его принимает CLI (`warrant run submit`, REQ-ENF-007):
+Результат — один envelope `warrant://skill-result/1` ([07 §4](../../../../docs/07-skills.md), схема
+`packages/cli/schemas/skill-result.1.schema.json`); его принимает CLI (`warrant run submit`, REQ-ENF-007):
 
 - `skill` — `specification/adversarial-review@0.2.0`; `run` — id Run из Context Pack;
-- `run_state` — `SUCCEEDED`, если review проведён целиком (с находками или без); `FAILED`, если прочитать spec не удалось; `CANCELLED`, если review прерван;
-- `findings[]` — находки: `id` (`F-1`, `F-2`, …), `marker`, `severity`, `category` из таблицы, `statement`, `targets` (`REQ-…`, `SCN-…` или путь файла), `recommendation`;
+- `run_state` — `SUCCEEDED`, если review проведён целиком (с находками или без); `FAILED`, если прочитать spec не удалось;
+  `CANCELLED`, если review прерван;
+- `findings[]` — находки: `id` (`F-1`, `F-2`, …), `marker`, `severity`, `category` из таблицы, `statement`, `targets`
+  (`REQ-…`, `SCN-…` или путь файла), `recommendation`;
 - `proposals[]`, `unknowns[]`, `assumptions[]`, `decisions_required[]` — каждое в своём массиве, не в `findings[]`;
 - `provenance` — `context_hash` из Context Pack, `model`, `started_at`, `finished_at` (RFC 3339).
 
@@ -99,10 +116,17 @@ Envelope MUST NOT содержать `gate_verdict` и `evidence_status`: ста
 
 ## Сдача результата
 
-Ты работаешь в Run `review`: хук этого файла (`warrant guard --frontend claude` на `Bash` и `Write`) запрещает правку файлов проекта и любую команду shell, кроме `warrant run submit`. Файлы читай инструментами Read, Grep, Glob. Единственная запись — файл envelope во временном каталоге: это часть сдачи, а не правка, которую запрещает текст skill (его запрет касается файлов проекта).
+Ты работаешь в Run `review`: хук этого файла (`warrant guard --frontend claude` на `Bash` и `Write`) запрещает правку файлов
+проекта и любую команду shell, кроме `warrant run submit`. Файлы читай инструментами Read, Grep, Glob. Единственная
+запись — файл envelope во временном каталоге: это часть сдачи, а не правка, которую запрещает текст skill (его запрет
+касается файлов проекта).
 
-1. Context Pack — вывод `warrant run start <change> --operation review`, его передаёт тот, кто тебя вызвал: `run`, `change`, `items[]`, `context_hash`. Без него review не начинай — попроси Context Pack.
-2. Собери envelope `warrant://skill-result/1` раздела «Результат» (`skill` — `specification/adversarial-review@0.2.0`, `run` и `context_hash` — из Context Pack). Инструментом Write запиши его файлом `<run>.envelope.json` в каталог scratchpad сессии — путь из строки «Scratchpad directory» твоего окружения (запись туда не требует разрешения); строки нет — во временный каталог ОС (`TEMP` на Windows, `TMPDIR` или `/tmp` на Linux и macOS). В проект файл не пиши.
+1. Context Pack — вывод `warrant run start <change> --operation review`, его передаёт тот, кто тебя вызвал: `run`,
+   `change`, `items[]`, `context_hash`. Без него review не начинай — попроси Context Pack.
+2. Собери envelope `warrant://skill-result/1` раздела «Результат» (`skill` — `specification/adversarial-review@0.2.0`, `run` и
+   `context_hash` — из Context Pack). Инструментом Write запиши его файлом `<run>.envelope.json` в каталог scratchpad
+   сессии — путь из строки «Scratchpad directory» твоего окружения (запись туда не требует разрешения); строки нет —
+   во временный каталог ОС (`TEMP` на Windows, `TMPDIR` или `/tmp` на Linux и macOS). В проект файл не пиши.
 3. Сдай его из корня проекта, без `cd` и без других команд в строке — сначала пробой, затем по-настоящему:
 
 ```bash
@@ -116,5 +140,7 @@ warrant run submit --file <путь к файлу envelope>
 {"$schema":"warrant://skill-result/1","skill":"specification/adversarial-review@0.2.0","run":"RUN-01J8Z3KQ2M7N4P6R8T0V2W4X6Y","run_state":"SUCCEEDED","findings":[],"provenance":{"model":"<model>","started_at":"2026-09-28T10:00:00Z","finished_at":"2026-09-28T10:12:00Z"}}
 ```
 
-4. Ответ `ok: false` — Run остаётся активным: исправь файл по `errors[].message`, `hint` и `data.received` и сдай снова с шага 3. Ответ `ok: true` — Run завершён: верни вызвавшему `evidence`, `status` и число находок по `severity` из ответа.
+4. Ответ `ok: false` — Run остаётся активным: исправь файл по `errors[].message`, `hint` и `data.received` и сдай
+   снова с шага 3. Ответ `ok: true` — Run завершён: верни вызвавшему `evidence`, `status` и число находок по
+   `severity` из ответа.
 5. `warrant` не найден или команда отклонена не guard'ом — остановись и сообщи вызвавшему; guard не обходи.
