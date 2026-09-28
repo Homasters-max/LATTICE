@@ -1,13 +1,13 @@
 ---
 id: wrap-cleanup
 type: dev/work@1
-version: 2
+version: 1
 title: Переносы строк по ширине и ссылки на строки
 track: infra
 from: gh/12
 change: null
 branch: chore/wrap-cleanup-dev
-pr: 15
+pr: null
 waits: []
 rules: []
 ---
@@ -27,7 +27,7 @@ rules: []
 - [x] 3 · agent · `D:\kb`: 16 874 правки в 982 файлах; навыки kb-search, kb-research, arch-integrate (junction в `D:\kb`) — вместе с базой; поиск до и после совпадает — gh/13
 - [x] 4 · agent · LATTICE: 51 адрес строки → ссылки на раздел; карта строк `--map`/`--remap`, фильтр `.md`/`.txt`, исключения — gh/13
 - [x] 5 · agent · правило ссылок, проверка `--links`, 23 битые ссылки исправлены — gh/14
-- [x] 6 · agent · правила в `rules/docs.md` (RUL-059, RUL-038), план → этот объект, описание инструмента → его `README.md` — gh/15
+- [ ] 6 · agent · правила в `rules/docs.md` (RUL-059, RUL-038), план → этот объект, описание инструмента → его `README.md`
 - [ ] 7 · agent · свои навыки `~/.claude/skills/`: domain-modeling, grill-me, grill-with-docs, grilling — `md-wrap --fix`
 - [ ] 8 · agent · остаток `D:\kb`: 13 файлов B, C, R — субагентами, по файлу на задачу
 - [ ] 9 · human · kb-research: доказательства `путь:строка#отпечаток` и `check-refs` перевести на `kb/ID#Раздел` (D-4)?
