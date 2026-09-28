@@ -1,6 +1,7 @@
 ---
 id: process
 type: dev/guide@1
+version: 1
 title: Повторяющиеся процедуры
 paths: ["**"]
 rules:

@@ -1,6 +1,7 @@
 ---
 id: IDEA-004
 type: dev/idea@1
+version: 1
 title: Метрики в сжатии сессии
 kind: idea
 by: agent

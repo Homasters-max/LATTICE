@@ -1,6 +1,7 @@
 ---
 id: pin-v0-8-1
 type: dev/work@1
+version: 1
 title: Закрепить WARRANT v0.8.1
 track: infra
 from: null

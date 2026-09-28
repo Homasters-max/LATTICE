@@ -1,6 +1,7 @@
 ---
 id: lattice2lattice-t1
 type: dev/work@1
+version: 1
 title: Форма dev/ в типах LATTICE
 track: infra
 from: null

@@ -1,6 +1,7 @@
 ---
 id: infra
 type: dev/track@1
+version: 1
 title: Процесс и инструменты разработки
 focus: dev-model
 depends_on: []

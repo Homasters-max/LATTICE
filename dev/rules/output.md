@@ -1,6 +1,7 @@
 ---
 id: output
 type: dev/guide@1
+version: 1
 title: Вывод агента человеку
 paths: ["**"]
 rules:

@@ -1,6 +1,7 @@
 ---
 id: quality
 type: dev/guide@1
+version: 1
 title: Качество кода
 paths: ["src/**", "test/**"]
 rules:

@@ -1,6 +1,7 @@
 ---
 id: IDEA-002
 type: dev/idea@1
+version: 1
 title: Модель dev/ на объектах LATTICE, отчёты отладки, стандарты разработки
 kind: request
 by: human:Homasters-max

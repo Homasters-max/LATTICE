@@ -1,6 +1,7 @@
 ---
 id: IDEA-005
 type: dev/idea@1
+version: 1
 title: След dev/ — число для сигнала остановки
 kind: idea
 by: agent

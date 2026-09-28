@@ -1,6 +1,7 @@
 ---
 id: session-audit
 type: dev/work@1
+version: 1
 title: Разбор сессий субагентом
 track: infra
 from: IDEA-002

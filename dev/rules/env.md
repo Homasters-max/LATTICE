@@ -1,6 +1,7 @@
 ---
 id: env
 type: dev/guide@1
+version: 1
 title: Среда — Windows, Git Bash, инструменты агента
 paths: ["**"]
 rules:

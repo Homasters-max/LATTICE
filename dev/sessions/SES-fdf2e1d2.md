@@ -1,6 +1,7 @@
 ---
 id: SES-fdf2e1d2
 type: dev/session@1
+version: 1
 title: Bootstrap LATTICE под WARRANT и spec-PR kernel-format до review 1
 transcript: fdf2e1d2-dada-4019-bb7f-f592da9a911b
 period: 2026-09-27T21:45Z/2026-09-28T06:10Z

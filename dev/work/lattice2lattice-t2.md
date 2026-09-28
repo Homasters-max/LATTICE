@@ -1,6 +1,7 @@
 ---
 id: lattice2lattice-t2
 type: dev/work@1
+version: 1
 title: Состояние разработки из LATTICE
 track: infra
 from: null

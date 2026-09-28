@@ -1,6 +1,7 @@
 ---
 id: git
 type: dev/guide@1
+version: 1
 title: Git и PR
 paths: ["**"]
 rules:

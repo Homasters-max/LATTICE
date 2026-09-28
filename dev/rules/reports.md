@@ -1,6 +1,7 @@
 ---
 id: reports
 type: dev/guide@1
+version: 1
 title: Отчёты отладки
 paths: ["dev/reports/**"]
 rules:

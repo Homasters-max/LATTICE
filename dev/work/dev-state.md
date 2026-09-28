@@ -1,6 +1,7 @@
 ---
 id: dev-state
 type: dev/work@1
+version: 1
 title: Состояние разработки в репозитории
 track: infra
 from: IDEA-001

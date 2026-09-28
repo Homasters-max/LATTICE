@@ -1,6 +1,7 @@
 ---
 id: code
 type: dev/guide@1
+version: 1
 title: Архитектура кода
 paths: ["src/**"]
 rules:

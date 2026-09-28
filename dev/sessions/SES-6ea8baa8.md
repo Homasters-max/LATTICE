@@ -1,6 +1,7 @@
 ---
 id: SES-6ea8baa8
 type: dev/session@1
+version: 1
 title: Архив pin-v0-8-1 и полный цикл kernel-format
 transcript: 6ea8baa8-af55-4d74-b31e-37711fd3b180
 period: 2026-09-28T08:37Z/10:38Z

@@ -1,6 +1,7 @@
 ---
 id: IDEA-006
 type: dev/idea@1
+version: 1
 title: Проверка стандартов кода при разборе сессии
 kind: idea
 by: agent

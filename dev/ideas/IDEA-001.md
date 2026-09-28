@@ -1,6 +1,7 @@
 ---
 id: IDEA-001
 type: dev/idea@1
+version: 1
 title: Отказ от скрытой памяти агента
 kind: request
 by: human:Homasters-max

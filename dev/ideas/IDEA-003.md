@@ -1,6 +1,7 @@
 ---
 id: IDEA-003
 type: dev/idea@1
+version: 1
 title: Правила текстом для промпта субагента
 kind: idea
 by: agent

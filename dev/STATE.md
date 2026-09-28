@@ -1,6 +1,7 @@
 ---
 id: state
 type: dev/state@1
+version: 1
 title: Состояние разработки LATTICE
 focus: infra
 switch:

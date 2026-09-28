@@ -91,7 +91,7 @@ def load():
     objs, errors = {}, []
     for path in sorted(glob.glob(os.path.join(DEV, "**", "*.md"), recursive=True)):
         rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
-        if rel == "dev/README.md":
+        if rel == "dev/README.md" or "/arhived/" in rel:
             continue
         text = open(path, encoding="utf-8").read()
         if not text.startswith("---\n"):
@@ -250,6 +250,15 @@ def check(objs, rules, errors, signals):
             signals.append(f"стандарт {o.id}: правил {len(active)} > 7 — разделить тему")
 
 
+def versions_check():
+    """Версии документов (snapshot.py --check): version = 1 + число снимков в arhived/."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("snapshot", os.path.join(ROOT, "scripts", "dev", "snapshot.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.check()
+
+
 def since(objs):
     return str((objs.get("state").fm.get("env") or {}).get("sessions_since", "2026-09-27T21:45"))
 
@@ -345,9 +354,13 @@ def start(objs, rules, signals):
 
 
 def footprint(objs, rules):
-    lines = {}
+    lines, archived_lines = {}, 0
     for path in glob.glob(os.path.join(DEV, "**", "*.md"), recursive=True):
-        part = os.path.relpath(path, DEV).replace(os.sep, "/").split("/")[0]
+        rel = os.path.relpath(path, DEV).replace(os.sep, "/")
+        if "/arhived/" in "/" + rel:
+            archived_lines += sum(1 for _ in open(path, encoding="utf-8"))
+            continue
+        part = rel.split("/")[0]
         part = part if part.endswith(".md") is False else "(корень)"
         lines[part] = lines.get(part, 0) + sum(1 for _ in open(path, encoding="utf-8"))
     archived = [d for d in glob.glob(os.path.join(ROOT, "openspec", "changes", "archive", "*")) if os.path.isdir(d)]
@@ -361,7 +374,7 @@ def footprint(objs, rules):
           f"на Change — {process // max(1, len(archived))} строк процесса")
     print("строки: " + ", ".join(f"{k} {v}" for k, v in sorted(lines.items())))
     print("объекты: " + ", ".join(f"{k.split('/')[1]} {v}" for k, v in sorted(by_type.items())))
-    print(f"правил: {len(rules)}, активных {active}")
+    print(f"правил: {len(rules)}, активных {active}; строк в arhived/ (версии) {archived_lines}")
 
 
 def main():
@@ -377,6 +390,7 @@ def main():
     rules = rules_of(objs)
     signals = []
     check(objs, rules, errors, signals)
+    errors += versions_check()
     if a.footprint:
         footprint(objs, rules)
         return 0

@@ -1,6 +1,7 @@
 ---
 id: dev-model
 type: dev/work@1
+version: 1
 title: Модель dev/ на объектах LATTICE
 track: infra
 from: IDEA-002

@@ -1,6 +1,7 @@
 ---
 id: foundation
 type: dev/track@1
+version: 1
 title: Общие контракты срезов
 focus: null
 depends_on: []

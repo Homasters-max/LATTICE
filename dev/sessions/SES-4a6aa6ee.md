@@ -1,6 +1,7 @@
 ---
 id: SES-4a6aa6ee
 type: dev/session@1
+version: 1
 title: Состояние разработки в репозитории — dev-state, dev-model, session-audit
 transcript: 4a6aa6ee-565f-468f-8770-e7aaec11ec85
 period: "2026-09-28T06:25Z/…"

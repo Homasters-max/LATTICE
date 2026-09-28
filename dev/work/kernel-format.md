@@ -1,6 +1,7 @@
 ---
 id: kernel-format
 type: dev/work@1
+version: 1
 title: Формат v1 ядра
 track: foundation
 from: null

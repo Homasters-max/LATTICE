@@ -1,6 +1,7 @@
 ---
 id: tests
 type: dev/guide@1
+version: 1
 title: Тесты
 paths: ["test/**"]
 rules:
