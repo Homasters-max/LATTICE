@@ -2,12 +2,12 @@
 schema: lattice-dev/node@1
 kind: work
 branch: chore/dev-state
-pr: null
+pr: 3
 done_when: PR chore/dev-state слит; автопамять LATTICE выключена и пуста; новая сессия стартует по dev/STATE.md
-focus: 1
+focus: 2
 waits: []
 steps:
-  - {id: 1, actor: agent, do: "PR chore/dev-state: dev/, CLAUDE.md, .gitignore, предложение для WARRANT", done: null}
+  - {id: 1, actor: agent, do: "PR chore/dev-state: dev/, CLAUDE.md, .gitignore, предложение для WARRANT", done: "https://github.com/Homasters-max/LATTICE/pull/3"}
   - {id: 2, actor: human, do: "комментарий-решение в PR: grilling Q1–Q29, R-L0-01, R-L0-02, E7 в приёмке S4", done: null}
   - {id: 3, actor: agent, do: "source R-L0-01, R-L0-02 → URL комментария, status active", done: null}
   - {id: 4, actor: human, do: "merge PR chore/dev-state", done: null}
