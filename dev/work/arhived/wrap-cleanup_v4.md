@@ -1,7 +1,7 @@
 ---
 id: wrap-cleanup
 type: dev/work@1
-version: 6
+version: 4
 title: Переносы строк по ширине и ссылки на строки
 track: infra
 from: gh/12
@@ -34,8 +34,7 @@ rules: []
 - [x] 10 · agent · SRA — отдельной сессией, https://github.com/Homasters-max/SRA/pull/83: обработаны `docs/`, `.claude/`; намеренно не тронуты `sra/skills` (пакет с дайджестом), `lattice/`, `docs/integrations/`, `.kb-search/` (не в git, kb-search в SRA заморожен); приёмочный опыт — 0 переносов — https://github.com/Homasters-max/SRA/pull/83
 - [x] 11 · agent · `dev-check.py`: шаг md-wrap — переносы, метки, адреса строк, битые ссылки — ошибки с командой `--fix`, спорные — сигналы, файлы не меняет; незаменённые заглушки шаблонов — ошибка — gh/16
 - [x] 12 · agent · шаблоны `dev/templates/` (9 типов), `design/templates/adr.md`, индекс `dev/INDEX.md` (`dev-check.py --index`); шаблоны OpenSpec — PRP-002; приёмка опытом: свежий Sonnet создаёт `issue` и `work` по шаблону — `dev-check` 0 ошибок, переносов 0 — gh/16
-- [x] 13 · agent · шаблоны выходных .md своих навыков: kb-research — `templates/` (START, реестр, пакет, фрагменты А и Б, итоги), `report-template.md` и `batch/run-template.md` приведены к D-5; arch-integrate — 9 шаблонов, ADR как `design/templates/adr.md`; domain-modeling — ADR и CONTEXT; session-audit — ссылки на `templates/report.md`, `report-synthesis.md`, `session.md`; приёмка опытом — `START.md` по шаблону без переносов и заглушек — gh/16
-- [ ] 14 · human · arch-integrate: `ledger.mjs check` требует в колонке «Где» реестра адрес строки `design/…md:NN`, `recalc-refs.mjs` пересчитывает строки, «Закрытие сессии» ссылается на убранные `check-refs --fix/--stamp` — перевести скрипты на `#раздел или id` (правка скриптов) или оставить исключением?
+- [ ] 13 · agent · шаблоны выходных файлов своих навыков (отчёт kb-research, реестры arch-integrate, SES/RPT session-audit) — по принципам D-5
 
 ## Приёмка
 
@@ -62,5 +61,3 @@ rules: []
 - 2026-09-28 — правило ссылок и проверка `--links` (gh/14).
 - 2026-09-28 — рабочая папка `wrap-cleanup/` расформирована: план — этот объект, правила — `rules/docs.md`, описание инструмента — его `README.md`.
 - 2026-09-28 — остаток D:\kb, kb-research на ссылки-разделы, индекс dev/, шаблоны, md-wrap в dev-check, PRP-002 (gh/16).
-- 2026-09-28 — склейка прятала задуманные структуры: список с «4.» и строки таблицы без разделителя по CommonMark — продолжение абзаца, склеивались в одну строку. md-wrap: классы N (список — пустая строка перед ним) и T (таблица — не трогать); восстановлены 2 таблицы `D:\kb` из копии, SRA — https://github.com/Homasters-max/SRA/pull/86; в LATTICE таких мест нет.
-- 2026-09-28 — шаблоны выходных файлов навыков (шаг 13); в arch-integrate реестр внедрения остаётся на адресах строк до решения (шаг 14).

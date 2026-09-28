@@ -18,6 +18,6 @@
 - WARRANT: что передать в первую очередь (по цене потерь), что уже закрыто upstream;
 - 3–7 предложений упростить или унифицировать процесс, каждое с основанием (RPT, ISS) и ожидаемым выигрышем.
 
-Выход: `{out}/synthesis-{rpt}.md` — отчёт по форме RPT: frontmatter (`id: {rpt}`, `type: dev/report@1`, `title`, `kind: synthesis`, `sessions: [SES-…]`, `period`, `refs: [ISS-…]`), `# {rpt} — <title>`, абзац-суть, «Сессии», «Сбои» (системные: № · что · классы · сессии · цена · действие), «Не хватает», «Улучшения», «Итог». ≤ 120 строк. Плюс `{out}/synthesis-actions-{rpt}.md` — список действий: слить ISS, retire RUL, новые IDEA, пункты PRP.
+Выход: `{out}/synthesis-{rpt}.md` — файл будет копией [dev/templates/report-synthesis.md](../../../dev/templates/report-synthesis.md), заглушки `<…>` заменить: `id: {rpt}`, `kind: synthesis`; сверх шаблона — `sessions: [SES-…]` во frontmatter; «Сбои» — системные: № · что · классы · сессии · цена · действие. ≤ 120 строк. Плюс `{out}/synthesis-actions-{rpt}.md` — список действий: слить ISS, retire RUL, новые IDEA, пункты PRP.
 
 Финальное сообщение — 10 строк главного.

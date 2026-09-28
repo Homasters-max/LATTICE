@@ -80,7 +80,7 @@
 
 ## Файл
 
-Новый файл — копией шаблона `templates/<тип>.md` (`idea`, `track`, `work`, `work-change`, `issue`, `session`, `report`, `report-synthesis`, `proposal`, `guide`): заглушки `<…>` заменить, необязательного в шаблоне нет. Frontmatter: `id`, `type`, `version`, `title`, `aliases?`, поля типа. Затем `# <id> — <title>`, **первый абзац — одна фраза-суть**, затем разделы строго по порядку:
+Новый файл — копией шаблона `templates/<тип>.md` (`idea`, `track`, `work`, `work-change`, `issue`, `session`, `report`, `proposal`, `guide`): заглушки `<…>` заменить, необязательного в шаблоне нет. Frontmatter: `id`, `type`, `version`, `title`, `aliases?`, поля типа. Затем `# <id> — <title>`, **первый абзац — одна фраза-суть**, затем разделы строго по порядку:
 
 | Тип | Разделы |
 |---|---|
