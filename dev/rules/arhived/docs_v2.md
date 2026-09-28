@@ -1,7 +1,7 @@
 ---
 id: docs
 type: dev/guide@1
-version: 3
+version: 2
 title: Тексты и документы
 paths: ["dev/**", "design/**", "openspec/changes/**"]
 rules:
@@ -23,4 +23,4 @@ rules:
 
 ## Проверка
 
-Review; RUL-036, RUL-038 — `lint` LATTICE после T1. RUL-059 и RUL-038 проверяет `python scripts/dev/dev-check.py` (инструмент md-wrap: переносы по ширине, метки, адреса строк, битые ссылки — ошибки; исправление переносов — `md-wrap --fix`); описание инструмента — его `README.md`. Новый объект — копией `templates/<тип>.md`; незаменённая заглушка `<…>` — ошибка dev-check.
+Review; RUL-036, RUL-038 — `lint` LATTICE после T1. RUL-059 — `node C:/Users/Xiaomi/.claude/tools/md-wrap/md-wrap.mjs --check dev design` (A и L исправляет `--fix`), RUL-038 — тот же инструмент с `--links` (битые ссылки); описание — `README.md` инструмента.

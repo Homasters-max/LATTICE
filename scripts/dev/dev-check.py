@@ -7,8 +7,13 @@
     python scripts/dev/dev-check.py --rules env активные правила стандарта или узла — текстом
     python scripts/dev/dev-check.py --brief review  всё применимое к операции — текстом для промпта субагента (RUL-013)
     python scripts/dev/dev-check.py --footprint    след dev/: строки, объекты по типам, правила, на один ARCHIVED Change
+    python scripts/dev/dev-check.py --index    записать dev/INDEX.md — все объекты и правила: id, заголовок, суть, файл
 
-Только чтение; зависимость — Python 3.10+ и PyYAML. `--start` вызывает `warrant status <change>` для Change в фокусе.
+Обычный запуск проверяет и тексты dev/, design/ инструментом md-wrap (RUL-059, RUL-038): переносы по ширине, адреса
+строк, битые ссылки — ошибки (исправить: md-wrap --fix; ссылки — руками); спорные места — сигналы. Инструмент —
+MD_WRAP или C:/Users/Xiaomi/.claude/tools/md-wrap/md-wrap.mjs; нет его — сигнал.
+
+Только чтение (кроме --index); зависимость — Python 3.10+ и PyYAML. `--start` вызывает `warrant status <change>` для Change в фокусе.
 """
 import argparse
 import datetime as dt
@@ -25,6 +30,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 DEV = os.path.join(ROOT, "dev")
 TRANSCRIPTS = os.path.join(os.path.expanduser("~"), ".claude", "projects", "D--project-LATTICE")
 TODAY = dt.date.today()
+INDEX = os.path.join(DEV, "INDEX.md")
+MD_WRAP = os.environ.get("MD_WRAP", "C:/Users/Xiaomi/.claude/tools/md-wrap/md-wrap.mjs")
 
 SECTIONS = {
     "dev/state": ["Журнал"],
@@ -91,7 +98,7 @@ def load():
     objs, errors = {}, []
     for path in sorted(glob.glob(os.path.join(DEV, "**", "*.md"), recursive=True)):
         rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
-        if rel == "dev/README.md" or "/arhived/" in rel:
+        if rel in ("dev/README.md", "dev/INDEX.md") or "/arhived/" in rel or rel.startswith("dev/templates/"):
             continue
         text = open(path, encoding="utf-8").read()
         if not text.startswith("---\n"):
@@ -186,6 +193,15 @@ def check(objs, rules, errors, signals):
                 errors.append(f"{o.path}: шаг не по форме «n · agent|human · что»")
             if len(nums) != len(set(nums)):
                 errors.append(f"{o.path}: номера шагов повторяются")
+        stubs = [k for k, v in o.fm.items() if isinstance(v, str) and re.fullmatch(r"<[^<>]+>", v.strip())]
+        fence = False
+        for line in o.body.split("\n"):
+            if line.lstrip().startswith(("```", "~~~")):
+                fence = not fence
+            elif not fence and re.fullmatch(r"(- \[ \] )?<[^<>]+>", line.strip()):
+                stubs.append(line.strip()[:40])
+        if stubs:
+            errors.append(f"{o.path}: заглушки шаблона не заменены: {', '.join(stubs[:5])}")
         if o.type == "dev/issue":
             items = o.checklist("Закрытие")
             if not items:
@@ -248,6 +264,79 @@ def check(objs, rules, errors, signals):
             signals.append(f"{o.id}: активных правил {len(active)} > 7 — поднять общее или сделать формой")
         if len(active) > 7 and o.type == "dev/guide":
             signals.append(f"стандарт {o.id}: правил {len(active)} > 7 — разделить тему")
+
+
+TYPE_TITLE = {"dev/state": "Состояние", "dev/idea": "Идеи", "dev/track": "Дорожки", "dev/work": "Работы",
+              "dev/issue": "Проблемы", "dev/guide": "Стандарты", "dev/proposal": "Предложения", "dev/session": "Сессии",
+              "dev/report": "Отчёты"}
+
+
+def summary(o):
+    lines = o.body.lstrip("\n").split("\n")
+    return " ".join(lines[2].split()) if len(lines) > 2 else ""
+
+
+def cell(x):
+    return " ".join(str(x).split()).replace("|", "\\|")
+
+
+def index_text(objs, rules):
+    out = ["# Индекс dev/", "",
+           "Все объекты и правила dev/ одной таблицей на тип: id, заголовок, суть, файл. Генерируется "
+           "`python scripts/dev/dev-check.py --index` — руками не править; устарел — ошибка dev-check.", ""]
+    for t, title in TYPE_TITLE.items():
+        items = sorted((o for o in objs.values() if o.type == t), key=lambda o: o.path)
+        if not items:
+            continue
+        out += [f"## {title} ({len(items)})", "", "| id | Заголовок | Суть | Файл |", "|---|---|---|---|"]
+        for o in items:
+            rel = o.path[len("dev/"):]
+            out.append(f"| {o.id} | {cell(o.fm.get('title', ''))} | {cell(summary(o))} | [{rel}]({rel}) |")
+        out.append("")
+    out += [f"## Правила ({len(rules)})", "", "| id | Правило | Где | Статус |", "|---|---|---|---|"]
+    for rid, (o, r) in sorted(rules.items()):
+        rel = o.path[len("dev/"):]
+        out.append(f"| {rid} | {cell(r.get('text', ''))} | [{o.id}]({rel}) | {r.get('status', '')} |")
+    return "\n".join(out) + "\n"
+
+
+def index_check(objs, rules, errors):
+    want = index_text(objs, rules)
+    have = open(INDEX, encoding="utf-8").read() if os.path.exists(INDEX) else None
+    if have != want:
+        errors.append("dev/INDEX.md " + ("нет" if have is None else "устарел") + " — python scripts/dev/dev-check.py --index")
+
+
+def md_wrap_check(errors, signals):
+    """Тексты dev/ и design/: переносы по ширине (A, L), адреса строк (R), битые ссылки (S) — ошибки; B, C — сигналы."""
+    if not os.path.exists(MD_WRAP):
+        signals.append(f"md-wrap не найден ({MD_WRAP}) — тексты не проверены")
+        return
+    def run(mode):
+        r = subprocess.run(["node", MD_WRAP, mode, "dev", "design", "--json"], capture_output=True, text=True,
+                           encoding="utf-8", cwd=ROOT, timeout=300)
+        return json.loads(r.stdout or "null")
+    try:
+        found, links = run("--check"), run("--links")
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        signals.append(f"md-wrap не отработал: {e}")
+        return
+    for x in found or []:
+        path = x["file"].replace("\\", "/")
+        if x.get("error"):
+            errors.append(f"{path}: md-wrap — {x['error']}")
+        by = {}
+        for f in x.get("findings", []):
+            by.setdefault(f["cls"], []).append(f["line"])
+        for cls, what, err in (("A", "перенос по ширине", True), ("L", "метка **X:** слита с абзацем", True),
+                               ("R", "адрес строки — ссылка на id или раздел (RUL-038)", True),
+                               ("B", "спорный перенос", False), ("C", "жёсткий разрыв строки", False)):
+            if cls in by:
+                msg = f"{path}: {what}, строки {', '.join(map(str, by[cls][:8]))}" + (
+                    f" — node {MD_WRAP} --fix {path}" if cls in "AL" else "")
+                (errors if err else signals).append(msg)
+    for x in (links or {}).get("broken", []):
+        errors.append(f"{x['file'].replace(chr(92), '/')}:{x['line']}: битая ссылка {x['link']} — {x['why']} (RUL-038)")
 
 
 def versions_check():
@@ -386,6 +475,7 @@ def main():
     ap.add_argument("--rules", metavar="ID", help="id стандарта или узла")
     ap.add_argument("--footprint", action="store_true")
     ap.add_argument("--brief", metavar="OPERATION", choices=sorted(BRIEF), help="правила для промпта субагента")
+    ap.add_argument("--index", action="store_true", help="записать dev/INDEX.md")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     objs, errors = load()
@@ -393,6 +483,13 @@ def main():
     signals = []
     check(objs, rules, errors, signals)
     errors += versions_check()
+    if a.index:
+        open(INDEX, "w", encoding="utf-8", newline="").write(index_text(objs, rules))
+        print(f"dev/INDEX.md: объектов {len(objs)}, правил {len(rules)}")
+        return 0
+    if not (a.footprint or a.brief or a.rules or a.sessions or a.start):
+        index_check(objs, rules, errors)
+        md_wrap_check(errors, signals)
     if a.footprint:
         footprint(objs, rules)
         return 0
