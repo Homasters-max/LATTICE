@@ -91,6 +91,14 @@ rules:
     when: {operation: implement}
     until: pin-v0-8-1 ARCHIVED
     review_by: 2026-10-12
+  - id: R-L0-09
+    text: Правка с кириллицей в шаблоне — Edit; perl — только ASCII-шаблоны или perl -Mutf8 -CSD
+    force: advisory
+    status: active
+    source: A-001
+    owner: human:Homasters-max
+    until: A-001 closed
+    review_by: 2026-10-12
 ---
 
 # Состояние разработки LATTICE
