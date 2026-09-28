@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3N2DKRYDJD4QYW1KYX3695W",
+  "claim": {
+    "text": "openspec-validate passed for fix-pin-test",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "709729a9894fa74245c3d6b5d937f2f489a870c6",
+    "base_commit": "65650da79170da3537eeb0a335454ae65c45dcca",
+    "spec_revision": "openspec/changes/fix-pin-test@709729a9894fa74245c3d6b5d937f2f489a870c6",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:e2679c1761215d1d726534515226708eb1a9f4a59b59a7ce8559baa7697b053f",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "created_at": "2026-09-28T22:33:27.072Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/fix-pin-test/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:a02bb5835d6d4ad49614cf63475f669baef0dc4761e05757d79defa66503a366"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}
