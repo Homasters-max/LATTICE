@@ -35,6 +35,3 @@ desktop.ini
 .kb-search/
 .vscode/
 .idea/
-
-# --- архив: сырые транскрипты агентов (77 МБ); доказательства — в отчётах
-arhived/research/runs/*/logs/transcripts/
