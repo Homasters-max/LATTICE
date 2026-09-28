@@ -32,6 +32,14 @@
 2. Run `implement` — правка теста (D-1) и отметки `tasks.md`; `warrant run finish`.
 3. Последний коммит — `warrant verify fix-pin-test` и `transition VERIFYING`. Тело PR — `Closes #21`.
 
+## Implementation Notes
+
+- **I-1** (review F-2, EVID-01M3N1TBR3EB58WHN3JM473THS): удалённое правило без `warrant sync` оставляет свой текст в
+  `AGENTS.md`, и тест правил это не видит — проверка односторонняя (правило → `AGENTS.md`). Вне объёма: рассинхрон
+  `AGENTS.md` с правилами ловит `warrant sync --check` / `warrant validate` (`GENERATED_DRIFT`). Решение maintainer'а —
+  одобрение spec-PR https://github.com/Homasters-max/LATTICE/pull/24, где план записан. F-1 закрыт в коде: каталог
+  читается с проверкой наличия, пустой — красный `it()` «there is at least one project rule».
+
 ## Risks / Trade-offs
 
 - Тест станет зелёным и при правиле, которое `warrant sync` ещё не доставил, — нет: проверка текста в `AGENTS.md` это ловит.

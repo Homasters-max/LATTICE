@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3N24BQTN9PZVP57KB4HHCNE",
+  "claim": {
+    "text": "Homasters-max approved fix-pin-test for SPECIFIED->APPROVED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "63d59dc226c03c1a88db99935ddb77d61554b994",
+    "base_commit": "65650da79170da3537eeb0a335454ae65c45dcca",
+    "spec_revision": "openspec/changes/fix-pin-test@63d59dc226c03c1a88db99935ddb77d61554b994",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/24"
+  },
+  "context_hash": "sha256:ab979861768096a76b9114c0c1df233c36a6b6e450a1dbf53f52d223a6532347",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "created_at": "2026-09-28T22:28:23.931Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}

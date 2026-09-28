@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3N26RGX55K9VE8C7FBDX8XF",
+  "claim": {
+    "text": "tests-passed passed for fix-pin-test",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "29e667ab7807b14678e69545653ee178dc9f5e9f",
+    "base_commit": "65650da79170da3537eeb0a335454ae65c45dcca",
+    "spec_revision": "openspec/changes/fix-pin-test@29e667ab7807b14678e69545653ee178dc9f5e9f",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:bf5ca9f6ce5ffb2186c09b1486f7367a836b7f86d146598ab4f55958ca535814",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "created_at": "2026-09-28T22:29:42.559Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/fix-pin-test/raw/tests-passed/junit.xml",
+      "sha256": "sha256:07b1b45eb155f72ec0eedc80504c3a09854f1b9108f4489ed32dbdef29efffb7"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 394
+  }
+}
