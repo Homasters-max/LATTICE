@@ -1,9 +1,9 @@
 ---
 id: state
 type: dev/state@1
-version: 2
+version: 1
 title: Состояние разработки LATTICE
-focus: s0
+focus: infra
 switch:
   id: lattice2lattice
   note: переключатель фокуса, не состояние и не workflow; проверяется на старте сессии и при archive Change
@@ -110,5 +110,3 @@ rules:
   процедуры Change, не ловушки проекта.
 - 2026-09-28 — RUL-003, RUL-004, RUL-009 (ловушки среды и техники) перенесены в стандарт `env` — их получают и субагенты
   (RPT-004: аналитики упирались в ISS-015, ISS-028); в STATE остались ловушки WARRANT.
-- 2026-09-28 — dev-model закрыт (`gh/8`); фокус → s0 (скелет, design/05-slices.md#s0): первым шагом — Change среза по
-  AGENTS.md.

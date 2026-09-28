@@ -1,9 +1,9 @@
 ---
 id: infra
 type: dev/track@1
-version: 2
+version: 1
 title: Процесс и инструменты разработки
-focus: null
+focus: dev-model
 depends_on: []
 rules: []
 ---
@@ -25,4 +25,3 @@ LATTICE подготовлен. Не закрывается.
   archive (перенос файлов конфликтовал бы с веткой impl).
 - 2026-09-28 — pin-v0-8-1 ARCHIVED (gh/7); фокус → dev-model (gh/8), затем session-audit.
 - 2026-09-28 — dev-model и session-audit готовы в `gh/8`: модель, реестр сессий, разборы RPT-001…005; дальше — срез s0.
-- 2026-09-28 — dev-model, session-audit закрыты (`gh/8`); в фокусе дорожки работы нет — следующая работа по STATE.

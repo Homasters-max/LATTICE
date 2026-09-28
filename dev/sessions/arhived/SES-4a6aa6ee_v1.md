@@ -1,10 +1,10 @@
 ---
 id: SES-4a6aa6ee
 type: dev/session@1
-version: 2
+version: 1
 title: Состояние разработки в репозитории — dev-state, dev-model, session-audit
 transcript: 4a6aa6ee-565f-468f-8770-e7aaec11ec85
-period: "2026-09-28T06:25Z/13:05Z"
+period: "2026-09-28T06:25Z/…"
 kind: work
 links: [IDEA-001, IDEA-002, dev-state, dev-model, session-audit, gh/3, gh/4, gh/8]
 audit: RPT-004
@@ -29,6 +29,3 @@ RPT-004 — срез на момент проверки навыка `session-au
 merge, сводный `RPT-005`) ещё не сделаны. Главная находка — поправка maintainer'а по дублированию dev/ и WARRANT
 (закрыта в сессии); остальное — ISS-029 (патч regex-функции в session-digest.py), ISS-030 (`git show` на MSYS Git
 Bash). При повторном разборе после закрытия PR #8 — обновить `audit` и период (закрыть `…`).
-
-Период закрыт при завершении сессии (исключение README «Файл»); после среза RPT-004 сессия: сводный RPT-005 и его
-действия, разбор по запросу человека, версии документов (IDEA-007), merge `gh/8`. Повторный разбор — `/session-audit`.

@@ -1,7 +1,7 @@
 ---
 id: dev-model
 type: dev/work@1
-version: 3
+version: 2
 title: Модель dev/ на объектах LATTICE
 track: infra
 from: IDEA-002
@@ -29,15 +29,15 @@ rules: []
 - [x] 3 · agent · разборы RPT-002, RPT-003 субагентами — gh/8
 - [x] 7 · agent · проверка навыка на этой сессии (RPT-004), сводный RPT-005 и его действия — gh/8
 - [x] 4 · agent · dev-check.py без ошибок, PR ready — gh/8
-- [x] 5 · human · ~~комментарий-решение в PR: модель IDEA-002; какие правила rules/ сделать normative (по желанию)~~ — отменено: необязательный, maintainer слил PR без него (git/586c24d)
-- [x] 6 · human · merge PR chore/dev-model — git/586c24d
+- [ ] 5 · human · комментарий-решение в PR: модель IDEA-002; какие правила rules/ сделать normative (по желанию)
+- [ ] 6 · human · merge PR chore/dev-model
 
 ## Приёмка
 
 - [x] python scripts/dev/dev-check.py — 0 ошибок · cmd — gh/8
 - [x] у Change в work/ нет шагов; задачи — только в tasks.md · cmd — gh/8
 - [x] каждая рабочая сессия с 2026-09-27T21:45 — в sessions/ и разобрана · cmd — RPT-005
-- [x] PR слит · human — git/586c24d
+- [ ] PR слит · human
 
 ## Решения
 
@@ -74,5 +74,3 @@ rules: []
   RUL-051 — после первой неудачи Read и одна замена Edit.
 - 2026-09-28 — версии документов (IDEA-007): базовая линия v1 — git/4dd6bbe; первая правка после неё — этот узел,
   снимок `work/arhived/dev-model_v1.md` (проверка snapshot.py).
-- 2026-09-28 — PR `gh/8` слит (git/586c24d); все правила `rules/` — `advisory`, `normative` — по будущему решению;
-  работа закрыта, фокус дорожки infra → нет, STATE → s0.
