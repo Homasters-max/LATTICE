@@ -1,7 +1,7 @@
 ---
 id: state
 type: dev/state@1
-version: 2
+version: 3
 title: Состояние разработки LATTICE
 focus: s0
 switch:
@@ -90,25 +90,16 @@ rules:
 
 # state — Состояние разработки LATTICE
 
-Корень цепочки `focus`: дорожка в работе, переключатель lattice2lattice, ловушки проекта; порядок — `infra`
-(dev-model, session-audit) → срез `s0` (скелет, design/05-slices.md).
+Корень цепочки `focus`: дорожка в работе, переключатель lattice2lattice, ловушки проекта; порядок — `infra` (dev-model, session-audit) → срез `s0` (скелет, design/05-slices.md).
 
 ## Журнал
 
 - 2026-09-28 — автопамять заменена dev/ (grilling Q1–Q29); фокус — infra/dev-state.
-- 2026-09-28 — R-L0-08 `until` → W-003 verified: junit 0.8.1 проверяется в impl-PR kernel-format, не archive
-  pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
-- 2026-09-28 — модель объектов LATTICE (IDEA-002): id по типу, старые — в `aliases` (W-/E-/A- → ISS, R-… → RUL);
-  раскладка `tracks/`, `work/`, `ideas/`, `rules/`, `reports/`; `done_when` — проверки (`gh/…`, dev-model).
+- 2026-09-28 — R-L0-08 `until` → W-003 verified: junit 0.8.1 проверяется в impl-PR kernel-format, не archive pin-v0-8-1 (review pin-v0-8-1 F-1, EVID-01M3KG6KKJPEA3FPFA8D600J8Q).
+- 2026-09-28 — модель объектов LATTICE (IDEA-002): id по типу, старые — в `aliases` (W-/E-/A- → ISS, R-… → RUL); раскладка `tracks/`, `work/`, `ideas/`, `rules/`, `reports/`; `done_when` — проверки (`gh/…`, dev-model).
 - 2026-09-28 — pin-v0-8-1 ARCHIVED (286829b, PR #7); switch при archive — T1, T2 не наступили; фокус → foundation.
-- 2026-09-28 — kernel-format ARCHIVED (archive-PR #10); switch при archive — T1, T2 не наступили; R-L0-08 retired —
-  «тест внутри describe» теперь норма REQ-AR-002, её держит тест структуры.
-- 2026-09-28 — RUL-001, RUL-002 retired: правила в WARRANT `maintainer-acts`, `session-start` (git/1be0734); RUL-008
-  retired (git/2f15f83). Фокус → infra (dev-model): foundation закрыт, следующий срез s0 — после dev-model и
-  session-audit.
-- 2026-09-28 — RUL-012, RUL-013 перенесены в стандарт `process` (8 активных правил > 7 на уровне): это правила
-  процедуры Change, не ловушки проекта.
-- 2026-09-28 — RUL-003, RUL-004, RUL-009 (ловушки среды и техники) перенесены в стандарт `env` — их получают и субагенты
-  (RPT-004: аналитики упирались в ISS-015, ISS-028); в STATE остались ловушки WARRANT.
-- 2026-09-28 — dev-model закрыт (`gh/8`); фокус → s0 (скелет, design/05-slices.md#s0): первым шагом — Change среза по
-  AGENTS.md.
+- 2026-09-28 — kernel-format ARCHIVED (archive-PR #10); switch при archive — T1, T2 не наступили; R-L0-08 retired — «тест внутри describe» теперь норма REQ-AR-002, её держит тест структуры.
+- 2026-09-28 — RUL-001, RUL-002 retired: правила в WARRANT `maintainer-acts`, `session-start` (git/1be0734); RUL-008 retired (git/2f15f83). Фокус → infra (dev-model): foundation закрыт, следующий срез s0 — после dev-model и session-audit.
+- 2026-09-28 — RUL-012, RUL-013 перенесены в стандарт `process` (8 активных правил > 7 на уровне): это правила процедуры Change, не ловушки проекта.
+- 2026-09-28 — RUL-003, RUL-004, RUL-009 (ловушки среды и техники) перенесены в стандарт `env` — их получают и субагенты (RPT-004: аналитики упирались в ISS-015, ISS-028); в STATE остались ловушки WARRANT.
+- 2026-09-28 — dev-model закрыт (`gh/8`); фокус → s0 (скелет, design/05-slices.md#s0): первым шагом — Change среза по AGENTS.md.

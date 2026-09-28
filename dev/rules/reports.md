@@ -1,7 +1,7 @@
 ---
 id: reports
 type: dev/guide@1
-version: 1
+version: 2
 title: Отчёты отладки
 paths: ["dev/reports/**"]
 rules:
@@ -20,16 +20,11 @@ rules:
 
 ## Область
 
-`dev/reports/`, `dev/sessions/`. Транскрипт сессии — `~/.claude/projects/D--project-LATTICE/<session>.jsonl`; процедура —
-навык [session-audit](../../.claude/skills/session-audit/SKILL.md); неразобранные — `python scripts/dev/dev-check.py --sessions`.
-Запуск — человеком: `/session-audit [id …] [--synthesis]`. Виды: `kind: session` (одна сессия, промпт `analyst.md`) и
-`kind: synthesis` (промпт `synthesis.md`) — системные проблемы, слияние повторов, правила без срабатываний.
+`dev/reports/`, `dev/sessions/`. Транскрипт сессии — `~/.claude/projects/D--project-LATTICE/<session>.jsonl`; процедура — навык [session-audit](../../.claude/skills/session-audit/SKILL.md); неразобранные — `python scripts/dev/dev-check.py --sessions`. Запуск — человеком: `/session-audit [id …] [--synthesis]`. Виды: `kind: session` (одна сессия, промпт `analyst.md`) и `kind: synthesis` (промпт `synthesis.md`) — системные проблемы, слияние повторов, правила без срабатываний.
 
-**Классы причины:** `warrant-defect` · `warrant-gap` · `lattice-process` (dev/, процедуры) · `env` · `agent` ·
-`human-wait`.
+**Классы причины:** `warrant-defect` · `warrant-gap` · `lattice-process` (dev/, процедуры) · `env` · `agent` · `human-wait`.
 
-**Разделы:** Сессия (id, период, цепочка `focus`, коммиты) · Сбои (таблица: № · что · класс · цена · покрытие ·
-действие) · Не хватает (инструменты, сведения) · Улучшения (кому · что · основание) · Итог (числа).
+**Разделы:** Сессия (id, период, цепочка `focus`, коммиты) · Сбои (таблица: № · что · класс · цена · покрытие · действие) · Не хватает (инструменты, сведения) · Улучшения (кому · что · основание) · Итог (числа).
 
 ## Проверка
 

@@ -1,7 +1,7 @@
 ---
 id: tests
 type: dev/guide@1
-version: 1
+version: 2
 title: Тесты
 paths: ["test/**"]
 rules:
@@ -18,8 +18,7 @@ rules:
 
 ## Область
 
-`test/**`. Не повторяет `AGENTS.md` (токен `SCN-…` в имени, тест внутри `describe()`) — это норма WARRANT rule
-`process`.
+`test/**`. Не повторяет `AGENTS.md` (токен `SCN-…` в имени, тест внутри `describe()`) — это норма WARRANT rule `process`.
 
 ## Проверка
 

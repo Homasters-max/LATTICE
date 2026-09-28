@@ -1,2 +1,0 @@
-FAIL research/runs/2026-09-27-r1/packets/Q-13.md · L1 6 · поиск 4 · дизайн 8 · 11.2 КБ
-  - L1: 6 строк без адреса с отпечатком (check-refs --stamp)
