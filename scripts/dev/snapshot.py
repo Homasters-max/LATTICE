@@ -29,7 +29,7 @@ def git(*args):
 
 
 def in_scope(path):
-    return path.endswith(".md") and path.startswith(SCOPE) and f"/{ARCHIVE}/" not in path and path != "dev/INDEX.md"  # INDEX — генерируется
+    return path.endswith(".md") and path.startswith(SCOPE) and f"/{ARCHIVE}/" not in path and path != "dev/INDEX.md" and not path.startswith("dev/templates/")  # INDEX генерируется; шаблоны — скелеты, их version — заглушка
 
 
 def snapshots(path):

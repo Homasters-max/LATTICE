@@ -3,8 +3,9 @@ id: RPT-<NNN>
 type: dev/report@1
 version: 1
 title: <что разобрано>
-kind: <session | synthesis>
+kind: session
 session: <id транскрипта>
+focus: "<цепочка расследования>"
 period: "<ГГГГ-ММ-ДДTчч:ммZ/чч:ммZ>"
 refs: []
 ---
