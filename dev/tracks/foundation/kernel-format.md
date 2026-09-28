@@ -3,7 +3,7 @@ schema: lattice-dev/node@1
 kind: change
 change: kernel-format
 branch: impl/kernel-format
-pr: null
+pr: 9
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
 focus: 21
 waits: []
