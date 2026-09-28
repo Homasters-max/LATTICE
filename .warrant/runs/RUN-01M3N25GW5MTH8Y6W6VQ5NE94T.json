@@ -1,0 +1,142 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3N25GW5MTH8Y6W6VQ5NE94T",
+  "change": "fix-pin-test",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/fix-pin-test/tasks.md",
+    "openspec/changes/fix-pin-test/design.md",
+    "openspec/changes/fix-pin-test/specs/**"
+  ],
+  "scope": [],
+  "branch": "impl/fix-pin-test",
+  "started_at": "2026-09-28T22:29:01.998Z",
+  "finished_at": "2026-09-28T22:29:55.183Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:d9b48d49f801e5b81070025439541bc270d7926a78b1a6e39832bd5527e21dc8",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "guard_events": [
+    {
+      "at": "2026-09-28T22:29:11.651Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/process/pin.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:12.676Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/process/pin.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-09-28T22:29:13.593Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:29.307Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:30.360Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:31.324Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:32.435Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:37.183Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:46.977Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:48.046Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/fix-pin-test/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T22:29:49.014Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

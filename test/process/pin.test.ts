@@ -1,10 +1,11 @@
 // Pin invariant of the WARRANT judge (Change pin-v0-8-1, design D-3): the CI tag
-// equals the CLI version that wrote the lock, and the project rules moved out of
-// dev/ are delivered to the agent through AGENTS.md. No spec scenarios
-// (skip_specs), so no SCN tokens.
+// equals the CLI version that wrote the lock. Delivery of project rules (Change
+// fix-pin-test, design D-1): every rule in .warrant/local/rules/ is a rule/1 for
+// every path and its text is in AGENTS.md. No spec scenarios (skip_specs), so no
+// SCN tokens.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const root = new URL("../../", import.meta.url);
 const read = (path: string): string => readFileSync(new URL(path, root), "utf8");
@@ -18,10 +19,22 @@ describe("pin: CI judge and lock", () => {
   });
 });
 
+const rulesDir = ".warrant/local/rules/";
+const ruleIds = existsSync(new URL(rulesDir, root))
+  ? readdirSync(new URL(rulesDir, root))
+      .filter((name) => name.endsWith(".json"))
+      .map((name) => name.slice(0, -".json".length))
+      .sort()
+  : [];
+
 describe("pin: project rules", () => {
-  for (const id of ["maintainer-acts", "session-start"]) {
+  it("there is at least one project rule", () => {
+    assert.ok(ruleIds.length > 0, `no *.json in ${rulesDir}`);
+  });
+
+  for (const id of ruleIds) {
     it(`rule ${id} is a warrant://rule/1 for every path, its text is in AGENTS.md`, () => {
-      const rule = JSON.parse(read(`.warrant/local/rules/${id}.json`)) as Record<string, unknown>;
+      const rule = JSON.parse(read(`${rulesDir}${id}.json`)) as Record<string, unknown>;
       assert.equal(rule.$schema, "warrant://rule/1");
       assert.equal(rule.id, id);
       assert.deepEqual(rule.paths, ["**"]);

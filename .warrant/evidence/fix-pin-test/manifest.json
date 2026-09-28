@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "fix-pin-test",
-  "commit": "63d59dc226c03c1a88db99935ddb77d61554b994",
+  "commit": "29e667ab7807b14678e69545653ee178dc9f5e9f",
   "versions": {
     "warrant": "0.8.1",
     "openspec": "1.13.1",
@@ -13,7 +13,8 @@
     "EVID-01M3N1V54PMPX9GQ0Q11V77722",
     "EVID-01M3N21PY5ZZV9A4QWSV30QHCK",
     "EVID-01M3N24BQTN9PZVP57KB4HHCNE",
-    "EVID-01M3N24PXS8FMB5314S1261BH2"
+    "EVID-01M3N24PXS8FMB5314S1261BH2",
+    "EVID-01M3N26RGX55K9VE8C7FBDX8XF"
   ],
   "gates": {
     "branch-isolated": "PASS",
