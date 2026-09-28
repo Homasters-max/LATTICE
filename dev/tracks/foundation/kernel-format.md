@@ -5,7 +5,7 @@ change: kernel-format
 branch: impl/kernel-format
 pr: 9
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 21
+focus: 23
 waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
@@ -28,8 +28,8 @@ steps:
   - {id: 18, actor: agent, do: "Run implement: I-N по review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0, D-1 — вариант A) и правка delta spec; waiver spec-approved (PROPOSED); код и тесты по tasks.md", done: "RUN-01M3KQ7AGCEBR2PRG98QRPHCA2; WAV-2026-001 (PROPOSED); коммит «kernel-format: implement — ядро формата v1…»"}
   - {id: 19, actor: human, do: "git apply патча корневых файлов (I-12: package.json, package-lock.json, tsconfig.json) — команду присылает агент", done: "8a007ef"}
   - {id: 20, actor: agent, do: "коммит патча; npm ci; Run implement: tests-passed со SCN-AR, typecheck, отметки tasks.md; push, impl-PR (draft)", done: "RUN-01M3KRGCX2CYWVMDZTWJREC2AW: tests-passed PROVEN 391 (EVID-01M3KRGH2BD307TCKY5YAYKZ56), typecheck чистый; impl-PR — draft"}
-  - {id: 21, actor: human, do: "активация WAV-2026-001 после чтения diff delta spec в impl-PR и коммит в ветку — команду присылает агент", done: null}
-  - {id: 22, actor: agent, do: "verify, VERIFYING последним коммитом; локальный warrant ci; PR ready", done: null}
+  - {id: 21, actor: human, do: "активация WAV-2026-001 после чтения diff delta spec в impl-PR и коммит в ветку — команду присылает агент", done: "95c261b"}
+  - {id: 22, actor: agent, do: "verify, VERIFYING последним коммитом; локальный warrant ci; PR ready", done: "коммит «kernel-format: verify и transition VERIFYING» в PR #9"}
   - {id: 23, actor: human, do: "merge impl-PR после зелёного job", done: null}
   - {id: 24, actor: agent, do: "archive-PR: ci fetch, MERGED, archive; W-003 verified", done: null}
   - {id: 25, actor: human, do: "merge archive-PR", done: null}
