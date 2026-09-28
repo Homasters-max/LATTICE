@@ -319,6 +319,8 @@ def start(objs, rules, signals):
     if work:
         chain.append(work.id)
     step_line, human = "—", []
+    if track is not None and work is None:
+        step_line = f"работы в фокусе нет — начать по «Цель» dev/tracks/{track.id}.md"
     warrant_line = "нет активного Change в фокусе"
     if work is not None and work.fm.get("change"):
         change = work.fm["change"].split("/", 1)[1]
