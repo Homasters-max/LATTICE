@@ -103,7 +103,7 @@ rules:
 
 # Состояние разработки LATTICE
 
-Порядок: `infra/dev-state` (этот PR) → `infra/pin-v0-8-1` → `foundation/kernel-format`. Правила полей и протокол —
+Порядок: `infra/dev-state` (закрыт) → `infra/pin-v0-8-1` → `foundation/kernel-format`. Правила полей и протокол —
 [README](README.md).
 
 ## Журнал

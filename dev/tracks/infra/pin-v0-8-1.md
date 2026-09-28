@@ -2,11 +2,11 @@
 schema: lattice-dev/node@1
 kind: change
 change: pin-v0-8-1
-branch: null
+branch: spec/pin-v0-8-1
 pr: null
 done_when: Change ARCHIVED; job warrant на теге v0.8.1; `warrant sync --check` без GENERATED_DRIFT и LOCK_MISMATCH
 focus: 1
-waits: [dev-state]
+waits: []
 steps:
   - {id: 1, actor: agent, do: "spec-PR: init change (profile factory-change, skip_specs), образец warrant-slice openspec/changes/archive/2026-09-27-pin-v0-8-0", done: null}
   - {id: 2, actor: human, do: "тег v0.8.1 в .github/workflows/warrant.yml (путь политики — команду присылает агент)", done: null}
