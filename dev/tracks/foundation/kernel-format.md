@@ -5,7 +5,7 @@ change: kernel-format
 branch: spec/kernel-format
 pr: 2
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 14
+focus: 16
 waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
@@ -21,8 +21,8 @@ steps:
   - {id: 11, actor: agent, do: "Run specify: F-1…F-27 review 2 (EVID-01M3KNFKZ2PE3AEHC569ZTF3B7), P-1 (tasks.md 3.2), решения UNK-KR-006…008", done: "RUN-01M3KNZAC5S8G0CNPJG4TV6AS4, RUN-01M3KP9D1RXYQY32HZAHP9PFC1; карта — design.md «Решения по review 2»"}
   - {id: 12, actor: agent, do: "review 3; MAJOR review 3 — I-N в impl-PR (R-L0-07), без раунда 4", done: "EVID-01M3KPSTHCHC1K4G92MZS2PBK0 (PROVEN: MAJOR 3, MINOR 5, INFO 3)"}
   - {id: 13, actor: agent, do: "warrant verify, PR #2 ready, итог и план I-N по review 3 в PR", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867571771"}
-  - {id: 14, actor: human, do: "одобрение spec-PR #2 и решение D-1 review 3 (формы Date: закрытый перечень или запреты) — для I-N impl-PR", done: null}
-  - {id: 15, actor: agent, do: "verify заново и transition SPECIFIED последним коммитом (без коммитов между ними)", done: null}
+  - {id: 14, actor: human, do: "одобрение spec-PR #2 и решение D-1 review 3 (формы Date: закрытый перечень или запреты) — для I-N impl-PR", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867606665"}
+  - {id: 15, actor: agent, do: "verify заново и transition SPECIFIED последним коммитом (без коммитов между ними)", done: "коммит «kernel-format: transition SPECIFIED» в PR #2"}
   - {id: 16, actor: human, do: "merge spec-PR #2", done: null}
 rules:
   - id: R-KF-01
@@ -50,3 +50,6 @@ spec-PR #2, risk HIGH. Review 1 — NOT_PROVEN: BLOCKER 1, MAJOR 10, MINOR 10, I
   (review 2 P-1); `openspec validate` не ловит. Удаление строки — со смежным переводом строки в `old_string`.
 - 2026-09-28 — шаг 11 начат до решений: независимые от UNK находки review 2 — RUN-01M3KNZAC5S8G0CNPJG4TV6AS4
   (0873c05); после решений — F-1, F-12 (список `forbidden-global`), F-27.
+- 2026-09-28 — одобрение spec — комментарием, не `gh pr review --approve`: автор PR — аккаунт maintainer'а, свой PR
+  GitHub одобрить не даёт. D-1 review 3 — вариант A (закрытый перечень форм `Date`) — вход для `I-N` impl-PR вместе с
+  F-2, F-3 review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0).
