@@ -1,0 +1,174 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3KPCJBM295RND7HZ7STDP71",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "Правило nondeterminism (REQ-AR-001) перечисляет зависящие от часового пояса формы Date не полностью. Форма `new Date(x, …)` разрешена явно, но многоаргументный конструктор `new Date(y, m, d, …)` трактует компоненты в местном времени. `new Date(\"2026-09-26T19:40\")` (строка ISO без смещения) тоже разбирается в местном времени, а нестандартные строки разбираются по правилам реализации. В перечне нет местных сеттеров `setFullYear`, `setMonth`, `setDate`, `setHours`, `setMinutes`, `setSeconds`, `setMilliseconds`, а также `getYear`/`setYear` (Annex B). Нет в нём и `Date.prototype.toString` с неявным приведением к строке (`String(d)`, `` `${d}` ``, `d + \"\"`), которое выводит местное время и пояс. Методы локали запрещены только как «вызов по имени»: вычисляемый доступ `d[\"getHours\"]()` и деструктуризация не описаны, хотя для `Math.random` они описаны явно. Код ядра с такими формами проходит тест структуры, но нарушает детерминизм «на любой машине» (REQ-KR-001). SCN-KR-001 повторяет вызовы на одной машине и такое нарушение не ловит.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002",
+        "REQ-KR-001"
+      ],
+      "recommendation": "Для Date заменить перечень запретов закрытым перечнем разрешённого: `new Date(x)` ровно с одним аргументом (не spread, не строковый литерал); результат используется только через `toISOString`, `getTime`, `valueOf` и `getUTC*`, всё прочее — nondeterminism. Если остаётся перечень запретов, дополнить его сеттерами, `getYear`/`setYear`, `toString`, многоаргументным `new Date(…)` и формами доступа (вычисляемый доступ, деструктуризация). Добавить в SCN-AR-002 векторы `new Date(2026, 0, 1)`, `new Date(0).setHours(1)`, `String(new Date(0))`, `new Date(0)[\"getHours\"]()`."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Определение свободного идентификатора (REQ-AR-001) перечисляет области видимости: модуль, функция, блок, класс, catch, параметры, импорты. Амбиентные объявления TypeScript не упомянуты. По буквальному прочтению `declare const process: any;` или `declare global { var fetch: … }` связывает имя в области модуля, и `process.env.HOME` после такого объявления — не свободный идентификатор. Тест такой файл пропускает, а при исполнении имя разрешается в глобальный объект (strip-types стирает `declare`). По другому прочтению амбиентное объявление имя не связывает. Два прочтения дают разный вердикт теста на одном файле. То же не сказано о неявной привязке `arguments`: это свободный идентификатор (forbidden-global) или связанный?",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "Добавить в REQ-AR-001: амбиентные объявления (`declare …`, `declare global`, `declare module`) имя в позиции значения не связывают, или в каталоге ядра они сами — нарушение forbidden-global. Явно сказать, как рассматривается `arguments`. Добавить в SCN-AR-002 вектор `declare const process: any; process.env.HOME` → forbidden-global."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-002 не говорит, выдаётся ли bad-ref, если значение первого члена `$ref` — строка, отклонённая по lone-surrogate или unassigned. Для ключей правило явное (отклонённые ключи — «другие ключи» для bad-ref), для значения `$ref` — нет. «NFC — только к строкам, прошедшим эти проверки; все прочие проверки … относятся к строкам после NFC»: у отклонённой строки формы после NFC нет. Для `{\"$ref\":\"\\ud800\"}` одно прочтение даёт [bad-ref \"\", lone-surrogate /$ref]: строка не является ссылкой по REQ-KR-005, отказы упорядочены по позиции. Другое прочтение даёт только [lone-surrogate /$ref]. То же для `{\"$ref\":\"warrant/x\\u0378\"}` и unassigned. Списки отказов — векторы формата v1 (REQ-KR-001), а сценария на этот вход нет.",
+      "targets": [
+        "REQ-KR-002",
+        "SCN-KR-004",
+        "SCN-KR-017"
+      ],
+      "recommendation": "Явно сказать в REQ-KR-002, проверяется ли значение `$ref`, отклонённое по lone-surrogate или unassigned, на bad-ref. Например: «такая строка — не ссылка; объект получает bad-ref». Добавить в SCN-KR-017 или SCN-KR-023 вектор `{\"$ref\":\"\\ud800\"}` с полным ожидаемым списком отказов."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "import-outside-kernel и dynamic-import (REQ-AR-001) называют статический `import`, `import type`, `export … from` и вызовы `import(…)`/`require(…)`. Не названы три формы. Первая — `import x = require(\"node:fs\")` (ImportEqualsDeclaration): это не вызов `require(…)` в AST. Вторая — импорт в позиции типа, `let v: import(\"../ledger/types.ts\").T` или `typeof import(\"node:fs\")` (ImportType): `import type` из-за границы ядра — нарушение, а равносильная форма в позиции типа не описана. Третья — директива `/// <reference path=\"…\" />`.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "Отнести `import … = require(…)` и ImportType в позиции типа к import-outside-kernel (для `node:crypto` — к crypto-import) с тем же правилом решения пути; назвать директиву `/// <reference>`. Добавить по вектору в SCN-AR-002."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-002: «вызов теста … не находится лексически внутри функции, переданной вызову набора». Не определены два случая. Первый — функция, переданная ссылкой: `describe(\"x\", body)` с `function body() { test(…) }` на уровне модуля. Лексически `test` внутри `body`, но `body` не аргумент-литерал; D-5 («цепочка предков до функции-аргумента») даёт нарушение, текст требования допускает оба прочтения. Второй — затенение: локальная привязка с именем импортированного теста (`function f(test) { test() }`).",
+      "targets": [
+        "REQ-AR-002",
+        "SCN-AR-003"
+      ],
+      "recommendation": "Уточнить: «функция, переданная вызову набора» — функциональное выражение или стрелочная функция непосредственно в аргументе; функция, переданная ссылкой, не считается. Имя теста распознаётся с учётом областей видимости: затенённое имя — не вызов теста. Добавить вектор `describe(\"x\", body)` в SCN-AR-003."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-001: «Отказ теста SHALL называть файл, строку и идентификатор правила». У отказа no-kernel нет файла и строки. Для parse-error не сказано, продолжается ли проверка остальных файлов каталога и выдаются ли их нарушения вместе с parse-error. На каталоге с файлом broken.ts и файлом с нарушением возможны два результата.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "Указать: no-kernel называет каталог; parse-error называет файл и строку первой диагностики, остальные файлы проверяются, и их нарушения выдаются (или проверка обрывается — выбрать одно)."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-003: «объект, чей прототип не Object.prototype и не null (кроме массива)». Не определено, что такое «массив»: `Array.isArray` или прототип `Array.prototype`. Тогда не ясно, принимаются ли массив с прототипом null и экземпляр подкласса `class A extends Array`. Порядок проверок массива называет у элементов только «пропуск, свойство-аксессор». Отклоняется ли неперечислимый элемент-свойство-данные по общему правилу «неперечислимое собственное свойство со строковым ключом», не сказано явно.",
+      "targets": [
+        "REQ-KR-003",
+        "SCN-KR-019"
+      ],
+      "recommendation": "Определить массив (например, `Array.isArray` и прототип `Array.prototype`, иначе not-json с path объекта) и явно назвать неперечислимый индекс среди проверок элемента. Добавить вектор в SCN-KR-019."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "`valueId` встречается только в SCN-KR-008, и только с допустимым входом. REQ-KR-004 («с теми же отказами») и соглашение REQ-KR-001 о неверном типе аргумента для `valueId` ни одним сценарием не проверяются. SCN-KR-001 («каждый недопустимый вход этой функции») для `valueId` пуст.",
+      "targets": [
+        "REQ-KR-004",
+        "SCN-KR-009",
+        "SCN-KR-001"
+      ],
+      "recommendation": "Добавить в SCN-KR-009 `valueId(\"std/domain@1\", {})` → bad-type-id /typeId и `valueId(\"std/x\", {\"x\": NaN})` → not-json /body/x, в SCN-KR-020 — `valueId(5, {})` → bad-type-id /typeId."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Тест структуры (REQ-AR-001) молча предполагает, что автор кода ядра не обходит правила намеренно. Конструктор Function достижим без свободного идентификатора: `Object.constructor(\"return process\")()` или `(() => 0).constructor(…)`, потому что имя после точки не свободный идентификатор. `new Error().stack` несёт пути файлов машины. Proposal обещает «не делает ввода-вывода», тест даёт более слабую гарантию.",
+      "targets": [
+        "REQ-AR-001",
+        "openspec/changes/kernel-format/proposal.md"
+      ],
+      "recommendation": "Записать в REQ-AR-001 или design, что тест ловит случайное, а не намеренное нарушение, либо запретить доступ к свойствам `constructor` и `stack` в ядре."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Правило для Math разрешает любое `Math.<имя>`, кроме `random`. По ECMAScript `Math.sin`, `Math.exp`, `Math.pow` и оператор `**` вычисляются приближённо, по выбору реализации, и их результат может различаться между движками и версиями. Это противоречит обещанию REQ-KR-001 «равные входы — равные результаты на любой машине». Ядро этих функций, скорее всего, не использует.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-KR-001"
+      ],
+      "recommendation": "Сузить разрешённые `Math.<имя>` до точных функций (`floor`, `ceil`, `trunc`, `abs`, `min`, `max`, `sign`) или записать допущение."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Предусловие Unicode ≥ 16.0 (REQ-KR-002, UNK-KR-006) проверяет только тест проекта SCN-KR-025. Будущие потребители ядра (CLI, хранилище) запускают его в своей среде. Диапазон `engines` `>=22.17` без верхней границы допускает линии Node, у которых встроенный ICU может быть старше Unicode 16.0 (ранние 23.x), а сборки с system-icu зависят от ICU системы. Предупреждение npm по `engines` не блокирует запуск.",
+      "targets": [
+        "REQ-KR-002",
+        "SCN-KR-025",
+        "openspec/changes/kernel-format/proposal.md"
+      ],
+      "recommendation": "Записать в design (или в Non-goals proposal), что проверка предусловия в среде потребителя — задача Change, который вводит исполнение вне тестов (например, ledger-commit), чтобы не потерять её."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Литеральный хэш SCN-KR-008 (`a4ab98af…51fe4`) не пересчитан: запуск команд в Run review запрещён guard'ом. Принят как верный."
+    },
+    {
+      "id": "A-2",
+      "statement": "По памяти приняты: U+323B0 и U+E0080 не назначены в Unicode 16.0 (U+323B0 назначена в 17.0), U+1C89 добавлена в 16.0, Node 22.17 несёт ICU с Unicode 16.0, 1.7976931348623159e308 округляется до Infinity, и 1790451612345 мс — это 2026-09-26T19:40:12.345Z (пересчитано вручную)."
+    },
+    {
+      "id": "A-3",
+      "statement": "Main specs (`openspec/specs/**`) в репозитории нет, поэтому сверка с принятым шла только по design/domains/10-kernel.md. Противоречий delta с ним, кроме записанных в design «Расхождения», не найдено."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "F-1: как ограничивать Date в ядре — закрытым перечнем разрешённых форм или дополнением перечня запретов?",
+      "options": [
+        "A: закрытый перечень — `new Date(x)` с одним аргументом, результат только через `toISOString`/`getTime`/`valueOf`/`getUTC*` (в духе решения UNK-KR-007 для глобальных имён)",
+        "B: расширить перечень запретов — сеттеры, `getYear`/`setYear`, `toString`, многоаргументный `new Date`, вычисляемый доступ и деструктуризация"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:8404c0471e896e3ab8c3deb6b0ff54b2555b23d3746626bf9e68a21bdcbc9d85",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-28T10:00:00Z",
+    "finished_at": "2026-09-28T10:45:00Z"
+  }
+}
