@@ -4,28 +4,30 @@
   "change_state": "VERIFYING",
   "classification": {
     "profiles": [
+      "chore",
+      "factory-change",
       "feature"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "MODERATE",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "SYSTEM",
-        "from": "proposer"
+        "from": "floor:core-sdd:2"
       },
       "security_impact": {
         "value": "LOW",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },

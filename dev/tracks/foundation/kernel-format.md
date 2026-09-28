@@ -65,3 +65,7 @@ spec-PR #2, risk HIGH. Review 1 — NOT_PROVEN: BLOCKER 1, MAJOR 10, MINOR 10, I
 - 2026-09-28 — корневые `package.json`, `package-lock.json`, `tsconfig.json` — вне `write_scope` Run implement (guard
   `deny`), `npm install` в корне — обход `deny`: патч maintainer'а (design I-12). `typescript` 5.9.3, не 7.x: 7.0 —
   нативный компилятор без прежнего JS API (`ts.createSourceFile`, design D-5).
+- 2026-09-28 — локальный `warrant ci` после `VERIFYING`: `RECORD_MISMATCH` классификации и `scope-valid` `FAIL` —
+  waiver в `.warrant/waivers/` и `package.json` в diff (W-014); `classify --base origin/main` → `chore`,
+  `factory-change`, `feature`, затем `verify` последним коммитом; проба на копии — исход D-1 (только
+  `ATTESTATION_REQUIRED` L1, `human-approval` в `deferred[]`).
