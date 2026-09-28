@@ -1,13 +1,13 @@
 ---
 id: dev-context
 type: dev/work@1
-version: 2
+version: 1
 title: Подсистема контекста разработки — черновик и инварианты
 track: infra
 from: null
 change: null
 branch: chore/dev-context
-pr: 18
+pr: null
 waits: []
 rules: []
 ---
@@ -23,7 +23,7 @@ rules: []
 ## Шаги
 
 - [x] 1 · agent · черновик `dev/ARCHITECTURE.md` — git/5b1f79a
-- [x] 2 · agent · PR — gh/18
+- [ ] 2 · agent · PR
 - [ ] 3 · human · решение по разделу 0 и вопросам Q-1…Q-11 комментарием в PR
 
 ## Приёмка
