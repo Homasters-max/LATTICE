@@ -1,0 +1,40 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3KFX06398BFT64PG3TWGZTD",
+  "change": "pin-v0-8-1",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/pin-v0-8-1",
+  "started_at": "2026-09-28T07:50:33.956Z",
+  "finished_at": "2026-09-28T07:55:49.492Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:9de76f3190ee3491dfcaa2f5750325ad12d770c4cf37d5fc770545e3e926254a",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "spec_tree": "sha256:089c79d9b2eb6d0b8583f0e3775dcfd1febb9d5e2f68df22c6badb655de8e34b",
+  "evidence": [
+    "EVID-01M3KG6KKJPEA3FPFA8D600J8Q"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-09-28T07:55:20.573Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T07:55:46.034Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

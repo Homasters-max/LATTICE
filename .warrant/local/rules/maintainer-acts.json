@@ -1,0 +1,8 @@
+{
+  "$schema": "warrant://rule/1",
+  "id": "maintainer-acts",
+  "paths": [
+    "**"
+  ],
+  "text": "Акты maintainer'а — решение UNKNOWN комментарием, одобрение и merge PR, активация waiver, правка policy-путей (`.github/workflows/**`, `.warrant/local/**`), перезапуск сессии Claude Code — агент не выполняет: присылает в чате «❗ Выполнить — <что>:» и одну команду в блоке bash, без `&&` (где правило `process` велит просить в PR — и в PR); результат проверяет сам (`gh pr view`, `git diff`)."
+}

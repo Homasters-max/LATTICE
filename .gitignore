@@ -1,9 +1,40 @@
-# LATTICE — не в истории
+# LATTICE — не в истории. Правило: в git — то, что нужно другому человеку или сессии на другой машине;
+# сгенерированное, личное и машинное — здесь. Состояние разработки — dev/ (в git), не память агента.
+
+# --- сборка и зависимости (Node.js / TypeScript)
 node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- секреты и окружение
+.env
+.env.*
+!.env.example
+
+# --- временное и журналы
 *.tmp
 *.log
-.obsidian/workspace*
-# сырые транскрипты агентов (77 МБ): доказательства — в отчётах, не здесь
-arhived/research/runs/*/logs/transcripts/
-.warrant/evidence/**/raw/
+
+# --- ОС
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- WARRANT: локальное состояние (record, evidence, Runs — в git, их пишет только warrant)
 .warrant/runs/current
+.warrant/evidence/**/raw/
+
+# --- Claude Code: личное и машинное (генерируемое warrant sync — settings.json, agents/ — в git)
+.claude/settings.local.json
+.claude/launch.json
+
+# --- редакторы и инструменты заметок: личные настройки и производные индексы
+.obsidian/
+.kb-search/
+.vscode/
+.idea/
+
+# --- архив: сырые транскрипты агентов (77 МБ); доказательства — в отчётах
+arhived/research/runs/*/logs/transcripts/

@@ -1,0 +1,149 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3KFX06398BFT64PG3TWGZTD",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Why называет Change приёмкой четырёх исправлений ADR-0042 п. 1, но наблюдаемых критериев приёмки нет: W-003 и W-006 отложены в kernel-format (Non-goals, dev/issues), W-002 проверен до Change, проверка задачи 2.1 (тесты в одном describe) верна и на v0.8.0. Migration Plan п. 3 снимает R-L0-08 до проверки W-003.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/proposal.md",
+        "openspec/changes/pin-v0-8-1/design.md",
+        "openspec/changes/pin-v0-8-1/tasks.md"
+      ],
+      "recommendation": "Назвать по каждому W, что принимает этот Change (W-005: FRONTEND_RESTART_REQUIRED в выводе sync, задача 1.2) и что — kernel-format (W-003, W-006) со ссылкой на close_when; либо сузить формулировку Why."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "D-1 при отказе CLI 0.8.1 на базе lock 0.8.0 говорит только «остановка и W-NNN»: не сказано, что дальше с Change (ждать v0.8.2; тег v0.8.1 назван в proposal, его смена — I-N и waiver spec-approved). Исход кода 3 (FORGE_UNAVAILABLE без gh auth) не отнесён ни к ошибке Change, ни к отказу CLI.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/design.md",
+        "openspec/changes/pin-v0-8-1/tasks.md"
+      ],
+      "recommendation": "Дописать запасной путь (как D-1 pin-v0-8-0): новый тег фабрики, I-N в design.md, waiver spec-approved; предусловие задачи 3.2 — gh auth status зелёный, код 3 — не отказ CLI."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Правило maintainer-acts перечисляет акты в скобках (решение UNKNOWN, merge, активация waiver); D-2 опирается на него для git apply патча policy-путей, которого в перечне нет. Канал «присылает» не назван, а process для waiver говорит «агент просит об этом в PR».",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/proposal.md",
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "recommendation": "Сделать перечень открытым классом (действие, которое WARRANT или guard оставляет человеку, в т.ч. патч policy-путей и перезапуск сессии) и назвать канал: ответ сессии и/или комментарий PR."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-actor",
+      "statement": "Перезапуск сессии Claude Code (D-1 шаг 3, Impact) без актора: агент не перезапускает сессию сам, это действие человека.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/design.md",
+        "openspec/changes/pin-v0-8-1/proposal.md"
+      ],
+      "recommendation": "Назвать актором maintainer'а (шаг actor: human в dev/), агент до этого коммитит и записывает шаг в dev/."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "design Context: «kernel и pack core-sdd 0.3.4 те же», а proposal и та же Context — lock меняет kernel 0.8.0 -> 0.8.1. Термин kernel двузначен; инвариант теста D-3 держится на том, что поле kernel lock — версия CLI (plan.ts пишет CLI_VERSION).",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "recommendation": "Писать «минорная kernel 0.8 в warrant.json та же; поле kernel lock — версия CLI, записавшего lock»."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Задача 2.1 сверяет число тестов с числом it(), а D-3 не фиксирует it() против test().",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/tasks.md",
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "recommendation": "В D-3 назвать форму теста (it() внутри describe()) или в 2.1 — «число тестов файла»."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "D-2 и задача 1.1 не говорят, что при отказе git apply (патч не ложится) или при проверке 1.1, нашедшей лишние строки.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/design.md",
+        "openspec/changes/pin-v0-8-1/tasks.md"
+      ],
+      "recommendation": "Добавить: git apply --check до применения; отказ или лишние строки — maintainer откатывает (git checkout -- <пути>), агент пересобирает патч."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Точный текст правил maintainer-acts и session-start не зафиксирован: proposal пересказывает, D-2 — «без изменения смысла», тест проверяет лишь непустоту и вхождение в AGENTS.md. Норму maintainer впервые увидит в impl-PR, вне spec-approved.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/proposal.md",
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "recommendation": "Привести в proposal точный text обоих правил."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "maintainer-acts — обход W-010 (один аккаунт gh, upstream BL-83), но становится постоянным правилом WARRANT без условия пересмотра; rule/1 поля until не имеет.",
+      "targets": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "recommendation": "Указать в design: после BL-83 правило пересматривается отдельным Change; в W-010 — ссылка на правило."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "warrant transition CLI 0.8.1 на lock 0.8.0 не проверяет lock (D-1): spec-PR уже шёл на CLI 0.8.1 с lock 0.8.0."
+    },
+    {
+      "id": "A-2",
+      "statement": "Guard вне Run разрешает warrant sync и запись патча вне проекта (ADR-0042: пути вне проекта guard отбрасывает)."
+    },
+    {
+      "id": "A-3",
+      "statement": "pack core-sdd 0.3.4 в CLI 0.8.1 имеет тот же hash, что в lock базы (ADR-0042 п. 1), иначе warrant ci даёт RECORD_MISMATCH classification."
+    },
+    {
+      "id": "A-4",
+      "statement": "AGENTS.md с двумя новыми правилами меньше 16 KiB (GENERATED_TOO_LARGE); .gitattributes eol=lf, CRLF тест не ломает."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Чем этот Change принимает исправления ADR-0042 п. 1 (F-1)?",
+      "options": [
+        "Только pin и W-005; W-003, W-006 — в kernel-format",
+        "Добавить в тест пина проверку W-003 (test() вне describe и вложенный describe)"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:9de76f3190ee3491dfcaa2f5750325ad12d770c4cf37d5fc770545e3e926254a",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-28T10:00:00Z",
+    "finished_at": "2026-09-28T10:30:00Z"
+  }
+}

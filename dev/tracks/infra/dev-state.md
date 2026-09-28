@@ -1,0 +1,34 @@
+---
+schema: lattice-dev/node@1
+kind: work
+branch: chore/dev-housekeeping
+pr: 4
+done_when: PR chore/dev-state слит; автопамять LATTICE выключена и пуста; новая сессия стартует по dev/STATE.md
+focus: null
+waits: []
+steps:
+  - {id: 1, actor: agent, do: "PR chore/dev-state: dev/, CLAUDE.md, .gitignore, предложение для WARRANT", done: "https://github.com/Homasters-max/LATTICE/pull/3"}
+  - {id: 2, actor: human, do: "комментарий-решение в PR: grilling Q1–Q29, R-L0-01, R-L0-02, E7 в приёмке S4", done: "https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587"}
+  - {id: 3, actor: agent, do: "source R-L0-01, R-L0-02 → URL комментария, status active", done: "коммит «dev-state: решение maintainer'а» в PR #3"}
+  - {id: 4, actor: human, do: "merge PR chore/dev-state", done: "7a1570d (merge PR #3)"}
+  - {id: 5, actor: agent, do: "показать перенос памяти → после подтверждения удалить файлы автопамяти", done: "ветка chore/dev-housekeeping, журнал 2026-09-28"}
+  - {id: 6, actor: agent, do: "новая сессия: память не загружается, старт по dev/STATE.md", done: "коммит «dev-state: закрыт» в ветке spec/pin-v0-8-1"}
+rules: []
+---
+
+# dev-state — состояние разработки в репозитории
+
+Работа без Change: PR только с dev/, `CLAUDE.md`, `.gitignore` (CI — вид `none`). Автопамять выключена
+`.claude/settings.local.json` (`autoMemoryEnabled: false`, файл локальный).
+
+## Журнал
+
+- 2026-09-28 — перенос: состояние и порядок — узлы dev/; ловушки и W-1…W-12 (из передачи во временном каталоге
+  прошлой сессии) — `issues/`; рамки проекта и Jev уже в `design/` (00-vision); записи kb-research, внедрения, аудита,
+  прогонов — закрытая работа в `arhived/`, не переносятся.
+- 2026-09-28 — E-001 сработала при записи самого E-001 (пример escape стал символом); исправлено perl по R-L0-03.
+- 2026-09-28 — перенос подтверждён maintainer'ом в чате после merge PR #3; удалены 13 файлов автопамяти (12 записей и
+  MEMORY.md). `.gitignore` по разделам; из истории выведены личное и машинное: `.obsidian/` (настройки редактора),
+  `.kb-search/` (индекс, генерирует kb-search), `.claude/launch.json` (абсолютные пути машины); файлы на диске остались.
+- 2026-09-28 — новая сессия: `memory/` проекта пуст, автопамять не загружена, старт по STATE.md — `done_when`
+  выполнен; фокус дорожки — pin-v0-8-1.
