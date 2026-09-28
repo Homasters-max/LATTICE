@@ -1,13 +1,13 @@
 ---
 id: wrap-cleanup
 type: dev/work@1
-version: 4
+version: 3
 title: Переносы строк по ширине и ссылки на строки
 track: infra
 from: gh/12
 change: null
-branch: chore/dev-index-templates
-pr: 16
+branch: chore/wrap-cleanup-dev
+pr: 15
 waits: []
 rules: []
 ---
@@ -28,21 +28,21 @@ rules: []
 - [x] 4 · agent · LATTICE: 51 адрес строки → ссылки на раздел; карта строк `--map`/`--remap`, фильтр `.md`/`.txt`, исключения — gh/13
 - [x] 5 · agent · правило ссылок, проверка `--links`, 23 битые ссылки исправлены — gh/14
 - [x] 6 · agent · правила в `rules/docs.md` (RUL-059, RUL-038), план → этот объект, описание инструмента → его `README.md` — gh/15
-- [x] 7 · agent · свои навыки `~/.claude/skills/`: domain-modeling, grill-me, grill-with-docs, grilling — уже чистые, склеивать нечего; kb-search, kb-research, arch-integrate — вместе с `D:\kb` (шаг 3) — gh/16
-- [x] 8 · agent · остаток `D:\kb`: 17 мест B решены по смыслу (метки — отдельным абзацем пункта, продолжения — склеены), 1 адрес строки → раздел; генератор `filters.md`, `filter-index.md` в kb-search — абзацы одной строкой; `md-wrap --check` по `D:\kb` — 0 — gh/16
-- [x] 9 · agent · kb-research: доказательства, выводы, место в дизайне, пакеты и фрагменты — `kb/<ID>#<Раздел>` и `design/…md#<раздел или id>`; `check-refs.mjs` проверяет цель ссылки, адрес строки — проблема; `check-packet`, `check-fragment` — по новому формату; коммиты в репозитории навыка — gh/16
+- [ ] 7 · agent · свои навыки `~/.claude/skills/`: domain-modeling, grill-me, grill-with-docs, grilling — уже чистые, склеивать нечего; kb-search, kb-research, arch-integrate — вместе с `D:\kb` (шаг 3)
+- [ ] 8 · agent · остаток `D:\kb`: 17 мест B решены по смыслу (метки — отдельным абзацем пункта, продолжения — склеены), 1 адрес строки → раздел; генератор `filters.md`, `filter-index.md` в kb-search — абзацы одной строкой; `md-wrap --check` по `D:\kb` — 0
+- [ ] 9 · agent · kb-research: доказательства, выводы, место в дизайне, пакеты и фрагменты — `kb/<ID>#<Раздел>` и `design/…md#<раздел или id>`; `check-refs.mjs` проверяет цель ссылки, адрес строки — проблема; `check-packet`, `check-fragment` — по новому формату; коммиты в репозитории навыка
 - [x] 10 · agent · SRA — отдельной сессией, https://github.com/Homasters-max/SRA/pull/83: обработаны `docs/`, `.claude/`; намеренно не тронуты `sra/skills` (пакет с дайджестом), `lattice/`, `docs/integrations/`, `.kb-search/` (не в git, kb-search в SRA заморожен); приёмочный опыт — 0 переносов — https://github.com/Homasters-max/SRA/pull/83
-- [x] 11 · agent · `dev-check.py`: шаг md-wrap — переносы, метки, адреса строк, битые ссылки — ошибки с командой `--fix`, спорные — сигналы, файлы не меняет; незаменённые заглушки шаблонов — ошибка — gh/16
-- [x] 12 · agent · шаблоны `dev/templates/` (9 типов), `design/templates/adr.md`, индекс `dev/INDEX.md` (`dev-check.py --index`); шаблоны OpenSpec — PRP-002; приёмка опытом: свежий Sonnet создаёт `issue` и `work` по шаблону — `dev-check` 0 ошибок, переносов 0 — gh/16
+- [ ] 11 · agent · `dev-check.py`: шаг md-wrap — переносы, метки, адреса строк, битые ссылки — ошибки с командой `--fix`, спорные — сигналы, файлы не меняет; незаменённые заглушки шаблонов — ошибка
+- [ ] 12 · agent · шаблоны `dev/templates/` (9 типов), `design/templates/adr.md`, индекс `dev/INDEX.md` (`dev-check.py --index`); шаблоны OpenSpec — PRP-002; приёмка опытом: свежий Sonnet создаёт `issue` и `work` по шаблону — `dev-check` 0 ошибок, переносов 0
 - [ ] 13 · agent · шаблоны выходных файлов своих навыков (отчёт kb-research, реестры arch-integrate, SES/RPT session-audit) — по принципам D-5
 
 ## Приёмка
 
 - [x] `md-wrap --check` по LATTICE — 0 находок · cmd — gh/13
 - [x] `md-wrap --links` по LATTICE — битых 0 · cmd — gh/14
-- [x] `md-wrap --check` по `D:\kb` и своим навыкам — без A и L · cmd — gh/16
+- [ ] `md-wrap --check` по `D:\kb` и своим навыкам — без A и L · cmd
 - [x] свежий Sonnet читает вычищенный документ и пишет новый — 0 переносов по ширине · cmd — https://github.com/Homasters-max/SRA/pull/83
-- [x] свежий агент переходит по ссылкам `#id`, `#раздел`, `kb/ID#раздел` без подсказок — 4 ссылки за 9 вызовов, все цели верны · cmd — gh/16
+- [ ] свежий агент переходит по ссылкам `#id`, `#раздел`, `kb/ID#раздел` без подсказок — 4 ссылки за 9 вызовов, все цели верны · cmd
 
 ## Решения
 
@@ -60,4 +60,3 @@ rules: []
 - 2026-09-28 — `D:\kb` вычищена, адреса строк LATTICE → разделы (gh/13).
 - 2026-09-28 — правило ссылок и проверка `--links` (gh/14).
 - 2026-09-28 — рабочая папка `wrap-cleanup/` расформирована: план — этот объект, правила — `rules/docs.md`, описание инструмента — его `README.md`.
-- 2026-09-28 — остаток D:\kb, kb-research на ссылки-разделы, индекс dev/, шаблоны, md-wrap в dev-check, PRP-002 (gh/16).
