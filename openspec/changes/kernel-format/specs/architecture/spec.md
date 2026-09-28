@@ -21,14 +21,19 @@
   переименованием `import { createHash as h }`): импорт по умолчанию, пространства имён, без привязок, `import type`,
   реэкспорт и прочие имена (`randomBytes`, `randomUUID`, `getRandomValues`) — нарушение;
 - `dynamic-import` — вызов `import(…)` или `require(…)`;
-- `forbidden-global` — свободный идентификатор `process`, `fetch`, `Deno`, `Bun`, `globalThis`, `global`, `window`,
-  `self`, `performance`, `console`, `crypto`, `setTimeout`, `setInterval`, `setImmediate`, `queueMicrotask`, `eval`,
-  `Function`;
+- `forbidden-global` — свободный идентификатор вне закрытого списка разрешённых (`UNK-KR-007`): `Object`, `Array`,
+  `String`, `Number`, `Boolean`, `Symbol`, `BigInt`, `Math`, `JSON`, `Reflect`, `Map`, `Set`, `WeakMap`, `Error`,
+  `TypeError`, `RangeError`, `ArrayBuffer`, `DataView`, `Uint8Array`, `Date`, `undefined`, `NaN`, `Infinity`
+  (`Math` и `Date` — с ограничениями `nondeterminism`); выражение `import.meta`; расширение списка — только правкой
+  этого требования;
 - `nondeterminism` — свободный идентификатор `Date` где-либо, кроме вызываемого выражения `new Date(x, …)` с первым
   аргументом не spread (вызов `Date(…)`, `Date.now`, `new Date()`, передача `Date` значением —
   `Reflect.construct(Date, [])` — нарушение); свободный идентификатор `Math` где-либо, кроме доступа к свойству через
   точку `Math.<имя>` с именем не `random` (`Math.random`, `Math["random"]`, `const { random } = Math`, передача `Math`
-  значением — нарушение).
+  значением — нарушение); вызов метода, зависящего от локали или часового пояса, по имени независимо от объекта: имя
+  с префиксом `toLocale`, `localeCompare`, `getTimezoneOffset`, `toDateString`, `toTimeString` и локальные геттеры
+  `Date` — `getFullYear`, `getMonth`, `getDate`, `getDay`, `getHours`, `getMinutes`, `getSeconds`,
+  `getMilliseconds`.
 
 Свободный идентификатор — идентификатор в позиции значения, не связанный ни в одной объемлющей области видимости файла
 (модуль, функция, блок, класс, `catch`, параметры, импорты). Сокращённое свойство `{ process }` — ссылка на значение.
@@ -57,10 +62,13 @@
   (`forbidden-global`); `globalThis.x` (`forbidden-global`); `console.log(1)` (`forbidden-global`);
   `new Function("return 1")` (`forbidden-global`); `setTimeout(f, 0)` (`forbidden-global`); `({ process })`
   (`forbidden-global`); файл, где `function f(console) { return console }` и `function g() { return console }`
-  (`forbidden-global` — только строка в `g`); `Date.now()` (`nondeterminism`); `new Date()` (`nondeterminism`);
+  (`forbidden-global` — только строка в `g`); `new WebSocket("…")` (`forbidden-global`); `import.meta.url`
+  (`forbidden-global`); `structuredClone(x)` (`forbidden-global`); `s.localeCompare(t)` (`nondeterminism`);
+  `new Date(0).getHours()` (`nondeterminism`); `n.toLocaleString()` (`nondeterminism`); `Date.now()` (`nondeterminism`); `new Date()` (`nondeterminism`);
   `Date(0)` (`nondeterminism`); `Reflect.construct(Date, [])` (`nondeterminism`); `Math.random()` (`nondeterminism`);
   `Math["random"]()` (`nondeterminism`); `const { random } = Math` (`nondeterminism`); и файлами без нарушений:
-  импорт `{ createHash as h }` из `node:crypto` и `./hash.ts` с вызовом `new Date(0)` и `Math.floor(1.5)`; файл в
+  импорт `{ createHash as h }` из `node:crypto` и `./hash.ts` с вызовом `new Date(0).toISOString()`,
+  `Math.floor(1.5)`, `JSON.stringify(s)`, `Reflect.ownKeys(o)`, `Number.isSafeInteger(n)` и `new Map()`; файл в
   подкаталоге `sub/`, импортирующий `../hash.ts`; файл с локальной `const process = 1`, её чтением и выражением
   `x.process`; файл с классом, у которого метод `process()`, с `interface X { console: number }` и
   `let f: Function`; затем тест структуры запускается на несуществующем каталоге и на каталоге с файлом

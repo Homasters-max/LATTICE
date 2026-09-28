@@ -59,6 +59,8 @@
 `checkInput(text)` SHALL принимать JSON-текст (RFC 8259) строкой и возвращать при успехе разобранное значение, в
 котором каждая строка — значение строки и ключ объекта — приведена к форме нормализации Unicode NFC (`UNK-KR-001`).
 Версия Unicode формата v1 — 16.0 (`UNK-KR-005`): NFC — по Unicode 16.0, строки из кодовых точек, назначенных в нём.
+NFC выполняет движок: среда исполнения ядра SHALL иметь Unicode не ниже 16.0 — предусловие формата v1
+(`UNK-KR-006`); ядро среду не читает, её проверяет тест среды проекта.
 Ключ `"__proto__"` и любой другой ключ SHALL быть обычным членом объекта результата. Число SHALL представляться
 ближайшим числом двойной точности IEEE 754. `lone-surrogate` и `unassigned` SHALL проверяться по строке после
 декодирования escape-последовательностей и до NFC — по кодовым единицам UTF-16 и кодовым точкам: суррогаты,
@@ -169,6 +171,11 @@
 - **THEN** первые шесть — единственный отказ `unassigned` `/s`; следующие три — успех; ключ — единственный отказ
   `unassigned` `""`; последний — единственный отказ `lone-surrogate` `/s`
 
+#### Scenario: Среда исполнения — Unicode не ниже 16.0
+<!-- id: SCN-KR-025 -->
+- **WHEN** тест среды читает версию Unicode среды исполнения (`process.versions.unicode`)
+- **THEN** версия не ниже 16.0; на среде ниже 16.0 тест падает с найденной версией в сообщении
+
 ### Requirement: Каноническая форма — JCS
 <!-- id: REQ-KR-003 -->
 
@@ -258,7 +265,8 @@
 <!-- id: REQ-KR-005 -->
 
 Идентификатор SHALL иметь вид `namespace "/" local` или `value-id`:
-- `namespace` — `[a-z][a-z0-9-]*` и ноль или больше частей `"." [a-z0-9-]+`;
+- `namespace` — `[a-z][a-z0-9-]*` и ноль или больше частей `"." [a-z0-9-]+`, не длиннее 64 символов целиком, без
+  предела числа частей (`UNK-KR-008`);
 - `local` — `[A-Za-z0-9][A-Za-z0-9._-]{0,127}`, регистр значим (`UNK-KR-003`);
 - `value-id` — `"#"` и ровно 32 строчные шестнадцатеричные цифры (схема 1);
 - `"#" label ":" hex` с `label` = `[g-z][a-z0-9]*` и `hex` = `[0-9a-f]+` — зарезервированная схема: ядро v1 её
@@ -284,20 +292,21 @@
 <!-- id: SCN-KR-010 -->
 - **WHEN** `parseRef` получает `std/need@2`, `warrant/REQ-KRN-011`, `core/rule.type-shape@1`, `acme.tools/x_1`,
   `warrant/01J8ZQ4N7X5K2M9R3T6V8W0Y1A`, `#3fa29c0d71be44a2b6c1d0e9f8a7b6c5`, `#3fa29c0d71be44a2b6c1d0e9f8a7b6c5@1`,
-  `warrant/x@9007199254740991`, строку из `warrant/` и 128 символов `a`, и для каждого результата вызывается
-  `formatRef`
+  `warrant/x@9007199254740991`, строку из `warrant/` и 128 символов `a`, строку из 64 символов `a` и `/x`, и для
+  каждого результата вызывается `formatRef`
 - **THEN** результаты по порядку: `{ id: "std/need", version: 2 }`, `{ id: "warrant/REQ-KRN-011" }`,
   `{ id: "core/rule.type-shape", version: 1 }`, `{ id: "acme.tools/x_1" }`,
   `{ id: "warrant/01J8ZQ4N7X5K2M9R3T6V8W0Y1A" }`, `{ id: "#3fa29c0d71be44a2b6c1d0e9f8a7b6c5" }`,
   `{ id: "#3fa29c0d71be44a2b6c1d0e9f8a7b6c5", version: 1 }`, `{ id: "warrant/x", version: 9007199254740991 }`,
-  `{ id }` с этой строкой целиком; `formatRef` каждого результата равен исходной строке
+  `{ id }` с этой строкой целиком для двух последних; `formatRef` каждого результата равен исходной строке
 
 #### Scenario: Недопустимые ссылки
 <!-- id: SCN-KR-011 -->
 - **WHEN** `parseRef` получает `#g1:abcd`, `#z:1`, `#3FA29C0D71BE44A2B6C1D0E9F8A7B6C5`, `#3fa29c0d71be44a2b6c1d0e9f8a7b6c`,
   `warrant/`, `Warrant/x`, `warrant/a b`, `warrant/a/b`, `warrant/-x`, `warrant/x@0`, `warrant/x@01`,
   `warrant/x@9007199254740992`, `warrant/x@`, `std/need@2@3`, пустую строку и строку из `warrant/` и 129 символов `a`,
-  `#z:`, `#z:xyz`, `acme./x`, `acme..tools/x`, `#g1:ab@2`, `#g1:ab@0`, `#G1:ab`; `formatRef` получает
+  `#z:`, `#z:xyz`, `acme./x`, `acme..tools/x`, `#g1:ab@2`, `#g1:ab@0`, `#G1:ab`, строку из 65 символов `a` и `/x`;
+  `formatRef` получает
   `("warrant/x", 0)`, `("warrant/x", 1.5)`, `("Warrant/x")`, `("#g1:ab")`
 - **THEN** `#g1:abcd`, `#z:1`, `#g1:ab@2` и `#g1:ab@0` — отказ `reserved-scheme` `""`; остальные строки — отказ `bad-ref`
   `""`; `formatRef` —
@@ -307,9 +316,11 @@
 <!-- id: SCN-KR-012 -->
 - **WHEN** `newId` получает `("warrant", "01J8ZQ4N7X5K2M9R3T6V8W0Y1A")`, `("Warrant", "01J8ZQ4N7X5K2M9R3T6V8W0Y1A")`,
   `("warrant", "01j8zq4n7x5k2m9r3t6v8w0y1a")`, `("warrant", "81J8ZQ4N7X5K2M9R3T6V8W0Y1A")`,
-  `("warrant", "01J8ZQ4N7X5K2M9R3T6V8W0Y1")`, `("warrant", "01J8ZQ4N7X5K2M9R3T6V8W0YIL")`
+  `("warrant", "01J8ZQ4N7X5K2M9R3T6V8W0Y1")`, `("warrant", "01J8ZQ4N7X5K2M9R3T6V8W0YIL")`, затем с ULID первого входа
+  — `namespace` из 64 символов `a` и из 65 символов `a`
 - **THEN** первый — успех `warrant/01J8ZQ4N7X5K2M9R3T6V8W0Y1A`; второй — отказ `bad-namespace` `/namespace`;
-  остальные — отказ `bad-ulid` `/ulid`
+  с третьего по шестой — отказ `bad-ulid` `/ulid`; `namespace` из 64 символов — успех, из 65 — отказ `bad-namespace`
+  `/namespace`
 
 ### Requirement: Ссылки в теле
 <!-- id: REQ-KR-006 -->

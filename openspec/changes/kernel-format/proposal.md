@@ -47,6 +47,18 @@
 > формат v1 фиксирует Unicode 16.0; `checkInput` отклоняет кодовые точки, не назначенные в нём, кодом `unassigned`
 > (`REQ-KR-002`, `SCN-KR-023`).
 
+Решения по review 2 — [комментарий в PR #2](https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215),
+все три — вариант A по рекомендации:
+
+> **UNKNOWN** `UNK-KR-006` · blocking — среда NFC Unicode 16.0. **Решено:** предусловие формата v1 — среда исполнения
+> с Unicode не ниже 16.0; тест среды, `engines` `>=22.17` (`REQ-KR-002`, `SCN-KR-025`).
+>
+> **UNKNOWN** `UNK-KR-007` · blocking — глобальные имена ядра. **Решено:** закрытый список разрешённых свободных
+> идентификаторов, прочее — `forbidden-global`; запрещены `import.meta` и методы локали (`REQ-AR-001`, `SCN-AR-002`).
+>
+> **UNKNOWN** `UNK-KR-008` · blocking — предел длины `namespace`. **Решено:** не длиннее 64 символов целиком
+> (`REQ-KR-005`, `SCN-KR-010`…`SCN-KR-012`).
+
 ## Capabilities
 
 ### New Capabilities

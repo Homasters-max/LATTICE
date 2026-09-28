@@ -5,8 +5,8 @@ change: kernel-format
 branch: spec/kernel-format
 pr: 2
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 10
-waits: [UNK-KR-006, UNK-KR-007, UNK-KR-008]
+focus: 12
+waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
   - {id: 2, actor: agent, do: "review 1", done: "EVID-01M3JHV12SMRHDT34WPQXC7QE3"}
@@ -17,8 +17,8 @@ steps:
   - {id: 7, actor: agent, do: "unknown resolve UNK-KR-005; Run specify — решение в spec (REQ-KR-002, SCN), design Open Questions", done: "RUN-01M3KMTWX4HJWBQSPWM6W0MS4E (SCN-KR-023, design D-7)"}
   - {id: 8, actor: agent, do: "review 2 субагентом warrant-reviewer, сдача --file (проверка W-006)", done: "EVID-01M3KNFKZ2PE3AEHC569ZTF3B7 (PROVEN: MAJOR 13, MINOR 11, INFO 3)"}
   - {id: 9, actor: agent, do: "раунд 3: D-1, D-2 review 2 — blocking UNK-KR-006, UNK-KR-007 (+ UNK-KR-008, F-27), вопрос в PR #2", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867300653, #issuecomment-5867318422"}
-  - {id: 10, actor: human, do: "решение UNK-KR-006, UNK-KR-007, UNK-KR-008 комментарием в PR #2", done: null}
-  - {id: 11, actor: agent, do: "Run specify: F-1…F-27 review 2 (EVID-01M3KNFKZ2PE3AEHC569ZTF3B7), P-1 (tasks.md 3.2), решения UNK-KR-006…008", done: null}
+  - {id: 10, actor: human, do: "решение UNK-KR-006, UNK-KR-007, UNK-KR-008 комментарием в PR #2", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215"}
+  - {id: 11, actor: agent, do: "Run specify: F-1…F-27 review 2 (EVID-01M3KNFKZ2PE3AEHC569ZTF3B7), P-1 (tasks.md 3.2), решения UNK-KR-006…008", done: "RUN-01M3KNZAC5S8G0CNPJG4TV6AS4, RUN-01M3KP9D1RXYQY32HZAHP9PFC1; карта — design.md «Решения по review 2»"}
   - {id: 12, actor: agent, do: "review 3; MAJOR review 3 — I-N в impl-PR (R-L0-07), без раунда 4", done: null}
   - {id: 13, actor: agent, do: "warrant verify, PR ready; далее transition SPECIFIED после одобрения", done: null}
 rules:

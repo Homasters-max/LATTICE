@@ -78,7 +78,9 @@ types (04 §7). Исключения внутри ядра не бросаютс
 `test/architecture/structure.test.ts` разбирает файлы через `ts.createSourceFile` (`typescript` — devDependency, в
 ядре не используется) и обходит узлы: `ImportDeclaration`, `ExportDeclaration` с `moduleSpecifier` (относительный
 путь разрешается от файла и сравнивается с корнем проверяемого каталога, расширение — `.ts`), `ImportClause` из
-`node:crypto`, `CallExpression` с `ImportKeyword` или идентификатором `require`, свободные `Identifier`,
+`node:crypto`, `CallExpression` с `ImportKeyword` или идентификатором `require`, свободные `Identifier` против
+закрытого списка разрешённых имён (`UNK-KR-007`), `MetaProperty` `import.meta`, вызовы методов по имени (`toLocale*`,
+`localeCompare`, локальные геттеры `Date`),
 употребления `Date` и `Math` (родитель узла решает: `new Date(x)`, `Math.<имя>` через точку). Свободный
 идентификатор — по областям видимости: обход держит стек областей (модуль, функция, блок, класс, `catch`) с
 объявленными в них именами (с подъёмом `var` и объявлений функций к функции); идентификатор в позиции значения, не
@@ -114,8 +116,10 @@ Unicode 16.0 (дополнение `Cn`, суррогаты — отдельны
 сверяет её с `\p{Cn}` по всем кодовым точкам, на другой версии — пропуск с причиной (`skip`).
 
 NFC назначенных точек Unicode 16.0 не меняется в следующих версиях (политика стабильности нормализации), поэтому
-Node с Unicode 16.0 и новее даёт те же байты; нижняя граница — `engines` (D-6), тест среды проверяет
-`process.versions.unicode` ≥ 16.0.
+Node с Unicode 16.0 и новее даёт те же байты; нижняя граница — предусловие формата (`UNK-KR-006`): `engines` (D-6)
+и тест среды `test/kernel/environment.test.ts` (SCN-KR-025) проверяет `process.versions.unicode` ≥ 16.0 — тест, не
+ядро (ядру `process` запрещён). Отвергнуто: собственные таблицы NFC в ядре — десятки КБ данных и алгоритм ради среды,
+которую проект и так закрепляет; проба нормализации в `checkInput` — эвристика.
 
 Отвергнуто:
 - Разбор UCD `DerivedGeneralCategory.txt` 16.0: загрузка файла — ввод-вывод вне ядра и сети CI; `\p{Cn}` Node 22.17 —
@@ -163,8 +167,37 @@ Review 1 (EVID-01M3JHV12SMRHDT34WPQXC7QE3, `NOT_PROVEN`) — правкой spec
 | F-23 | Место фикстуры — в design | SCN-KR-006, D-2 |
 | F-24 | `canonical` шире входной проверки | REQ-KR-003 |
 
+## Решения по review 2
+
+Review 2 (EVID-01M3KNFKZ2PE3AEHC569ZTF3B7, `PROVEN`: MAJOR 13, MINOR 11, INFO 3) — раунд 3 правкой spec по решению
+maintainer'а; D-1, D-2 reviewer'а и F-27 — `UNK-KR-006`…`UNK-KR-008`.
+
+| Находка | Решение | Где |
+|---|---|---|
+| F-1 | Unicode ≥ 16.0 — предусловие формата, тест среды (`UNK-KR-006`) | REQ-KR-002, SCN-KR-025, D-7 |
+| F-2 | `unassigned` — до NFC, как `lone-surrogate` | REQ-KR-002 |
+| F-3 | `canonical`, `refsOf` — любая глубина, обход без рекурсии | REQ-KR-003, SCN-KR-024, D-2 |
+| F-4 | Proxy — вне гарантий чистоты | REQ-KR-001 |
+| F-5, F-6 | `refsOf`: строка `$ref` без NFC; `not-json` единственный; отказ объекта до членов | REQ-KR-006, SCN-KR-022 |
+| F-7 | Порядок проверок при входе в объект и массив | REQ-KR-003, SCN-KR-019 |
+| F-8, F-21 | `reserved-scheme` — где допустим `value-id`, при любом `@…`; метка вне `[g-z]…` — `bad-ref` | REQ-KR-005, SCN-KR-009, SCN-KR-011, SCN-KR-015 |
+| F-9, F-19, F-24 | `revision`: `bad-input` вместо полей, `at` — как обычно; поля — свойства-данные; порядок ключей | REQ-KR-007, SCN-KR-014, SCN-KR-015, SCN-KR-020 |
+| F-10, F-11, F-14 | `Date`, `Math` — узкие формы; свободный идентификатор по областям видимости, только позиции значений | REQ-AR-001, SCN-AR-002, D-5 |
+| F-12 | Закрытый список разрешённых имён, `import.meta`, методы локали (`UNK-KR-007`) | REQ-AR-001, SCN-AR-002 |
+| F-13, F-15, F-16 | `non-ts-file`; `no-kernel`, `parse-error`; границы `crypto-import` | REQ-AR-001, SCN-AR-002 |
+| F-17 | Правило describe — на тестах проекта или файлах фикстуры | REQ-AR-002, D-5 |
+| F-18 | Входы своих сценариев; снимок по дескрипторам | SCN-KR-001 |
+| F-20, F-22 | Дубль на каждый повтор; `bad-ref` по первому `$ref`; отклонённый ключ не входит в `path` | REQ-KR-002, SCN-KR-017 |
+| F-23 | Точка входа `src/kernel/index.ts` | REQ-KR-001 |
+| F-25 | Векторы сценариев — норма формата v1 | REQ-KR-001 |
+| F-26 | UNK-KR-005 в расхождениях с 10-kernel | этот design |
+| F-27 | `namespace` ≤ 64 символов (`UNK-KR-008`) | REQ-KR-005, SCN-KR-010, SCN-KR-011, SCN-KR-012 |
+| P-1 | Задача 3.2 отделена от 3.1 | tasks.md |
+
 ## Open Questions
 
 Нет. `UNK-KR-001`…`UNK-KR-004` решены maintainer'ом по рекомендациям (proposal.md); `UNK-KR-005` — вариант A по
 рекомендации ([PR #2](https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5866978072)): формат v1 фиксирует
-Unicode 16.0, неназначенные в нём кодовые точки — отказ `unassigned`. Spec им соответствует.
+Unicode 16.0, неназначенные в нём кодовые точки — отказ `unassigned`; `UNK-KR-006`…`UNK-KR-008` — вариант A по
+рекомендации ([PR #2](https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867393215)). Spec им
+соответствует.
