@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "fix-pin-test",
-  "change_state": "PROPOSED",
+  "change_state": "SPECIFIED",
   "classification": {
     "profiles": [
       "chore"
@@ -34,6 +34,20 @@
       "to": "PROPOSED",
       "at": "2026-09-28T22:20:06.257Z",
       "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-09-28T22:27:02.298Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3N21PY5ZZV9A4QWSV30QHCK"
+      ]
     }
   ]
 }
