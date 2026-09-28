@@ -1,13 +1,13 @@
 ---
 id: wrap-cleanup
 type: dev/work@1
-version: 8
+version: 7
 title: Переносы строк по ширине и ссылки на строки
 track: infra
 from: gh/12
 change: null
-branch: chore/arch-integrate-places
-pr: 17
+branch: chore/dev-index-templates
+pr: 16
 waits: []
 rules: []
 ---
@@ -35,7 +35,7 @@ rules: []
 - [x] 11 · agent · `dev-check.py`: шаг md-wrap — переносы, метки, адреса строк, битые ссылки — ошибки с командой `--fix`, спорные — сигналы, файлы не меняет; незаменённые заглушки шаблонов — ошибка — gh/16
 - [x] 12 · agent · шаблоны `dev/templates/` (9 типов), `design/templates/adr.md`, индекс `dev/INDEX.md` (`dev-check.py --index`); шаблоны OpenSpec — PRP-002; приёмка опытом: свежий Sonnet создаёт `issue` и `work` по шаблону — `dev-check` 0 ошибок, переносов 0 — gh/16
 - [x] 13 · agent · шаблоны выходных .md своих навыков: kb-research — `templates/` (START, реестр, пакет, фрагменты А и Б, итоги), `report-template.md` и `batch/run-template.md` приведены к D-5; arch-integrate — 9 шаблонов, ADR как `design/templates/adr.md`; domain-modeling — ADR и CONTEXT; session-audit — ссылки на `templates/report.md`, `report-synthesis.md`, `session.md`; приёмка опытом — `START.md` по шаблону без переносов и заглушек — gh/16
-- [x] 14 · agent · arch-integrate, скрипты: константа EXT = .md и явный список папок (`design-lint --dirs`, `ledger init --dirs`) — снимки, шаблоны, предложения больше не читаются (на LATTICE: 129 файлов, 1175 ложных ошибок → 58 файлов, 0); «Где» реестра — `design/…md#<id или раздел>`, `ledger check` проверяет цель; `recalc-refs.mjs` переводит адреса строк в места по истории git (реестр LATTICE: 974 адреса — 270 на id, 657 на раздел, 47 на файл, 9 вручную — раздел переименован); описания навыка, «Где что» — с местами — gh/17
+- [ ] 14 · agent · arch-integrate, скрипты: константа EXT = .md и явный список папок (`design-lint --dirs`, `ledger init --dirs`) — снимки, шаблоны, предложения больше не читаются (на LATTICE: 129 файлов, 1175 ложных ошибок → 58 файлов, 0); «Где» реестра — `design/…md#<id или раздел>`, `ledger check` проверяет цель; `recalc-refs.mjs` переводит адреса строк в места по истории git (реестр LATTICE: 974 адреса — 270 на id, 657 на раздел, 47 на файл, 9 вручную — раздел переименован); описания навыка, «Где что» — с местами
 
 ## Приёмка
 
