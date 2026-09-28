@@ -5,7 +5,7 @@ change: pin-v0-8-1
 branch: impl/pin-v0-8-1
 pr: null
 done_when: Change ARCHIVED; job warrant на теге v0.8.1; `warrant sync --check` без GENERATED_DRIFT и LOCK_MISMATCH
-focus: 8
+focus: 9
 waits: []
 steps:
   - {id: 1, actor: agent, do: "spec-PR: init change (chore + factory-change, skip_specs), review 1, verify", done: "https://github.com/Homasters-max/LATTICE/pull/5"}
@@ -15,7 +15,7 @@ steps:
   - {id: 5, actor: agent, do: "impl-PR: APPROVED + IMPLEMENTING; I-N по F-1…F-9 (EVID-01M3KG6KKJPEA3FPFA8D600J8Q); патч policy-путей во временный каталог", done: "b71a490 (RUN-01M3KGXFX4K77F1D663EVFCFTP); патч pin-v0-8-1-policy.patch в scratchpad сессии"}
   - {id: 6, actor: human, do: "git apply патча (тег v0.8.1, правила maintainer-acts, session-start, CLAUDE.md) — команду присылает агент", done: "4ba948f"}
   - {id: 7, actor: agent, do: "коммит патча; warrant sync CLI 0.8.1 (FRONTEND_RESTART_REQUIRED); коммит", done: "ae75067"}
-  - {id: 8, actor: human, do: "перезапуск сессии Claude Code (design I-4): правила и субагент warrant-reviewer читаются при старте", done: null}
+  - {id: 8, actor: human, do: "перезапуск сессии Claude Code (design I-4): правила и субагент warrant-reviewer читаются при старте", done: "сессия 2026-09-28: warrant-reviewer со сдачей --file, правила в Context Pack RUN-01M3KJMVZF9J0NMESHM4HG4WJ4"}
   - {id: 9, actor: agent, do: "новая сессия: старт по dev/STATE.md; Run implement — warrant check tests-passed, отметки tasks.md; verify, VERIFYING, локальный warrant ci (задача 3.2); push, PR", done: null}
   - {id: 10, actor: human, do: "merge impl-PR", done: null}
   - {id: 11, actor: agent, do: "archive-PR: ci fetch, MERGED --by, archive; dev/: R-L0-01, R-L0-02 retired", done: null}
