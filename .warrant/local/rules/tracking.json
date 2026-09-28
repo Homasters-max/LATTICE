@@ -1,0 +1,8 @@
+{
+  "$schema": "warrant://rule/1",
+  "id": "tracking",
+  "paths": [
+    "**"
+  ],
+  "text": "Учёт работы — там, где событие; отдельного журнала нет. Задача Change — `[x]` в `tasks.md`; отменённая или перенесённая — не `[x]`: убрать и строка `I-N` в `design.md` с причиной и ссылкой. Где мы — вычислять: `warrant status`, `git log`, `gh pr list`, `gh issue list`. Работа без Change — коммит и PR. Долг LATTICE вне текущего Change (дефект, идея продукта) — GitHub Issue (`gh issue create`), ссылка `…/issues/N`; закрывает Change или PR (`Closes #N`). Дефект WARRANT — `D:/tmp/warrant-inbox/`."
+}

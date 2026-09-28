@@ -19,3 +19,5 @@ UNKNOWN — только в `PROPOSED` и `SPECIFIED`: `warrant unknown add <cha
 3. archive-PR (ветка `archive/<change>` от `main` со слитым impl-PR): `warrant ci fetch <URL impl-PR>`, `warrant transition <change> MERGED --ref <URL impl-PR>` — без `--by`; только если `warrant` отвечает `USAGE`, потому что effective policy Change (risk `HIGH`) ставит gate `human-approval` на `VERIFYING->MERGED`, — с `--by <maintainer>`; `warrant archive <change>`. Merge делает maintainer.
 
 Maintainer — `roles.maintainer` в `.warrant/warrant.json`. Коммит и push — в свою ветку; `main` и `gh pr merge` — только maintainer.
+
+Учёт работы — там, где событие; отдельного журнала нет. Задача Change — `[x]` в `tasks.md`; отменённая или перенесённая — не `[x]`: убрать и строка `I-N` в `design.md` с причиной и ссылкой. Где мы — вычислять: `warrant status`, `git log`, `gh pr list`, `gh issue list`. Работа без Change — коммит и PR. Долг LATTICE вне текущего Change (дефект, идея продукта) — GitHub Issue (`gh issue create`), ссылка `…/issues/N`; закрывает Change или PR (`Closes #N`). Дефект WARRANT — `D:/tmp/warrant-inbox/`.
