@@ -1,0 +1,81 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3N1QH5PS5D020YA3GE1BX6V",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Proposal requires 'правил не меньше одного', but the behavior when the directory .warrant/local/rules/ itself is absent is not stated; with readdirSync in the describe() body (design D-1) the file crashes at load instead of failing the named it(), and junit may not count the failure as a test.",
+      "targets": [
+        "openspec/changes/fix-pin-test/proposal.md",
+        "openspec/changes/fix-pin-test/design.md"
+      ],
+      "recommendation": "State that a missing or empty rules directory fails the it() 'правил не меньше одного' (directory read guarded so the describe still registers its tests)."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "Impact says removing a rule does not break the test 'если warrant sync выполнен', and design Goals say the delivery invariant is kept; but the check is one-directional (rule text is in AGENTS.md). A removed rule whose text stays in AGENTS.md because sync was not run passes silently, so the stated condition is not verified by the test.",
+      "targets": [
+        "openspec/changes/fix-pin-test/proposal.md",
+        "openspec/changes/fix-pin-test/design.md"
+      ],
+      "recommendation": "Either state explicitly that the test checks only rule -> AGENTS.md delivery (stale text after removal is out of scope), or add a check that AGENTS.md body consists exactly of the rule texts."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-boundary",
+      "statement": "'каждый файл .warrant/local/rules/*.json' leaves non-.json files and subdirectories silently ignored; a rule file with another extension or nested path would be skipped without failure.",
+      "targets": [
+        "openspec/changes/fix-pin-test/proposal.md"
+      ],
+      "recommendation": "Optionally state that non-.json entries are ignored (or fail), so the intent is explicit."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "The AGENTS.md check is a substring match of text.trim(); it assumes warrant sync copies rule text verbatim and that no rule text is a substring of another. Holds today for env, maintainer-acts, process, tracking.",
+      "targets": [
+        "openspec/changes/fix-pin-test/design.md"
+      ],
+      "recommendation": "No change required; note the verbatim-copy assumption in design if warrant sync may normalize text."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "ambiguity",
+      "statement": "Non-goal references 'S-2 в D:/tmp/warrant-inbox/' — a local path outside the repository, not resolvable by a PR reviewer or CI.",
+      "targets": [
+        "openspec/changes/fix-pin-test/proposal.md"
+      ],
+      "recommendation": "Optionally reference a repository-visible artifact (issue) for CI on push to main."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Change has skip_specs: true (openspec/changes/fix-pin-test/.openspec.yaml), so there are no REQ/SCN; proposal.md is reviewed as the contract."
+    },
+    {
+      "id": "A-2",
+      "statement": "Current .warrant/local/rules/ holds env, maintainer-acts, process, tracking, all with paths [\"**\"], and their texts are present in AGENTS.md (checked by reading files)."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:c3089ca1e5228c58aeab0829718e690dbedb27cfb3375c6067d869a2f54f1f23",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-29T10:00:00Z",
+    "finished_at": "2026-09-29T10:10:00Z"
+  }
+}

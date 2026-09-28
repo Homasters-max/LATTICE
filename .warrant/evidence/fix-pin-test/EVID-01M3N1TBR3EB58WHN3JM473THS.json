@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3N1TBR3EB58WHN3JM473THS",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of fix-pin-test: 0 BLOCKER, 0 MAJOR, 2 MINOR, 3 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "d5d8c77db607ff74df733ffba58ef0b59125dbec",
+    "spec_revision": "openspec/changes/fix-pin-test@d5d8c77db607ff74df733ffba58ef0b59125dbec",
+    "spec_tree": "sha256:009e817421c2ef474185d02496fd4f7c42d4d9a7b4f14d44402fd0b931532268",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3N1QH5PS5D020YA3GE1BX6V"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:c3089ca1e5228c58aeab0829718e690dbedb27cfb3375c6067d869a2f54f1f23",
+  "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+  "created_at": "2026-09-28T22:22:56.259Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3N1QH5PS5D020YA3GE1BX6V.result.json",
+      "sha256": "sha256:ca46bd11506401bf1b3171468531893920942dab775a2facd813db158c1490af"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 3,
+    "MAJOR": 0,
+    "MINOR": 2
+  }
+}
