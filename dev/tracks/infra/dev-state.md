@@ -2,7 +2,7 @@
 schema: lattice-dev/node@1
 kind: work
 branch: chore/dev-housekeeping
-pr: 3
+pr: 4
 done_when: PR chore/dev-state слит; автопамять LATTICE выключена и пуста; новая сессия стартует по dev/STATE.md
 focus: 6
 waits: []
