@@ -98,7 +98,7 @@ def load():
     objs, errors = {}, []
     for path in sorted(glob.glob(os.path.join(DEV, "**", "*.md"), recursive=True)):
         rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
-        if rel in ("dev/README.md", "dev/INDEX.md") or "/arhived/" in rel or rel.startswith("dev/templates/"):
+        if rel in ("dev/README.md", "dev/INDEX.md", "dev/ARCHITECTURE.md") or "/arhived/" in rel or rel.startswith("dev/templates/"):
             continue
         text = open(path, encoding="utf-8").read()
         if not text.startswith("---\n"):
