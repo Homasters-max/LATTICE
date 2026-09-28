@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "fix-pin-test",
-  "change_state": "SPECIFIED",
+  "change_state": "IMPLEMENTING",
   "classification": {
     "profiles": [
       "chore"
@@ -48,6 +48,33 @@
       "evidence": [
         "EVID-01M3N21PY5ZZV9A4QWSV30QHCK"
       ]
+    },
+    {
+      "to": "APPROVED",
+      "at": "2026-09-28T22:28:40.393Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+      "gates": {
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3N24BQTN9PZVP57KB4HHCNE",
+        "EVID-01M3N24PXS8FMB5314S1261BH2"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/24"
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-09-28T22:28:54.100Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:966f210e2ae454b9271ba8434507e8aba10435da3c1367a5e0c10bc090455382",
+      "gates": {
+        "branch-isolated": "PASS"
+      },
+      "evidence": []
     }
   ]
 }
