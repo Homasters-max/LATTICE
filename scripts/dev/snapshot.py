@@ -4,6 +4,7 @@
     python scripts/dev/snapshot.py            снимки для файлов, изменённых относительно HEAD (перед коммитом)
     python scripts/dev/snapshot.py --check    сверка: version во frontmatter = 1 + число снимков (код 1 при расхождении)
     python scripts/dev/snapshot.py --list     файлы с версией > 1
+    python scripts/dev/snapshot.py --repair   недостающие снимки — из истории git (правка закоммичена без снимка)
 
 Охват — SCOPE; openspec/ и .warrant/ версионирует WARRANT. Снимок — содержимое файла в HEAD; один снимок на коммит,
 повторный запуск ничего не меняет. Удалённый файл — последний снимок остаётся в arhived/. У объекта dev/ поле
@@ -91,6 +92,30 @@ def snapshot():
     return made
 
 
+def repair():
+    """Снимки из git: версия k — содержимое файла до k-го коммита, менявшего его после базовой линии."""
+    fixed = []
+    for full in glob.glob(os.path.join(ROOT, "**", "*.md"), recursive=True):
+        path = os.path.relpath(full, ROOT).replace(os.sep, "/")
+        if not in_scope(path):
+            continue
+        edits = git("log", "--no-merges", "--diff-filter=M", "--reverse", "--format=%h", f"{BASELINE}..HEAD", "--",
+                    path).split()
+        if len(edits) <= len(snapshots(path)):
+            continue
+        for k, sha in enumerate(edits, start=1):
+            write(snap_path(path, k), git("show", f"{sha}^:{path}"))
+        n = len(edits)
+        text = read(path)
+        if VERSION_RE.search(text):
+            # подъём version — сам правка: версия из HEAD — ещё один снимок, чтобы после коммита правок = снимков
+            n += 1
+            write(snap_path(path, n), git("show", f"HEAD:{path}"))
+            write(full, VERSION_RE.sub(f"version: {n + 1}", text, count=1))
+        fixed.append(f"{path}: снимки v1…v{n} из git, version {n + 1}")
+    return fixed
+
+
 def check():
     errors = []
     pending = {p for p, _ in changed()}
@@ -119,8 +144,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--repair", action="store_true")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
+    if a.repair:
+        for line in repair():
+            print(line)
+        return 0
     if a.check:
         errors = check()
         for e in errors:
