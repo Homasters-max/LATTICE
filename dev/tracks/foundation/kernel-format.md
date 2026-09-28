@@ -2,10 +2,10 @@
 schema: lattice-dev/node@1
 kind: change
 change: kernel-format
-branch: spec/kernel-format
-pr: 2
+branch: impl/kernel-format
+pr: null
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 16
+focus: 17
 waits: []
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
@@ -23,7 +23,14 @@ steps:
   - {id: 13, actor: agent, do: "warrant verify, PR #2 ready, итог и план I-N по review 3 в PR", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867571771"}
   - {id: 14, actor: human, do: "одобрение spec-PR #2 и решение D-1 review 3 (формы Date: закрытый перечень или запреты) — для I-N impl-PR", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5867606665"}
   - {id: 15, actor: agent, do: "verify заново и transition SPECIFIED последним коммитом (без коммитов между ними)", done: "коммит «kernel-format: transition SPECIFIED» в PR #2"}
-  - {id: 16, actor: human, do: "merge spec-PR #2", done: null}
+  - {id: 16, actor: human, do: "merge spec-PR #2", done: "3776ea7 (merge PR #2, после зелёного job)"}
+  - {id: 17, actor: agent, do: "impl-PR: verify, APPROVED --ref PR #2 --by Homasters-max, IMPLEMENTING — первый коммит", done: null}
+  - {id: 18, actor: agent, do: "Run implement: I-N по review 3 (EVID-01M3KPSTHCHC1K4G92MZS2PBK0, D-1 — вариант A) и правка delta spec; waiver spec-approved (PROPOSED); код и тесты по tasks.md", done: null}
+  - {id: 19, actor: human, do: "активация waiver spec-approved — команду присылает агент", done: null}
+  - {id: 20, actor: agent, do: "verify, VERIFYING последним коммитом; локальный warrant ci; push, impl-PR", done: null}
+  - {id: 21, actor: human, do: "merge impl-PR после зелёного job", done: null}
+  - {id: 22, actor: agent, do: "archive-PR: ci fetch, MERGED, archive; W-003 verified", done: null}
+  - {id: 23, actor: human, do: "merge archive-PR", done: null}
 rules:
   - id: R-KF-01
     text: F-5 сам не решать — только blocking UNK к maintainer'у
