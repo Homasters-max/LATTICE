@@ -115,6 +115,6 @@ process), `severity` (blocker · major · minor), `status` (open · workaround �
 
 ## Решения
 
-Приняты grilling'ом 2026-09-28 (Q1–Q29 и поправки); подтверждение maintainer'а — комментарий в PR `chore/dev-state`.
+Приняты grilling'ом 2026-09-28 (Q1–Q29 и поправки); подтверждение maintainer'а — [комментарий в PR #3](https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587).
 Автоматики нет: скрипты, хуки и проверка формы — после реального цикла и только для повторяющегося; форму dev/ после T1
 проверяет `lint` LATTICE.

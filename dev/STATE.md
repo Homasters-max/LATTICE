@@ -13,6 +13,7 @@ switch:
         все Change дорожки S4 ARCHIVED; lattice load dev/ (source-files, второй корпус E7) и WARRANT
         (source-warrant) — lint без hard; lattice explain по цепочке focus отвечает «почему мы здесь»
       then: focus → infra/lattice2lattice-t2 — STATE берётся из lattice explain, dev/ остаётся только источником
+      source: https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587 (E7 на dev/ — приёмка S4 и T2)
     - id: T3
       when: не включён
       then: точка расширения — LATTICE предлагает retire/promote/revise правил, решает maintainer
@@ -26,16 +27,16 @@ rules:
       Акты maintainer'а (решение UNK комментарием, merge, активация waiver) агент не выполняет — присылает
       «❗ Выполнить — <что>:» и одну команду в блоке bash, без &&; результат проверяет сам (gh pr view)
     force: normative
-    status: candidate
-    source: W-010; решение maintainer'а — комментарий в PR chore/dev-state (ожидается)
+    status: active
+    source: W-010; https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило переносится в .warrant/local/rules/)
     review_by: 2026-10-12
   - id: R-L0-02
     text: Старт основной сессии — протокол dev/README.md «Протокол основной сессии»
     force: normative
-    status: candidate
-    source: решение maintainer'а — комментарий в PR chore/dev-state (ожидается)
+    status: active
+    source: https://github.com/Homasters-max/LATTICE/pull/3#issuecomment-5865372587
     owner: human:Homasters-max
     until: pin-v0-8-1 ARCHIVED (правило переносится в .warrant/local/rules/)
     review_by: 2026-10-12
