@@ -7,3 +7,5 @@ node_modules/
 arhived/research/runs/*/logs/transcripts/
 .warrant/evidence/**/raw/
 .warrant/runs/current
+# локальные настройки Claude Code (autoMemoryEnabled: false — dev/README.md)
+.claude/settings.local.json
