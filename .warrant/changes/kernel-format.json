@@ -76,6 +76,16 @@
       "resolution": "Вариант A по рекомендации: формат v1 фиксирует Unicode 16.0; checkInput отклоняет кодовые точки, не назначенные в Unicode 16.0, кодом unassigned.",
       "resolved_as": "decision",
       "ref": "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5866978072"
+    },
+    {
+      "id": "UNK-KR-006",
+      "text": "Среда NFC Unicode 16.0 (review 2 F-1, D-1): ядро нормализует строки normalize движка; на Node с Unicode ниже 16.0 строки с точками, назначенными в 16.0, получат другую форму и хэш. Варианты: (A) предусловие формата v1 — среда с Unicode не ниже 16.0: требование и сценарий теста среды (тест падает ниже 16.0), engines >=22.17; ядро среду не читает (process запрещён); (B) собственные таблицы NFC Unicode 16.0 в ядре без normalize движка — независимость от среды, цена — десятки КБ данных и алгоритм нормализации; (C) checkInput сам определяет версию Unicode движка пробой нормализации и отказывает ниже 16.0 — эвристика. Рекомендация: A — среда проекта закреплена (engines, CI Node 22), unassigned проверяется до NFC (F-2), а NFC назначенных в 16.0 точек стабилен в следующих версиях.",
+      "blocking": true
+    },
+    {
+      "id": "UNK-KR-007",
+      "text": "Глобальные имена ядра (review 2 F-12, D-2): список запретов forbidden-global не закрывает ввод-вывод и недетерминизм (WebSocket, navigator, Intl и toLocale*, WeakRef, SharedArrayBuffer, import.meta и др.). Варианты: (A) закрытый список разрешённых свободных идентификаторов ядра — Object, Array, String, Number, Boolean, Symbol, BigInt, Math (без random), JSON, Reflect, Map, Set, WeakMap, Error, TypeError, RangeError, ArrayBuffer, DataView, Uint8Array, Date (только new Date с аргументом), undefined, NaN, Infinity; остальное — forbidden-global; дополнительно запрещены import.meta и вызовы toLocale*, localeCompare; расширение списка — правкой spec; (B) расширить список запретов перечисленными именами. Рекомендация: A — закрытый список полон по построению, список запретов устаревает с каждой версией Node.",
+      "blocking": true
     }
   ]
 }

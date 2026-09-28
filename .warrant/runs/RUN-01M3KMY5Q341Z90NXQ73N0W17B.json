@@ -1,0 +1,68 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3KMY5Q341Z90NXQ73N0W17B",
+  "change": "kernel-format",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/kernel-format",
+  "started_at": "2026-09-28T09:18:35.273Z",
+  "finished_at": "2026-09-28T09:28:07.672Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:60d423f8aaafe954a7443850de5bbc80824f3e57c2c73e23f2c149775cb56aac",
+  "effective_policy_hash": "sha256:e9787d18af3b7042f48f23f29706b189702355f238326586ce589644544dcd72",
+  "spec_tree": "sha256:e73ac01ff0dd787b3b6c0962ba92e4aee01982daf96ddc958e2a433afa6506a3",
+  "evidence": [
+    "EVID-01M3KNFKZ2PE3AEHC569ZTF3B7"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-09-28T09:24:07.296Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`warrant run submit --help` under the review Run RUN-01M3KMY5Q341Z90NXQ73N0W17B of kernel-format: a review Run runs only `warrant run submit`",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:27:51.751Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:27:52.809Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:27:56.949Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T09:28:04.388Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
