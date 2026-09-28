@@ -341,7 +341,7 @@ def start(objs, rules, signals):
         sess.append("не в реестре: " + ", ".join(sid[:8] for _, sid in missing))
     if unaudited:
         sess.append("без разбора: " + ", ".join(unaudited))
-    print(f"| Сессии    | {'; '.join(sess) if sess else 'все разобраны'} |")
+    print(f"| Сессии    | {'; '.join(sess) + ' — разбор по запросу: /session-audit' if sess else 'все разобраны'} |")
 
 
 def footprint(objs, rules):
