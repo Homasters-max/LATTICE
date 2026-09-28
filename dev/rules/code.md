@@ -1,7 +1,7 @@
 ---
 id: code
 type: dev/guide@1
-version: 1
+version: 2
 title: Архитектура кода
 paths: ["src/**"]
 rules:
@@ -16,15 +16,12 @@ rules:
 
 # code — Архитектура кода
 
-Как устроен код LATTICE: слои, зависимости, ввод-вывод, данные вместо классов — выжимка `design/04-architecture.md`
-для правки `src/**`.
+Как устроен код LATTICE: слои, зависимости, ввод-вывод, данные вместо классов — выжимка `design/04-architecture.md` для правки `src/**`.
 
 ## Область
 
-`src/**`. Источник — `design/04-architecture.md` §1–7 и решения AR-01…AR-14, AD-01…AD-16; при расхождении прав
-`design/`, правило исправляется. Стек — AR-03 (TypeScript, Node ESM, `node:test`, без фреймворков).
+`src/**`. Источник — `design/04-architecture.md` §1–7 и решения AR-01…AR-14, AD-01…AD-16; при расхождении прав `design/`, правило исправляется. Стек — AR-03 (TypeScript, Node ESM, `node:test`, без фреймворков).
 
 ## Проверка
 
-RUL-014, RUL-015 — тест структуры (T169, с S0). Остальные — review. Доставка при правке `src/**` — WARRANT rule с
-`paths` (следующий factory-change); до того — сборка контекста по README.
+RUL-014, RUL-015 — тест структуры (T169, с S0). Остальные — review. Доставка при правке `src/**` — WARRANT rule с `paths` (следующий factory-change); до того — сборка контекста по README.

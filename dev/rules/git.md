@@ -1,7 +1,7 @@
 ---
 id: git
 type: dev/guide@1
-version: 1
+version: 2
 title: Git и PR
 paths: ["**"]
 rules:
@@ -17,8 +17,7 @@ rules:
 
 ## Область
 
-Весь репозиторий. Ветки Change (`spec/`, `impl/`, `archive/`), merge-коммит и акты maintainer'а — в `AGENTS.md` и
-RUL-001, здесь не повторяются.
+Весь репозиторий. Ветки Change (`spec/`, `impl/`, `archive/`), merge-коммит и акты maintainer'а — в `AGENTS.md` и RUL-001, здесь не повторяются.
 
 ## Проверка
 

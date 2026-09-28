@@ -1,7 +1,7 @@
 ---
 id: foundation
 type: dev/track@1
-version: 1
+version: 2
 title: Общие контракты срезов
 focus: null
 depends_on: []
@@ -26,5 +26,4 @@ Change, чей контракт нужен нескольким срезам, а
 ## Журнал
 
 - 2026-09-28 — kernel-format отнесён сюда (grilling: область действия контракта).
-- 2026-09-28 — kernel-format ARCHIVED (gh/10): нормы `openspec/specs/kernel`, `openspec/specs/architecture`; дорожка без
-  работы в фокусе, новые общие контракты — сюда.
+- 2026-09-28 — kernel-format ARCHIVED (gh/10): нормы `openspec/specs/kernel`, `openspec/specs/architecture`; дорожка без работы в фокусе, новые общие контракты — сюда.
