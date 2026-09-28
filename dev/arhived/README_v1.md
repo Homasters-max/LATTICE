@@ -110,8 +110,8 @@ Frontmatter: `id`, `type`, `version`, `title`, `aliases?`, поля типа. З
 Каждый документ `dev/` и `design/` версионируется: прежняя версия изменённого файла ложится в `arhived/<имя>_vN.md`
 его же папки, у объекта `dev/` поле `version` (ревизия, как `id@n` в LATTICE) = 1 + число снимков. Делает это
 `python scripts/dev/snapshot.py` перед коммитом (один снимок на коммит; повторный запуск ничего не меняет;
-удалённый файл — последний снимок остаётся). Проверка — `dev-check.py` (`snapshot.py --check`: коммит без снимка и
-незаснятая правка — ошибки); забыл — `snapshot.py --repair` (снимки из истории git); список — `snapshot.py --list`. Сравнить версии — `git diff --no-index <папка>/arhived/<имя>_v1.md <папка>/<имя>.md`.
+удалённый файл — последний снимок остаётся). Проверка — `dev-check.py` (`snapshot.py --check`); список —
+`snapshot.py --list`. Сравнить версии — `git diff --no-index <папка>/arhived/<имя>_v1.md <папка>/<имя>.md`.
 `openspec/` и `.warrant/` версионирует WARRANT (архив Change, evidence) — снимков там нет. `arhived/` — не объекты:
 `dev-check` и загрузка LATTICE (T1) их пропускают. Базовая линия — v1 на 2026-09-28 (dev-model).
 
