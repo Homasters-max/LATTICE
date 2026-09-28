@@ -5,14 +5,14 @@ change: kernel-format
 branch: spec/kernel-format
 pr: 2
 done_when: Change ARCHIVED; W-003 проверен в impl-PR (junit node:test → PROVEN)
-focus: 5
+focus: 6
 waits: [UNK-KR-005]
 steps:
   - {id: 1, actor: human, do: "решение UNK-KR-001…004", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5860422619"}
   - {id: 2, actor: agent, do: "review 1", done: "EVID-01M3JHV12SMRHDT34WPQXC7QE3"}
   - {id: 3, actor: agent, do: "подтянуть main в spec/kernel-format (после pin-v0-8-1)", done: "3aa7323"}
   - {id: 4, actor: agent, do: "Run specify: правка spec по F-1…F-24 (находки — в EVID-01M3JHV12SMRHDT34WPQXC7QE3)", done: "RUN-01M3KMC27PYZFPJ68PGA63BRBP; карта F-N → REQ/SCN — design.md «Решения по review 1»"}
-  - {id: 5, actor: agent, do: "F-5 (версия Unicode для NFC) — blocking UNK-KR-005, вопрос в PR #2", done: null}
+  - {id: 5, actor: agent, do: "F-5 (версия Unicode для NFC) — blocking UNK-KR-005, вопрос в PR #2", done: "https://github.com/Homasters-max/LATTICE/pull/2#issuecomment-5866964576"}
   - {id: 6, actor: human, do: "решение UNK-KR-005 комментарием в PR #2", done: null}
   - {id: 7, actor: agent, do: "unknown resolve UNK-KR-005; Run specify — решение в spec (REQ-KR-002, SCN), design Open Questions", done: null}
   - {id: 8, actor: agent, do: "review 2 субагентом warrant-reviewer, сдача --file (проверка W-006)", done: null}
