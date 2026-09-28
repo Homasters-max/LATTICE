@@ -1,0 +1,8 @@
+{
+  "$schema": "warrant://rule/1",
+  "id": "session-start",
+  "paths": [
+    "**"
+  ],
+  "text": "Основная сессия (не субагент): старт — [dev/STATE.md](dev/STATE.md), протокол — [dev/README.md](dev/README.md) «Протокол основной сессии». Состояние, ловушки и проблемы — только в dev/; автопамять выключена."
+}

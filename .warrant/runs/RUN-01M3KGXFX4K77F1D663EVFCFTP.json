@@ -1,0 +1,77 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3KGXFX4K77F1D663EVFCFTP",
+  "change": "pin-v0-8-1",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/pin-v0-8-1/tasks.md",
+    "openspec/changes/pin-v0-8-1/design.md",
+    "openspec/changes/pin-v0-8-1/specs/**"
+  ],
+  "scope": [],
+  "branch": "impl/pin-v0-8-1",
+  "started_at": "2026-09-28T08:08:18.635Z",
+  "finished_at": "2026-09-28T08:09:01.718Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:fc3c535c175777ccfa82df8004944d3e9263807d04b325dfb8244a0ad03dc659",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": [
+    {
+      "at": "2026-09-28T08:08:40.873Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T08:08:41.926Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "process"
+      ]
+    },
+    {
+      "at": "2026-09-28T08:08:50.514Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/process/pin.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T08:08:51.471Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/process/pin.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-28T08:08:58.883Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
