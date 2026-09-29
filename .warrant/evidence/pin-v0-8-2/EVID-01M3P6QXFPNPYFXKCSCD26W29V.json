@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3P6QXFPNPYFXKCSCD26W29V",
+  "claim": {
+    "text": "openspec-validate passed for pin-v0-8-2",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "a0e25d5be68e746879d0df605450ecacf908e04e",
+    "base_commit": "7910b7f2c6fb6c1135ea75b5000a207eddede2d2",
+    "spec_revision": "openspec/changes/pin-v0-8-2@a0e25d5be68e746879d0df605450ecacf908e04e",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:6e2d1cd53358ac877d0c4a0a24503a1e5591419d57aa63a5cb083531afd5f2fd",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-09-29T09:08:13.432Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/pin-v0-8-2/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:d6bf01a2e181b464628b2b1a3eb089ed4044f9ca36feb29eace1c65d55e6ca95"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}
