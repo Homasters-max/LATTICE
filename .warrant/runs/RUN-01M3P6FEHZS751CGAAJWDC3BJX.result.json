@@ -1,0 +1,93 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3P6FEHZS751CGAAJWDC3BJX",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "Контракт вызова reusable workflow SRA v0.8.2 принят без указания источника: существование и семантика входов setup, warrant, merge_commit; значения node-version 22 и openspec-version 1.13.1 по умолчанию (D-3: совпадают с прежней копией); отсутствие собственного блока concurrency у вызываемого workflow (D-3: reusable workflow своего блока не имеет); передача GH_TOKEN, который прежняя копия задавала через env job. От внутреннего имени job вызываемого workflow зависит и утверждение proposal, что имя проверки в GitHub - warrant / warrant. Ни одно из этих утверждений не подтверждено ссылкой на файл SRA и не проверяется задачей.",
+      "targets": [
+        "openspec/changes/pin-v0-8-2/design.md",
+        "openspec/changes/pin-v0-8-2/proposal.md"
+      ],
+      "recommendation": "Сослаться в D-3 на файл и строки workflow_call-контракта SRA@v0.8.2 (inputs, defaults, concurrency, токен). Добавить в tasks.md проверку по факту: имя проверки warrant / warrant в job impl-PR и отсутствие отмены прогонов из-за конфликта concurrency."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-4 не задаёт правил разбора workflow-файла: без YAML-парсера (зависимостей нет) значение входа warrant: в with отделяется от ключа warrant: (id job) и от group: warrant-... неоднозначно; не сказано про кавычки вокруг значения, inline-комментарии после значения (D-4 отбрасывает только строки-комментарии), отступы. Два разумных теста дадут разный результат на одном файле.",
+      "targets": [
+        "openspec/changes/pin-v0-8-2/design.md"
+      ],
+      "recommendation": "Записать в D-4 точные шаблоны разбора строки with-входа warrant (кавычки, отступ, inline-комментарий) либо явно ограничить форму файла, которую тест принимает."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Proposal: sync обновляет AGENTS.md и warrant-reviewer.md 'если генератор их изменит'; design D-1 п. 3: 'при изменении', проба показала, что changed их не называет. При этом правка process.json (D-2) меняет текст правила, а тест 'pin: project rules' и задача 1.2 требуют, чтобы AGENTS.md содержал новый текст правила. То есть AGENTS.md изменится безусловно, а proposal и D-1 подают это как условное.",
+      "targets": [
+        "openspec/changes/pin-v0-8-2/proposal.md",
+        "openspec/changes/pin-v0-8-2/design.md",
+        "openspec/changes/pin-v0-8-2/tasks.md"
+      ],
+      "recommendation": "Разделить: AGENTS.md меняется всегда (текст правила process); условно - только warrant-reviewer.md и FRONTEND_RESTART_REQUIRED."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Non-goal (dev-check) и задача 3.2 не связаны: 0.8.2 вводит gate с evidence конкретного check (proposal Why, 06 §3), а ожидаемый исход warrant ci в 3.2 перечисляет только ATTESTATION_REQUIRED у L1 и human-approval в deferred[]. Не сказано, что произойдёт и что считать приемлемым, если gate требует evidence check, для которого в проекте нет инструмента; в .warrant/ упоминаний dev-check нет.",
+      "targets": [
+        "openspec/changes/pin-v0-8-2/proposal.md",
+        "openspec/changes/pin-v0-8-2/tasks.md"
+      ],
+      "recommendation": "В 3.2 явно указать, что gate 0.8.2 не требует check вне tests-passed для этого Change (по результату пробы warrant gate / verify), либо назвать ожидаемую находку и её приемлемость."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "D-6 фиксирует классификацию (risk HIGH, BREAKING, blast_radius SYSTEM) и следствие для MERGED (--by) до warrant classify; BREAKING обосновано сменой имени проверки при незащищённой main. Риск и оси должны быть выведены classify, иначе D-6 и Migration Plan расходятся с фактом.",
+      "targets": [
+        "openspec/changes/pin-v0-8-2/design.md"
+      ],
+      "recommendation": "Пометить D-6 как предложение --propose до classify; после classify сверить значения."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-1",
+      "question": "Требует ли gate VERIFYING->MERGED в pack core-sdd 0.3.4 под kernel 0.8.2 evidence check (в том числе dev-check) сверх tests-passed, и не даст ли его отсутствие иную находку, чем перечислено в задаче 3.2?",
+      "blocking": false,
+      "impact": [
+        "tasks.md"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Принято без проверки: репозиторий Homasters-max/SRA публичен, тег v0.8.2 существует и указывает на коммит 7c603f0, вызов reusable workflow из LATTICE разрешён настройками Actions."
+    },
+    {
+      "id": "A-2",
+      "statement": "Принято без проверки: Claude Code >= 2.1.277 читает AGENTS.md без CLAUDE.md (issue #22)."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:0ba4f73632ccbf28dab90c8b9a3094fafe1e767ca2947c118d6cdf37059bb975",
+    "model": "claude-sonnet-5-5",
+    "started_at": "2026-09-29T10:00:00Z",
+    "finished_at": "2026-09-29T10:10:00Z"
+  }
+}
