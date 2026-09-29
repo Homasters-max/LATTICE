@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3P6JSX4MM8YHSQV1PJD1NS6",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of pin-v0-8-2: 0 BLOCKER, 1 MAJOR, 3 MINOR, 1 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "05c5a490add0724dc914fe76f27d6f542283f59c",
+    "spec_revision": "openspec/changes/pin-v0-8-2@05c5a490add0724dc914fe76f27d6f542283f59c",
+    "spec_tree": "sha256:74aea7523c190d60c0c05a739de1261cb95c5e50e33e0d1e29bc944fa5b03427",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3P6FEHZS751CGAAJWDC3BJX"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:0ba4f73632ccbf28dab90c8b9a3094fafe1e767ca2947c118d6cdf37059bb975",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-09-29T09:05:25.924Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3P6FEHZS751CGAAJWDC3BJX.result.json",
+      "sha256": "sha256:f74676557c97694ae4a87f0fcffdf9bdd646353b5806cd07d6fc00e4590d9a17"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 1,
+    "MAJOR": 1,
+    "MINOR": 3
+  }
+}
