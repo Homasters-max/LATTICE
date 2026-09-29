@@ -24,8 +24,10 @@ describe("SCN-KR-023 Unicode 16.0 table", () => {
     }
   });
 
+  // No SCN token in the name: the scenario is proven by the cases of scenarios.test.ts; this cross-check runs only on
+  // a Unicode 16.0 runtime, and WARRANT 0.8.2 turns a skipped test with an SCN id into NOT_PROVEN (06 §2, I-6).
   it(
-    "SCN-KR-023 table equals the complement of \\p{Cn} of Unicode 16.0",
+    "table equals the complement of \\p{Cn} of Unicode 16.0 (runtime 16.0 only)",
     { skip: unicode === "16.0" ? false : `runtime Unicode ${unicode} is not 16.0` },
     () => {
       const cn = /\p{Cn}/u;

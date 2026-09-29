@@ -87,6 +87,32 @@
       "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
       "gates": {},
       "evidence": []
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-09-29T09:55:44.539Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-09-29T10:03:22.295Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {},
+      "evidence": []
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-09-29T10:14:06.173Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-09-29T10:14:41.550Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {},
+      "evidence": []
     }
   ]
 }

@@ -10,35 +10,26 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 const root = new URL("../../", import.meta.url);
 const read = (path: string): string => readFileSync(new URL(path, root), "utf8");
 
-// The judge is a call of the reusable workflow of WARRANT (Change pin-v0-8-2,
-// design D-3, D-4): comment lines are dropped, the tag is read from `uses` and
-// from the input `warrant` of the block `with` (indent 6), and the file holds no
-// copy of the job.
-const workflowLines = read(".github/workflows/warrant.yml")
+// The judge is a copy of the job that packs the tag and installs the tarball
+// (Change pin-v0-8-2, design I-5, D-4): the reusable workflow of WARRANT v0.8.2
+// installs the CLI by a bare `npm i -g github:…`, which leaves a binary without
+// dependencies on the runner. Comment lines are dropped before the checks.
+const workflow = read(".github/workflows/warrant.yml")
   .split("\n")
-  .filter((line) => !line.trimStart().startsWith("#"));
-const workflow = workflowLines.join("\n");
+  .filter((line) => !line.trimStart().startsWith("#"))
+  .join("\n");
 const lockKernel = (JSON.parse(read(".warrant/warrant.lock.json")) as { kernel: string }).kernel;
 
 describe("pin: CI judge and lock", () => {
-  it("the single tag of the called workflow equals v + kernel of the lock", () => {
-    const tags = [
-      ...workflow.matchAll(/^\s*uses:\s*Homasters-max\/SRA\/\.github\/workflows\/warrant\.yml@v(\d+\.\d+\.\d+)\s*$/gm),
-    ].map((m) => m[1]);
+  it("the single CLI tag in warrant.yml equals v + kernel of the lock", () => {
+    const tags = [...workflow.matchAll(/npm pack github:Homasters-max\/SRA#v(\d+\.\d+\.\d+)/g)].map((m) => m[1]);
     assert.deepEqual(tags, [lockKernel]);
   });
 
-  it("the single input warrant of the call equals v + kernel of the lock", () => {
-    const inputs = workflowLines
-      .map((line) => /^ {6}warrant:\s*v(\d+\.\d+\.\d+)\s*$/.exec(line))
-      .filter((m) => m !== null)
-      .map((m) => m[1]);
-    assert.deepEqual(inputs, [lockKernel]);
-  });
-
-  it("warrant.yml is a call, not a copy of the job", () => {
-    assert.ok(!/^\s*steps:/m.test(workflow), "steps: found");
-    assert.ok(!workflow.includes("npm pack"), "npm pack found");
+  it("the CLI is installed from the packed tarball, not by a bare git install", () => {
+    assert.ok(/npm i -g "\.\/\$tgz"/.test(workflow), "install of the tarball not found");
+    assert.ok(!/npm i -g\s+"?github:/.test(workflow), "bare npm i -g github: found");
+    assert.ok(!/^\s*uses:\s*Homasters-max\/SRA\//m.test(workflow), "call of the reusable workflow found");
   });
 });
 
