@@ -1,0 +1,21 @@
+domains/14-trust.md зависит от domains/14-trust.md, а в «Используют» у domains/14-trust.md нет «trust»
+domains/20-lens.md зависит от domains/13-rules.md, а в «Используют» у domains/13-rules.md нет «lens»
+domains/20-lens.md зависит от domains/22-run.md, а в «Используют» у domains/22-run.md нет «lens»
+domains/20-lens.md зависит от domains/30-adapters.md, а в «Используют» у domains/30-adapters.md нет «lens»
+domains/20-lens.md зависит от domains/20-lens.md, а в «Используют» у domains/20-lens.md нет «lens»
+domains/21-compose.md зависит от domains/22-run.md, а в «Используют» у domains/22-run.md нет «compose»
+domains/21-compose.md зависит от domains/30-adapters.md, а в «Используют» у domains/30-adapters.md нет «compose»
+domains/23-bench.md зависит от domains/13-rules.md, а в «Используют» у domains/13-rules.md нет «bench»
+domains/30-adapters.md зависит от domains/23-bench.md, а в «Используют» у domains/23-bench.md нет «adapters»
+цикл «Зависит от»: trust → trust
+цикл «Зависит от»: lens → run → compose → lens
+цикл «Зависит от»: lens → run → compose → run
+цикл «Зависит от»: lens → run → compose → adapters → lens
+цикл «Зависит от»: lens → run → compose → adapters → compose
+цикл «Зависит от»: lens → run → compose → adapters → run
+цикл «Зависит от»: lens → run → compose → adapters → bench → run
+цикл «Зависит от»: lens → run → compose → adapters → bench → lens
+цикл «Зависит от»: lens → run → compose → adapters → bench → compose
+цикл «Зависит от»: lens → lens
+тип `std/verdict.execution` не встречается ни в одном домене — нет владельца (встречается: 04-architecture.md)
+тип `core/session.purpose` не встречается ни в одном домене — нет владельца (встречается: 04-architecture.md)
