@@ -1,31 +1,32 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "deepen-kernel",
-  "change_state": "SPECIFIED",
+  "change_state": "ABANDONED",
   "classification": {
     "profiles": [
+      "chore",
       "feature"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "LOCAL",
-        "from": "proposer"
+        "from": "record"
       },
       "security_impact": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
@@ -48,6 +49,11 @@
       "evidence": [
         "EVID-01M3QM8TSPRYCB2TGG9EE8W3DZ"
       ]
+    },
+    {
+      "to": "ABANDONED",
+      "at": "2026-09-29T23:37:25.070Z",
+      "by": "cli:local"
     }
   ]
 }
