@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3QND22ARTJRCM54BGGWTCRS",
+  "claim": {
+    "text": "openspec-validate passed for deepen-kernel-2",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "879c8b27f1a54a43a44b04c421237ad82c19e8f7",
+    "base_commit": "e5403862a3167c46693450305a4c2d3cbeb255f5",
+    "spec_revision": "openspec/changes/deepen-kernel-2@879c8b27f1a54a43a44b04c421237ad82c19e8f7",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:29e09a1c581cddda26e209de227e7181863419880ef0a68afd90b4ed536f992d",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-09-29T22:43:40.748Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/deepen-kernel-2/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:196647fbc97a4003b96cf6eb6a094a7da8452fc70221477c054eb3f04e850f22"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 0
+  }
+}
