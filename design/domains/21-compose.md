@@ -11,9 +11,9 @@
 | Объект | Тип | Вид | Тело / роли | Зерно, ключ, `writers` |
 |---|---|---|---|---|
 | потребность | `std/need` | сущность | `{scope: ref, label, terms: [ref]}` | — (ключ потребности — индекс) |
-| подсказка | `std/cue` | факт | `{of: {target: need \| блок@n \| term}, value: "текст", from?, via?, policy?, match?}` | ключ `[target, norm(value)]`; `any` |
+| подсказка | `std/cue` | факт | `{of: {target: need \| блок@n \| term}, value: "текст", from?, via?, policy?, bench?, match?}` | ключ `[target, norm(value)]`; `any` |
 | решение | `std/solution` | сущность | `{need: ref, form: "set" \| "graph"}` | `[need]` — одно решение на потребность |
-| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок}, value: true \| false, reason, found_by, from?, via?, policy?}` | ключ `[group, member]`; `grant` — владелец или допущенный |
+| член решения | `std/member` (`extends core/member@1`) | факт | `{of: {group: solution, member: блок}, value: true \| false, reason, found_by, from?, via?, policy?, bench?}` | ключ `[group, member]`; `grant` — владелец или допущенный |
 | связь | `std/link` | факт | `{of: {group: solution, from: блок, to: блок}, value: true \| false}` | ключ `[group, from, to]`; как у `std/member` |
 | snapshot | `core/snapshot` | значение | `{of: solution, members: [ref@n], links: [[from@n, to@n]]}` | содержимое |
 | пробел | `std/gap` | событие | `{need, scope, kind: "absent" \| "coverage", places?: [Place], note?}` | — |
@@ -70,7 +70,7 @@ frame ─► recall ─┬─ fresh, доверие ок, не пустое ─�
 3. Ещё одна потребность выше `candidates.min_p` (§6) → кандидат `std/alias-candidate` для пары (не слияние, ADR-8, §6); порог кандидатов один для сущностей и потребностей, `same_hi` — только «та же потребность». `candidates.min_p` — калиброванный порог с `onMismatch: mark` (§6), его сверяет та же функция `checkCalibration` ([13](13-rules.md) §3): `calibrated_for` расходится с judge из `setup` — кандидат пишется, как без калибровки, в трассе — `min_p: calibration-mismatch`; нет калибровки — `candidates: uncalibrated`; вызов не отклоняется.
 4. **Без `calibrated_for`** (T136) judge «ту же» сам не выносит: всё ≥ `same_lo` подтверждает Composer, в трассе — `recall: uncalibrated` (как LN-07).
 
-Параметры стадии: `same_hi` 0,85, `same_lo` 0,5 — калиброванные пороги `CalibratedThreshold {value, calibrated_for, call: verify, onMismatch: refuse}` (T198, [13](13-rules.md) §3, ADR-45), способность `recall` объявляет оба в `calibrated`; значения — до калибровки на перефразах стенда (пары «та же / другая» с трудными отрицательными примерами проекта, обе ошибки, `dev`; [23](23-bench.md)); `top_n` 5; `calibrated_for` `{adapter, model, prompt_hash, bench}` — рантайм отказывает при расхождении с judge из `std/setup` обобщённой сверкой ([22](22-run.md) §3, ADR-28). Повтор решения — названное исключение ADR-13: выдача без поиска обратима, ошибку ловит вердикт (`same_need: false` → утверждение −1 на подсказку-формулировку, [22](22-run.md) §6). Доверие решения при повторе — [14](14-trust.md) §5, §7: сводка `overruled`, `contested` или `rejected` — заново через LENS; иначе ≥ `observed` — выдать, `inferred` — выдать с пометкой. Член, который не проходит правило выдачи (выведен, перекрыт, [14](14-trust.md) TR-15), — как `broken`. Пустое решение `recall` не выдаёт: повтор — всегда через LENS (CP-20). Формулировка, признанная той же, — подсказка к потребности (`inferred`) со следом `match` (CP-25); новая потребность — сущность и подсказка.
+Параметры стадии: `same_hi` 0,85, `same_lo` 0,5 — калиброванные пороги `CalibratedThreshold {value, calibrated_for, call: verify, onMismatch: refuse}` (T198, [13](13-rules.md) §3, ADR-45), способность `recall` объявляет оба в `calibrated`; значения — до калибровки на перефразах стенда (пары «та же / другая» с трудными отрицательными примерами проекта, обе ошибки, `dev`; [23](23-bench.md)); `top_n` 5; `calibrated_for` `{adapter, model, prompt_hash, bench}` — рантайм отказывает при расхождении с judge из `std/setup` обобщённой сверкой ([22](22-run.md) §3, ADR-28, ADR-45). Повтор решения — названное исключение ADR-13: выдача без поиска обратима, ошибку ловит вердикт (`same_need: false` → утверждение −1 на подсказку-формулировку, [22](22-run.md) §6). Доверие решения при повторе — [14](14-trust.md) §5, §7: сводка `overruled`, `contested` или `rejected` — заново через LENS; иначе ≥ `observed` — выдать, `inferred` — выдать с пометкой. Член, который не проходит правило выдачи (выведен, перекрыт, [14](14-trust.md) TR-15), — как `broken`. Пустое решение `recall` не выдаёт: повтор — всегда через LENS (CP-20). Формулировка, признанная той же, — подсказка к потребности (`inferred`) со следом `match` (CP-25); новая потребность — сущность и подсказка.
 
 ### 4. Стадии compose
 
@@ -150,7 +150,7 @@ Composer получает кандидатов и может сослаться 
 interface Composer {
   run<T>(t: { kind: 'frame' | 'confirm-same' | 'select' | 'recheck' | 'self-search';
              prompt: string; input: Json; schema: JsonSchema }): Promise<{ output: T; meta: Meta } | Pending>
-                                       // prompt — из params стадии; Pending — [22] §2: {kind, prompt_hash, input, schema}
+                                       // prompt — из params стадии; Pending — [22] §2: {pending: {kind, prompt_hash, input, schema}}
   describe(): Ident                    // adapter, model — [22](22-run.md) §3
 }
 
@@ -159,6 +159,7 @@ interface Source {                                              // потреб�
   locate(ref: Ref): Promise<{ places: Place[] }>                 // где блок в источнике
   grep(q: string, scope: Ref): Promise<Ref[]>                    // по тексту блоков области — self-search
   find(q: string, scope?: Ref): Promise<{ places: Place[] }>     // по сырому источнику — дыра покрытия
+  docs(scope?: Ref): Promise<Array<{ path: string; text: string; blocks: Ref[] }>>  // документы области с их блоками — bm25.doc ([20] §4)
 }
 type Place = { kind: 'doc' | 'code' | 'test'; path: string; lines?: [number, number] }
 ```
@@ -183,7 +184,7 @@ type Place = { kind: 'doc' | 'code' | 'test'; path: string; lines?: [number, num
 | `check(selection, ctx)` | → нарушения (§5); тот же код проверяет `add[]` вердикта |
 | `materialize(need, selection, by)` | → строки: решение, `std/member`, `std/link`, snapshot. Вне вызова (CLI, API) — один коммит, закрытый мир — живые блоки области решения (§5); внутри вызова — строки без записи, коммит делает рантайм (ADR-19) |
 | `divide(need, parts, by)` | → потребности-части + `core/deprecate {replaced_by}` старой (§6) |
-| `pending(namespace, seq)` | → пробелы `std/gap` (`absent`, `coverage`) по потребностям пространства — вид очереди владельца ([15](15-catalog.md) §6); чистая функция журнала |
+| `pending(view, namespace)` | → пробелы `std/gap` (`absent`, `coverage`) по потребностям пространства — вид очереди владельца ([15](15-catalog.md) §6); чистая функция журнала |
 
 ## Инварианты
 
@@ -229,6 +230,7 @@ type Place = { kind: 'doc' | 'code' | 'test'; path: string; lines?: [number, num
 | CP-26 | Перед `coverage` места `source.find` сверяются с `source.locate` живых блоков пространства: пересечение — блок в `found` (промах B), не дыра; блок из `candidates`, отвергнутый выбором, в `found` не возвращается — его место покрыто | блок, чей смысл вне карточки, получал низкий балл, self-search находил его место — `coverage` и дубль, который `aliasCandidates` на той же карточке не ловил. v0.5 · CA-F27 |
 | CP-27 | Пороги `recall` (`same_hi`, `same_lo`) и `candidates.min_p` — `CalibratedThreshold`: у `recall` — `onMismatch: refuse`, у кандидатов — `mark`; подсказка в силе — `inForce(cue)` | три поведения калибровки были прозой по стадиям; порог «в силе» стадии выводили сами. v0.6 · ADR-45 · ADR-47 |
 | CP-28 | Порт `Source` — только чтения стадий; загрузка — порт `Loader` хоста ([30](30-adapters.md) §5) | `source` смешивал двух потребителей: replay записывает только чтения, а каждая фикстура обязана была реализовать и `load`. v0.6 · ADR-24 · разбор 2026-09-29, кандидат 11 |
+| CP-29 | `Source` += `docs(scope?)` — документы области с текстом и их блоками; им ранжирует базовая линия `bm25.doc` ([20](20-lens.md) §4); строки обучения `std/cue`, `std/member` несут `bench?` в схеме | стадия `bm25.doc` ранжировала документы, а ни один из четырёх методов `Source` не отдавал перечня документов и их текстов; гейт читает `bench` строки обучения, а закрытые схемы `std` его не содержали. v0.6 · финальное чтение F (F-gaps Н11, Н25) |
 
 ## Вопросы для grilling
 

@@ -66,7 +66,7 @@
   - версия ядра — заголовок `kernel` коммита вызова (T113), в теле её нет.
 
   Пишется в вызов (§3) и целиком — в `std/bench-run` ([23](23-bench.md) §1). **Совпадение** `bench-run pass` с вызовом — по `setup@n`, `code`, `prompts` и `policy`; `kernel` записан, но не сравнивается: ядро заморожено, его смену покрывают векторы S1 ([05](../05-slices.md)). Смена политики без прогона стенда прежний `pass` не наследует (RN-24).
-- **Модуль кортежа `run/tuple`** (ADR-42) — кортеж в коде определён одним модулем, остальные его зовут: `capture(setup, manifest, describe, policy) → tuple` — кортеж вызова; `startRefusals(tuple, setup, pipeline, session) → отказы` — все отказы старта одной таблицей (§3); `matches(a, b)` — совпадение кортежей для стенда (`invalid`) и перезапуска после `answer` — вызов функции ядра `sameTuple` ([13](13-rules.md) §2), которой сравнивает и `countedRun`: правило одно. Replay кортежи не сравнивает — сверяет хэши модулей стадий с манифестом (§7). Засчитанный прогон кортежа — не здесь: функция замороженного ядра `countedRun(view, tuple)` ([13](13-rules.md) §2, T200) — её читают рантайм (пакет «проверен стендом»), `learn`, гейт и стенд.
+- **Модуль кортежа `run/tuple`** (ADR-42) — кортеж в коде определён одним модулем, остальные его зовут: `capture(setup, manifest, describe, policy) → tuple` — кортеж вызова; `startRefusals(tuple, setup, pipeline, session, request, view) → отказы` — все отказы старта одной таблицей (§3): `request` — для схемы запроса, `view` на `seq` старта — для отзыва версии и реестра; `matches(a, b)` — совпадение кортежей для стенда (`invalid`) и перезапуска после `answer` — вызов функции ядра `sameTuple` ([13](13-rules.md) §2), которой сравнивает и `countedRun`: правило одно. Replay кортежи не сравнивает — сверяет хэши модулей стадий с манифестом (§7). Засчитанный прогон кортежа — не здесь: функция замороженного ядра `countedRun(view, tuple)` ([13](13-rules.md) §2, T200) — её читают рантайм (пакет «проверен стендом»), `learn`, гейт и стенд.
 - Способностей проектов вне пакета (`impl.adapter` ≠ `builtin`) в v1 нет: порта `exec` и его типа не заводится — гипотетический шов без адаптера и потребителя; такая способность — отказ на старте (RN-10). Порт — вместе со способностями проектов (разбор 2026-09-29, кандидат 11).
 
 ### 2. Контекст конвейера (`std/ctx`) и стадия
@@ -120,14 +120,16 @@ interface View extends LedgerView { trust(target: Ref): Json; standing(target: R
 ### 3. Рантайм — интерпретатор
 
 ```text
-run(request, session, rt) → {pack} | {pending, task}    // сессию открыл хост (ADR-25); rt: Runtime — выход корня
-                                                        // сборки assemble ([30] §2, ADR-41): {store, deps, progress,
-                                                        // clock, ids, manifest, env}; рантайм другого не получает
-  setup = view.get(<пространство>/setup)                  // ревизия setup@n
-  x     = answer ? answer.execution : newId(namespace, ids.ulid())  // id вызова: ключ коммита, ход, lattice answer
+run(request, session, rt, resume?) → {pack} | {pending, task}   // сессию открыл хост (ADR-25); rt: Runtime — выход
+                                                        // корня сборки assemble ([30] §2, ADR-41): {ledger, namespace,
+                                                        // deps, progress, clock, ids, manifest, env, pendingTtl};
+                                                        // resume = {execution} — перезапуск после answer; другого не получает
+  view  = rt.ledger.view() + trust()/standing()/inForce()   // View на хвосте старта (§2); deps = rt.deps + {view}
+  setup = view.get(<rt.namespace>/setup)                  // ревизия setup@n
+  x     = resume ? resume.execution : newId(rt.namespace, rt.ids.ulid())  // id вызова: ключ коммита, ход, lattice answer
   seq   = view.seq                                        // хвост на старте; при перезапуске — на перезапуске
   tuple = run/tuple.capture(setup, rt.manifest, describe() портов, policy@n)   // §1, ADR-42
-  отказы = run/tuple.startRefusals(tuple, setup, pipeline, session)       // одна таблица (ниже); есть — вызов с ошибкой
+  отказы = run/tuple.startRefusals(tuple, setup, pipeline, session, request, view)  // одна таблица (ниже); есть — вызов с ошибкой
   bench = countedRun(view, tuple) или null                // [13] §2, T200; null → пакет «не проверено стендом» (ADR-29)
   прежний = progress.resume(x)                            // перезапуск после answer: записанный кортеж и задание
   прежний и не sameTuple(прежний.tuple, tuple) → progress.reset(x)   // ответы агента сброшены, задание уйдёт заново
@@ -141,7 +143,7 @@ run(request, session, rt) → {pack} | {pending, task}    // сессию отк
       сумма Meta ≤ request.budget — иначе ошибка
       ctx = out
   vals = std/payload входа, выхода и calls[] вызова                        // пишет рантайм, не стадия
-  rt.store: commit(author {drafts: [execution x] ∪ vals ∪ needs[].rows, by: session, key: x})   // один коммит (RN-03)
+  rt.ledger.commit(author {drafts: [execution x] ∪ vals ∪ needs[].rows, by: session, key: x})   // один коммит (RN-03)
   progress.end(x); return {pack: ctx.pack}
 ```
 
@@ -163,8 +165,8 @@ run(request, session, rt) → {pack} | {pending, task}    // сессию отк
 - Калибровку рантайм сверяет обобщённо — по полю `calibrated` способности и `call` значения, а не по именам стадий: интерпретатор не знает, что `threshold` — это `score`, а `recall` — `verify` (ADR-45). Агент другой модели не исполняет и не учит систему под чужим `pass` (RN-32).
 - **Гейт стенда** (ADR-29): засчитанный прогон кортежа — `countedRun(view, tuple)` ([13](13-rules.md) §2, T200, ADR-42) — та же функция, что у гейта обучения: `bench ≠ null` в пакете ⇔ гейт примет строку обучения вердикта на этот вызов. Не нашёл — вызов разрешён, пакет помечен «не проверено стендом», `execution.bench: null`. Запрет обучения держит коммит (примитив `learning-gate`), а не рантайм.
 - **Бюджет:** `request.budget` сверяется после каждой стадии по сумме `Meta` вызовов портов; у `std/setup` бюджета нет — он в плане стенда ([23](23-bench.md)).
-- **Режим агента** (`composer-caller`, ADR-19): стадия вернула `Pending` — рантайм паркует вызов (`progress.park`, кортеж записан при `begin`) и отдаёт `{pending, task}`; `answer(x, json)` — хост дописывает ответ в `.lattice/answers/<x>.jsonl` с ключом `(kind, prompt_hash, хэш input)` из задания ([30](30-adapters.md) AD-09) и перезапускает вызов с тем же `x` на новом `view` (хвост на перезапуске, `seq` вызова — его). **Ответ привязан к кортежу** (ADR-41): перезапуск с другим кортежем, чем записанный при `begin` (`progress.resume`; новая ревизия `setup`, промпт, код), — `progress.reset`: записанные ответы сброшены, задание уходит заново; `composer-caller` получает на вход промпт и отдаёт ответ по ключу `(kind, хэш промпта, хэш input)` ([21](21-compose.md) §8), изменился промпт или вход — снова `pending`. Истина — трасса вызова, не файл ответов (Ф-3).
-- **Обёртка `Recording`** (T197, ADR-44) — сквозное поведение портов `Deps` в одном месте, над адаптером-транспортом. У портов LLM (`judge`, `composer`): кэш по ключу потребителя (judge — [20](20-lens.md) §6, composer — [21](21-compose.md) §8), проверка ключей ответа (LN-18), сверка `Meta.model` с моделью порта в `setup` — расхождение — ошибка стадии (RN-32). У всех портов — запись вызова в `calls` стадии (кроме `judge.score`: его баллы — строка `std/measurement`, которую готовит сама стадия `judge` в `rows`, [20](20-lens.md) §4; обёртка отдаёт баллы — живые или из кэша). Адаптер не повторяет её у себя; фиктивный адаптер получает кэш и проверки той же обёрткой. Над записанным адаптером (`recorded(execution)`, §7) обёртка кэша не ведёт и трассу не пишет: проверяет LN-18, `Meta.model` берёт из записи.
+- **Режим агента** (`composer-caller`, ADR-19): стадия вернула `Pending` — рантайм паркует вызов (`progress.park`, кортеж записан при `begin`) и отдаёт `{pending, task}`; `answer(x, json)` — хост дописывает ответ в `.lattice/answers/<x>.jsonl` с ключом `(kind, prompt_hash, хэш input)` из задания ([30](30-adapters.md) AD-09) и перезапускает вызов с тем же `x` (`run(…, resume: {execution: x})`) на новом `view` (хвост на перезапуске, `seq` вызова — его). **Ответ привязан к кортежу** (ADR-41): перезапуск с другим кортежем, чем записанный при `begin` (`progress.resume`; новая ревизия `setup`, промпт, код), — `progress.reset`: записанные ответы сброшены, задание уходит заново; `composer-caller` получает на вход промпт и отдаёт ответ по ключу `(kind, хэш промпта, хэш input)` ([21](21-compose.md) §8), изменился промпт или вход — снова `pending`. Истина — трасса вызова, не файл ответов (Ф-3).
+- **Обёртка `Recording`** (T197, ADR-44) — сквозное поведение портов `Deps` в одном месте, над адаптером-транспортом. У портов LLM (`judge`, `composer`): кэш по ключу потребителя (judge — [20](20-lens.md) §6, composer — [21](21-compose.md) §8), проверка ключей ответа (LN-18), сверка `Meta.model` с моделью порта в `setup` — расхождение — ошибка стадии (RN-32). У всех портов — запись вызова в `calls` стадии (кроме `judge.score`: его баллы — строка `std/measurement`, которую готовит сама стадия `judge` в `rows`, [20](20-lens.md) §4; обёртка отдаёт баллы — живые или из кэша). Адаптер не повторяет её у себя; фиктивный адаптер получает кэш и проверки той же обёрткой. Над записанным адаптером (`recorded(execution)`, §7) обёртка кэша не ведёт и трассу не пишет: проверяет LN-18; `Meta.model` — модель порта из `setup@n` вызова (в записи вызова модели нет; replay модели не сверяет, RN-34).
 
 **Сбой → что пишется** (RN-11):
 
@@ -175,9 +177,9 @@ run(request, session, rt) → {pack} | {pending, task}    // сессию отк
 | отказ и этого коммита; замок хранилища занят дольше срока (`locked`, ADR-31) | только ход (`Progress`); повтор — новым вызовом |
 | обрыв процесса | хвост без маркера `core/commit` → `.lattice/recovered/` при `open()` ([12](12-ledger.md) §2), без `lock()`; где остановился — в ходе |
 | `pending` (режим агента) | в журнал — ничего; ход — `park` с заданием и кортежем; `answer` перезапускает вызов |
-| брошенный `pending`: ход `pending` старше `pending_ttl` (параметр хоста, по умолчанию 24 ч; время — порт `clock`) | следующая `solve` или `answer` в хранилище перед своим вызовом получает от `Progress` брошенные вызовы (`abandoned(now, ttl)`) и коммитит каждому `std/execution {status: error, error: {kind: abandoned}}` своей сессией — стадии и время из хода, `key` = id вызова; ход и ответы удаляются; `answer` на этот вызов — отказ; читающие команды не пишут (RN-37) |
+| брошенный `pending`: ход `pending` старше `pending_ttl` (параметр хоста, по умолчанию 24 ч, — `rt.pendingTtl`; время — порт `clock`) | следующая `solve` или `answer` в хранилище перед своим вызовом получает от `Progress` брошенные вызовы (`abandoned(rt.clock.now(), rt.pendingTtl)`) и коммитит каждому `std/execution {status: error, error: {kind: abandoned}}` своей сессией — стадии и время из хода, `key` = id вызова; ход и ответы удаляются; `answer` на этот вызов — отказ; читающие команды не пишут (RN-37) |
 
-**Порт хода `Progress`** (T194, ADR-41) — ход вызова вне журнала: телеметрия, не истина и не вход replay. Контракт — здесь (потребитель — рантайм, ADR-24), адаптеры — `progress-fs` (файл хода `.lattice/runs/<id вызова>.log`, T155, построчно `{stage, need?, at, ms?, status}`) и `progress-memory` (тесты) — [30](30-adapters.md) §1. Рантайм не делает ввода-вывода сам: ход, брошенные вызовы и `pending` проверяются без файловой системы на фиксированных часах.
+**Порт хода `Progress`** (T194, ADR-41) — ход вызова вне журнала: телеметрия, не истина и не вход replay. Контракт — здесь (потребитель — рантайм, ADR-24), адаптеры — `progress-fs` (файл хода `.lattice/runs/<id вызова>.log`, T155, построчно `{stage, need?, at, ms?, status}`) и `progress-memory` (тесты) — [30](30-adapters.md) §1. Рантайм не делает ввода-вывода сам: ход, брошенные вызовы и `pending` проверяются без файловой системы на фиксированных часах. Адаптер `Progress` получает `Clock` при создании ([30](30-adapters.md) §1): время строк хода (`at`) и возраст в `abandoned` — по нему; методы времени не принимают, кроме `abandoned(now, ttl)`.
 
 ```ts
 interface Progress {
@@ -200,8 +202,8 @@ interface Progress {
 ```json
 { "id": "warrant/01J8…X", "type": "std/execution@1",
   "body": { "setup": {"$ref": "warrant/setup@3"}, "pipeline": {"$ref": "std/pipeline.solve@1"},
-            "code": { "stage.bm25": "sha256:…", "stage.judge": "sha256:…", "stage.select": "sha256:…",
-                      "adapter.judge-jev": "sha256:…", "adapter.composer-claude": "sha256:…" },
+            "code": { "lens/stages/bm25.ts": "sha256:…", "lens/stages/judge.ts": "sha256:…", "compose/stages/select.ts": "sha256:…",
+                      "adapters/judge-jev/index.ts": "sha256:…", "adapters/composer-claude/index.ts": "sha256:…" },
             "prompts": { "score": "sha256:…", "verify": "sha256:…", "choose": "sha256:…" },
             "policy": {"$ref": "std/trust-policy@1"},
             "source": "<ревизия источника>", "env": { "node": "22.11.0", "icu": "76.1" },
@@ -334,7 +336,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 
 `replay(execution)` повторяет вызов на записанном (T-4) — **тем же интерпретатором** (§3) с `Deps` из записанных адаптеров `recorded(execution)` (ADR-44): живой, фиктивный и записанный адаптер — три адаптера одного шва; отдельной механики воспроизведения нет.
 
-- `view` — на `scan(0, execution.seq)` ([12](12-ledger.md) §5); `ids` — записанный адаптер отдаёт id, выданные стадиями исходного вызова, по порядку (`stages[].ids`, §3).
+- `view` — `rt.ledger.view(execution.seq)`: пересборка `scan(0, execution.seq)` ([12](12-ledger.md) §5); `ids` — записанный адаптер отдаёт id, выданные стадиями исходного вызова, по порядку (`stages[].ids`, §3).
 - Порты — записанные адаптеры: `judge.score` — баллы из `std/measurement` вызова ([20](20-lens.md) §6); composer, `judge.verify`, `judge.choose`, `source.*` — ответы из `calls` трассы (вход и выход — значения по хэшу, §3). Записи нет — ошибка стадии «нет записанного ответа»; живых вызовов портов нет, поэтому ревизия источника (`execution.source`) и версии адаптеров в replay не сверяются. Вызов `status: error` не воспроизводится: его `rows` не записаны, `replay` отвечает «нет записи».
 - Код **стадий** (их хэши в `code`) = установленному — иначе отказ `code-changed`; адаптеры не сверяются: их ответы — из записи; модели = `setup@n` (RN-34).
 - Журнал не пишет; выход — пакет и расхождение с исходным `output`: первая стадия, чей выход отличается.
@@ -352,7 +354,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 | `learn(verdict)` | → коммит строк обучения сессией `learn` (§6); идемпотентен по вердикту; отказ гейта — вердикт ждёт `pass`; кортеж не прогнать установленным кодом — находка владельцу (RN-34) |
 | `replay(execution)` | → пакет и расхождение с исходным; журнал не пишет; старше горизонта — `expired` (§7) |
 | `explain(solution)` | → история решения: вердикты, доверие, snapshot'ы |
-| `pending(namespace, seq)` | → вердикты, ждущие `pass` (гейт отказал, строки обучения не записаны), и находки «не выучится» — вид очереди владельца ([15](15-catalog.md) §6); чистая функция журнала |
+| `pending(view, namespace)` | → вердикты, ждущие `pass` (гейт отказал, строки обучения не записаны), и находки «не выучится» — вид очереди владельца ([15](15-catalog.md) §6); чистая функция журнала |
 
 ## Инварианты
 
@@ -412,7 +414,7 @@ learn(verdict)         → строки по таблице ниже → commit(
 | RN-36 | Способность объявляет типы строк `emits`; рантайм сверяет с ними `rows` (ошибка стадии), `contract` не допускает в `emits` типов блоков | `writes` ограничивал пути `ctx`, не типы строк: «Runtime не создаёт и не правит блоки» держалось честностью кода стадии, а при вызове владельцем `owner` пропустил бы ревизию любой нормы с основанием `declared`. v0.5 · CA-F48 |
 | RN-37 | Брошенный `pending` (старше `pending_ttl` хоста) закрывает следующая `solve` или `answer` — вызов с ошибкой `abandoned` её сессией; `answer` на него — отказ. Уточняет RN-11 | брошенные вызовы не оставляли следа — не входили ни в долю сбоев и вызовов без вердикта, ни в цену. v0.5 · CA-F58 · v0.6 · ADR-41: брошенные отдаёт `Progress.abandoned` — тест на фиксированных часах |
 | RN-38 | Кортеж в коде — модуль `run/tuple` (`capture`, `startRefusals`, `matches`); зерно `code` — модуль из манифеста кода; засчитанный прогон — `countedRun` ядра | кортеж сверялся в семи местах, T200 был записан четырежды; кто вычисляет `code`, не было сказано, а пример ключевал по пакету против RN-34 — при зерне «пакет» любой релиз ломал совпадение гейта и replay. v0.6 · ADR-42 · П-37 |
-| RN-39 | Рантайм — `run(request, session, rt: Runtime) → {pack} \| {pending, task}`, `Runtime` — выход `assemble` (`store`, `deps`, `progress`, `clock`, `ids`, `manifest`, `env`); стадия может вернуть `Pending` (`{kind, prompt_hash, input, schema}`); ход — порт `Progress` (адаптеры fs, memory; `resume`, `reset` — для перезапуска); ответ агента привязан к кортежу вызова: перезапуск с другим кортежем (`sameTuple`) сбрасывает ответы, ключ ответа — `(kind, prompt_hash, хэш input)` | файл хода, `pending_ttl` и `env` процесса были вводом-выводом в run мимо портов; `run() → pack` не называл `pending`; ревизия `setup` между `pending` и `answer` переигрывала бы старый ответ под новым промптом. v0.6 · ADR-41 |
+| RN-39 | Рантайм — `run(request, session, rt: Runtime, resume?) → {pack} \| {pending, task}`, `Runtime` — выход `assemble` (`ledger`, `namespace`, `deps` без `view`, `progress`, `clock`, `ids`, `manifest`, `env`, `pendingTtl` — уточнено F: рантайм пишет только `rt.ledger.commit`, `x` перезапуска — из `resume`); стадия может вернуть `Pending` (`{kind, prompt_hash, input, schema}`); ход — порт `Progress` (адаптеры fs, memory; `resume`, `reset` — для перезапуска); ответ агента привязан к кортежу вызова: перезапуск с другим кортежем (`sameTuple`) сбрасывает ответы, ключ ответа — `(kind, prompt_hash, хэш input)` | файл хода, `pending_ttl` и `env` процесса были вводом-выводом в run мимо портов; `run() → pack` не называл `pending`; ревизия `setup` между `pending` и `answer` переигрывала бы старый ответ под новым промптом. v0.6 · ADR-41 |
 | RN-40 | Replay — тот же интерпретатор с записанными адаптерами `recorded(execution)`; сквозное поведение портов LLM (кэш, LN-18, `Meta.model`, запись) — обёртка `Recording` | один порт judge записывался двумя механизмами, ключ кэша жил в каждом адаптере, replay был отдельной механикой. v0.6 · ADR-44 |
 | RN-41 | Калибровку рантайм сверяет обобщённо по полю `calibrated` способности (`CalibratedThreshold`, `onMismatch`); имён стадий интерпретатор не знает | три места `calibrated_for` с тремя поведениями; интерпретатор знал, что `threshold` — это `score`, а `recall` — `verify`. v0.6 · ADR-45 |
 | RN-42 | Порта `exec` нет: способность с `impl.adapter` ≠ `builtin` — отказ на старте | ноль адаптеров и потребителей — гипотетический шов; тип был бы долгом без проверки. v0.6 · разбор 2026-09-29, кандидат 11 |

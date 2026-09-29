@@ -14,6 +14,8 @@
 
 Уточнено C2 (аудит C1, T-20): вход и выход корня сборки — `assemble(config, vars, overrides?) → {runtime, refusals}`, где `vars` — переменные окружения процесса, `overrides` — адаптеры тестов (`store-memory`, `progress-memory`, фиксированные часы), `runtime: Runtime = {store, deps, progress, clock, ids, manifest, env}`, `env` — версии среды (T182); хранилище создаёт фаза «открытие» по проводке, список проекций — её вход; рантайм — `run(request, session, runtime)`. `Progress` += `resume(x)`, `reset(x)`; задание `Pending` несёт `prompt_hash`. Отказ «модель — алиас провайдера» — только таблица отказов старта рантайма (ADR-42), не фаза `setup`.
 
+Уточнено F (F-dev Н12, Н14–Н18; F-gaps Н19, Н20, Н24): `Runtime = {ledger, namespace, deps, progress, clock, ids, manifest, env, pendingTtl}` — `ledger` (выход `open()`: `commit`, `view(seq)`, 12 §5) вместо `store`: рантайм пишет только через коммит; `deps` — без `view` (его добавляет рантайм на старте вызова); адаптер `Progress` получает `Clock` при создании; вход `run(request, session, rt, resume?)`; схема `config/2`, форма отказа `{phase, path, code}` и какие фазы проходит какая команда — 30 §2.
+
 **Варианты:** (б) оставить `wire.ts` без фаз и файл хода в run — тест структуры требует исключения для run, `pending` не проверить без диска.
 
 **Последствия:** 04-architecture (§4 — `assemble`, §6 — фиктивные адаптеры через `setup.ports`), 30-adapters (§2 — фазы, §4 — `runs/`, `answers/`, §5 — протокол `composer-caller`, фикстура, AD-09), 22-run (§1 — `Progress`, `run()`, `env`, RN-11, RN-12, RN-37), 02-glossary, 05-slices (S0 — таблица отказов через `assemble`). ADR-28 не меняется — под него выравнивается 04 §6.

@@ -11,6 +11,8 @@
 3. **`LedgerView` остаётся портом стадий** (`get`, `history`, `facts`, `find`, `referrers` на `seq`).
 4. Исключение правила интерфейса (04 §2) «`rules/types` → `ledger/types`» снимается: rules читает свой `CheckView`, ledger реализует его адаптером `overlay`.
 
+Уточнено F (финальное чтение, F-dev Н1, Н39; F-gaps Н5): `fromRows(rows)` = `overlay(пустой индекс, rows).total()` — у ledger рядом с `overlay`: в rules он либо нарушал матрицу (rules не импортирует ledger), либо повторял проекции и `authority` — вторую модель прав; проверка `examples` получает `fromRows` аргументом. `CheckView` += `events(type)` (прогоны, планы, метка копии по `seq` — `countedRun` и гейт) и `referrers(ref)` (смена типа сущности); перечень 04 §1 += `byType`, `referrers`. Строки `overlay` получают условный `seq = t + 1 + i` (12 §3).
+
 **Варианты:** (б) расширить `LedgerView` чтениями проверок — порт стадий раздувается чтениями ядра, `history` асинхронна, проверки на `examples` по-прежнему без вида; (в) проверки читают сырой индекс — владельца префикса и итога нет.
 
 **Последствия:** 13-rules (§2 — `CheckView`, `fromRows`), 12-ledger (§3, §5 — адаптер `overlay`), 04-architecture (§2 — правило интерфейса, AR-06), 05-slices (S1: каждая проверка — тест на `fromRows()`; префикс против итога — один тест `overlay`). Шов кандидата 1 (ADR-38).

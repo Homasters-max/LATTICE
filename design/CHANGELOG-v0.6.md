@@ -7,7 +7,7 @@ v0.6 вносит итоги архитектурного разбора `design
 | ADR | Что | Статус |
 |---|---|---|
 | [38](adr/0038-commit-batch.md) | коммит — один глубокий модуль: вход `batch` (`author` / `copy` / `genesis`), реестр проверок, намерения `ensure` / `merge` / `split` | принято |
-| [39](adr/0039-check-view.md) | вид проверки `CheckView` у rules; адаптеры `overlay` (ledger), `fromRows()` (rules) | принято |
+| [39](adr/0039-check-view.md) | вид проверки `CheckView` у rules; адаптеры `overlay` и `fromRows()` — ledger (уточнено F) | принято |
 | [40](adr/0040-authority-and-classify.md) | проекция полномочий `authority` в ядре; `classify` в trust — единственный читатель `purpose` вне ядра | принято |
 | [41](adr/0041-assemble-and-progress.md) | корень сборки `assemble` с фазами и `Runtime`; порт хода `Progress`; `run() → pack \| pending`; ответ агента привязан к кортежу | принято |
 | [42](adr/0042-execution-tuple-module.md) | зерно `code` — модуль из манифеста кода; `countedRun` и `sameTuple` — функции ядра; модуль `run/tuple` | принято |
@@ -22,11 +22,11 @@ v0.6 вносит итоги архитектурного разбора `design
 ## Сквозное
 
 - **Путь записи** (ADR-38, ADR-39): один вход коммита у CLI, импорта, `init`, обновления `std` и перехода ядра; исключения проверок — по виду входа, а не по `key`; перечни «построчные / относительные» — из реестра проверок `{scope, phase, appliesTo}`; отдельной операции `validate` нет; проверки читают `CheckView` из `Revision` ядра. `ref-exists` — один владелец (13 §2), `Clock.now()` — число (разбор, «исправить до S1»).
-- **Периметр ядра** (ADR-40, ADR-43): `kernel-v1 = {kernel, genesis, checks, primitives, projections, authority}`; `authority.mayWrite(row, seq)` — одна модель прав, без цикла типов с `CheckView`.
+- **Периметр ядра** (ADR-40, ADR-43): `kernel-v1 = {version, genesis, checks, primitives, projections, authority, overlay, fromRows}` (F), тест — достижимое ⊆ перечня периметра; `authority.mayWrite(row, seq)` — одна модель прав, без цикла типов с `CheckView`.
 - **Скелет** (ADR-41, ADR-42): `assemble(config, vars, overrides?) → {runtime, refusals}`; рантайм без ввода-вывода; одна таблица отказов старта; манифест кода.
 - **Порты LLM** (ADR-44, ADR-45): кэш, LN-18, `Meta.model`, запись вызова — в обёртке `Recording`; адаптеры — транспорт; калибровка — одно значение с объявленным поведением.
 - **Доверие** (ADR-40, ADR-47): перечень `purpose` со свойствами — таблица 14 §1; trust не знает типов run; «в силе ли» — `inForce`, правило выдачи — `standing`.
-- **Кандидат 11**: catalog — `update`, `migrate`, `transfer`, `setPolicy` + сборка строк; очередь владельца — `cli/` из `pending(namespace, seq)` доменов; порта `exec` нет; `source` разделён на `Source` (стадии) и `Loader` (хост).
+- **Кандидат 11**: catalog — `update`, `migrate`, `transfer`, `setPolicy` + сборка строк; очередь владельца — `cli/` из `pending(view, namespace)` доменов; порта `exec` нет; `source` разделён на `Source` (стадии) и `Loader` (хост).
 
 ## По доменам
 
@@ -47,9 +47,21 @@ v0.6 вносит итоги архитектурного разбора `design
 - [00-vision](00-vision.md): абзац «Самоописание» — периметр ядра `kernel-v1`.
 - [02-glossary](02-glossary.md): новые T187–T200 (кроме занятых); уточнены T29, T96, T117, T120, T129, T131, T133, T134, T137, T139, T155, T157, T166, T169, T119.
 
+## Финальное чтение F
+
+Два разреза свежим взглядом — «новый разработчик пишет S0–S1» (43 находки: блокирует 1, исправить 29, мелочь 13) и «противоречия и недоопределённость» (26: исправить 10, мелочь 16); отчёты и разбор каждой — в истории git (`integration/audit/F-*.md`, `integration/sessions/F.md`). Главное:
+
+- **`fromRows` — у ledger** (блокировало S1): `fromRows(rows) = overlay(пустой индекс, rows).total()`, проверке `examples` — аргументом; `CheckView` += `events(type)`, `referrers`; строки `overlay` — условный `seq`; тип `Check` и оболочка `Violation` (ADR-39, RL-21).
+- **Контракт записи значениями** (LG-28): `append → {seq} | {conflict} | {locked}`, `store.recover()`, замок по `Clock` адаптера; `open(store, options) → {ledger} | {refusal}`, `Ledger {commit, view(seq)}`, секреты — вход `open`; `expect` — и для v1 → v2; `ids[i]`, `valueId` значений.
+- **Генезис** (KR-22): константа — `commit` коммита генезиса, `at` — константа, `purpose: genesis`; `owner` — `appliesTo: author, copy`; векторы JCS — файл, реализация своя.
+- **`init` и хост** (AD-23…AD-25, CT-21, TR-22): четыре коммита (генезис → копия `std` с подписью сессии пакета → самоустановление → `learner` и `setup@1`); владелец из `--as`; сессия — отдельным коммитом; шов терминала; `os_user`; команды `lattice commit`, `lattice policy` и их `purpose`.
+- **Корень сборки** (AD-24, ADR-41): схема `config/2` и привязки адаптеров, форма отказа, фазы по командам, `Runtime = {ledger, namespace, deps, progress, clock, ids, manifest, env, pendingTtl}`; манифест — ключ «путь от `src/`», хэш с транзитивными импортами.
+- **Тест структуры** (04 §3): явный перечень периметра ядра, что разрешено ядру (`createHash`), запрет часов и случайности.
+- Мелочи: ADR-42 п. 3, ADR-44 п. 3 — уточнены; `Source.docs` для `bm25.doc`, `bench?` в строках обучения (CP-29); `standing()` в стадии `trust`; T136, T191, T194, T196; README «Статус».
+
 ## Переименования
 
-`commit(rows, by, key?)` → `commit(batch)`; `validate(rows, state)` → шаг коммита по реестру проверок; `source.load()` → `Loader.load()`; `queue(namespace)` → `pending(namespace, seq)` доменов.
+`commit(rows, by, key?)` → `commit(batch)`; `validate(rows, state)` → шаг коммита по реестру проверок; `source.load()` → `Loader.load()`; `queue(namespace)` → `pending(view, namespace)` доменов; `Runtime.store` → `Runtime.ledger` (F).
 
 ## Отложено
 

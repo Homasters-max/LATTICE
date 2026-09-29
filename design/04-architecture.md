@@ -6,7 +6,7 @@
 
 | Слой | Что | Меняется |
 |---|---|---|
-| **замороженное ядро** (код) | генезис, форма ревизии, хэш и каноническая форма, ссылки, режимы идентичности, факты с ролями, примитивы и проверки ядра с реестром проверок и `countedRun` (T134, T189, ADR-32, ADR-38, ADR-42; код — `src/rules/kernel-checks/` и `src/rules/primitives/`), проекции перечня ниже и проекция полномочий `authority` ([10](domains/10-kernel.md) §7, ADR-40; код — `src/ledger/projections.ts`) — единственный перечень периметра ядра: [10](domains/10-kernel.md) §8 (KR-11) и T21 ссылаются сюда. Код собран одной версионированной **точкой входа `kernel-v1`** (T196, ADR-43) — `src/ledger/kernel-v1.ts`: ledger — нижний домен, которому матрица (§2) разрешает импорт `kernel`, `identity` и `rules` | только версией ядра; слой задаётся версией, не каталогом; хэш генезиса — константа версии; маркер коммита берёт `kernel` из точки входа |
+| **замороженное ядро** (код) | генезис, форма ревизии, хэш и каноническая форма, ссылки, режимы идентичности, факты с ролями, примитивы и проверки ядра с реестром проверок и `countedRun` (T134, T189, ADR-32, ADR-38, ADR-42; код — `src/rules/kernel-checks/` и `src/rules/primitives/`), проекции перечня ниже и проекция полномочий `authority` ([10](domains/10-kernel.md) §7, ADR-40; код — `src/ledger/projections.ts`), вид проверок `overlay` / `fromRows` ([12](domains/12-ledger.md) §3; код — `src/ledger/overlay.ts`) — единственный перечень периметра ядра: [10](domains/10-kernel.md) §8 (KR-11) и T21 ссылаются сюда. Код собран одной версионированной **точкой входа `kernel-v1`** (T196, ADR-43) — `src/ledger/kernel-v1.ts`: ledger — нижний домен, которому матрица (§2) разрешает импорт `kernel`, `identity` и `rules`. Форма: `kernel-v1 = {version: "v1", genesis: {rows: Revision[], hash}, checks: Check[], primitives: Check[], projections: Projection[], authority: Projection, overlay, fromRows}`; маркер коммита пишет `kernel: "v1"`; замороженные фикстуры версии — `test/fixtures/kernel-v1/*.jsonl` с ожидаемым индексом по разделам ([12](domains/12-ledger.md) §4) | только версией ядра; слой задаётся версией, не каталогом; хэш генезиса — константа версии; маркер коммита берёт `kernel` из точки входа |
 | **код системы** | identity, ledger, rules (кроме примитивов и проверок ядра), trust, catalog, интерпретатор конвейера, bench, реализации стадий `builtin` | обычными релизами пакета; стадия исполняется, только если код совпадает с `impl.pins` ([13](domains/13-rules.md) §3) |
 | **библиотека `std`** (данные) | типы механизма, правила, политика доверия по умолчанию, способности, конвейер `solve`, шаблоны карточек, промпты стадий Composer (`params` конвейера) | ревизиями; в проект — копией при `init` / `update` ([15](domains/15-catalog.md) §1) |
 | **адаптеры и CLI** (код) | реализации портов, фиктивные адаптеры, корень сборки, хост, команды ([30](domains/30-adapters.md)); шаблоны вопросов judge — код адаптера, идентичность — `prompt_hash` в кортеже ([20](domains/20-lens.md) LN-17) | релизами пакета; адаптеры вне пакета — позже (AD-14) |
@@ -18,7 +18,7 @@
 |---|---|---|
 | поля `std` | `std/verdict.execution` (владелец поля — [22](domains/22-run.md) §5); `std/execution` — кортеж (`setup@n`, `code`, `prompts`, `policy`); `std/bench-run` — `plan`, `tuple`, `verdict`; `std/bench-plan` — `kind`, `base`, `setup` и кто писал регрессионный план (владелец на `seq` записи); строка обучения — `from`, `bench`; наличие события `std/bench-copy` | `learning-gate` и `countedRun` ([13](domains/13-rules.md) §2, RL-18, ADR-29, ADR-42) |
 | значения полей `core` | `core/session.purpose` — у гейта перечень разрешённых: `verdict`, `simulate` (прочие — отказ); у `authority` — значение `writers {purpose}` типа факта (например, `std/bench-copy` — `bench`, [23](domains/23-bench.md) §1) | `learning-gate`; `authority` (проверка `owner`) |
-| проекции индекса ([12](domains/12-ledger.md) §3) | `revisions`, `latest`, `grain`, `aliases`, `facts`, `executions`, `authority` | проверки ядра и примитивы — через вид `CheckView` ([13](domains/13-rules.md) §2, ADR-39) |
+| проекции индекса ([12](domains/12-ledger.md) §3) | `revisions`, `latest`, `byType`, `grain`, `aliases`, `facts`, `referrers`, `executions`, `authority` | проверки ядра и примитивы — через вид `CheckView` ([13](domains/13-rules.md) §2, ADR-39): `byType` + `revisions` — `events(type)` (прогоны, планы, метка копии для `countedRun` и гейта), `referrers` — перепроверка при смене типа сущности |
 
 Политику доверия ядро не читает: её тип — `std/policy` (ADR-35). Вне ядра `purpose` читает только операция trust `classify` ([14](domains/14-trust.md) §1, ADR-40); перечень значений со свойствами — таблица там же.
 
@@ -41,24 +41,24 @@
 | [30](domains/30-adapters.md) адаптеры | `src/adapters/<имя>/` | kernel; не домены и не другие адаптеры |
 | [30](domains/30-adapters.md) CLI и хост | `src/cli/` | всё; `adapters/*` — только корень сборки `wire.ts` (§4) |
 
-**Интерфейс домена** (T167) — файл `src/<домен>/types.ts`: типы и интерфейсы портов, которые домен определяет (ADR-24). Матрица его не ограничивает: интерфейс импортирует только ядро и интерфейсы других доменов, и между файлами нет циклов. Так типы ходят в обе стороны (`Ctx` у run читает кандидатов lens, `Judge` у lens возвращает `Meta` run), а вызовы — только по матрице. Адаптер импортирует ядро и интерфейс своего порта. Вид проверок `CheckView` — контракт у потребителя, `rules/types` (ADR-39): rules не импортирует `ledger/types`, ledger реализует `CheckView` адаптером `overlay` — импорт реализации ledger → rules по матрице. `ledger/types` нарушений не знает: выход `commit` (с нарушениями `rules`) — тип реализации `ledger/commit.ts`.
+**Интерфейс домена** (T167) — файл `src/<домен>/types.ts`: типы и интерфейсы портов, которые домен определяет (ADR-24). Матрица его не ограничивает: интерфейс импортирует только ядро и интерфейсы других доменов, и между файлами нет циклов. Так типы ходят в обе стороны (`Ctx` у run читает кандидатов lens, `Judge` у lens возвращает `Meta` run), а вызовы — только по матрице. Адаптер импортирует ядро и интерфейс своего порта. Вид проверок `CheckView` — контракт у потребителя, `rules/types` (ADR-39): rules не импортирует `ledger/types`, ledger реализует `CheckView` адаптером `overlay` — импорт реализации ledger → rules по матрице. `ledger/types` импортирует `Violation` из `rules/types` для выхода `Ledger.commit` ([12](domains/12-ledger.md) §5); обратного импорта нет — цикла нет.
 
 ## 3. Тест структуры
 
 Тест структуры (T169) разбирает импорты `src/` и проверяет с первого среза (S0, [05](05-slices.md)):
 
 1. направление — импорт реализации по матрице §2, интерфейса — по правилу интерфейса;
-2. ввод-вывод — встроенные модули (`node:fs`, `node:net`, `fetch`, `process.env`, динамический импорт модуля) — только в `adapters/` и `cli/`;
+2. ввод-вывод, часы и случайность — только в `adapters/` и `cli/`: встроенные модули (`node:fs`, `node:net`, `node:child_process`, `fetch`, `process`, динамический импорт модуля), `Date.now()`, `new Date()` без аргумента, `performance.now()`, `Math.random()`, `crypto.random*`; вне них разрешены `node:crypto` `createHash` (хэш ядра) и `new Date(ms).toISOString()` (формат `at`, KR-18);
 3. нет циклов между файлами;
 4. адаптеры не импортируют друг друга;
-5. пакеты из `dependencies` (SDK поставщика) — только в `adapters/` и `cli/`;
-6. **периметр ядра:** всё, что достижимо из точки входа `kernel-v1` (§1), — чистые функции без ввода-вывода, часов и случайности, импортирует только достижимое из той же точки входа и интерфейсы (ADR-43); так охраняются не только `src/kernel`, но и `rules/kernel-checks`, `rules/primitives` и проекции перечня.
+5. пакеты из `dependencies` (SDK поставщика) — только в `adapters/` и `cli/`; каноническая форма JCS — своя реализация ядра по векторам формата v1 ([10](domains/10-kernel.md) §3), не пакет;
+6. **периметр ядра:** всё, что достижимо по импортам из точки входа `kernel-v1` (§1), лежит в перечне периметра — `src/kernel/**`, `src/identity/**`, `src/rules/types.ts`, `src/rules/registry.ts`, `src/rules/kernel-checks/**`, `src/rules/primitives/**`, `src/ledger/kernel-v1.ts`, `src/ledger/projections.ts`, `src/ledger/overlay.ts` и интерфейсы `src/*/types.ts` — и соблюдает п. 2 без исключений (ADR-43); так правка `projections.ts`, притянувшая `ledger/commit.ts`, красная. Правка достижимого — новая версия ядра (ADR-32).
 
 Run ввода-вывода не делает и исключений из п. 2 не требует: всё внешнее — из `Runtime` корня сборки (ход — порт `Progress`, `env` — версии среды), [22](domains/22-run.md) §3, ADR-41.
 
 ## 4. Корень сборки и проекции
 
-**Корень сборки** (T166, ADR-41) — `assemble(config, vars, overrides?) → {runtime, refusals}` в `src/cli/wire.ts`, единственном модуле, который импортирует `adapters/*`. Фазы с названными отказами: схема проводки → открытие хранилища (создаёт `store` по проводке, передаёт в `open()` список проекций) → `setup` из журнала → привязки адаптеров `setup.ports` (живых и фиктивных — одним путём); выход — `Runtime` рантайма: `store`, `deps` (T133) в обёртке `Recording`, `progress`, `clock`, `ids`, `manifest`, `env`; подробно — [30](domains/30-adapters.md) §2.
+**Корень сборки** (T166, ADR-41) — `assemble(config, vars, overrides?) → {runtime, refusals}` в `src/cli/wire.ts`, единственном модуле, который импортирует `adapters/*`. Фазы с названными отказами: схема проводки → открытие хранилища (создаёт `store` по проводке, передаёт в `open()` список проекций) → `setup` из журнала → привязки адаптеров `setup.ports` (живых и фиктивных — одним путём); выход — `Runtime` рантайма: `ledger` (выход `open()`: `commit`, `view(seq)`, [12](domains/12-ledger.md) §5), `namespace`, `deps` (T133, без `view`) в обёртке `Recording`, `progress`, `clock`, `ids`, `manifest`, `env`, `pendingTtl`; какие фазы проходит какая команда и подробно — [30](domains/30-adapters.md) §2.
 
 **Проекции индекса подключаемые** (T170, N-32). Каждый раздел индекса — проекция ([12](domains/12-ledger.md) §3). Разделы журнала вычисляет 12; раздел `trust` — проекция [14](domains/14-trust.md): 14 зависит от 12, а не наоборот. Список проекций корень сборки передаёт в `open()` в фазе «открытие» — это вход фазы, не выход сборки; их имена и версии входят в кэш индекса (`IndexBlob.projection`).
 
@@ -78,10 +78,10 @@ LATTICE/
   src/
     kernel/                     types.ts, revision.ts, canonical.ts, hash.ts, ref.ts, ids.ts, genesis.ts
     identity/                   types.ts, grain.ts, intents.ts (разрешение ensure / merge / split — чистые функции), regrain.ts, alias.ts, resolve.ts
-    rules/                      types.ts (CheckView), registry.ts (реестр проверок), from-rows.ts, primitives/*.ts,
+    rules/                      types.ts (CheckView, Check, Violation), registry.ts (реестр проверок), primitives/*.ts,
                                 kernel-checks/*.ts (+ counted-run.ts), lint.ts, contract.ts
-    ledger/                     types.ts (Store, Clock, Ids, LedgerView, Projection, Batch), commit.ts, overlay.ts, open.ts,
-                                projections.ts (+ authority), kernel-v1.ts, rebuild.ts, query.ts
+    ledger/                     types.ts (Store, Clock, Ids, LedgerView, Ledger, Projection, Batch), commit.ts,
+                                overlay.ts (+ fromRows), open.ts, projections.ts (+ authority), kernel-v1.ts, rebuild.ts, query.ts
     catalog/                    types.ts, namespace.ts, update.ts, migrate.ts, transfer.ts, rows.ts (сборка строк), referrers.ts
     trust/                      types.ts, assert.ts, compute.ts, classify.ts, projection.ts, policy.ts, explain.ts
     lens/                       types.ts (Judge, Scorer), stages/{normalize,route,id-lookup,lexicon,pool,bm25,judge,fuse,trust,threshold,cut}.ts, card.ts, aliases.ts
@@ -91,9 +91,9 @@ LATTICE/
     bench/                      plan.ts, metrics.ts, bootstrap.ts, report.ts
     adapters/                   store-jsonl/  store-memory/  judge-jev/  judge-fixture/  composer-claude/  composer-caller/
                                 composer-fixture/  source-warrant/  source-files/  source-fixture/  progress-fs/  progress-memory/
-                                (clock, ids — 30 §1)
+                                clock-system/  clock-fixed/  ids-system/  ids-counter/   (30 §1)
     cli/                        types.ts (Loader), main.ts, wire.ts (assemble), queue.ts (из pending доменов), commands/*.ts
-  code-manifest.json            манифест кода — генерирует сборка, фиксируют тесты (30 §2, ADR-42)
+  code-manifest.json            манифест кода — генерирует `npm run manifest`, фиксируют тесты (30 §2, ADR-42)
   std/                          *.json — библиотека (типы, правила, стадии, конвейер, промпты стадий Composer)
   test/                         node:test; структура, контрактные наборы портов, срезы S0–S9, фикстуры
   design/                       этот каталог
@@ -259,15 +259,19 @@ LATTICE/
 | `warrant/norm`, `warrant/summary` | типы проекта | [30-adapters](domains/30-adapters.md) §5 | AD-12 · D12 Q5, Q6 |
 | `Draft`, `Row` (строка до коммита и хранимая) | формат | [12-ledger](domains/12-ledger.md) §5 | LG-05 · C2c Q4 |
 | вход коммита `Batch` (`author` / `copy` / `genesis`, T187), намерения `intents` (T188) | формат | [12-ledger](domains/12-ledger.md) §2, §5; намерения — [11-identity-grain](domains/11-identity-grain.md) «Операции» | LG-23 · GR-19 · ADR-38 · v0.6 |
-| вид проверки `CheckView` (T190), `fromRows()` | порт (чтение) | [13-rules](domains/13-rules.md) §2 | RL-21 · ADR-39 · v0.6 |
-| адаптер `overlay(ix, rows)` | адаптер | [12-ledger](domains/12-ledger.md) §3 | LG-24 · ADR-39 · v0.6 |
+| вид проверки `CheckView` (T190), тип проверки `Check` | порт (чтение), формат | [13-rules](domains/13-rules.md) §2 | RL-21 · ADR-39 · v0.6 |
+| адаптеры `overlay(ix, rows)` (условный `seq` строк коммита) и `fromRows()` | адаптер | [12-ledger](domains/12-ledger.md) §3 | LG-24, LG-28 · ADR-39 · v0.6 |
+| `open(store, options)`, открытый журнал `Ledger` (`commit`, `view(seq)`), `Store.recover`, ответ `append` | операция, порт | [12-ledger](domains/12-ledger.md) §5, «Операции» | LG-28 · v0.6 |
+| `checkCalibration` | функция | [13-rules](domains/13-rules.md) §3 | RL-24 · ADR-45 · v0.6 |
+| `setPolicy` (команда `lattice policy`) | операция | [15-catalog](domains/15-catalog.md) «Операции» | LG-27 · CT-20 · v0.6 |
+| команда записи владельца `lattice commit` | операция | [30-adapters](domains/30-adapters.md) «Операции (CLI)» | AD-23 · v0.6 |
 | точка входа ядра `kernel-v1` (T196) | модуль | §1 | AR-15 · ADR-43 · v0.6 |
 | `determinism` способности (`deterministic`, `ports`) | поле | [13-rules](domains/13-rules.md) §3 | RL-07 · T-3 · C2c Q3 |
 | часть набора `subset` (T176) | поле | [23-bench](domains/23-bench.md) §1 | BN-06 · C2c Q6 |
 | роли видения (LATTICE, LENS, Composer, Runtime, judge, потребитель — T183), принцип P13 | правило | [00-vision](00-vision.md) | VI-07 · ADR-37 · CA-F62 |
 | маркер сегмента `std/segment-event` (T184) | тип | [12-ledger](domains/12-ledger.md) §1 | LG-21 · ADR-3 · CA-F51 |
 | кэш индекса `IndexBlob` (`tail`, `segments`) | формат | [12-ledger](domains/12-ledger.md) §4 | LG-22 · CA-F32 |
-| очередь владельца (T185): состав — [15-catalog](domains/15-catalog.md) §6; сборка — `cli/` из `pending(namespace, seq)` доменов | правило, операция | [15-catalog](domains/15-catalog.md) §6 | CT-17 · CA-F45 · v0.6 · AD-22 |
+| очередь владельца (T185): состав — [15-catalog](domains/15-catalog.md) §6; сборка — `cli/` из `pending(view, namespace)` доменов | правило, операция | [15-catalog](domains/15-catalog.md) §6 | CT-17 · CA-F45 · v0.6 · AD-22 |
 | шов оценщика `Scorer` (T199) | шов | [20-lens](domains/20-lens.md) §4 | LN-19 · ADR-45 · v0.6 |
 | подлинность `std` (хэш пакета в ключе обновления) | правило | [15-catalog](domains/15-catalog.md) §1 | CT-18 · CA-F56 |
 | `emits` способности стадии (типы строк `rows`) | поле | [13-rules](domains/13-rules.md) §3 | RN-36 · RL-19 · CA-F48 |
@@ -286,7 +290,7 @@ LATTICE/
 | AR-04 | Правило зависимостей — матрица §2, единственный источник для теста структуры и строк «Зависит от»; тест проверяет пункты §3 с первого среза (v0.6: + п. 6 — периметр ядра, ADR-43) | архитектура не расползается: эрозия структуры не даёт красных поведенческих тестов. v0.4 · T-10 · 30-adapters/И-2 · И-3 · П-30 |
 | AR-05 | Срезы — единица реализации и приёмки; первый — скелет S0 | каждый шаг даёт работающий результат; стыки слоёв видны с начала. v0.4 · 30-adapters/И-13 |
 | AR-06 | Интерфейс домена (`types.ts`) вне матрицы: импортирует только ядро и интерфейсы, без циклов; матрица ограничивает реализацию | типы нужны в обе стороны (`Ctx` ↔ `Judge`), вызовы — только по направлению. v0.4 · D13 Q1 · ADR-24 · v0.6 · ADR-39: вид проверок `CheckView` — у rules, исключение `rules/types` → `ledger/types` снято |
-| AR-07 | Корень сборки `assemble` в `src/cli/wire.ts` — единственный импортёр `adapters/*`; фазы отказов схема · открытие · `setup` · привязки; создаёт хранилище и передаёт `open()` список проекций; собирает адаптеры (живые и фиктивные портов `setup.ports` — через `setup.ports`, прочие — по проводке или `overrides` тестов) и отдаёт рантайму `Runtime` (`store`, `deps` в обёртке `Recording`, `progress`, `clock`, `ids`, `manifest`, `env`) | одна точка знает технологии; правило проверяемо тестом; скелет S0 собирается по описанным интерфейсам. v0.4 · 30-adapters/И-1 · AD-01 · v0.6 · ADR-41 · П-36 |
+| AR-07 | Корень сборки `assemble` в `src/cli/wire.ts` — единственный импортёр `adapters/*`; фазы отказов схема · открытие · `setup` · привязки; создаёт хранилище и передаёт `open()` список проекций; собирает адаптеры (живые и фиктивные портов `setup.ports` — через `setup.ports`, прочие — по проводке или `overrides` тестов) и отдаёт рантайму `Runtime` (`ledger`, `namespace`, `deps` в обёртке `Recording`, `progress`, `clock`, `ids`, `manifest`, `env`, `pendingTtl`; уточнено F: `ledger` вместо `store` — рантайм пишет только через коммит) | одна точка знает технологии; правило проверяемо тестом; скелет S0 собирается по описанным интерфейсам. v0.4 · 30-adapters/И-1 · AD-01 · v0.6 · ADR-41 · П-36 |
 | AR-08 | Раздел индекса вычисляет домен-владелец; проекцию выше журнала (`trust`) подключает корень сборки | индекс хранит результат `trust()`, но 12 от 14 не зависит. v0.4 · N-32 · D13 Q2 |
 | AR-09 | Меняет пакет или цену при том же журнале — журнал (`std/setup`), иначе — проводка; эндпоинт и корень источника — допущения, которые ловят сверки (`Meta.model`, `text_hash`) | воспроизводимость по журналу; проводка не влияет на результат, пока допущения держат сверки. v0.4 · PF-01 · ADR-28 · v0.5 · CA-F19: «проводка не влияет» противоречило PF-01 — эндпоинт выбирал модель вне журнала |
 | AR-10 | Один пакет с каталогами; разделение (`@lattice/core`, `@lattice/adapters-*`) — когда адаптеры понадобятся отдельно | нет второго потребителя; матрица и тест держат границы и без пакетов. v0.4 · Q-04-1 · AD-14 |
@@ -294,8 +298,8 @@ LATTICE/
 | AR-12 | Проверки ядра (T134) — слой замороженного ядра по версии `kernel`; код — `src/rules/kernel-checks/` (в том числе `owner` — вызов `authority`, прежде `catalog/owner.ts`; `countedRun`, v0.6) | валидатор не меняется посреди работы (P9); коммит (ledger) вызывает проверки через rules — catalog ему недоступен (AR-04). v0.4 · ADR-32 · C1 B9, E34 |
 | AR-13 | Карта владения (§8) — понятие → файл-владелец и раздел; новое понятие вносится строкой в том же изменении, что и его определение | у каждого понятия один владелец, остальные ссылаются — иначе определения расходятся молча (аудит C1); адреса строк хрупки — в карте только раздел. v0.4 · C2c Q8 |
 | AR-14 | Что ядро читает вне `core` — поля `std`, значения `purpose` и проекции индекса — перечень §1, часть версии ядра; тип политики доверия — `std/policy` | два канала релиза (ядро и `std`, ядро и ledger) не связываются неявно: новое значение, которое читает гейт, не проходит молча совместимостью схемы; ядро не несёт параметров верхних доменов. v0.5 · ADR-35 · CA-F13, CA-F49 · v0.6 · перечень += `authority` (читатель `writers {purpose}`), `countedRun`; вне ядра `purpose` читает только `classify` (ADR-40, ADR-42, П-35) |
-| AR-15 | Замороженное ядро — одна версионированная точка входа `kernel-v1 = {kernel, genesis, checks, primitives, projections, authority}` в `src/ledger/kernel-v1.ts`; тест структуры (§3 п. 6) охраняет всё, что из неё достижимо | обещание «меняется только с `kernel`» охранялось в одном каталоге из трёх: правка проекций или проверок молча меняла смысл ядра v1. В `src/kernel` точке входа не место — матрица не даёт ядру импортировать rules и ledger; ledger — нижний домен, которому можно. v0.6 · ADR-43 |
-| AR-16 | Коммит — одна точка записи с размеченным входом; вид проверок — `CheckView` у rules с адаптерами `overlay` (ledger) и `fromRows` (rules) | правила коммита были в девяти местах, копия `std` и генезис шли мимо интерфейса; каждая проверка тестируется без хранилища. v0.6 · ADR-38 · ADR-39 |
+| AR-15 | Замороженное ядро — одна версионированная точка входа `kernel-v1 = {version, genesis, checks, primitives, projections, authority, overlay, fromRows}` в `src/ledger/kernel-v1.ts` (форма — §1); тест структуры (§3 п. 6) проверяет, что всё достижимое из неё лежит в явном перечне периметра и чисто | обещание «меняется только с `kernel`» охранялось в одном каталоге из трёх: правка проекций или проверок молча меняла смысл ядра v1. В `src/kernel` точке входа не место — матрица не даёт ядру импортировать rules и ledger; ledger — нижний домен, которому можно. Уточнено F: условие «импортирует только достижимое» было всегда истинно, а вид `overlay` определяет вердикт проверок наравне с проекциями. v0.6 · ADR-43 |
+| AR-16 | Коммит — одна точка записи с размеченным входом; вид проверок — `CheckView` у rules с адаптерами `overlay` и `fromRows` (оба — ledger, уточнено F) | правила коммита были в девяти местах, копия `std` и генезис шли мимо интерфейса; каждая проверка тестируется без хранилища. v0.6 · ADR-38 · ADR-39 |
 
 ## Вне объёма
 
