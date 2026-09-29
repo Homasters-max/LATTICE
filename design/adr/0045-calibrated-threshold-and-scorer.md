@@ -6,7 +6,7 @@
 
 Решили:
 
-1. **`CalibratedThreshold {value, for: {adapter, model, prompt_hash, bench}, call: score | verify | choose, onMismatch: refuse | mark}`** — одно значение калиброванного порога. Способность объявляет свои калиброванные параметры в контракте; run сверяет их с `setup` обобщённо, не по именам стадий.
+1. **`CalibratedThreshold {value, calibrated_for: {adapter, model, prompt_hash, bench} | null, call: score | verify | choose, onMismatch: refuse | mark}`** — одно значение калиброванного порога; поле привязки сохраняет имя `calibrated_for` (T136; уточнено D05 — имя уже в восьми файлах). Способность объявляет свои калиброванные параметры в контракте; run сверяет их с `setup` обобщённо, не по именам стадий. `calibrated_for: null` — «не откалиброван»: поведение без калибровки задаёт стадия (LN-07, CP-05).
 2. **Шов `Scorer`:** оценщик пула `pool → Record<Id, number>`; адаптеры шва — `bm25`, `judge` (эмбеддинги — позже). Слияние баллов в `candidates` — стадия `fuse` явно.
 3. **Отложено — LENS одной стадией `retrieve`:** вопрос в 20-lens с рекомендацией; триггер — код S5 (тесты стадий требуют ручной сборки большого частичного `Ctx`).
 

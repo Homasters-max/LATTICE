@@ -85,7 +85,7 @@
 | T46 | **совместимость** | compatible | выход A подходит ко входу B: тот же тип или его наследник, совместимый по контракту (ADR-12) |
 | T189 | **реестр проверок** | check registry | каждая проверка ядра и примитив объявляет `{name, scope: row \| commit, phase: write \| publish-type \| publish-rule, appliesTo}` — где и к каким входам коммита применяется; перечни «построчные / относительные» выводятся из него (13-rules §2, ADR-38) |
 | T190 | **вид проверки** | `CheckView` | синхронные чтения проверок ядра и примитивов — ровно перечень 04 §1; контракт у rules; адаптеры — индекс на `seq`, `overlay` ledger (префикс и итог коммита), `fromRows()` (`examples`, тесты) (13-rules §2, ADR-39) |
-| T198 | **калиброванный порог** | `CalibratedThreshold` | `{value, for: {adapter, model, prompt_hash, bench}, call, onMismatch: refuse \| mark}` — порог, подобранный стендом под версию judge; способность объявляет его в контракте, run сверяет обобщённо (13-rules §3, ADR-45) |
+| T198 | **калиброванный порог** | `CalibratedThreshold` | `{value, calibrated_for: {adapter, model, prompt_hash, bench} \| null (T136), call, onMismatch: refuse \| mark}` — порог, подобранный стендом под версию judge; способность объявляет его в контракте, run сверяет обобщённо (13-rules §3, ADR-45) |
 
 ## Факты и доверие
 
