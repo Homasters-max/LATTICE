@@ -1,12 +1,21 @@
 // Canonical form — JCS, RFC 8785 (REQ-KR-003, design D-2). The walk keeps an explicit stack of frames instead of
-// recursion, so a value of any depth built in code is serialised without exhausting the call stack.
+// recursion, so a value of any depth built in code is serialised without exhausting the call stack. Two operations
+// share the walk through a visitor: canonical builds the text, eachObject hands every object to a function.
 
 import type { Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
+import { hasLoneSurrogate } from "./admit.ts";
 
-export type WalkHooks = {
-  /** Called on entering a plain object after its own checks and before its members, in walk order. */
-  readonly enterObject?: (obj: object, path: string) => void;
+/** What the walk reports, in walk order; every reported value has passed its own checks. */
+type Visitor = {
+  /** A string, a finite number, a boolean or null. */
+  readonly scalar: (value: string | number | boolean | null) => void;
+  /** Entering an array or a plain object, before its children; `path` gives the JSON Pointer of the container. */
+  readonly enter: (container: object, isArray: boolean, path: () => string) => void;
+  /** Before the child number `index` of the innermost container; `key` of an object member. */
+  readonly child: (index: number, key: string | undefined) => void;
+  /** Leaving the innermost container after its last child. */
+  readonly leave: (isArray: boolean) => void;
 };
 
 type ObjFrame = { readonly kind: "obj"; readonly obj: object; readonly keys: readonly string[]; i: number };
@@ -19,57 +28,40 @@ type ArrFrame = {
 };
 type Frame = ObjFrame | ArrFrame;
 
-/** True when the string has a UTF-16 surrogate that is not part of a pair. */
-export function hasLoneSurrogate(s: string): boolean {
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c >= 0xd800 && c <= 0xdbff) {
-      const next = i + 1 < s.length ? s.charCodeAt(i + 1) : 0;
-      if (next >= 0xdc00 && next <= 0xdfff) i++;
-      else return true;
-    } else if (c >= 0xdc00 && c <= 0xdfff) {
-      return true;
-    }
-  }
-  return false;
-}
+const nothing = (): void => {};
 
 function isIndexKey(k: string, len: number): boolean {
   const n = Number(k);
   return String(n) === k && Number.isInteger(n) && n >= 0 && n < len;
 }
 
-export type WalkResult = { readonly error: Refusal | null; readonly text: string };
-
 /**
  * Walk a JSON value depth first — object members in canonical key order, array elements by index — checking that
- * it is a JSON value; the first place that is not gives `not-json` with its path (prefixed by `prefix`). With `emit`
- * the canonical text is built along the way.
+ * it is a JSON value and reporting it to the visitor; the first place that is not gives `not-json` with its path.
  */
-export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHooks): WalkResult {
-  const out: string[] = [];
+function walk(root: unknown, visitor: Visitor): Refusal | null {
   const frames: Frame[] = [];
   const segs: string[] = [];
   const onPath = new Set<object>();
-  const pathOf = (seg: string): string => prefix + segs.join("") + seg;
-  const notJson = (seg: string): Refusal => refusal("not-json", pathOf(seg));
+  const here = (): string => segs.join("");
+  const notJson = (seg: string): Refusal => refusal("not-json", here() + seg);
 
   const visit = (value: unknown, seg: string): Refusal | null => {
     switch (typeof value) {
       case "string":
         if (hasLoneSurrogate(value)) return notJson(seg);
-        if (emit) out.push(JSON.stringify(value));
+        visitor.scalar(value);
         return null;
       case "number":
         if (!Number.isFinite(value)) return notJson(seg);
-        if (emit) out.push(String(value));
+        visitor.scalar(value);
         return null;
       case "boolean":
-        if (emit) out.push(value ? "true" : "false");
+        visitor.scalar(value);
         return null;
       case "object": {
         if (value === null) {
-          if (emit) out.push("null");
+          visitor.scalar(null);
           return null;
         }
         if (onPath.has(value)) return notJson(seg);
@@ -82,7 +74,7 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
           frames.push({ kind: "arr", arr: value, len, extra, i: 0 });
           segs.push(seg);
           onPath.add(value);
-          if (emit) out.push("[");
+          visitor.enter(value, true, here);
           return null;
         }
         const proto = Object.getPrototypeOf(value);
@@ -92,8 +84,7 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
         frames.push({ kind: "obj", obj: value, keys, i: 0 });
         segs.push(seg);
         onPath.add(value);
-        if (hooks.enterObject !== undefined) hooks.enterObject(value, pathOf(""));
-        if (emit) out.push("{");
+        visitor.enter(value, false, here);
         return null;
       }
       default:
@@ -105,6 +96,7 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
     frames.pop();
     segs.pop();
     onPath.delete(frame.kind === "obj" ? frame.obj : frame.arr);
+    visitor.leave(frame.kind === "arr");
   };
 
   let error = visit(root, "");
@@ -112,11 +104,11 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
     const frame = frames[frames.length - 1] as Frame;
     if (frame.kind === "obj") {
       if (frame.i >= frame.keys.length) {
-        if (emit) out.push("}");
         leave(frame);
         continue;
       }
-      const key = frame.keys[frame.i] as string;
+      const index = frame.i;
+      const key = frame.keys[index] as string;
       frame.i++;
       const seg = segment(key);
       const d = Object.getOwnPropertyDescriptor(frame.obj, key);
@@ -124,10 +116,7 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
         error = notJson(seg);
         break;
       }
-      if (emit) {
-        if (frame.i > 1) out.push(",");
-        out.push(JSON.stringify(key), ":");
-      }
+      visitor.child(index, key);
       error = visit(d.value, seg);
     } else {
       if (frame.i < frame.len) {
@@ -139,7 +128,7 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
           error = notJson(seg);
           break;
         }
-        if (emit && index > 0) out.push(",");
+        visitor.child(index, undefined);
         error = visit(d.value, seg);
         continue;
       }
@@ -147,15 +136,38 @@ export function walk(root: unknown, emit: boolean, prefix: string, hooks: WalkHo
         error = notJson(segment(frame.extra[0] as string));
         break;
       }
-      if (emit) out.push("]");
       leave(frame);
     }
   }
-  return { error, text: error === null && emit ? out.join("") : "" };
+  return error;
 }
 
 /** Canonical form of a JSON value: JCS without changes; strings are not normalised (NFC belongs to checkInput). */
 export function canonical(value: unknown): Result<string> {
-  const r = walk(value, true, "", {});
-  return r.error === null ? ok(r.text) : fail([r.error]);
+  const out: string[] = [];
+  const error = walk(value, {
+    scalar: (v) => out.push(typeof v === "string" ? JSON.stringify(v) : String(v)),
+    enter: (_container, isArray) => out.push(isArray ? "[" : "{"),
+    child: (index, key) => {
+      if (index > 0) out.push(",");
+      if (key !== undefined) out.push(JSON.stringify(key), ":");
+    },
+    leave: (isArray) => out.push(isArray ? "]" : "}"),
+  });
+  return error === null ? ok(out.join("")) : fail([error]);
+}
+
+/**
+ * Walk a value like canonical and call `fn` on entering each plain object, after its own checks and before its
+ * members, with its path; the result is the `not-json` refusal of canonical or `null`.
+ */
+export function eachObject(value: unknown, fn: (obj: object, path: string) => void): Refusal | null {
+  return walk(value, {
+    scalar: nothing,
+    enter: (container, isArray, path) => {
+      if (!isArray) fn(container, path());
+    },
+    child: nothing,
+    leave: nothing,
+  });
 }

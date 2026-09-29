@@ -3,7 +3,7 @@
 
 import type { Id, Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
-import { idKind, parseRef } from "./ref.ts";
+import { checkAt } from "./ref.ts";
 
 export type Revision = {
   readonly id: Id;
@@ -23,12 +23,6 @@ function field(input: object, key: string): { readonly present: boolean; readonl
   if (d === undefined) return { present: false, value: undefined };
   if (!("value" in d)) return { present: true, value: undefined };
   return { present: true, value: d.value };
-}
-
-function isPinnedTypeRef(s: unknown): boolean {
-  if (typeof s !== "string") return false;
-  const r = parseRef(s);
-  return r.ok && r.value.version !== undefined && idKind(r.value.id) === "name";
 }
 
 export function revision(input: unknown, at: unknown): Result<Revision> {
@@ -54,14 +48,14 @@ export function revision(input: unknown, at: unknown): Result<Revision> {
     by = field(obj, "by").value;
     const b = field(obj, "body");
     body = b.value;
-    const kind = idKind(id);
-    if (kind === "reserved") errors.push(refusal("reserved-scheme", "/input/id"));
-    else if (kind === "bad") errors.push(refusal("bad-id", "/input/id"));
-    if (!isPinnedTypeRef(type)) errors.push(refusal("bad-type", "/input/type"));
-    if (typeof version !== "number" || !Number.isSafeInteger(version) || version < 1) {
-      errors.push(refusal("bad-version", "/input/version"));
-    }
-    if (idKind(by) !== "name") errors.push(refusal("bad-by", "/input/by"));
+    // Rows of the REQ-KR-005 table, refusals in this order: id, type, version, by.
+    const checks = [
+      checkAt("id", id, "/input/id"),
+      checkAt("type", type, "/input/type"),
+      checkAt("version", version, "/input/version"),
+      checkAt("by", by, "/input/by"),
+    ];
+    for (const r of checks) if (r !== null) errors.push(r);
     if (!b.present || body === undefined) errors.push(refusal("bad-body", "/input/body"));
   }
   const atOk = typeof at === "number" && Number.isSafeInteger(at) && at >= 0 && at <= AT_MAX;
