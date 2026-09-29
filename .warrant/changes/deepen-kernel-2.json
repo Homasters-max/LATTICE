@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "deepen-kernel-2",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-09-29T22:30:47.036Z",
+      "by": "cli:local"
+    }
+  ]
+}
