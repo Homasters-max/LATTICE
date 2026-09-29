@@ -5,8 +5,8 @@
 - [ ] 1.1 Граф импортов и политика: загрузка дерева по `sources` ∪ `perimeter`, один разбор файла, рёбра по D-2, глобы,
   `checkStructure(root, policy)`, правила REQ-AR-001 перенесены из `checkKernelFile`, `no-kernel` для точки входа,
   политика проекта `test/architecture/policy.ts`, `structure.test.ts` на новом интерфейсе, `checkKernel` удалён
-  (`REQ-AR-001`, design D-1, D-2, D-8); проверка — тесты с токенами `SCN-AR-001`, `SCN-AR-002` проходят, метки
-  фикстур `test/fixtures/structure/kernel/**` и `broken/**` не правлены
+  (`REQ-AR-001`, design D-1, D-2, D-8), `broken/` дополнен импортами по SCN-AR-002; проверка — тесты с токенами
+  `SCN-AR-001`, `SCN-AR-002` проходят, метки фикстур `test/fixtures/structure/kernel/**` не правлены
 - [ ] 1.2 Периметр от точки входа: правило `outside-perimeter`, фикстура `test/fixtures/structure/perimeter/`
   (`REQ-AR-003`, design D-3, D-8); проверка — тесты с токенами `SCN-AR-004`, `SCN-AR-005` проходят
 - [ ] 1.3 Нет циклов: правило `import-cycle`, фикстура `test/fixtures/structure/cycles/` (`REQ-AR-004`, design D-1);
