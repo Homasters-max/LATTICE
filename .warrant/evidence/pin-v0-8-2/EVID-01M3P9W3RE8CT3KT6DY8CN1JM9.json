@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3P9W3RE8CT3KT6DY8CN1JM9",
+  "claim": {
+    "text": "tests-passed passed for pin-v0-8-2",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "daeaf2ecc983b0bae9ffdf72d3dbd9f47c25ee76",
+    "base_commit": "da6ef998fb9709f6b125b1e1ad91cd5b0ac008ff",
+    "spec_revision": "openspec/changes/pin-v0-8-2@daeaf2ecc983b0bae9ffdf72d3dbd9f47c25ee76",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:1d9d9631eb624dbf7ae1ae0afb99d0dc664b71f659cdb2eb9f33ac511bd1d2ba",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-09-29T10:02:56.657Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/pin-v0-8-2/raw/tests-passed/junit.xml",
+      "sha256": "sha256:42947eb158a7855e9f0459b3058aedbc955262b4e5a6dfb1d3c9512276973ab8"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 395
+  }
+}
