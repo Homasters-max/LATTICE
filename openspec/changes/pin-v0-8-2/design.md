@@ -138,6 +138,20 @@ CI зависит от внешнего workflow; `reversibility: EASY` — от
 секретов. Risk `HIGH` → gate `human-approval` на `VERIFYING->MERGED`, `MERGED` — с `--by <maintainer>` (правило
 `process`).
 
+## Implementation Notes
+
+По находкам review 1 (EVID-01M3P6JSX4MM8YHSQV1PJD1NS6, `PROVEN`: MAJOR F-1, MINOR F-2…F-4, INFO F-5) — строками, не
+новым раундом; решение maintainer'а — одобрение spec-PR
+([PR #29](https://github.com/Homasters-max/LATTICE/pull/29#issuecomment-5887132171)). Строки уточняют исполнение
+D-1…D-6 и решений spec не меняют.
+
+| # | Решение |
+|---|---|
+| I-1 | F-1: контракт вызываемого workflow сверен с `.github/workflows/warrant.yml` SRA на теге `v0.8.2`: входы `warrant` (обязателен), `setup`, `node-version` (22), `openspec-version` (1.13.1), `merge_commit`; блока `concurrency` нет (остаётся у вызывающего, D-3); job называется `warrant`, поэтому проверка — `warrant / warrant` (06 §8). Имя проверки и запуск подтверждает job самого impl-PR |
+| I-2 | F-2: тест пина (D-4) разбирает файл по строкам без YAML-парсера: строки-комментарии отброшены; тег `uses` — строка `uses: Homasters-max/SRA/.github/workflows/warrant.yml@v<X>`; вход — строка `warrant: v<X>` с отступом ровно 6 (вход блока `with:`), а не id job `warrant:` (отступ 2); кавычек и комментариев в конце строки вызов не содержит |
+| I-3 | F-3: `AGENTS.md` меняется безусловно — `warrant sync` переносит в него новый текст правила `process`; «если генератор изменит» из proposal и D-1 п. 3 относится к `warrant-reviewer.md`, который `sync` 0.8.2 не изменил |
+| I-4 | F-4, U-1: gates `VERIFYING->MERGED` в effective policy — `analyze-clean`, `evidence-complete`, `factory-golden-passed`, `human-approval`, `ids-valid`, `scope-valid`, `spec-approved`, `tests-passed`; check `dev-check` (Non-goal, issue #27) ни в одном не участвует, ожидаемый исход `warrant ci` (задача 3.2) не меняется |
+
 ## Risks / Trade-offs
 
 - [Вызов reusable workflow не стартует (`startup_failure`: доступ, синтаксис, права)] → job красный до merge, правка
