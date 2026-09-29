@@ -4,7 +4,8 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkStructure, checkTests, listFiles, projectTestFiles } from "./structure.ts";
@@ -65,6 +66,34 @@ describe("SCN-AR-002 kernel violations", () => {
     assert.deepEqual(checkStructure(file, KERNEL), noKernel(file));
   });
 
+  it("SCN-AR-002 a ** segment matches zero segments too", () => {
+    const kernel = fixture("kernel");
+    assert.deepEqual(checkStructure(kernel, { ...KERNEL, sources: ["**/*"], perimeter: ["**/*"] }), marks(kernel));
+    const cycles = fixture("cycles");
+    assert.deepEqual(checkStructure(cycles, { ...CYCLES, perimeter: ["**/entry.ts"] }), marks(cycles));
+  });
+
+  it("SCN-AR-002 a symbolic link is neither a directory nor a file of the tree", () => {
+    // the linked directory holds a file with a syntax error: walked, it would give parse-error
+    const tmp = mkdtempSync(join(tmpdir(), "structure-"));
+    try {
+      const tree = join(tmp, "tree");
+      const target = join(tmp, "target");
+      mkdirSync(join(tree, "kernel"), { recursive: true });
+      mkdirSync(target);
+      writeFileSync(join(tree, "kernel", "entry.ts"), "export const v = 1;\n");
+      writeFileSync(join(target, "bad.ts"), "export const = ;\n");
+      symlinkSync(target, join(tree, "kernel", "linked"), "junction"); // a junction on Windows needs no admin rights
+      const policy: Policy = { sources: ["**"], entry: "kernel/entry.ts", perimeter: ["**"] };
+      assert.deepEqual(checkStructure(tree, policy), []);
+      assert.deepEqual(checkStructure(tree, { ...policy, sources: ["kernel/linked/**"] }), []);
+      const linked = "kernel/linked/bad.ts";
+      assert.deepEqual(checkStructure(tree, { ...policy, entry: linked }), noKernel(linked));
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
   it("SCN-AR-002 parse error is the only refusal of its file, the other files are still checked", () => {
     const dir = fixture("broken");
     const found = checkStructure(dir, BROKEN);
@@ -87,7 +116,7 @@ describe("SCN-AR-003 tests inside describe", () => {
 });
 
 describe("SCN-AR-004 reachable from the entry left the perimeter", () => {
-  it("SCN-AR-004 an import out of a reachable file gives both rules, of an unreachable one only the import rule", () => {
+  it("SCN-AR-004 an import out of a reachable file gives both rules, of an unreachable one the import rule", () => {
     const dir = fixture("perimeter");
     assert.deepEqual(checkStructure(dir, PERIMETER), marks(dir));
   });
@@ -142,6 +171,14 @@ describe("SCN-AR-006 cycles of one, two and three files", () => {
   it("SCN-AR-006 a source file with a parse error has no edges, a cycle through it does not close", () => {
     const dir = fixture("cycles-broken");
     assert.deepEqual(checkStructure(dir, CYCLES), [{ file: "q.ts", line: 1, rule: "parse-error" }]);
+  });
+
+  it("SCN-AR-006 only source files are nodes: a cycle through a file outside the sources does not close", () => {
+    const dir = fixture("cycles-sources");
+    const policy: Policy = { sources: ["src/**"], entry: "src/entry.ts", perimeter: ["src/entry.ts"] };
+    assert.deepEqual(checkStructure(dir, policy), marks(dir));
+    const all = ordered([...marks(dir), { file: "src/a.ts", line: 1, rule: "import-cycle" }]);
+    assert.deepEqual(checkStructure(dir, { ...policy, sources: ["**"] }), all);
   });
 });
 

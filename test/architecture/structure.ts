@@ -285,28 +285,36 @@ function treeEntry(root: string, segs: readonly string[]): Dirent | null {
   return entry;
 }
 
-/** Files of the directory `dir` at tree path `at`, recursive; a symbolic link is neither a directory nor a file. */
-function walk(dir: string, at: string, into: Set<string>): void {
+/**
+ * Files of the directory `dir` at tree path `at`, `depth` levels down (1 — its own files only); a symbolic link is
+ * neither a directory nor a file.
+ */
+function walk(dir: string, at: string, depth: number, into: Set<string>): void {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const path = at === "" ? e.name : `${at}/${e.name}`;
-    if (e.isDirectory()) walk(join(dir, e.name), path, into);
-    else if (e.isFile()) into.add(path);
+    if (e.isDirectory()) {
+      if (depth > 1) walk(join(dir, e.name), path, depth - 1, into);
+    } else if (e.isFile()) {
+      into.add(path);
+    }
   }
 }
 
 /**
- * Tree files under the static prefix of each glob — its directory segments before the first one with `*` — so the
- * walk never enters what no glob matches (`node_modules` of the project); a prefix that is not a directory of the
- * tree holds no files.
+ * Tree files under the static prefix of each glob — its directory segments before the first one with `*` — and, for
+ * a glob without `**`, no deeper than its segments reach (`entry.ts` — the root level only), so the walk never enters
+ * what no glob matches (`node_modules` of the project); a prefix that is not a directory of the tree holds no files.
  */
 function treeFiles(root: string, globs: readonly string[]): Set<string> {
   const files = new Set<string>();
   for (const glob of globs) {
-    const dirs = glob.split("/").slice(0, -1);
+    const segs = glob.split("/");
+    const dirs = segs.slice(0, -1);
     const wild = dirs.findIndex((seg) => seg.includes("*"));
     const prefix = wild === -1 ? dirs : dirs.slice(0, wild);
     if (prefix.length > 0 && treeEntry(root, prefix)?.isDirectory() !== true) continue;
-    walk(join(root, ...prefix), prefix.join("/"), files);
+    const depth = segs.includes("**") ? Infinity : segs.length - prefix.length;
+    walk(join(root, ...prefix), prefix.join("/"), depth, files);
   }
   return files;
 }
