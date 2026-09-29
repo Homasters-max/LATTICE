@@ -132,6 +132,24 @@
       "decision": "allow",
       "findings": [],
       "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:02:47.604Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:02:52.563Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
     }
   ]
 }
