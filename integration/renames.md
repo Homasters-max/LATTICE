@@ -4,6 +4,7 @@
 
 | Было | Стало | Решение | Статус |
 |---|---|---|---|
-| `commit(rows, by, key?)` | `commit(batch)` — вход `author` / `copy` / `genesis` | ADR-38 | план |
-| `validate(rows, state)` | шаг коммита по реестру проверок | ADR-38 | план |
-| `wire.ts` как описание корня | `assemble(config, env, store)` в `src/cli/wire.ts` | ADR-41 | план |
+| `commit(rows, by, key?)` | `commit(batch)` — вход `author` / `copy` / `genesis` | ADR-38 | действует |
+| `validate(rows, state)` | шаг коммита по реестру проверок | ADR-38 | действует |
+| `source.load()` | `Loader.load()` — порт загрузки хоста | ADR-24 · AD-20 | действует |
+| `queue(namespace)` | `pending(namespace, seq)` доменов, сборка в `cli/` | CT-17 · AD-22 | действует |
