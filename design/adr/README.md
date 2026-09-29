@@ -1,6 +1,6 @@
 # Решения (ADR) — design v0.4
 
-Номер файла = номер кандидата из итогов разбора (`arhived/research/analysis/arch-changes.md`, «Развилки»: кандидаты 1…23); новые — с 24. Отклонённый или отложенный кандидат тоже получает файл (статус и довод «почему нет»).
+Номер файла = номер кандидата из итогов разбора (`arhived/research/analysis/arch-changes.md`, «Развилки»: кандидаты 1…23); новые — с 24. v0.6: ADR-38…ADR-47 — кандидаты 1–10 архитектурного разбора 2026-09-29 по порядку. Отклонённый или отложенный кандидат тоже получает файл (статус и довод «почему нет»).
 
 | ADR | Решение | Статус | Затрагивает | Волна | Сессия |
 |---|---|---|---|---|---|
@@ -41,3 +41,13 @@
 | [35](0035-kernel-reads-and-policy-type.md) | поля `std` и проекции индекса, которые читает ядро, — перечень 04 §1, часть версии ядра; тип политики доверия — `std/policy`, ядро её не читает | принято | 04-architecture, 10-kernel, 14-trust, 11-identity-grain, 13-rules | — | CA-1 |
 | [36](0036-block-text-hash.md) | текст блока закреплён `text_hash` в теле, `deliver` сверяет его с `text()` — иначе карточка и пометка; тексты блоков в промптах — цитаты; вызов пишет `env`, кампания с разным источником или средой — `invalid` | принято | 20-lens, 21-compose, 22-run, 23-bench, 30-adapters, 05-slices | — | CA-3 |
 | [37](0037-judgement-is-not-knowledge.md) | принцип P13 «суждение не становится знанием»: выходы judge и Composer — только события или факты не в силе; `verify` — «то же ли»; роли видения += judge, потребитель; T63 → «ссылающийся» (`referrers`); вопросы judge — шаблоны адаптера | принято | 00-vision, 02-glossary, 20-lens, 21-compose, 30-adapters, 04-architecture, 12-ledger, 13-rules, 15-catalog, 22-run | — | CA-4 |
+| [38](0038-commit-batch.md) | коммит — один глубокий модуль: вход `batch` трёх видов (`author` / `copy` / `genesis`), реестр проверок `{scope, phase, appliesTo}`, намерения `ensure` / `merge` / `split` внутри `author`; `validate` не отдельная операция | принято | 12-ledger, 13-rules, 11-identity-grain, 10-kernel, 15-catalog, 02-glossary, 05-slices | 1 | R1–R4 |
+| [39](0039-check-view.md) | `CheckView` — контракт у rules, ровно перечень 04 §1; адаптеры: индекс на `seq`, `overlay` ledger, `fromRows()` | принято | 13-rules, 12-ledger, 04-architecture, 05-slices | 1 | R1–R4 |
+| [40](0040-authority-and-classify.md) | проекция `authority` в замороженном ядре (`principal`, `mayWrite`); `classify` в trust — единственный читатель `purpose` вне ядра; перечень `purpose` со свойствами — таблица 14 §1 | принято | 10-kernel, 13-rules, 14-trust, 15-catalog, 20-lens, 22-run, 23-bench, 30-adapters, 04-architecture, 02-glossary | 3 | R1–R4 |
+| [41](0041-assemble-and-progress.md) | корень сборки `assemble` с фазами отказов; фиктивные адаптеры через `setup.ports`; порт хода `Progress`; `run() → pack \| pending`; ответ агента привязан к кортежу | принято | 04-architecture, 30-adapters, 22-run, 02-glossary, 05-slices | 2 | R1–R4 |
+| [42](0042-execution-tuple-module.md) | зерно `code` — модуль из манифеста кода; `countedRun` — одна функция T139 в замороженном ядре; `run/tuple` — захват, отказы старта, сверка | принято | 22-run, 13-rules, 23-bench, 30-adapters, 04-architecture, 02-glossary | 2 | R1–R4 |
+| [43](0043-kernel-entry-point.md) | `kernel-v1` — одна точка входа замороженного ядра; тест структуры охраняет достижимое | принято | 04-architecture, 10-kernel, 12-ledger, 11-identity-grain | 3 | R1–R4 |
+| [44](0044-replay-recorded-adapters.md) | replay — интерпретатор с записанными адаптерами; обёртка `Recording` — кэш, LN-18, `Meta.model`, запись | принято | 22-run, 20-lens, 30-adapters | 4 | R1–R4 |
+| [45](0045-calibrated-threshold-and-scorer.md) | `CalibratedThreshold` — одно значение калибровки; шов `Scorer`; LENS одной стадией — отложено до S5 | принято | 20-lens, 13-rules, 21-compose, 22-run, 14-trust | 4 | R1–R4 |
+| [46](0046-solve-need-closed-world.md) | `solveNeed` и `ClosedWorld` — отложено до S6 (YAGNI) | отложено | 21-compose, 22-run | 4 | R1–R4 |
+| [47](0047-voice-provenance-in-force.md) | автор голоса `via ?? by`, trust не знает типов run; `inForce`, `standing` в trust; проверка политики — при `open()` | принято | 14-trust, 22-run, 20-lens, 10-kernel, 12-ledger | 4 | R1–R4 |
