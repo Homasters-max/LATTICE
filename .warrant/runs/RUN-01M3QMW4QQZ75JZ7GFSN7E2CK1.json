@@ -1,0 +1,95 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3QMW4QQZ75JZ7GFSN7E2CK1",
+  "change": "deepen-kernel-2",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/deepen-kernel-2",
+  "started_at": "2026-09-29T22:34:26.472Z",
+  "finished_at": "2026-09-29T22:42:13.523Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:41dfae0fa221210796f9ad6e40194f9dcd8135d5b29b3a96c82eeadb9c04fd55",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "spec_tree": "sha256:59211880f630c4cd5675b78bff2e7ea76393d8314ed9740567c90158233cd0bc",
+  "evidence": [
+    "EVID-01M3QNACWD94RNEHTWGEE7P33W"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-09-29T22:34:48.572Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`ls D:/project/LATTICE/openspec/specs/ D:/project/LATTICE/test/architecture D:/project/LATTICE/src/kernel` under the review Run RUN-01M3QMW4QQZ75JZ7GFSN7E2CK1 of deepen-kernel-2: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:41:05.174Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:41:06.145Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:41:10.214Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:42:02.509Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:42:03.349Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:42:04.265Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:42:11.091Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

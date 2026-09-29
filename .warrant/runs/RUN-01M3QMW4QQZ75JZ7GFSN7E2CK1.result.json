@@ -1,0 +1,172 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3QMW4QQZ75JZ7GFSN7E2CK1",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-AR-001 defines a tree file as any path produced by a recursive walk of the whole root, and the third no-kernel condition checks whether the entry file exists. Design D-1 loads only files that match sources ∪ perimeter, walking from the static prefix of each glob. The two disagree when the entry exists but matches neither list, for example sources outside/**, perimeter kernel/**, entry other/x.ts. The spec gives outside-perimeter at line 0. An implementation that follows D-1 finds no entry and gives no-kernel. D-1 also does not say what happens when a glob's static prefix is missing (src/identity/** before S1) or is a file rather than a directory (a literal glob such as src/ledger/kernel-v1.ts). Under the spec, such a glob simply matches nothing.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "openspec/changes/deepen-kernel-2/design.md"
+      ],
+      "recommendation": "Make design match the spec: check the entry's existence independently of loading (by an exact tree path, without a case-insensitive existsSync), and treat a missing or non-directory glob prefix as matching no files. Or narrow the spec's 'tree file' to files under sources ∪ perimeter ∪ {entry}. Add a SCN-AR-005 run where the entry exists but lies outside both lists, expecting outside-perimeter at line 0 and not no-kernel."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-AR-001 makes import(\"…\") in any type position an import-outside-kernel violation. REQ-AR-003 says an import from a reachable perimeter file to a path outside the list SHALL give both import-outside-kernel and outside-perimeter. Design D-1 moves the purity rules from checkKernelFile 'without changing the logic'. That code (test/architecture/structure.ts:256-257) does not enter `declare …` subtrees, interfaces or type aliases, so it misses `type T = import(\"../x.ts\").T`, `interface I { x: import(\"node:fs\").Stats }` and `declare const d: import(\"node:fs\").Stats`. D-2 makes every ImportTypeNode an edge. So a type-alias import out of a reachable kernel file would get outside-perimeter only, and in an unreachable file it would get nothing. No scenario uses these forms: SCN-AR-002 and SCN-AR-006 only use `let t: import(…)`.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "REQ-AR-004",
+        "SCN-AR-002",
+        "openspec/changes/deepen-kernel-2/design.md"
+      ],
+      "recommendation": "In D-1, name this gap and require that import-outside-kernel and edges be collected from one set of import nodes, including those in type aliases, interfaces and declare blocks; only the free-identifier checks skip those subtrees. Add scenario inputs (a new fixture, or an explicit exception to 'kernel/** fixtures are unchanged'): `type T = import(\"../ledger/types.ts\").T`, `interface I { x: import(\"node:fs\").Stats }` and `declare const d: import(\"node:fs\").Stats`, each giving import-outside-kernel. Also add a type-alias import to the SCN-AR-004 reachable set and to the SCN-AR-006 cycles."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-001 defines a path outside the root as one that 'starts with `..` after resolution', and normalisation resolves only `.` and `..`. A root file named `..x.ts` also starts with `..`; the current insideRoot has the same rel.startsWith(\"..\") mistake. A specifier such as `./a//b.ts` resolves to `a//b.ts` under the spec but to `a/b.ts` under path.resolve in D-2, so glob matching and existence can differ.",
+      "targets": [
+        "REQ-AR-001"
+      ],
+      "recommendation": "Write 'the first segment of the path is `..`' and say what happens to empty segments: either collapse them or keep them and let the path match nothing."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The result order is 'by file (UTF-16 code units), then by line, then by rule'. The rule key is not defined: by rule identifier in code units, or in the order the rules are listed. It matters in SCN-AR-004, which has two rules on one line, when tests compare the whole list (D-1). The line is presumably numeric, but the current test sorts `file:line:rule` strings, which puts 10 before 9.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-004"
+      ],
+      "recommendation": "Write 'then by line number as a number, then by rule identifier in UTF-16 code units'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Every violation must name a line, and the result is a set of triples, but REQ-AR-001 does not give the line for non-ts-file. no-kernel and an entry outside the list have line 0. The code and the helper.js fixture use line 1. The vector is fixed only by the fixture, not by the spec.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "State in REQ-AR-001 that non-ts-file names the file with line 1, as the current code and fixture do."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-001 does not say which filesystem objects count as a tree or a file. If the root exists but is a regular file, the spec could mean no-kernel ('the root does not exist') or the walk could fail with an exception; the code gives no-kernel. 'Symbolic links are not followed' leaves open whether a symlink to a file is itself a tree file, which would then be read (readFileSync follows the link), checked by non-ts-file and become a node. D-1 treats it as a file only by default: not a directory.",
+      "targets": [
+        "REQ-AR-001"
+      ],
+      "recommendation": "Add: 'a root that is not a directory gives no-kernel as a missing root; a symbolic link is neither a directory nor a tree file'. Or state the opposite explicitly."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The no-kernel order is 'root, .ts files in the perimeter, entry'. No scenario checks the second condition, a perimeter without .ts files, or its precedence over a missing entry (the refusal must name the root, not the entry). SCN-AR-002 covers only a missing root, and SCN-AR-005 covers only a missing entry with .ts files present in the perimeter.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002",
+        "SCN-AR-005"
+      ],
+      "recommendation": "Add a run to SCN-AR-005 or SCN-AR-002: a tree whose perimeter has only a .js file and no entry, expecting exactly one no-kernel that names the root, at line 0."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-001 decides whether an edge's target exists by exact, case-sensitive string match. D-1 argues that Windows and Linux CI therefore build the same graph, but no scenario fixes it. On Windows, an existsSync implementation would follow `./A.ts` to `a.ts` and could add outside-perimeter or import-cycle refusals the spec does not allow.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "SCN-AR-004"
+      ],
+      "recommendation": "Add to SCN-AR-004 (or a separate scenario): kernel/entry.ts imports `./A.ts` while the file is kernel/a.ts, which imports ../outside/x.ts. Expected: a.ts is unreachable and gets only import-outside-kernel."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-001 and REQ-AR-004 give parse-error to a source file outside the perimeter and keep it as a graph node with no outgoing edges, so a cycle through it does not close. Only a perimeter file is covered by a scenario (SCN-AR-002, broken.ts). The source-only case and a cycle through a broken file are not covered.",
+      "targets": [
+        "REQ-AR-004",
+        "SCN-AR-006"
+      ],
+      "recommendation": "Add to SCN-AR-006 a file p.ts that imports ./q.ts, and q.ts with a syntax error on line 1 and an import of ./p.ts on line 2. Expected: only parse-error on q.ts at line 1, and no import-cycle."
+    },
+    {
+      "id": "F-10",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-7 and task 2.4 check that the public interface is unchanged only with `git diff` of src/kernel/index.ts, test/kernel and jcs-vectors.json. index.ts re-exports the types Hash, Id, Ref, Refusal and Result from types.ts and Revision from revision.ts, and D-4 edits revision.ts. A change to these types does not show in the index.ts diff.",
+      "targets": [
+        "openspec/changes/deepen-kernel-2/design.md",
+        "openspec/changes/deepen-kernel-2/tasks.md"
+      ],
+      "recommendation": "Add src/kernel/types.ts to the diff check in task 2.4, and state in D-7 that the Revision type in revision.ts does not change, or check the public types of index.ts with a type snapshot."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "ambiguity",
+      "statement": "SCN-AR-007 (no import-cycle on the project) is a strict subset of SCN-AR-001 (no violations at all on the project under the same policy). The scenario is not wrong, but it adds no separate evidence. The src/ tree today contains only src/kernel.",
+      "targets": [
+        "SCN-AR-007",
+        "SCN-AR-001"
+      ],
+      "recommendation": "Keep it as a named anchor for S1, or merge it into SCN-AR-001."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The fixes for review-1 findings F-1…F-13 were checked against the final text: each is present in the spec or design at the places named in the table 'Решения по review 1'."
+    },
+    {
+      "id": "A-2",
+      "statement": "Existing test/fixtures/structure/kernel/** vectors are preserved under the new rules: with entry clean.fixture.ts, the only reachable targets are hash.ts (a missing path inside **). No fixture file imports another existing fixture file, so there is no outside-perimeter and no import-cycle (checked by grep of the fixture imports, not by running the code)."
+    },
+    {
+      "id": "A-3",
+      "statement": "The kernel refactors D-4…D-6 were compared with the current code of hash.ts, canonical.ts, ref.ts, refs.ts, revision.ts, input.ts and ids.ts. No change of refusal codes, paths, order or bytes was found; for example, the envelope {body,type} and {body} gives the same /body/... paths as walk with prefix /body."
+    },
+    {
+      "id": "A-4",
+      "statement": "Tasks 1.1–1.4 cover SCN-AR-001…SCN-AR-007. SCN-KR-003, SCN-KR-005 and SCN-KR-025 are not named in tasks 2.x but are covered by npm test in task 3.1."
+    },
+    {
+      "id": "A-5",
+      "statement": "TypeScript reports the first parse diagnostic of `export const = ;` on line 1 (not run)."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:41dfae0fa221210796f9ad6e40194f9dcd8135d5b29b3a96c82eeadb9c04fd55",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-30T10:00:00Z",
+    "finished_at": "2026-09-30T10:40:00Z"
+  }
+}

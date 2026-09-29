@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://evidence-manifest/1",
+  "change": "deepen-kernel-2",
+  "commit": "88a6799ab216d5f0fd9dd66d536666bb83c916ab",
+  "versions": {
+    "warrant": "0.8.3",
+    "openspec": "1.13.1",
+    "lock_hash": "sha256:a374e3ae15a7193d82ac36ecf10adc1d90b1d85713f1c1b5dafcbec0df72a682",
+    "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31"
+  },
+  "evidence": [
+    "EVID-01M3QNACWD94RNEHTWGEE7P33W"
+  ]
+}
