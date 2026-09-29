@@ -1,0 +1,102 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3PAGJKTEK967Z4728RBKSZ5",
+  "change": "pin-v0-8-2",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/pin-v0-8-2/tasks.md",
+    "openspec/changes/pin-v0-8-2/design.md",
+    "openspec/changes/pin-v0-8-2/specs/**"
+  ],
+  "scope": [],
+  "branch": "impl/pin-v0-8-2",
+  "started_at": "2026-09-29T10:14:07.265Z",
+  "finished_at": "2026-09-29T10:14:33.695Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:8847ca9eb5b3f6d255a63abb3197a130912f42a87d6072b7c72fac997d8e8c33",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": [
+    {
+      "at": "2026-09-29T10:14:11.619Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/kernel/environment.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:14:16.094Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/kernel/environment.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-09-29T10:14:16.902Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-2/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:14:17.994Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-2/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:14:18.862Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-2/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:14:19.960Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-8-2/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T10:14:25.819Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

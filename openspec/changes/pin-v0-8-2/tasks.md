@@ -21,6 +21,9 @@
 - [x] 2.1 `test/process/pin.test.ts` (design D-4), все тесты внутри `describe()`; проверка — `warrant check pin-v0-8-2
   tests-passed` даёт `PROVEN`, число тестов в evidence равно числу тестов прогона
 
+- [x] 2.2 `test/kernel/environment.test.ts` (design I-6): токен `SCN-KR-023` снят с имени теста, пропускаемого вне Unicode
+  16.0; проверка — `warrant check pin-v0-8-2 tests-passed` `PROVEN`, в отчёте нет пропущенного теста с `SCN-…` в имени
+
 ## 3. Проверка
 
 - [x] 3.1 `warrant verify pin-v0-8-2` CLI 0.8.2; проверка — завершается успешно
