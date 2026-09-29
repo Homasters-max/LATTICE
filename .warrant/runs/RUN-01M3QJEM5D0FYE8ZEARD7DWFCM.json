@@ -1,0 +1,35 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3QJEM5D0FYE8ZEARD7DWFCM",
+  "change": "deepen-kernel",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/deepen-kernel/**"
+  ],
+  "scope": [],
+  "branch": "spec/deepen-kernel",
+  "started_at": "2026-09-29T21:52:06.377Z",
+  "run_state": "RUNNING",
+  "context_hash": "sha256:91ec16285e5ec7001c247359d2f45f60c45ff06ddcb1e2db9f6298e0ce171078",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-09-29T21:52:11.547Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T21:52:16.315Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
