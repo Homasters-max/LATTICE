@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "deepen-kernel-2",
-  "change_state": "MERGED",
+  "change_state": "ARCHIVED",
   "classification": {
     "profiles": [
       "chore",
@@ -105,6 +105,21 @@
         "EVID-01M3QRNQYR21TAQ7VJN015TQKX"
       ],
       "ref": "https://github.com/Homasters-max/LATTICE/pull/37"
+    },
+    {
+      "to": "ARCHIVED",
+      "at": "2026-09-29T23:42:56.393Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {
+        "analyze-clean": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3QRSDGXN5AJ3K0BDDN4RN9M"
+      ]
     }
   ]
 }
