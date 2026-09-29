@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3QMGT8FBH3PRE3MNQC0NZ9C",
+  "claim": {
+    "text": "Homasters-max approved deepen-kernel for SPECIFIED->APPROVED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "1faab9eb294df3c1d65b4061eb4958cf441334fd",
+    "base_commit": "e5403862a3167c46693450305a4c2d3cbeb255f5",
+    "spec_revision": "openspec/changes/deepen-kernel@1faab9eb294df3c1d65b4061eb4958cf441334fd",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/35"
+  },
+  "context_hash": "sha256:faab5b34e360932a53a15c42e23d5e2e9366eaf467cb0530afc88eb799b003fa",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-09-29T22:28:15.247Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}
