@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3QKCXF49W9AFDTDBFB2T1TG",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of deepen-kernel: 0 BLOCKER, 5 MAJOR, 7 MINOR, 1 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "3c48301b3468568796e3d4342f9f441419e056bd",
+    "spec_revision": "openspec/changes/deepen-kernel@3c48301b3468568796e3d4342f9f441419e056bd",
+    "spec_tree": "sha256:843ab04fc9d540a981c61d579c066872a03ab390cdfe43dbb4f0665429ea5838",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3QK32FS5XRRQAJN2MHPD4KZ"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:a72ef6f27872a4c4eadd45088953cfee2da5ea5ecf84b5afcdb854bc427341a7",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-09-29T22:08:38.885Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3QK32FS5XRRQAJN2MHPD4KZ.result.json",
+      "sha256": "sha256:d31a545025cdb4fbc5a7b4a6c243860e32ca2f05308195999603d2fbe887464b"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 1,
+    "MAJOR": 5,
+    "MINOR": 7
+  }
+}

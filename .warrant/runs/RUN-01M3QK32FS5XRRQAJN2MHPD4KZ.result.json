@@ -1,0 +1,175 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3QK32FS5XRRQAJN2MHPD4KZ",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-003 does not say whether a path outside the tree root (starting with `..`) can lie in the perimeter list. By the glob definition in REQ-AR-001, `**` matches any number of segments, so it also matches `../x.ts`. The exclusion 'путь вне корня дерева — вне периметра' appears only inside the `import-outside-kernel` bullet of REQ-AR-001, and design D-2 alone says such a path matches no glob. With perimeter `**` (the SCN-AR-002 policy), an import out of the root from a reachable file gets `outside-perimeter` under one reading and not under the other.",
+      "targets": [
+        "REQ-AR-003",
+        "REQ-AR-001"
+      ],
+      "recommendation": "In REQ-AR-001, next to the glob definition, state that a path outside the tree root matches no glob, so it is outside every list, sources included. Or repeat this in REQ-AR-003."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "No requirement says what a file with `parse-error` contributes to the import graph. REQ-AR-001 checks the other files and REQ-AR-003/004 build edges 'по разбору исходного текста', but nothing says whether the imports of a file that fails to parse count as edges. TypeScript still returns an AST for it. The rule matters in two cases: a reachable perimeter file with a syntax error that imports outside the list (is `outside-perimeter` reported?), and a source file with a syntax error that closes a cycle (is `import-cycle` reported?). Today `checkKernelFile` stops at the first diagnostic and checks nothing else in that file.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "State that a file with `parse-error` gets only `parse-error`: it has no outgoing edges and no purity checks, but it stays a node and an edge target. Or state the opposite. Then extend the `broken/` part of SCN-AR-002 to show the chosen behaviour."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The spec does not say what the `sources` list does in REQ-AR-003. REQ-AR-001 calls it 'перечень источников графа импортов', which reads as if the graph, and so the `outside-perimeter` traversal, contains only source files. But REQ-AR-003 builds the graph 'дерева' and follows edges from every reachable perimeter file, and only REQ-AR-004 limits its nodes to sources. If a perimeter file is not under `sources`, one reading traces its edges and the other does not. No scenario covers this: every scenario has perimeter ⊆ sources. Design D-1 loads sources ∪ perimeter, which points to the first reading, but the spec does not say so.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "Name the exact role of `sources`: the nodes of REQ-AR-004 plus the scope of `parse-error`, while REQ-AR-003 follows edges of perimeter files whether or not they are in `sources`. Or require perimeter ⊆ sources and say what happens when a policy breaks that."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "When several `no-kernel` conditions hold at once, the spec does not say which file the refusal names. REQ-AR-001: 'если корня дерева нет, если в периметре нет файлов `*.ts` (отказ называет корень) или если нет файла точки входа (отказ называет точку входа); `no-kernel` — единственный отказ'. If the root is missing, there is also no entry file, so the one refusal could name either the root or the entry. The same applies to a perimeter with no `*.ts` plus a missing entry. The existing SCN-AR-002 test expects `file` = the root as passed, but the scenario text does not pin that.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002",
+        "SCN-AR-005"
+      ],
+      "recommendation": "Fix the order of the conditions: missing root, then no `*.ts` in the perimeter (naming the root), then missing entry file (naming the entry). The first condition that holds produces the one refusal."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The spec does not say whether the result is a set or a list with repeats. REQ-AR-003 demands a refusal 'на каждое такое ребро' and REQ-AR-004 'один отказ на такой импорт'. A Violation, however, is only `file`, `line`, `rule`, and design D-1 removes repeats of `file:line:rule`. Two edges on one line, such as two `import … from \"../o/…\"` on the same line, or `import` and `export … from` of one path, give two entries under the spec wording and one after dedup. The structure tests compare the full sorted list with `deepEqual`, so the two readings are told apart.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "Say in REQ-AR-001 that the test result is a set of distinct `file:line:rule` triples, and reword 'на каждое ребро' and 'на каждый импорт' as 'на каждую строку такого импорта'."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-AR-001 defines 'Файл периметра — файл дерева, путь которого подходит…', which means an existing file. `import-outside-kernel` then applies to a 'модуля, который не является файлом `*.ts` периметра', yet the same bullet says 'существование файла не требуется'. Read literally, an import of a missing `./hash.ts` breaks the rule. The clean file in SCN-AR-002 (the existing `clean.fixture.ts` imports the missing `./hash.ts`) shows the intended meaning: the decision is made by path.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-002"
+      ],
+      "recommendation": "Word the rule by path: 'модуля, путь которого не оканчивается на `.ts` или не подходит под перечень периметра'. Keep 'файл периметра' only for existing files that the purity rules check."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The phrase '`no-kernel` — единственный отказ проверки' has two readings. It can mean that when `no-kernel` occurs, the result contains nothing else, which is what SCN-AR-005 means. It can also mean that `no-kernel` is the only refusal code of the check itself, which clashes with the next sentence, 'проверка SHALL отказывать кодом `parse-error`'.",
+      "targets": [
+        "REQ-AR-001",
+        "SCN-AR-005"
+      ],
+      "recommendation": "Rephrase: 'при `no-kernel` результат — ровно этот один отказ, правила не выполняются'."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The spec does not define which line is 'строка импорта' when an import statement spans several lines, such as `import {` on one line and `} from \"../outside/b.ts\"` a few lines later. The candidates are the line where the declaration starts and the line of the specifier. REQ-AR-003 requires both refusals of one import on 'одной строке', and REQ-AR-004 names 'строку импорта, который замыкает цикл'. Today the code uses the start of the node.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "Define the import line as the line of the first token of the declaration, or of the `import(…)` node in type position, as it is today."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The order of refusals in the result is not specified. Design D-1 sorts by file, line and rule, and the tests sort keys themselves. REQ-AR-004 demands determinism in which import is named, but not in the order of the list.",
+      "targets": [
+        "REQ-AR-001",
+        "REQ-AR-004"
+      ],
+      "recommendation": "Either say that the order is not part of the contract (compare as a set), or fix the design order: file by UTF-16 code units, then line, then rule."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "SCN-AR-002 runs the `broken` tree with 'политикой того же вида' but does not name the entry point. The same policy has as entry 'файл без нарушений с импортом `{ createHash as h }`', and no such file exists in `broken/`. Taken literally, the entry is missing, which gives `no-kernel` instead of the expected `parse-error`. Only design D-8 names the entry (`other.fixture.ts`).",
+      "targets": [
+        "SCN-AR-002"
+      ],
+      "recommendation": "Name the entry point of the `broken` tree in the scenario: a file without a syntax error. Say whether an entry with a syntax error is allowed."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The scenarios of REQ-AR-003 and REQ-AR-004 test only two edge kinds: `import` and `import type`. The requirements also make edges from `export … from`, from `import x = require(…)` and from `import(\"…\")` in type position, and count a file importing itself as a cycle. None of these has a scenario, so a test may leave them out without breaking any SCN.",
+      "targets": [
+        "SCN-AR-004",
+        "SCN-AR-006",
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "Add to the SCN-AR-006 fixture a self-import and a cycle through `export … from` and through `import(\"…\")` in type position. Add to SCN-AR-004 an exit from the perimeter through `export … from`."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "The spec assumes paths are compared case-sensitively, in normalised form, with no symlinks. Nodes of REQ-AR-004 and file existence come from the file system, while membership in a list and the identity of edges are decided by path string. The project runs on Windows, where the file system ignores case, and on Linux CI. On Windows an import of `./Ref.ts` for file `ref.ts` finds the file but produces a different node string, so a cycle can be detected differently on the two platforms.",
+      "targets": [
+        "REQ-AR-003",
+        "REQ-AR-004"
+      ],
+      "recommendation": "State that a path is the normalised string after resolving `.` and `..`, compared exactly (case-sensitive), and that the file exists only if the tree listing contains that exact string."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Kernel behaviour (D-7): the delta has no requirement that allows a change in kernel refusals, paths, order or bytes. Design D-4, D-5 and D-6 were checked against the current `ref.ts`, `revision.ts`, `hash.ts`, `canonical.ts`, `refs.ts`, `input.ts` and `ids.ts`. Revision check order, both hash refusals, `/body/…` paths and JCS bytes of the envelope, the refObject inputs of input and refs, and the order lone-surrogate→unassigned→NFC all match. The only guarantee of 'без смены поведения' is the Non-goals line of the proposal plus the existing SCN-KR vectors (task 2.4). Behaviour that REQ-KR does not pin is not checked.",
+      "targets": [
+        "openspec/changes/deepen-kernel/proposal.md"
+      ],
+      "recommendation": "No change is needed. In impl-PR review, compare the refusal order of `revision` and `refsOf` against the current code, not only against the SCN-KR tests."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:a72ef6f27872a4c4eadd45088953cfee2da5ea5ecf84b5afcdb854bc427341a7",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-09-30T10:00:00Z",
+    "finished_at": "2026-09-30T10:40:00Z"
+  }
+}
