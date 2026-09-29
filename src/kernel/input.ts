@@ -3,9 +3,8 @@
 
 import type { Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
-import { hasLoneSurrogate } from "./canonical.ts";
-import { parseRef } from "./ref.ts";
-import { isAssigned16 } from "./unicode16.ts";
+import { refObject } from "./ref.ts";
+import { admit } from "./unicode16.ts";
 
 const MAX_DEPTH = 64;
 const HEX4 = /^[0-9a-fA-F]{4}$/;
@@ -21,14 +20,6 @@ const ESCAPES: Readonly<Record<string, string>> = {
 };
 
 type Found = { readonly code: string; readonly path: string; readonly pos: number };
-type Decoded = { readonly s: string; readonly lone: boolean; readonly unassigned: boolean };
-
-function hasUnassigned(s: string): boolean {
-  for (const ch of s) {
-    if (!isAssigned16(ch.codePointAt(0) as number)) return true;
-  }
-  return false;
-}
 
 function isDigit(c: number): boolean {
   return c >= 0x30 && c <= 0x39;
@@ -66,7 +57,8 @@ export function checkInput(text: unknown): Result<unknown> {
     }
   };
 
-  const readString = (): Decoded | undefined => {
+  /** The decoded string, not yet admitted (REQ-KR-002: `admit` decides for a key and a value alike). */
+  const readString = (): string | undefined => {
     pos++; // opening quote
     const parts: string[] = [];
     let run = pos;
@@ -98,22 +90,21 @@ export function checkInput(text: unknown): Result<unknown> {
       if (c < 0x20) return syntax();
       pos++;
     }
-    const s = parts.join("");
-    const lone = hasLoneSurrogate(s);
-    return { s, lone, unassigned: !lone && hasUnassigned(s) };
+    return parts.join("");
   };
 
   const parseStringValue = (): unknown => {
     const at = pos;
-    const d = readString();
-    if (d === undefined) return undefined;
-    if (d.lone || d.unassigned) {
-      report(d.lone ? "lone-surrogate" : "unassigned", path(), at);
+    const s = readString();
+    if (s === undefined) return undefined;
+    const a = admit(s);
+    if (!a.ok) {
+      report(a.code, path(), at);
       lastStringRejected = true;
-      return d.s;
+      return s;
     }
     lastStringRejected = false;
-    return d.s.normalize("NFC");
+    return a.nfc;
   };
 
   const parseNumber = (): unknown => {
@@ -205,8 +196,9 @@ export function checkInput(text: unknown): Result<unknown> {
       skipWs();
       if (!(pos < len && text.charCodeAt(pos) === 0x3a)) return syntax();
       pos++;
-      if (key.lone || key.unassigned) {
-        report(key.lone ? "lone-surrogate" : "unassigned", objPath, keyPos);
+      const a = admit(key);
+      if (!a.ok) {
+        report(a.code, objPath, keyPos);
         otherKeys++;
         if (quiet === 0) quietPath = objPath;
         quiet++;
@@ -214,7 +206,7 @@ export function checkInput(text: unknown): Result<unknown> {
         quiet--;
         if (stop !== null) return undefined;
       } else {
-        const k = key.s.normalize("NFC");
+        const k = a.nfc;
         const seg = segment(k);
         const duplicate = seen.has(k);
         if (duplicate) report("duplicate-key", objPath + seg, keyPos);
@@ -250,11 +242,8 @@ export function checkInput(text: unknown): Result<unknown> {
       }
       return syntax();
     }
-    if (refPos >= 0) {
-      const bad =
-        otherKeys > 0 || typeof refValue !== "string" || refRejected || !parseRef(refValue).ok;
-      if (bad) report("bad-ref", objPath, refPos);
-    }
+    // By text: refused keys are other keys, a duplicate `$ref` is not; the value is the first `$ref`, after NFC.
+    if (refPos >= 0 && refObject(otherKeys > 0, refValue, refRejected) === null) report("bad-ref", objPath, refPos);
     return obj;
   };
 

@@ -1,2 +1,2 @@
 export const = ; // expect: parse-error
-import { y } from "../outside.ts";
+import { p } from "./p.ts";

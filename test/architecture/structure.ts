@@ -1,12 +1,22 @@
-// Structure checks (REQ-AR-001, REQ-AR-002, design D-5) over the TypeScript AST: the kernel imports nothing but
-// itself and createHash of node:crypto and uses only the allowed free identifiers; every node:test test is declared
-// inside a function passed to a suite call. The checks parse source text and never run the checked files.
+// Structure checks (REQ-AR-001…REQ-AR-004, design D-1…D-3) over the TypeScript AST of a file tree and a policy: the
+// kernel perimeter imports nothing but itself and createHash of node:crypto and uses only the allowed free
+// identifiers; everything reachable from the kernel entry stays in the perimeter; source files import each other
+// without cycles; every node:test test is declared inside a function passed to a suite call. The checks parse source
+// text and never run the checked files.
 
 import ts from "typescript";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import type { Dirent } from "node:fs";
+import { join } from "node:path";
 
 export type Violation = { readonly file: string; readonly line: number; readonly rule: string };
+
+/** Globs of the sources and of the kernel perimeter and the path of the kernel entry, relative to the tree root. */
+export type Policy = {
+  readonly sources: readonly string[];
+  readonly entry: string;
+  readonly perimeter: readonly string[];
+};
 
 // Closed list of free identifiers of the kernel (UNK-KR-007); Math and Date only in the forms of `nondeterminism`.
 const ALLOWED = new Set([
@@ -202,14 +212,117 @@ function isValueIdentifier(id: ts.Identifier): boolean {
   return true;
 }
 
-// ---- REQ-AR-001: kernel isolation ----------------------------------------------------------------------------
+// ---- paths and globs (REQ-AR-001) ----------------------------------------------------------------------------
 
-function insideRoot(spec: string, file: string, root: string): boolean {
-  if (!spec.startsWith("./") && !spec.startsWith("../")) return false;
-  const target = resolve(dirname(file), spec);
-  const rel = relative(root, target);
-  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel) && target.endsWith(".ts");
+/**
+ * A `/` path with empty and `.` segments dropped and `..` resolved; a `..` that leaves the root stays as the first
+ * segment, so the path is outside the root.
+ */
+function normalize(path: string): string {
+  const out: string[] = [];
+  for (const seg of path.split("/")) {
+    if (seg === "" || seg === ".") continue;
+    if (seg === ".." && out.length > 0 && out[out.length - 1] !== "..") out.pop();
+    else out.push(seg);
+  }
+  return out.join("/");
 }
+
+function isRelative(spec: string): boolean {
+  return spec.startsWith("./") || spec.startsWith("../");
+}
+
+/** The path a relative specifier of `file` names; whether a file is there is not asked (design D-2). */
+function resolveSpec(file: string, spec: string): string {
+  return normalize(file.slice(0, file.lastIndexOf("/") + 1) + spec);
+}
+
+/** A glob segment: `**` (any number of path segments, none included) or a pattern of one segment. */
+type GlobSegment = "**" | RegExp;
+
+/** `*` is any part of one segment, every other character is literal. */
+function compileGlob(glob: string): GlobSegment[] {
+  return glob.split("/").map((seg) => {
+    if (seg === "**") return "**";
+    const literal = seg.split("*").map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    return new RegExp(`^${literal.join("[^/]*")}$`);
+  });
+}
+
+function matchSegments(path: readonly string[], glob: readonly GlobSegment[], i: number, j: number): boolean {
+  if (j === glob.length) return i === path.length;
+  const g = glob[j] as GlobSegment;
+  if (g === "**") {
+    return matchSegments(path, glob, i, j + 1) || (i < path.length && matchSegments(path, glob, i + 1, j));
+  }
+  return i < path.length && g.test(path[i] as string) && matchSegments(path, glob, i + 1, j + 1);
+}
+
+/** Whether a path matches a list of globs; a path outside the root (first segment `..`) matches none. */
+function globList(globs: readonly string[]): (path: string) => boolean {
+  const compiled = globs.map(compileGlob);
+  return (path) => {
+    const segs = path === "" ? [] : path.split("/");
+    return segs[0] !== ".." && compiled.some((glob) => matchSegments(segs, glob, 0, 0));
+  };
+}
+
+// ---- the tree: files, parse facts, import edges (design D-1, D-2) --------------------------------------------
+
+/**
+ * The walk entry of a tree path: each segment is found by name, exactly and case-sensitively, in the listing of its
+ * directory, so a path exists only as the walk of the root gives it; null when it does not.
+ */
+function treeEntry(root: string, segs: readonly string[]): Dirent | null {
+  let dir = root;
+  let entry: Dirent | null = null;
+  for (const seg of segs) {
+    if (entry !== null && !entry.isDirectory()) return null;
+    entry = readdirSync(dir, { withFileTypes: true }).find((e) => e.name === seg) ?? null;
+    if (entry === null) return null;
+    dir = join(dir, seg);
+  }
+  return entry;
+}
+
+/** Files of the directory `dir` at tree path `at`, recursive; a symbolic link is neither a directory nor a file. */
+function walk(dir: string, at: string, into: Set<string>): void {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const path = at === "" ? e.name : `${at}/${e.name}`;
+    if (e.isDirectory()) walk(join(dir, e.name), path, into);
+    else if (e.isFile()) into.add(path);
+  }
+}
+
+/**
+ * Tree files under the static prefix of each glob — its directory segments before the first one with `*` — so the
+ * walk never enters what no glob matches (`node_modules` of the project); a prefix that is not a directory of the
+ * tree holds no files.
+ */
+function treeFiles(root: string, globs: readonly string[]): Set<string> {
+  const files = new Set<string>();
+  for (const glob of globs) {
+    const dirs = glob.split("/").slice(0, -1);
+    const wild = dirs.findIndex((seg) => seg.includes("*"));
+    const prefix = wild === -1 ? dirs : dirs.slice(0, wild);
+    if (prefix.length > 0 && treeEntry(root, prefix)?.isDirectory() !== true) continue;
+    walk(join(root, ...prefix), prefix.join("/"), files);
+  }
+  return files;
+}
+
+/** An import of a file: its specifier, its line (of the first token) and the path a relative specifier names. */
+type Import = {
+  readonly spec: string;
+  readonly line: number;
+  readonly hashOnly: boolean; // the named value import of createHash, nothing else
+  readonly target: string | null;
+};
+
+/** A `*.ts` file parsed once: the line of its first parse diagnostic, or null and its imports in text order. */
+type Parsed = { readonly sf: ts.SourceFile; readonly errorLine: number | null; readonly imports: readonly Import[] };
+
+type Report = (file: string, line: number, rule: string) => void;
 
 function cryptoImportOk(node: ts.ImportDeclaration): boolean {
   const c = node.importClause;
@@ -218,6 +331,43 @@ function cryptoImportOk(node: ts.ImportDeclaration): boolean {
   if (nb === undefined || !ts.isNamedImports(nb) || nb.elements.length === 0) return false;
   return nb.elements.every((el) => !el.isTypeOnly && (el.propertyName ?? el.name).text === "createHash");
 }
+
+/**
+ * `import`, `import type`, `export … from`, `import x = require(…)` and `import("…")` in a type position, wherever
+ * they stand — in type aliases, interfaces and ambient declarations too — so the purity rules and the edges see one
+ * set of imports.
+ */
+function importsOf(sf: ts.SourceFile, file: string): Import[] {
+  const out: Import[] = [];
+  const visit = (node: ts.Node): void => {
+    let spec: ts.Node | undefined;
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) spec = node.moduleSpecifier;
+    else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+      spec = node.moduleReference.expression;
+    } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) spec = node.argument.literal;
+    if (spec !== undefined && ts.isStringLiteral(spec)) {
+      out.push({
+        spec: spec.text,
+        line: lineOf(sf, node),
+        hashOnly: ts.isImportDeclaration(node) && cryptoImportOk(node),
+        target: isRelative(spec.text) ? resolveSpec(file, spec.text) : null,
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/** A file after a syntax error has no imports: its AST is recovered by heuristics (design D-2). */
+function parseFile(root: string, file: string): Parsed {
+  const sf = parse(join(root, file));
+  const diags = parseDiagnostics(sf);
+  if (diags.length > 0) return { sf, errorLine: lineOf(sf, diags[0]?.start ?? 0), imports: [] };
+  return { sf, errorLine: null, imports: importsOf(sf, file) };
+}
+
+// ---- REQ-AR-001: kernel isolation ----------------------------------------------------------------------------
 
 function dateFormOk(id: ts.Identifier): boolean {
   const n = id.parent;
@@ -235,56 +385,35 @@ function mathFormOk(id: ts.Identifier): boolean {
   return ts.isPropertyAccessExpression(p) && p.expression === id && MATH_EXACT.has(p.name.text);
 }
 
-function checkKernelFile(file: string, root: string, report: (line: number, rule: string) => void): void {
-  const sf = parse(file);
-  const diags = parseDiagnostics(sf);
-  if (diags.length > 0) {
-    report(lineOf(sf, diags[0]?.start ?? 0), "parse-error");
-    return;
-  }
+/**
+ * The purity rules over a perimeter file parsed without errors; an import stays in the kernel as a relative `.ts`
+ * path of the perimeter (REQ-AR-001, design D-1).
+ */
+function purity(
+  file: Parsed,
+  inPerimeter: (path: string) => boolean,
+  report: (line: number, rule: string) => void,
+): void {
+  const sf = file.sf;
   for (const ref of [...sf.referencedFiles, ...sf.typeReferenceDirectives, ...sf.libReferenceDirectives]) {
     report(lineOf(sf, ref.pos), "import-outside-kernel");
   }
-  const moduleSpec = (spec: string, at: ts.Node, named: boolean): void => {
-    if (spec === "node:crypto") {
-      if (!named) report(lineOf(sf, at), "crypto-import");
-    } else if (!insideRoot(spec, file, root)) {
-      report(lineOf(sf, at), "import-outside-kernel");
+  for (const imp of file.imports) {
+    if (imp.spec === "node:crypto") {
+      if (!imp.hashOnly) report(imp.line, "crypto-import");
+    } else if (imp.target === null || !imp.target.endsWith(".ts") || !inPerimeter(imp.target)) {
+      report(imp.line, "import-outside-kernel");
     }
-  };
+  }
   const visit = (node: ts.Node): void => {
     if (isDeclare(node)) return; // ambient declarations: no runtime, bind nothing
     if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) return;
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-      moduleSpec(node.moduleSpecifier.text, node, cryptoImportOk(node));
-      return;
-    }
-    if (ts.isExportDeclaration(node)) {
-      if (node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) {
-        moduleSpec(node.moduleSpecifier.text, node, false);
-      }
-      return;
-    }
-    if (ts.isImportEqualsDeclaration(node)) {
-      const ref = node.moduleReference;
-      if (ts.isExternalModuleReference(ref) && ts.isStringLiteral(ref.expression)) {
-        moduleSpec(ref.expression.text, node, false);
-      }
-      return;
-    }
-    if (ts.isImportTypeNode(node)) {
-      const arg = node.argument;
-      if (ts.isLiteralTypeNode(arg) && ts.isStringLiteral(arg.literal)) moduleSpec(arg.literal.text, node, false);
-      return;
-    }
+    // imports are checked above, `import("…")` in a type position with the type nodes below
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node) || ts.isImportEqualsDeclaration(node)) return;
     if (ts.isTypeNode(node) || ts.isExpressionWithTypeArguments(node)) {
       if (ts.isExpressionWithTypeArguments(node) && ts.isHeritageClause(node.parent) && node.parent.token === ts.SyntaxKind.ExtendsKeyword && ts.isClassLike(node.parent.parent)) {
         visit(node.expression);
-        return;
       }
-      ts.forEachChild(node, (c) => {
-        if (ts.isImportTypeNode(c) || ts.isTypeNode(c)) visit(c);
-      });
       return;
     }
     if (ts.isCallExpression(node)) {
@@ -320,26 +449,100 @@ function checkKernelFile(file: string, root: string, report: (line: number, rule
   visit(sf);
 }
 
-/** Violations of the kernel directory `dir` (recursive); `no-kernel` when it is missing or has no `*.ts` file. */
-export function checkKernel(dir: string): Violation[] {
-  const root = resolve(dir);
-  if (!existsSync(root) || !statSync(root).isDirectory()) return [{ file: dir, line: 0, rule: "no-kernel" }];
-  const files = listFiles(root);
-  if (!files.some((f) => f.endsWith(".ts"))) return [{ file: dir, line: 0, rule: "no-kernel" }];
-  const found = new Map<string, Violation>();
-  for (const file of files) {
-    const rel = relative(root, file).split("\\").join("/");
-    const report = (line: number, rule: string): void => {
-      const v = { file: rel, line, rule };
-      found.set(`${rel}:${line}:${rule}`, v);
-    };
-    if (!file.endsWith(".ts")) {
-      report(1, "non-ts-file");
-      continue;
-    }
-    checkKernelFile(file, root, report);
+// ---- REQ-AR-003: everything reachable from the entry stays in the perimeter ----------------------------------
+
+/**
+ * `outside-perimeter` over a breadth-first walk from the entry along the edges of existing perimeter files: an edge
+ * into a path outside the perimeter is refused at its import line and not followed; an entry outside it, at line 0.
+ */
+function perimeter(
+  entry: string,
+  parsed: ReadonlyMap<string, Parsed>,
+  inPerimeter: (path: string) => boolean,
+  report: Report,
+): void {
+  if (!inPerimeter(entry)) {
+    report(entry, 0, "outside-perimeter");
+    return;
   }
-  return [...found.values()];
+  const reached = new Set([entry]);
+  const queue = [entry];
+  for (let i = 0; i < queue.length; i++) {
+    const file = queue[i] as string;
+    for (const { target, line } of parsed.get(file)?.imports ?? []) {
+      if (target === null) continue;
+      if (!inPerimeter(target)) {
+        report(file, line, "outside-perimeter");
+      } else if (!reached.has(target)) {
+        reached.add(target);
+        queue.push(target);
+      }
+    }
+  }
+}
+
+// ---- REQ-AR-004: no cycles between source files --------------------------------------------------------------
+
+/**
+ * `import-cycle` over a depth-first walk of the nodes in the given order, edges in text order, each node walked once:
+ * an edge into a node on the current walk path (the node itself included) closes a cycle.
+ */
+function cycles(nodes: readonly string[], parsed: ReadonlyMap<string, Parsed>, report: Report): void {
+  const isNode = new Set(nodes);
+  const state = new Map<string, "on-path" | "done">();
+  const visit = (file: string): void => {
+    state.set(file, "on-path");
+    for (const { target, line } of parsed.get(file)?.imports ?? []) {
+      if (target === null || !isNode.has(target)) continue;
+      const s = state.get(target);
+      if (s === "on-path") report(file, line, "import-cycle");
+      else if (s === undefined) visit(target);
+    }
+    state.set(file, "done");
+  };
+  for (const file of nodes) if (!state.has(file)) visit(file);
+}
+
+// ---- the check -----------------------------------------------------------------------------------------------
+
+const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * Violations of the tree at `root` under `policy` (REQ-AR-001, REQ-AR-003, REQ-AR-004): distinct file–line–rule
+ * triples ordered by file (UTF-16 code units), line as a number, rule (UTF-16 code units). `no-kernel` alone, at line
+ * 0, by the first condition met: no root directory (named as given), no `*.ts` file in the perimeter (the root), no
+ * entry file (the entry path).
+ */
+export function checkStructure(root: string, policy: Policy): Violation[] {
+  const noKernel = (file: string): Violation[] => [{ file, line: 0, rule: "no-kernel" }];
+  if (statSync(root, { throwIfNoEntry: false })?.isDirectory() !== true) return noKernel(root);
+  const inSources = globList(policy.sources);
+  const inPerimeter = globList(policy.perimeter);
+  const files = [...treeFiles(root, [...policy.sources, ...policy.perimeter])]
+    .filter((file) => inSources(file) || inPerimeter(file))
+    .sort(byCodeUnits);
+  if (!files.some((file) => inPerimeter(file) && file.endsWith(".ts"))) return noKernel(root);
+  const entry = normalize(policy.entry);
+  if (treeEntry(root, entry.split("/"))?.isFile() !== true) return noKernel(entry);
+
+  const parsed = new Map<string, Parsed>();
+  for (const file of files) if (file.endsWith(".ts")) parsed.set(file, parseFile(root, file));
+  const found = new Map<string, Violation>();
+  const report: Report = (file, line, rule) => found.set(`${file}:${line}:${rule}`, { file, line, rule });
+  for (const file of files) {
+    const facts = parsed.get(file);
+    if (facts !== undefined && facts.errorLine !== null) {
+      report(file, facts.errorLine, "parse-error"); // the only refusal of the file: no purity rules, no edges
+    } else if (inPerimeter(file)) {
+      if (facts === undefined) report(file, 1, "non-ts-file");
+      else purity(facts, inPerimeter, (line, rule) => report(file, line, rule));
+    }
+  }
+  perimeter(entry, parsed, inPerimeter, report);
+  cycles(files.filter((file) => inSources(file) && parsed.has(file)), parsed, report);
+  return [...found.values()].sort(
+    (a, b) => byCodeUnits(a.file, b.file) || a.line - b.line || byCodeUnits(a.rule, b.rule),
+  );
 }
 
 // ---- REQ-AR-002: tests inside describe -----------------------------------------------------------------------
