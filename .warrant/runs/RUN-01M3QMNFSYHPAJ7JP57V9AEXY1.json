@@ -1,0 +1,138 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3QMNFSYHPAJ7JP57V9AEXY1",
+  "change": "deepen-kernel-2",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/deepen-kernel-2/**"
+  ],
+  "scope": [],
+  "branch": "spec/deepen-kernel-2",
+  "started_at": "2026-09-29T22:30:48.425Z",
+  "finished_at": "2026-09-29T22:34:24.058Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:91ec16285e5ec7001c247359d2f45f60c45ff06ddcb1e2db9f6298e0ce171078",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-09-29T22:31:11.533Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:32:31.195Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:32:56.190Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/specs/architecture/spec.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-09-29T22:32:57.004Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:32:57.897Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:32:58.932Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:32:59.955Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:33:54.971Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:33:57.302Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/deepen-kernel-2/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:33:58.210Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:34:21.353Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

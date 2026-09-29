@@ -1,0 +1,53 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "deepen-kernel-2",
+  "change_state": "SPECIFIED",
+  "classification": {
+    "profiles": [
+      "feature"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "LOCAL",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "COMPATIBLE",
+        "from": "proposer"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-09-29T22:30:47.036Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-09-29T22:43:02.273Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3QNBDACWFCFWY19J0YT0FEZ"
+      ]
+    }
+  ]
+}
