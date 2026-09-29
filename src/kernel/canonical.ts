@@ -4,7 +4,7 @@
 
 import type { Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
-import { hasLoneSurrogate } from "./unicode16.ts";
+import { hasLoneSurrogate } from "./admit.ts";
 
 /** What the walk reports, in walk order; every reported value has passed its own checks. */
 type Visitor = {

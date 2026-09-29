@@ -16,15 +16,14 @@ export function refsOf(body: unknown): Result<readonly Ref[]> {
     // By value: any other own key counts, an accessor is the value `undefined`, no string is refused as text.
     const others = Reflect.ownKeys(obj).length > 1;
     const s: unknown = "value" in d ? d.value : undefined;
-    const ref = refObject(others, s, false);
-    if (ref === null) {
+    const found = refObject(s, { others, rejected: false });
+    if (found === null) {
       bad.push(refusal("bad-ref", path));
       return;
     }
-    const text = s as string; // refObject admits only a string
-    if (!seen.has(text)) {
-      seen.add(text);
-      refs.push(ref);
+    if (!seen.has(found.source)) {
+      seen.add(found.source);
+      refs.push(found.ref);
     }
   });
   if (error !== null) return fail([error]);

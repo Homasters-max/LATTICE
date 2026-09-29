@@ -25,8 +25,8 @@
   `refsOf` на `eachObject` (`REQ-KR-003`, `REQ-KR-004`, `REQ-KR-006`, design D-5); проверка — тесты с токенами
   `SCN-KR-006`, `SCN-KR-007`, `SCN-KR-008`, `SCN-KR-009`, `SCN-KR-013`, `SCN-KR-019`, `SCN-KR-021`, `SCN-KR-022`,
   `SCN-KR-024` проходят
-- [x] 2.3 `unicode16.ts` — `admit`, `hasLoneSurrogate`; `input.ts` — одна ветка для ключа и значения (`REQ-KR-002`,
-  design D-6); проверка — тесты с токенами `SCN-KR-002`, `SCN-KR-004`, `SCN-KR-007`, `SCN-KR-016`, `SCN-KR-017`,
+- [x] 2.3 `admit.ts` — `admit`, `hasLoneSurrogate`; `input.ts` — одна ветка для ключа и значения (`REQ-KR-002`,
+  design D-6, I-22); проверка — тесты с токенами `SCN-KR-002`, `SCN-KR-004`, `SCN-KR-007`, `SCN-KR-016`, `SCN-KR-017`,
   `SCN-KR-018`, `SCN-KR-023` проходят
 - [x] 2.4 Не новая версия ядра (design D-7, I-10); проверка — `git diff main -- src/kernel/index.ts src/kernel/types.ts
   test/kernel test/fixtures/jcs-vectors.json` пуст, тип `Revision` в `git diff main -- src/kernel/revision.ts` без

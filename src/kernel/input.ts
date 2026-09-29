@@ -4,7 +4,7 @@
 import type { Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
 import { refObject } from "./ref.ts";
-import { admit } from "./unicode16.ts";
+import { admit } from "./admit.ts";
 
 const MAX_DEPTH = 64;
 const HEX4 = /^[0-9a-fA-F]{4}$/;
@@ -243,7 +243,9 @@ export function checkInput(text: unknown): Result<unknown> {
       return syntax();
     }
     // By text: refused keys are other keys, a duplicate `$ref` is not; the value is the first `$ref`, after NFC.
-    if (refPos >= 0 && refObject(otherKeys > 0, refValue, refRejected) === null) report("bad-ref", objPath, refPos);
+    if (refPos >= 0 && refObject(refValue, { others: otherKeys > 0, rejected: refRejected }) === null) {
+      report("bad-ref", objPath, refPos);
+    }
     return obj;
   };
 

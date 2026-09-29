@@ -5,7 +5,7 @@
 // text and never run the checked files.
 
 import ts from "typescript";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import type { Dirent } from "node:fs";
 import { join } from "node:path";
 
@@ -24,6 +24,7 @@ const ALLOWED = new Set([
   "WeakMap", "Error", "TypeError", "RangeError", "ArrayBuffer", "DataView", "Uint8Array", "Date", "undefined", "NaN",
   "Infinity",
 ]);
+const REFERENCE = /^\/\/\/\s*<reference\b/;
 const MATH_EXACT = new Set(["floor", "ceil", "trunc", "abs", "min", "max", "sign"]);
 const DATE_METHOD = /^(?:toISOString|getTime|valueOf|getUTC[A-Za-z]+)$/;
 const LOCAL_TIME =
@@ -42,15 +43,11 @@ function parseDiagnostics(sf: ts.SourceFile): readonly ts.Diagnostic[] {
   return (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] }).parseDiagnostics ?? [];
 }
 
-/** Files of a directory, recursive, in a stable order. */
+/** Files of a directory, recursive, ordered by their relative paths; symbolic links are not followed, as in `walk`. */
 export function listFiles(dir: string): string[] {
-  const out: string[] = [];
-  for (const name of readdirSync(dir).sort()) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...listFiles(p));
-    else out.push(p);
-  }
-  return out;
+  const files = new Set<string>();
+  walk(dir, "", Infinity, files);
+  return [...files].sort().map((file) => join(dir, file));
 }
 
 // ---- scopes -------------------------------------------------------------------------------------------------
@@ -301,9 +298,11 @@ function walk(dir: string, at: string, depth: number, into: Set<string>): void {
 }
 
 /**
- * Tree files under the static prefix of each glob — its directory segments before the first one with `*` — and, for
- * a glob without `**`, no deeper than its segments reach (`entry.ts` — the root level only), so the walk never enters
- * what no glob matches (`node_modules` of the project); a prefix that is not a directory of the tree holds no files.
+ * Candidate tree files of normalised globs, to be filtered by them. The walk starts at the static prefix of each
+ * glob — its segments before the last one and before the first one with `*` — and, for a glob without `**`, goes no
+ * deeper than its segments reach (`entry.ts` — the root level only), so it never enters what no glob matches
+ * (`node_modules` of the project). A prefix that is a file is itself the candidate (`lib/api.ts/**` matches
+ * `lib/api.ts`: `**` is zero segments too); a prefix that is not in the tree gives none.
  */
 function treeFiles(root: string, globs: readonly string[]): Set<string> {
   const files = new Set<string>();
@@ -312,9 +311,14 @@ function treeFiles(root: string, globs: readonly string[]): Set<string> {
     const dirs = segs.slice(0, -1);
     const wild = dirs.findIndex((seg) => seg.includes("*"));
     const prefix = wild === -1 ? dirs : dirs.slice(0, wild);
-    if (prefix.length > 0 && treeEntry(root, prefix)?.isDirectory() !== true) continue;
-    const depth = segs.includes("**") ? Infinity : segs.length - prefix.length;
-    walk(join(root, ...prefix), prefix.join("/"), depth, files);
+    const at = prefix.join("/");
+    const entry = prefix.length === 0 ? null : treeEntry(root, prefix);
+    if (entry?.isFile() === true) {
+      files.add(at);
+    } else if (prefix.length === 0 || entry?.isDirectory() === true) {
+      const depth = segs.includes("**") ? Infinity : segs.length - prefix.length;
+      walk(join(root, ...prefix), at, depth, files);
+    }
   }
   return files;
 }
@@ -403,8 +407,10 @@ function purity(
   report: (line: number, rule: string) => void,
 ): void {
   const sf = file.sf;
-  for (const ref of [...sf.referencedFiles, ...sf.typeReferenceDirectives, ...sf.libReferenceDirectives]) {
-    report(lineOf(sf, ref.pos), "import-outside-kernel");
+  // every `/// <reference …>` directive of the file head, whatever its attribute (`path`, `types`, `lib`,
+  // `no-default-lib`): the parser keeps only some of them in `referencedFiles` and its siblings
+  for (const c of ts.getLeadingCommentRanges(sf.text, 0) ?? []) {
+    if (REFERENCE.test(sf.text.slice(c.pos, c.end))) report(lineOf(sf, c.pos), "import-outside-kernel");
   }
   for (const imp of file.imports) {
     if (imp.spec === "node:crypto") {
@@ -523,10 +529,13 @@ const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
  */
 export function checkStructure(root: string, policy: Policy): Violation[] {
   const noKernel = (file: string): Violation[] => [{ file, line: 0, rule: "no-kernel" }];
-  if (statSync(root, { throwIfNoEntry: false })?.isDirectory() !== true) return noKernel(root);
-  const inSources = globList(policy.sources);
-  const inPerimeter = globList(policy.perimeter);
-  const files = [...treeFiles(root, [...policy.sources, ...policy.perimeter])]
+  // a root that is a symbolic link is not followed, as no link of the tree is
+  if (lstatSync(root, { throwIfNoEntry: false })?.isDirectory() !== true) return noKernel(root);
+  const sources = policy.sources.map(normalize);
+  const perimeterGlobs = policy.perimeter.map(normalize);
+  const inSources = globList(sources);
+  const inPerimeter = globList(perimeterGlobs);
+  const files = [...treeFiles(root, [...sources, ...perimeterGlobs])]
     .filter((file) => inSources(file) || inPerimeter(file))
     .sort(byCodeUnits);
   if (!files.some((file) => inPerimeter(file) && file.endsWith(".ts"))) return noKernel(root);

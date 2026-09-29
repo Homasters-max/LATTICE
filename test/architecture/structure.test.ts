@@ -16,6 +16,8 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const fixture = (p: string): string => join(root, "test", "fixtures", "structure", p);
 const MARK = /\/\/ expect: ([a-z-]+(?: [a-z-]+)*)/;
 
+// The order and the `no-kernel` refusal are restated here, not imported: the test keeps an oracle independent of
+// structure.ts on purpose.
 const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The result order of REQ-AR-001: file (UTF-16 code units), line as a number, rule (UTF-16 code units). */
@@ -73,6 +75,12 @@ describe("SCN-AR-002 kernel violations", () => {
     assert.deepEqual(checkStructure(cycles, { ...CYCLES, perimeter: ["**/entry.ts"] }), marks(cycles));
   });
 
+  it("SCN-AR-002 globs and the entry are paths: normalised the same way", () => {
+    const kernel = fixture("kernel");
+    const policy: Policy = { sources: ["./**"], entry: "./sub/../clean.fixture.ts", perimeter: [".//sub/../**"] };
+    assert.deepEqual(checkStructure(kernel, policy), marks(kernel));
+  });
+
   it("SCN-AR-002 a symbolic link is neither a directory nor a file of the tree", () => {
     // the linked directory holds a file with a syntax error: walked, it would give parse-error
     const tmp = mkdtempSync(join(tmpdir(), "structure-"));
@@ -89,6 +97,9 @@ describe("SCN-AR-002 kernel violations", () => {
       assert.deepEqual(checkStructure(tree, { ...policy, sources: ["kernel/linked/**"] }), []);
       const linked = "kernel/linked/bad.ts";
       assert.deepEqual(checkStructure(tree, { ...policy, entry: linked }), noKernel(linked));
+      const linkedRoot = join(tree, "kernel", "linked");
+      assert.deepEqual(checkStructure(linkedRoot, { ...policy, entry: "bad.ts" }), noKernel(linkedRoot));
+      assert.deepEqual(listFiles(tree), [join(tree, "kernel", "entry.ts")]);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -125,6 +136,11 @@ describe("SCN-AR-004 reachable from the entry left the perimeter", () => {
     const dir = fixture("perimeter-edges");
     assert.deepEqual(checkStructure(dir, PERIMETER), marks(dir));
   });
+
+  it("SCN-AR-004 import(…), require(…) calls and /// <reference …> are not edges; their own refusals stay", () => {
+    const dir = fixture("perimeter-non-edges");
+    assert.deepEqual(checkStructure(dir, PERIMETER), marks(dir));
+  });
 });
 
 describe("SCN-AR-005 entry missing, outside the perimeter; sources do not limit the perimeter", () => {
@@ -150,6 +166,14 @@ describe("SCN-AR-005 entry missing, outside the perimeter; sources do not limit 
 
   it("SCN-AR-005 sources outside the perimeter do not change its violations", () => {
     assert.deepEqual(checkStructure(dir, { ...PERIMETER, sources: ["outside/**"] }), marks(dir));
+  });
+
+  it("SCN-AR-005 a perimeter glob whose static part is a file matches it, whatever the sources", () => {
+    const tree = fixture("perimeter-file-glob");
+    const perimeter = ["kernel/**", "lib/api.ts/**"];
+    const policy: Policy = { sources: ["kernel/**"], entry: "kernel/entry.ts", perimeter };
+    assert.deepEqual(checkStructure(tree, policy), marks(tree));
+    assert.deepEqual(checkStructure(tree, { ...policy, sources: ["**"] }), marks(tree));
   });
 
   it("SCN-AR-005 no-kernel conditions in order: root, .ts files of the perimeter, entry", () => {
