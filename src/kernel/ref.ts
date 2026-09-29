@@ -86,14 +86,14 @@ export function checkAt(position: Position, value: unknown, path: string): Refus
 type RefObjectFacts = { readonly others: boolean; readonly rejected: boolean };
 
 /** A `$ref` object that is a reference: the reference and the string it was parsed from. */
-type RefObject = { readonly ref: Ref; readonly source: string };
+type FoundRef = { readonly ref: Ref; readonly source: string };
 
 /**
  * Verdict on an object with the key `$ref` (REQ-KR-002, REQ-KR-006): its reference, or `null` — the caller refuses
  * `bad-ref` at its own path — when the object has other keys, the value is not a string, the string was refused as
  * text or is not a reference. What counts as another key and as a refused string is the caller's.
  */
-export function refObject(value: unknown, facts: RefObjectFacts): RefObject | null {
+export function refObject(value: unknown, facts: RefObjectFacts): FoundRef | null {
   if (facts.others || typeof value !== "string" || facts.rejected) return null;
   const r = parseRef(value);
   return r.ok ? { ref: r.value, source: value } : null;

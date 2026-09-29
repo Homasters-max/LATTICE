@@ -7,7 +7,7 @@
 import ts from "typescript";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import type { Dirent } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 export type Violation = { readonly file: string; readonly line: number; readonly rule: string };
 
@@ -43,8 +43,20 @@ function parseDiagnostics(sf: ts.SourceFile): readonly ts.Diagnostic[] {
   return (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] }).parseDiagnostics ?? [];
 }
 
-/** Files of a directory, recursive, ordered by their relative paths; symbolic links are not followed, as in `walk`. */
+/**
+ * A directory that is not a symbolic link: a root link is not followed, as no link of a tree is. The path is resolved
+ * first — with a trailing `/` POSIX `lstat` would follow the link.
+ */
+function isRealDirectory(path: string): boolean {
+  return lstatSync(resolve(path), { throwIfNoEntry: false })?.isDirectory() === true;
+}
+
+/**
+ * Files of a directory, recursive, ordered by their relative paths; symbolic links are not followed, as in `walk`,
+ * and a directory that is itself a link has no files.
+ */
 export function listFiles(dir: string): string[] {
+  if (!isRealDirectory(dir)) return [];
   const files = new Set<string>();
   walk(dir, "", Infinity, files);
   return [...files].sort().map((file) => join(dir, file));
@@ -212,25 +224,46 @@ function isValueIdentifier(id: ts.Identifier): boolean {
 // ---- paths and globs (REQ-AR-001) ----------------------------------------------------------------------------
 
 /**
- * A `/` path with empty and `.` segments dropped and `..` resolved; a `..` that leaves the root stays as the first
- * segment, so the path is outside the root.
+ * Segments of a `/` path with empty and `.` segments dropped and `..` cancelling the segment before it; a `..` that
+ * leaves the root stays as the first segment, so the path is outside the root. Null when `..` would cancel a segment
+ * that `cancellable` refuses.
  */
-function normalize(path: string): string {
+function resolveSegments(path: string, cancellable: (seg: string) => boolean): string[] | null {
   const out: string[] = [];
   for (const seg of path.split("/")) {
     if (seg === "" || seg === ".") continue;
-    if (seg === ".." && out.length > 0 && out[out.length - 1] !== "..") out.pop();
-    else out.push(seg);
+    const last = out[out.length - 1];
+    if (seg === ".." && last !== undefined && last !== "..") {
+      if (!cancellable(last)) return null;
+      out.pop();
+    } else {
+      out.push(seg);
+    }
   }
-  return out.join("/");
+  return out;
+}
+
+function normalize(path: string): string {
+  return (resolveSegments(path, () => true) as string[]).join("/");
+}
+
+/** A glob normalised as a path; null (matches nothing) when `..` follows a wildcard segment it cannot cancel. */
+function normalizeGlob(glob: string): string | null {
+  return resolveSegments(glob, (seg) => !seg.includes("*"))?.join("/") ?? null;
 }
 
 function isRelative(spec: string): boolean {
   return spec.startsWith("./") || spec.startsWith("../");
 }
 
-/** The path a relative specifier of `file` names; whether a file is there is not asked (design D-2). */
-function resolveSpec(file: string, spec: string): string {
+/**
+ * The path a relative specifier of `file` names; whether a file is there is not asked (design D-2). Inner empty
+ * segments collapse (`.//a.ts`), as the file system resolves them; a specifier ending in `/`, `.` or `..` names a
+ * directory, never a file — null, not an edge.
+ */
+function resolveSpec(file: string, spec: string): string | null {
+  const last = spec.slice(spec.lastIndexOf("/") + 1);
+  if (last === "" || last === "." || last === "..") return null;
   return normalize(file.slice(0, file.lastIndexOf("/") + 1) + spec);
 }
 
@@ -246,13 +279,23 @@ function compileGlob(glob: string): GlobSegment[] {
   });
 }
 
-function matchSegments(path: readonly string[], glob: readonly GlobSegment[], i: number, j: number): boolean {
-  if (j === glob.length) return i === path.length;
-  const g = glob[j] as GlobSegment;
-  if (g === "**") {
-    return matchSegments(path, glob, i, j + 1) || (i < path.length && matchSegments(path, glob, i + 1, j));
+/**
+ * Whether the glob matches the path, in O(glob × path): `row[j]` — the glob from segment `j` matches the path from
+ * segment `i`, filled for `i` from the end of the path down, `below` holding the row of `i + 1`.
+ */
+function matchSegments(path: readonly string[], glob: readonly GlobSegment[]): boolean {
+  let below: boolean[] = [];
+  for (let i = path.length; i >= 0; i--) {
+    const row = new Array<boolean>(glob.length + 1).fill(false);
+    row[glob.length] = i === path.length;
+    for (let j = glob.length - 1; j >= 0; j--) {
+      const g = glob[j] as GlobSegment;
+      if (g === "**") row[j] = row[j + 1] === true || (i < path.length && below[j] === true);
+      else row[j] = i < path.length && g.test(path[i] as string) && below[j + 1] === true;
+    }
+    below = row;
   }
-  return i < path.length && g.test(path[i] as string) && matchSegments(path, glob, i + 1, j + 1);
+  return below[0] === true;
 }
 
 /** Whether a path matches a list of globs; a path outside the root (first segment `..`) matches none. */
@@ -260,7 +303,7 @@ function globList(globs: readonly string[]): (path: string) => boolean {
   const compiled = globs.map(compileGlob);
   return (path) => {
     const segs = path === "" ? [] : path.split("/");
-    return segs[0] !== ".." && compiled.some((glob) => matchSegments(segs, glob, 0, 0));
+    return segs[0] !== ".." && compiled.some((glob) => matchSegments(segs, glob));
   };
 }
 
@@ -529,10 +572,11 @@ const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
  */
 export function checkStructure(root: string, policy: Policy): Violation[] {
   const noKernel = (file: string): Violation[] => [{ file, line: 0, rule: "no-kernel" }];
-  // a root that is a symbolic link is not followed, as no link of the tree is
-  if (lstatSync(root, { throwIfNoEntry: false })?.isDirectory() !== true) return noKernel(root);
-  const sources = policy.sources.map(normalize);
-  const perimeterGlobs = policy.perimeter.map(normalize);
+  if (!isRealDirectory(root)) return noKernel(root);
+  const globs = (list: readonly string[]): string[] =>
+    list.map(normalizeGlob).filter((glob): glob is string => glob !== null);
+  const sources = globs(policy.sources);
+  const perimeterGlobs = globs(policy.perimeter);
   const inSources = globList(sources);
   const inPerimeter = globList(perimeterGlobs);
   const files = [...treeFiles(root, [...sources, ...perimeterGlobs])]

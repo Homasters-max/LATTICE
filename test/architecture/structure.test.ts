@@ -79,6 +79,26 @@ describe("SCN-AR-002 kernel violations", () => {
     const kernel = fixture("kernel");
     const policy: Policy = { sources: ["./**"], entry: "./sub/../clean.fixture.ts", perimeter: [".//sub/../**"] };
     assert.deepEqual(checkStructure(kernel, policy), marks(kernel));
+    // `..` cannot cancel a wildcard segment: such a glob matches nothing, so the perimeter has no files
+    assert.deepEqual(checkStructure(kernel, { ...KERNEL, perimeter: ["**/../**"] }), noKernel(kernel));
+    assert.deepEqual(checkStructure(kernel, { ...KERNEL, perimeter: ["*/../**", "sub/*/../**"] }), noKernel(kernel));
+  });
+
+  it("SCN-AR-002 many ** segments against a deep path are matched in polynomial time", () => {
+    // 20 `**` against 40 segments: a backtracking matcher would not finish, a correct one answers at once
+    const tmp = mkdtempSync(join(tmpdir(), "structure-"));
+    try {
+      const dirs = Array.from({ length: 39 }, () => "d");
+      mkdirSync(join(tmp, ...dirs), { recursive: true });
+      writeFileSync(join(tmp, ...dirs, "x.ts"), "export const x = 1;\n");
+      const entry = [...dirs, "x.ts"].join("/");
+      const perimeter = ["**/".repeat(20) + "y.ts", "**/".repeat(20) + "x.ts"];
+      assert.deepEqual(checkStructure(tmp, { sources: ["**"], entry, perimeter }), []);
+      const none = { sources: ["**"], entry, perimeter: perimeter.slice(0, 1) };
+      assert.deepEqual(checkStructure(tmp, none), noKernel(tmp));
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it("SCN-AR-002 a symbolic link is neither a directory nor a file of the tree", () => {
@@ -99,7 +119,10 @@ describe("SCN-AR-002 kernel violations", () => {
       assert.deepEqual(checkStructure(tree, { ...policy, entry: linked }), noKernel(linked));
       const linkedRoot = join(tree, "kernel", "linked");
       assert.deepEqual(checkStructure(linkedRoot, { ...policy, entry: "bad.ts" }), noKernel(linkedRoot));
+      assert.deepEqual(checkStructure(`${linkedRoot}/`, { ...policy, entry: "bad.ts" }), noKernel(`${linkedRoot}/`));
       assert.deepEqual(listFiles(tree), [join(tree, "kernel", "entry.ts")]);
+      assert.deepEqual(listFiles(linkedRoot), []);
+      assert.deepEqual(listFiles(`${linkedRoot}/`), []);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -137,6 +160,7 @@ describe("SCN-AR-004 reachable from the entry left the perimeter", () => {
     assert.deepEqual(checkStructure(dir, PERIMETER), marks(dir));
   });
 
+  // also: a specifier ending in `/` names no file (import-outside-kernel, no edge); `.//z.ts` collapses to an edge
   it("SCN-AR-004 import(…), require(…) calls and /// <reference …> are not edges; their own refusals stay", () => {
     const dir = fixture("perimeter-non-edges");
     assert.deepEqual(checkStructure(dir, PERIMETER), marks(dir));
