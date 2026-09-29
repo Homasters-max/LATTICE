@@ -1,0 +1,40 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "pin-v0-8-2",
+  "change_state": "PROPOSED",
+  "classification": {
+    "profiles": [
+      "chore",
+      "factory-change"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "SYSTEM",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "LOW",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "BREAKING",
+        "from": "proposer"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-09-29T09:01:05.443Z",
+      "by": "cli:local"
+    }
+  ]
+}
