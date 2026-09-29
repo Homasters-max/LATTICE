@@ -1,0 +1,78 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3QK32FS5XRRQAJN2MHPD4KZ",
+  "change": "deepen-kernel",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/deepen-kernel",
+  "started_at": "2026-09-29T22:03:16.392Z",
+  "finished_at": "2026-09-29T22:08:38.889Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:a72ef6f27872a4c4eadd45088953cfee2da5ea5ecf84b5afcdb854bc427341a7",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "spec_tree": "sha256:843ab04fc9d540a981c61d579c066872a03ab390cdfe43dbb4f0665429ea5838",
+  "evidence": [
+    "EVID-01M3QKCXF49W9AFDTDBFB2T1TG"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-09-29T22:03:20.807Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`cat C:/Users/Xiaomi/AppData/Local/Temp/claude/D--project-LATTICE/2b3099d7-7adb-4912-a94f-4d3a8539ee3e/scratchpad/deepen-kernel/run-review.json` under the review Run RUN-01M3QK32FS5XRRQAJN2MHPD4KZ of deepen-kernel: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:04:06.315Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`for f in kernel/*.ts kernel/sub/*.ts kernel/helper.js broken/*.ts` under the review Run RUN-01M3QK32FS5XRRQAJN2MHPD4KZ of deepen-kernel: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:08:23.981Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:08:24.905Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:08:29.077Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-09-29T22:08:36.364Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
