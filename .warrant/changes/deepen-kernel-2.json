@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "deepen-kernel-2",
-  "change_state": "IMPLEMENTING",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "feature"
@@ -77,6 +77,14 @@
       "gates": {
         "branch-isolated": "PASS"
       },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-09-29T23:30:30.991Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {},
       "evidence": []
     }
   ]
