@@ -191,7 +191,7 @@ lattice init [--setup <файл>]         .lattice/, генезис (вход ge
                                       + владелец одним коммитом (самоустановление, ADR-33); реестр, <ns>/learner,
                                       <ns>/setup@1 ([22] §1) — из --setup (фиктивные адаптеры, тесты) или умолчание
 lattice update                        коммит обновления std новой версии пакета ([15] §1)
-lattice load                          source.load() → коммиты сессий загрузки (§5) → aliasCandidates по
+lattice load                          Loader.load() → коммиты сессий загрузки (§5) → aliasCandidates по
                                       новым сущностям отдельным коммитом ([20] «Операции», [11] §6)
 lattice solve "<задача>" [--scope <домен>] [--json]
                                       → пакет или pending (§5)
