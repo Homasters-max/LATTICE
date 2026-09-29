@@ -34,4 +34,4 @@
 
 ## 3. Проверка
 
-- [ ] 3.1 `npm run typecheck`, `npm test` и `warrant verify deepen-kernel-2`; проверка — все три завершаются успешно
+- [x] 3.1 `npm run typecheck`, `npm test` и `warrant verify deepen-kernel-2`; проверка — все три завершаются успешно
