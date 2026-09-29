@@ -10,6 +10,11 @@
   `.claude/agents/warrant-reviewer.md`; проверка — `warrant validate` и `warrant sync --check` зелёные; lock —
   `kernel: "0.8.2"`; `AGENTS.md` содержит новый текст правила `process`; при `FRONTEND_RESTART_REQUIRED` — перезапуск
   сессии до следующего Run
+- [ ] 1.3 Патч maintainer'а (design I-5): `.github/workflows/warrant.yml` — копия job с `npm pack github:Homasters-max/SRA#v0.8.2`
+  и установкой tarball вместо вызова reusable workflow; проверка — `git diff` называет только этот путь, в файле нет
+  `uses: Homasters-max/SRA/` и голого `npm i -g github:`
+- [ ] 1.4 Waiver `spec-approved` (design I-5; `warrant waive`, активирует maintainer): проверка — `warrant status` показывает
+  waiver `ACTIVE`
 
 ## 2. Тест пина
 

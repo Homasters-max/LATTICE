@@ -1,0 +1,15 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-002",
+  "change": "pin-v0-8-2",
+  "gate": "spec-approved",
+  "reason": "I-5: reusable workflow v0.8.2 не ставит CLI на runner (ERR_MODULE_NOT_FOUND commander); судья — копия job с npm pack вместо вызова, proposal.md описывает вызов",
+  "risk": "MEDIUM",
+  "compensating_controls": [
+    "job warrant impl-PR судит Change теми же gates; тест пина держит тег судьи = kernel lock и форму установки",
+    "возврат к вызову reusable workflow — issue #31, следующий pin-Change"
+  ],
+  "owner": "human:Homasters-max",
+  "expires_at": "2026-10-13",
+  "waiver_state": "PROPOSED"
+}
