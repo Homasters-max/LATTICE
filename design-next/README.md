@@ -48,6 +48,7 @@ Reviews — input for decisions, not norm:
 
 | File | What |
 |---|---|
+| [reviews/2026-10-01-design-next-final-review](reviews/2026-10-01-design-next-final-review.md) | design-next before the freeze: 17 text fixes (R01–R17), four deepening candidates (D1–D4); grilled (24 questions) and applied on 2026-10-01 — all taken; D3 reopens U1 and DP-L01 (`live` only for pipelines and `setup`), D4 reopens G10 (basis only through an act); deferred parts into 11-later as LT-22…LT-25; follow-up: semantic judgement (GL-13), `llm` never branches (PL-C07), judge answers evaluations only (PL-C09), `binary` in DP-D01, admission of operators, acts by an agent as a v1 assumption (CT-A05), ideas not proposed as NX-21…NX-25 |
 | [reviews/2026-10-01-design-v06-audit](reviews/2026-10-01-design-v06-audit.md) | old `design/` v0.6 against design-next: 24 gaps (G), 37 items to take (T), 24 later with a trigger (L), 20 groups not to take (X); grilled and applied on 2026-10-01 — G and T into 00–10, L into 11-later (L06, L15, L17, L21–L24 taken at once), X into 11-later as not taken |
 | [reviews/2026-10-01-unified-architecture](reviews/2026-10-01-unified-architecture.md) | design-next against itself: one path per question, six candidates U1–U6; grilled and applied to 01–09 on 2026-10-01 |
 | [reviews/2026-09-30-kernel-architecture](reviews/2026-09-30-kernel-architecture.md) | existing `src/kernel` against design-next: five deepening candidates; input for the first kernel Change (SL-T02) |

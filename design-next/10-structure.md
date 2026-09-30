@@ -8,17 +8,18 @@ How the code is split into modules and which tests keep the split honest. The ru
 
 | ID | Rule |
 |---|---|
-| ST-M01 | Modules and what each may import. The matrix is the starting point for the first kernel Change (SL-T02); a change to it is a design change. |
+| ST-M01 | Modules and what each may import; the matrix is the starting point for the first kernel Change (SL-T02), and a change to it is a design change: |
 
 | Module | Holds | May import |
 |---|---|---|
 | `kernel` | envelope, canonical form and hash, meta-type, schema subset, references (OM-L04) | — |
-| `policy` | catalog and trust as pure functions over records: basis, in force, findings (04, 05) | `kernel` |
-| `ledger` | commits, apply, projections, the `store` and `acts` port interfaces (03) | `kernel`, `policy` |
-| `codec` | `md` import and export (LG-B05) | `kernel` |
-| `runtime` | pipelines, runs, recording, port interfaces (06) | `kernel`, `ledger` (read view, PL-K05) |
-| `capabilities` | built-in capabilities, `decide` (01, 07) | `kernel`, `runtime` port interfaces |
-| `adapters` | one module per adapter; vendor SDKs | the port interface it implements |
+| `trust` | namespace policy and trust rules as pure functions over records: basis, writers and owner acts, in force, findings (04, 05) | `kernel` |
+| `measure` | the closed set of policy operators (01), bench metrics (BN-M01…M06), the gate: targets and BN-G04 (DP-L06) | `kernel` |
+| `ledger` | commits, apply, projections, the `store` and `acts` port interfaces (03) | `kernel`, `trust`, `measure` |
+| `codec` | md import and export (LG-B05) | `kernel`, `ledger` (proposal format, read view) |
+| `runtime` | pipelines, runs, recording, port interfaces (06) | `kernel`, `ledger` (read view, PL-K05; append of a `runtime` commit, LG-R05; tape lookup, PL-K03) |
+| `capabilities` | built-in capabilities, `decide` (01, 07) | `kernel`, `runtime` port interfaces, `measure` |
+| `adapters` | one module per adapter; vendor SDKs; the prompts of `judge` adapters (PL-C09) | the port interface it implements |
 | `assembly` | builds the runtime from configuration (PL-A03) | everything above |
 | `cli` | commands (PL-E02) | `assembly` |
 
@@ -26,18 +27,19 @@ How the code is split into modules and which tests keep the split honest. The ru
 
 | ID | Rule |
 |---|---|
-| ST-S01 | A structure test checks the imports of `src/` against ST-M01: direction, no cycles, adapters never import each other, a vendor SDK only inside its adapter. |
-| ST-S02 | Only `assembly` imports adapters. |
-| ST-S03 | Purity holds for all code outside `adapters` and `cli` — apply, projections, codec, capabilities, not only capabilities (PL-C04): no I/O, clock, randomness or environment. |
+| ST-S01 | A structure test checks the imports of `src/` against ST-M01: direction, no cycles, adapters never import each other, a vendor SDK only inside its adapter, only `decide` imports the `judge` port (DP-B13). |
+| ST-S02 | Only `assembly` imports adapters. Only `assembly` and `cli` import `codec`; CI reaches it through `cli` (LG-P05). |
+| ST-S03 | Purity holds for all code outside `adapters`, `assembly` and `cli` — apply, projections, codec, `measure`, capabilities, not only capabilities (PL-C04): no I/O, clock, randomness or environment. `assembly` is the composition root: it reads configuration and `$env` (PL-A02, PL-A03). |
 | ST-K01 | Kernel perimeter: everything reachable from the kernel entry point is on an explicit list of files, and all of it is pure. A file added to the reach of the kernel without the list turns the test red. |
 
 ## Contract tests and fixtures
 
 | ID | Rule |
 |---|---|
-| ST-T01 | One set of contract tests per port runs against every adapter of that port: `service`, `recorded`, `fixture` (PL-K02), and `store` adapters (LG-S02). A judge adapter's set includes exact coverage of the candidate set (DP-R05). |
+| ST-T01 | One set of contract tests per port runs against every adapter of that port: `service`, `recorded`, `fixture` (PL-K02), `store` adapters (LG-S02) and `acts` adapters (LG-A04). A judge adapter's set includes exact coverage of the candidate set (DP-R05). |
 | ST-T02 | Fixtures are keyed by meaning — the need and the ids of the candidates — never by a prompt hash, so a prompt edit does not invalidate every fixture. Deterministic adapters for tests: `clock-fixed`, `ids-counter`. |
 
 ## History
 
 - 2026-10-01 — created from the design v0.6 audit (T36), grilled.
+- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): module `policy` renamed `trust`; module `measure` for operators, metrics and the gate (D1); `codec` and `runtime` imports of `ledger`; judge prompts in `adapters` (D2); DP-B13 in ST-S01; who imports `codec` (ST-S02); `assembly` outside purity (ST-S03); `acts` contract tests (ST-T01).

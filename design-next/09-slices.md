@@ -21,16 +21,16 @@ Order of implementation and the transition from the v0.6 architecture. Every sli
 |---|---|
 | SL-K01 | The first corpus is LATTICE's own design: English, under our control, and we ask the questions about it ourselves. |
 | SL-K02 | The WARRANT corpus comes second, through a source adapter (CT-M02), when importing another project must be tested. |
-| SL-K03 | The first bench set: the agent drafts questions about the LATTICE design from real tasks (BN-S06), with expected IDs from `design-next`, Russian variants and `trap` / `blank` items (BN-S01); the maintainer's owner act on the drafted intents gives the items basis `asserted` (TR-I04, BN-S04). S1 starts with about 60 questions: a baseline `hit@k` needs no minimum per answer value. Before S3 the set grows to the size BN-M05 requires after the `tune` / `holdout` split — about 150 or more for a point with two answer values. |
+| SL-K03 | The first bench set: the agent drafts questions about the LATTICE design from real tasks (BN-S06), with expected IDs from `design-next`, Russian variants and `trap` / `blank` items (BN-S01); the maintainer's act on the drafted intents gives the items basis `asserted` (TR-B02, BN-S04). S1 starts with about 60 questions: a baseline `hit@k` needs no minimum per answer value. Before S3 the set grows to the size BN-M05 requires after the `tune` / `holdout` split — about 150 or more for a point with two answer values. |
 
 ## Slices
 
 | ID | Slice | Proves | Done when |
 |---|---|---|---|
-| SL-S0 | **Self-description round-trip** | object model, ledger, apply, codec (02, 03: LG-A01…A05, LG-B04…B07) | the normalized `design-next/*.md` (LG-B04) → blocks → `md` is byte-identical, checked in CI; from then on `md` is export only (LG-B02) |
-| SL-S1 | **Solve without judge** | LENS candidates, expansion by edges, output (07); first bench set; the seams of recording: `solve` already runs through `lattice run` with `clock`, `ids` and `source` recorded on `fixture` adapters | `solve` with BM25 + expansion on own design; baseline numbers `hit@k`, pool recall (BN-M02, BN-M03). Starting values from Jev measurements in v0.6: pool K = 20, output 5–20 blocks, acceptance "the expected block is in the output" ≥ 0.95 |
-| SL-S2 | **Decide in shadow** | decision pattern (01), recording with `fixture` / `recorded` adapters (PL-K01…K04), `judge-jev` adapter | point `lens-rank` in `shadow` against the S1 baseline; RU↔EN consistency measured (BN-M04) |
-| SL-S3 | **First live point** | calibration, gates, owner act through CI (04, 08) | one point in `live` after calibration on `holdout`; the path "owner act → CI" works end to end |
+| SL-S0 | **Self-description round-trip** | object model, ledger, apply, codec (02, 03: LG-A01…A05, LG-B04…B07); bootstrap: genesis and `std` (LG-G01…G04), the project namespace (CT-N05), the basis table (TR-B02), the `live` fact (TR-F05) and the `setup` type (PL-A01) | the normalized `design-next/*.md` (LG-B04) → blocks → `md` is byte-identical, checked in CI; from then on `md` is export only (LG-B02) |
+| SL-S1 | **Solve without judge** | LENS candidates, expansion by edges, output (07); first bench set; the seams of recording: `solve` already runs through `lattice run` with `clock`, `ids` and `source` recorded on `fixture` adapters; the gate (DP-L06) on the S1 metrics | `solve` with BM25 + expansion on own design; baseline numbers `hit@k`, pool recall (BN-M02, BN-M03). Starting values from Jev measurements in v0.6: pool K = 20, output 5–20 blocks, acceptance "the expected block is in the output" ≥ 0.95; `solve` becomes `live` through the gate with these targets, the baseline of S2 |
+| SL-S2 | **Decide in shadow** | decision pattern (01), recording with `fixture` / `recorded` adapters (PL-K01…K04), `judge-jev` adapter | a revision of `solve` with the point `lens-rank` in `shadow` against the `live` S1 pipeline (DP-L02); RU↔EN consistency measured (BN-M04) |
+| SL-S3 | **First live point** | calibration, gates, owner act through CI (04, 08) | a pipeline that pins one calibrated point becomes `live` through the gate on `holdout` (DP-L06); the path "owner act → CI" works end to end |
 | SL-S4 | **Foreign corpus** | source adapter, re-import (05 TR-S01…S02) | WARRANT corpus imported; second point "scenario coverage" in `shadow` |
 
 Out of these slices: everything in [11-later](11-later.md) — each item returns only when its trigger fires.
@@ -40,3 +40,4 @@ Out of these slices: everything in [11-later](11-later.md) — each item returns
 - 2026-09-30 — grilled (9 questions).
 - 2026-10-01 — unified-architecture review, grilled: S0 proves apply and the codec on normalized `md` (SL-S0), S2 proves recording (SL-S2), bench items by owner act (SL-K03).
 - 2026-10-01 — design v0.6 audit, grilled: TypeScript lessons (SL-T02), IDs bound to tests and manual acceptance (SL-T06), bench set sized by BN-M05 and written from real tasks (SL-K03), recording seams and starting values in S1 (SL-S1), deferred items moved to 11-later.
+- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): S0 proves the bootstrap (SL-S0); `solve` `live` through the gate in S1 (SL-S1); `shadow` and `live` through pipelines (SL-S2, SL-S3); bench items by act (SL-K03).
