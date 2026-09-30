@@ -32,6 +32,7 @@ What is deliberately not in the design yet, and what is deliberately never taken
 | LT-22 | Address of one decision inside a run (run `id` plus stage index) as a reference form, so a verdict on an outcome (DP-B05, DP-C04) can name that decision. Not a separate DecisionResult event (NX-25). | the first verdict on a decision outcome (S3) | OM-I05, TR-F05, PL-R03, DP-R06 |
 | LT-23 | Runs on `holdout` only in CI on `recorded` answers, so the run count of BN-S05 is verifiable. | the first `live` pipeline that pins a point (S3) | BN-S05, BN-R01 |
 | LT-24 | The code hash of a capability leaves out the modules below the stage seam (`kernel`, port interfaces); the LATTICE version in the execution tuple covers them. | the first `upgrade` where re-pinning pipelines (LG-G02) proves expensive | PL-C01, LG-G02, GL-07 |
+| LT-25 | An act that cannot be posted by an agent holding the human's login: a check beyond the login. | the first act disputed as posted by an agent | CT-A05, CT-P03 |
 
 ## Not taken
 
@@ -68,4 +69,4 @@ Ideas of `design/` v0.6 that add a second mechanism next to a question already d
 ## History
 
 - 2026-10-01 — created from the design v0.6 audit (`reviews/2026-10-01-design-v06-audit.md`), grilled: items L, G09, and the items deferred by 09 moved here; groups X recorded as not taken.
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): LT-22 (address of a decision inside a run, R08), LT-23 (verifiable holdout, R16), LT-24 (capability hash below the seam, R17); LT-21 trigger rewritten, LT-15 through pipelines; NX-21…NX-25 from the review's list of ideas not proposed.
+- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): LT-22 (address of a decision inside a run, R08), LT-23 (verifiable holdout, R16), LT-24 (capability hash below the seam, R17); LT-21 trigger rewritten, LT-15 through pipelines; NX-21…NX-25 from the review's list of ideas not proposed; follow-up: LT-25 (an act posted by an agent).

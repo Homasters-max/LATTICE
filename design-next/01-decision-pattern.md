@@ -86,7 +86,7 @@ Escalation and refusal are not statuses — they are branches of the pipeline di
 ## Policy operators
 
 Closed set: `threshold`, `top-k`, `margin` (gap between first and second → `ambiguous`), `budget` (reads the run budget, DP-M05), `any`, `all`, `table` (maps the selected value to an output value by a table in the point's policy).
-The operators are code of module `measure` (ST-M01), shared by `decide` and the gate (DP-L06). A new operator is code there, never an expression in a block.
+The operators are code of module `measure` (ST-M01), shared by `decide` and the gate (DP-L06). A new operator is code there, never an expression in a block, and enters only with a case of a slice or of the stress test that no combination of the existing operators expresses, named in the change.
 
 ## Boundaries
 
@@ -104,13 +104,13 @@ The operators are code of module `measure` (ST-M01), shared by `decide` and the 
 | DP-B10 | LATTICE blocks are the source of truth for this design (LG-B02). |
 | DP-B11 | Hard invariants (schema, imports, hashes, layer boundaries) are checked only by code, all of them, always. The judge may find, explain and propose them, never decide pass/fail or skip one. Every boundary named in criteria or in a prompt is either checked by code or declared uncheckable and measured by a metric. |
 | DP-B12 | An irreversible action always requires a human, regardless of configuration. |
-| DP-B13 | Single channel: every semantic judgement goes through `decide()`. Only the `decide` capability imports the `judge` port; a structure test forbids any other import (ST-S01). |
+| DP-B13 | Single channel: every semantic judgement (GL-13) goes through `decide()`. Only the `decide` capability imports the `judge` port; a structure test forbids any other import (ST-S01). The `llm` port only generates (DP-X04) or extracts (DP-X06): no branch of a pipeline depends on its output (PL-C07). |
 
 ## Disciplines
 
 | ID | Discipline |
 |---|---|
-| DP-D01 | Candidates are always the answer options. A question about the state becomes a choice over levels (e.g. complexity levels → model via the `table` operator). A question about a whole set becomes one composite candidate. |
+| DP-D01 | For `choice` and `score` the candidates are the answer options; `binary` asks one yes/no per candidate. A question about the state becomes a choice over levels (e.g. complexity levels → model via the `table` operator). A question about a whole set becomes one composite candidate. |
 | DP-D02 | The policy operator set is closed (see above). |
 | DP-D03 | A multi-step decision is several points in a linear pipeline, never steps inside one point. Agent loops live in the caller, not in LATTICE. |
 
@@ -203,4 +203,4 @@ External cases:
 - 2026-09-30 — grilled (18 questions); DP-Q01 closed by the external stress test, DP-Q02 closed by DP-N01, DP-Q03 closed by DP-G01…G02.
 - 2026-10-01 — unified-architecture review, grilled: allowed set and pool (DP-M06, DP-B04), one budget (DP-M05), operator `required ⊆ selected` removed, DecisionResult only in the run record (DP-R06), no stored lifecycle — authority is the `live` fact (DP-L01…L06), calibration as a status fact (DP-C01), judge does not escalate (DP-B01), memoization through recording (DP-T03).
 - 2026-10-01 — design v0.6 audit, grilled: `judge@n` fixes model and prompt (DP-M02, DP-T03), match not truth (DP-M07), exact candidate coverage (DP-R05), boundaries checked or measured (DP-B11), `live` gate for pipelines, targets before runs, recompute under new policy (DP-L06), bench set in calibration (DP-C01), escalations only to `tune` (DP-C05), stale calibration (DP-C06).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): judge is a port configured by `judge@n` (Roles, DP-M02, DP-T03…T05; D2); `live` only for pipelines, `shadow` against the `live` baseline (DP-L01…L04; D3 reopens U1 and DP-L01); one gate in module `measure`, always recomputed (DP-L06; D1); calibration keyed by what it applies to (DP-C01, DP-C06); where DP-S02 and DP-S03 are checked; one budget spent once, `scope` as the allowed set (DP-M05, DP-M06, DP-N01); operator `table` (Policy operators, DP-D01, stress test); restatements replaced by references (DP-B02, DP-B10, DP-C05).
+- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): judge is a port configured by `judge@n` (Roles, DP-M02, DP-T03…T05; D2); `live` only for pipelines, `shadow` against the `live` baseline (DP-L01…L04; D3 reopens U1 and DP-L01); one gate in module `measure`, always recomputed (DP-L06; D1); calibration keyed by what it applies to (DP-C01, DP-C06); where DP-S02 and DP-S03 are checked; one budget spent once, `scope` as the allowed set (DP-M05, DP-M06, DP-N01); operator `table` (Policy operators, DP-D01, stress test); restatements replaced by references (DP-B02, DP-B10, DP-C05); follow-up: admission of a new operator (Policy operators), semantic judgement and the `llm` port (DP-B13), `binary` in DP-D01.

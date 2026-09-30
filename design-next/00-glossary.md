@@ -70,8 +70,9 @@ One term — one definition. A term already defined by a rule points to that rul
 | GL-10 | consumer | An agent or a human who uses the output of `solve` or of a decision and reports back: a verdict on truth (TR-V02) or feedback on usefulness (TR-V10). |
 | GL-11 | slice | An end-to-end scenario across several documents, done when its check passes in CI (09). |
 | GL-12 | tail | The last commit of a ledger; `base` names the tail a commit was applied on (LG-C02, LG-C03). |
+| GL-13 | semantic judgement | A choice, a score or a yes/no about candidates whose answer comes from a model (an LLM, Jev). Deterministic code — BM25, a regex, a schema check — is not a semantic judgement. Every semantic judgement goes through `decide()` (DP-B13). |
 
 ## History
 
 - 2026-10-01 — created from the design v0.6 audit, grilled.
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): block and content block (GL-01), `judge` as a recorded port (GL-02), execution tuple with adapter code hash (GL-07), tail (GL-12); pointers added for record, current revision, referrers, store, evidence, segment, genesis, `upgrade`, md import, namespace policy and the owner-act floor, act, policy of a point, baseline, gate, applies to, `judge@n`, run record, store commands, report.
+- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): block and content block (GL-01), `judge` as a recorded port (GL-02), execution tuple with adapter code hash (GL-07), tail (GL-12); pointers added for record, current revision, referrers, store, evidence, segment, genesis, `upgrade`, md import, namespace policy and the owner-act floor, act, policy of a point, baseline, gate, applies to, `judge@n`, run record, store commands, report; follow-up: semantic judgement (GL-13).
