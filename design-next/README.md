@@ -1,10 +1,10 @@
 # LATTICE — architecture from scratch (design-next)
 
-Status: **draft**. A clean-slate redesign of LATTICE. Nothing here is normative yet.
+Status: **frozen**, tag `design-next-v0.1` (SL-T01). A clean-slate redesign of LATTICE and the source of requirements: OpenSpec specs are written from it slice by slice (SL-T03); the norm is `openspec/specs/`.
 
 ## Relation to `design/`
 
-- `design/` (v0.6, tag `design-v0.6`) stays frozen and remains the current source of requirements until this folder replaces it.
+- `design/` (v0.6, tag `design-v0.6`) is history, not norm: this folder replaced it at the freeze (SL-T01).
 - Nothing is inherited implicitly. An idea from `design/` enters here only when it is restated here; a reference like `design/…` is history, not norm.
 
 ## Language
