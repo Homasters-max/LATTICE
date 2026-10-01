@@ -2,7 +2,7 @@
 
 ## Purpose
 
-How to prove that something got better: calibration of decision points and quality of pipelines, measured on sets written by humans.
+BN-Z01. How to prove that something got better: calibration of decision points and quality of pipelines, measured on sets written by humans.
 
 ## Sets
 
@@ -44,12 +44,3 @@ How to prove that something got better: calibration of decision points and quali
 | BN-R02 | A **report** is a fact of the `std` type `report`, keyed by subject `ref@n` (a pipeline, or a decision point revision it pins), `set@n` and split (`tune` or `holdout`, BN-S05), with basis `observed` (`machine`, purpose `bench`, TR-B02). Its value is the metrics and the ids of the cited runs. It enters `knowledge` by the proposal of `bench` with those runs as evidence (LG-R02). There is one report per key; a `calibration` references the `holdout` report, never copies it (TR-F05). |
 | BN-R03 | The gate recomputes the metrics of a `holdout` report from its evidence (DP-L06); CI only runs apply (LG-P05). |
 | BN-R04 | Apply admits a report only if its cited runs cover exactly the inputs of its split — one run per item input and per variant (BN-S03), matched by input fingerprint (PL-R01) — and share the subject's `pipeline@n`, one execution tuple and one knowledge commit; a failed run is cited and counts as a miss, never dropped; and its stored metrics equal those `measure` recomputes from the evidence under the subject revision. The stored metrics are a checked copy; the evidence is the source (LG-J01). |
-
-## History
-
-- 2026-09-30 — grilled (9 questions).
-- 2026-10-01 — unified-architecture review, grilled: owner act on agent drafts (BN-S04), restatements replaced by references (BN-S02, BN-M01, BN-R03), gate before `live` run by apply (BN-G02), basis of reports from TR-B02 (BN-R02).
-- 2026-10-01 — design v0.6 audit, grilled: `trap` and `blank` items (BN-S01), escalations only to `tune` (BN-S04), salt and run count (BN-S05), questions from real tasks (BN-S06), MRR, refusal and per-kind metrics (BN-M02), baselines as pipeline revisions (BN-M03), bootstrap and noise (BN-M06), default targets (BN-G01), pipeline gate (BN-G02), comparability (BN-G03), targets before runs (BN-G04).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): expected answer (BN-S01, BN-S03); defaults of owner acts (BN-S02); agent drafts by act (BN-S04; D4); holdout run count local and unverified (BN-S05); memoization in `setup` (BN-M06); pipeline `targets` (BN-G01); one gate in `measure` (BN-G02, BN-R03; D1); one report fact per subject and set (BN-R02).
-- 2026-10-01 — corrections F1–F6: set and `holdout` minimums are a floor (BN-S01, BN-M05, BN-G05); reports cite runs as evidence (BN-R02, BN-R03).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: the bench is the store command `bench` (BN-R01; A4); report keyed by split, its metrics a checked copy (BN-R02, BN-R04); gate on `holdout` (BN-R03); targets at the knowledge commit of the runs (BN-G04); regression refused until `dismissed` (BN-G03); gate is a step of apply (BN-G02; A2); minimum for pipelines (BN-M05); expected refs compared by `id` (BN-S01).

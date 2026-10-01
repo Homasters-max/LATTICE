@@ -2,7 +2,7 @@
 
 ## Purpose
 
-What a block, a revision, a reference and a type are. Everything else — decisions (01), ledger, catalog, trust — is built on this model.
+OM-Z01. What a block, a revision, a reference and a type are. Everything else — decisions (01), ledger, catalog, trust — is built on this model.
 
 ## Kinds
 
@@ -26,7 +26,7 @@ What a block, a revision, a reference and a type are. Everything else — decisi
 
 ## Envelope
 
-```json
+```json OM-Z02
 // entity revision
 { "id": "lattice/decision-pattern", "rev": 3, "type": "std/composition@2",
   "hash": "sha256:…", "by": "<session>", "at": "2026-09-30T12:00:00.000Z", "body": { … } }
@@ -108,20 +108,3 @@ What a block, a revision, a reference and a type are. Everything else — decisi
 | OM-L02 | `std` — base types (OM-T04), status fact types (TR-F05), the types that 03–08 name (pipeline, `setup`, `judge`, adapter block, namespace, session, run record, question, bench item, report, source listing, `example`) and the blocks of built-in capabilities and adapters (PL-C03); a data package shipped with a LATTICE version and loaded through apply by a named path (LG-G02). |
 | OM-L03 | Project — own types via `extends` from `std`. |
 | OM-L04 | Kernel code contains only: envelope and header, canonical form and hash, the meta-type, schema validation over the closed subset, reference grammar and resolution. Every type, base types included, is data. The kernel changes only by version. The kernel is an internal seam of apply (LG-A03); namespace policy and trust rules live above it (module `trust`, ST-M01). Its perimeter is checked by a structure test (ST-K01). |
-
-## Depends on (not yet designed)
-
-| Topic | Document |
-|---|---|
-| order, storage, referrers storage, no-op mechanics | resolved: [03-ledger](03-ledger.md) LG-S01, LG-J01…J04, LG-C05 |
-| namespaces, owners, write permissions | resolved: [04-catalog](04-catalog.md) CT-N01…N06 |
-| fact keys, "what is in force", verdicts | resolved: [05-trust](05-trust.md) TR-F01…F07, TR-I01…I04, TR-V01…V06 |
-
-## History
-
-- 2026-09-30 — grilled (22 questions).
-- 2026-10-01 — unified-architecture review, grilled: `retired` and `alias` are status facts (OM-K03, OM-D02), `unique` replaces the type's `key` (OM-T02, OM-D01), base type `hint` (OM-T04), composition text checked by schema (OM-C01), `state` is not block text (OM-A03), kernel as a seam of apply (OM-L04).
-- 2026-10-01 — design v0.6 audit (`reviews/2026-10-01-design-v06-audit.md`), grilled: hash covers `type@n` (OM-H01), I-JSON rejection (OM-H02), frozen vectors (OM-H05), id grammar (OM-I05, OM-I06), `at` from `clock` (OM-E03), alias resolution (OM-R06), `extends` limits (OM-T03, OM-T07), exit paths (OM-T08), uniqueness scope (OM-D03).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): runs, not decisions, are events and pinned referrers (OM-K01, OM-R02, envelope example); event `id` carried by the intent (OM-I02); no-op against the current revision (OM-H03); `core` holds the session type, `std` holds the types 03–08 name and built-in blocks (OM-L01, OM-L02, OM-T04); module `trust` (OM-L04).
-- 2026-10-01 — corrections F1–F6: `supersedes` as lineage in every base type (OM-I07), exempt from the retired-reference finding (OM-R04).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: base type `behaviour` replaces the undefined `rule`, event types outside base entity types (OM-T04, OM-I07); full list of `std` types (OM-L02).

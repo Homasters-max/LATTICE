@@ -2,7 +2,7 @@
 
 ## Purpose
 
-What is deliberately not in the design yet, and what is deliberately never taken. A deferred item returns only when its trigger fires, through the document it touches; until then no other document restates it. A not-taken item is never proposed again without a new argument against the reason given here.
+LT-Z01. What is deliberately not in the design yet, and what is deliberately never taken. A deferred item returns only when its trigger fires, through the document it touches; until then no other document restates it. A not-taken item is never proposed again without a new argument against the reason given here.
 
 ## Later — with a trigger
 
@@ -36,7 +36,7 @@ What is deliberately not in the design yet, and what is deliberately never taken
 
 ## Not taken
 
-Ideas of `design/` v0.6 that add a second mechanism next to a question already decided here.
+NX-Z01. Ideas of `design/` v0.6 that add a second mechanism next to a question already decided here.
 
 | ID | What | Why not |
 |---|---|---|
@@ -66,9 +66,3 @@ Ideas of `design/` v0.6 that add a second mechanism next to a question already d
 | NX-24 | The read view (PL-K05) as a separate module. | An interface of `ledger` with one adapter: a hypothetical seam (ST-M02). |
 | NX-25 | A DecisionResult stored as a separate event for verdicts to reference. | A second home next to DP-R06; an address inside a run (LT-22) is cheaper. |
 | NX-26 | `import-md --diff`: after the switch, an edited `md` re-imported as a diff against the ledger. | A second path into `knowledge` next to proposals written by `draft`; LG-B02, PL-E01. |
-
-## History
-
-- 2026-10-01 — created from the design v0.6 audit (`reviews/2026-10-01-design-v06-audit.md`), grilled: items L, G09, and the items deferred by 09 moved here; groups X recorded as not taken.
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): LT-22 (address of a decision inside a run, R08), LT-23 (verifiable holdout, R16), LT-24 (capability hash below the seam, R17); LT-21 trigger rewritten, LT-15 through pipelines; NX-21…NX-25 from the review's list of ideas not proposed; follow-up: LT-25 (an act posted by an agent).
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): LT-01 and LT-20 fire on the first kernel change after the switch (LG-G05); NX-24 generalised by ST-M02; NX-26 (`import-md --diff`) not taken.

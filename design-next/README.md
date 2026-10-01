@@ -1,18 +1,24 @@
 # LATTICE — architecture from scratch (design-next)
 
-Status: **frozen**, tag `design-next-v0.1` (SL-T01); edited after the tag through PRs (#52 and later), and the next tag `design-next-v0.2` follows the normalization pass (LG-B04). A clean-slate redesign of LATTICE and the source of requirements: OpenSpec specs are written from it slice by slice (SL-T03); the norm is `openspec/specs/`.
+RM-Z01. Status: **frozen**, tag `design-next-v0.1` (SL-T01); edited after the tag through PRs (#52 and later), and the next tag `design-next-v0.2` follows the normalization pass (LG-B04). A clean-slate redesign of LATTICE and the source of requirements: OpenSpec specs are written from it slice by slice (SL-T03); the norm is `openspec/specs/`.
 
 ## Relation to `design/`
+
+RM-Z02. What `design/` is now:
 
 - `design/` (v0.6, tag `design-v0.6`) is history, not norm: this folder replaced it at the freeze (SL-T01).
 - Nothing is inherited implicitly. An idea from `design/` enters here only when it is restated here; a reference like `design/…` is history, not norm.
 
 ## Language
 
+RM-Z03. The language of the design:
+
 - Documents, invariants, decisions, criteria — **English**. Rationale: these texts are meant to become LATTICE blocks, and `judge` reads block text; non-English accuracy of the judge is not measured.
 - Discussion with the maintainer happens in Russian, outside these files.
 
 ## Conventions
+
+RM-Z04. The conventions of the design:
 
 - **One statement — one ID.** Every boundary, invariant, decision gets an ID (`DP-B01`, …). Other text references the ID and never restates it: a document is a composition of references, not a second copy of knowledge.
 - **Docs are a future projection.** The target is: LATTICE blocks are the source of truth, these files are an export. Write each item so it can become a block unchanged: self-contained, one idea, explicit references.
@@ -23,11 +29,13 @@ Status: **frozen**, tag `design-next-v0.1` (SL-T01); edited after the tag throug
 
 ## What v1 proves
 
-v1 proves that semantic judgement can drive program logic while staying deterministic, replayable and measured: LATTICE describes itself as blocks (S0), moves its own design into the ledger (SW, SL-T07), finds the blocks a task needs (S1), decides with a judge in `shadow` (S2), lets one calibrated decision drive execution (S3), and takes in a foreign corpus (S4).
+RM-Z05. v1 proves that semantic judgement can drive program logic while staying deterministic, replayable and measured: LATTICE describes itself as blocks (S0), moves its own design into the ledger (SW, SL-T07), finds the blocks a task needs (S1), decides with a judge in `shadow` (S2), lets one calibrated decision drive execution (S3), and takes in a foreign corpus (S4).
 
-v1 does not do: blocks written by an LLM as knowledge (TR-I02), automatic migration (OM-T05), automatic merge (LG-C03, LG-P03), numeric trust (LT-18).
+RM-Z06. v1 does not do: blocks written by an LLM as knowledge (TR-I02), automatic migration (OM-T05), automatic merge (LG-C03, LG-P03), numeric trust (LT-18).
 
 ## Contents
+
+RM-Z07. The documents of the design:
 
 | File | What |
 |---|---|

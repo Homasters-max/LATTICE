@@ -2,7 +2,7 @@
 
 ## Purpose
 
-How records (02) are ordered, stored, verified and changed through the git workflow; apply as the only write path; where run records (06) live; how the `md` files become blocks.
+LG-Z01. How records (02) are ordered, stored, verified and changed through the git workflow; apply as the only write path; where run records (06) live; how the `md` files become blocks.
 
 ## Stores
 
@@ -27,7 +27,7 @@ How records (02) are ordered, stored, verified and changed through the git workf
 | LG-C07 | Every check of apply sees one state: the tail plus the whole commit. A commit holds at most one intent per entity `id` and per fact key; a second one is rejected. So the result does not depend on the order of intents: any permutation of intents gives the same result — the same outcome (commit, `no-op` or the same set of rejections) and the same bytes, because records inside a commit are ordered canonically (entity `id`, fact key, event `id`), never by intent order. A permutation test proves it. A type and blocks of that type may be written in one commit. |
 | LG-C08 | Re-applying a proposal whose hash (LG-C02 `proposal`) is already in the ledger returns that commit and writes nothing. This covers a crash between writing the commit and removing the proposal file (LG-P04). |
 
-```json
+```json LG-Z02
 { "seq": 1042, "prev": "sha256:…", "kernel": "1", "base": 1041,
   "proposal": "sha256:…", "by": "<session>", "at": "…",
   "records": [ … ] }
@@ -35,7 +35,7 @@ How records (02) are ordered, stored, verified and changed through the git workf
 
 ## Proposals (git workflow)
 
-The `knowledge` ledger lives in the repository. Only one writer applies to it, and `main` is merged only by the maintainer.
+LG-Z03. The `knowledge` ledger lives in the repository. Only one writer applies to it, and `main` is merged only by the maintainer.
 
 | ID | Rule |
 |---|---|
@@ -116,20 +116,3 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 | ID | Rule |
 |---|---|
 | LG-B07 | In S0 **md import** is a store command next to apply (PL-E02), run in a `machine` session with purpose `import`; the maintainer's act naming the proposal hash (CT-A05) gives its records basis `derived` (TR-B02). `reviews/`, with its index `reviews/README.md`, is not part of the corpus. |
-
-## Depends on (not yet designed)
-
-| Topic | Document |
-|---|---|
-| several projects, references across projects, `std` imports | resolved: [04-catalog](04-catalog.md) CT-M01…M03, CT-N02 |
-| who may apply a proposal, sessions (`by`) | resolved: [04-catalog](04-catalog.md) CT-N03, CT-P01…P05, CT-A03 |
-
-## History
-
-- 2026-09-30 — grilled (19 questions).
-- 2026-10-01 — unified-architecture review, grilled: apply as the only write path (LG-A01…A05), one path from `runtime` to `knowledge` (LG-R04), `runtime` segments (LG-R05), codec and normalization for S0 (LG-B04…B07).
-- 2026-10-01 — design v0.6 audit, grilled: `seq` gaps (LG-S01), store contract tests (LG-S02), JSONL lock and recovery (LG-C06), one state for all checks of a commit (LG-C07), idempotent re-apply (LG-C08), rejection shape (LG-A02), secrets (LG-A06), named exemptions (LG-A07), rebuild tests (LG-J02), cache key and semantics by LATTICE version (LG-J04, LG-J05), no default expiry (LG-R01), genesis session and kernel chain (LG-G01), `std` hash and `upgrade` (LG-G02), init commits 1–4 (LG-G04), prose IDs written once (LG-B04).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): intents carry `id`, `at` and `by`, canonical order inside a commit, `at` of a commit from its session event (LG-P01, LG-C01, LG-C02, LG-C07); gate of a `live` pipeline, namespace policy and trust rules (LG-A03); acts and act record (LG-A04, LG-A05); named exemptions for the session type and the namespace entity (LG-A07); evidence defined, hashes verified by apply (LG-R02); participant events in `runtime` commits (LG-R05); genesis session `id` constant (LG-G01); `upgrade` under `init`, re-pinned pipelines (LG-G02); md → blocks for every form of the corpus, prose verbatim (LG-B04, LG-B06); md import and its act (LG-B05, LG-B07).
-- 2026-10-01 — corrections F1–F6: the unit of evidence is a whole run, written by the `writes-proposal` stage (LG-R02); runs, not segments, are cited (LG-R04).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: evidence written only by `cite` (LG-R02; A4), report admission among the checks of apply (LG-A03), acts admitted in CI through `github` (LG-P05).
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): paths of the store and local state (LG-S05); the store is disposable before the switch, kernel `0` → `1` at the switch (LG-G05); kernel, LATTICE and `std` versions (LG-G06); `md` is the source until the switch and is imported at it (LG-B01, LG-B02); prose IDs use the letter `Z` (LG-B04, LG-B06).

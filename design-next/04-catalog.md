@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Who may change what: namespaces, owners, participants, sessions, owner acts, several projects.
+CT-Z01. Who may change what: namespaces, owners, participants, sessions, owner acts, several projects.
 
 ## Namespaces
 
@@ -42,17 +42,3 @@ Who may change what: namespaces, owners, participants, sessions, owner acts, sev
 | CT-M01 | In v1 the stores of different projects (LG-S03: each a pair `knowledge` + `runtime`) are independent; only `core` and `std` are shared. There are no references across projects; inside a project `runtime` references `knowledge` (LG-S04). |
 | CT-M02 | Knowledge of another project enters through a source adapter: imported into own blocks with basis `derived` and a reference to the source (commit and path in that project). |
 | CT-M03 | References across projects are a question after the first slice (LT-17). |
-
-## Depends on (not yet designed)
-
-| Topic | Document |
-|---|---|
-| bases (`derived`, `inferred`, …), "what is in force", verdict weight | resolved: [05-trust](05-trust.md) TR-B01…B03, TR-I01, TR-V02 |
-
-## History
-
-- 2026-09-30 — grilled (12 questions); CT-A03 replaced the formal-approval variant because an author cannot approve their own PR.
-- 2026-10-01 — unified-architecture review, grilled: owner-act requirement only in namespace policy (CT-N03), store init through the `acts` port (CT-N05), basis from TR-B02 (CT-P01, CT-P02), owner acts as status facts (CT-A02), acts checked once (CT-A03), `runtime` weight through LG-R04 (CT-A04), stores per project (CT-M01).
-- 2026-10-01 — design v0.6 audit, grilled: policy at the record's `seq` (CT-N06), `human` only when confirmed by an act (CT-P03, CT-A05), `machine` participant without version (CT-P05), two-sided transfer and `upgrade` (CT-A02), `std` path (CT-N02).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): namespace entity `id` (CT-N01); `core` and `std` are reserved prefixes (CT-N02); owner-act floor (CT-N03, CT-A02); declared kind only chooses the basis of an act (CT-P03; D4 reopens G10); act by a named writer on intent ids or a proposal hash (CT-A05), owner act through the port (CT-A03); store commands; follow-up: an act posted by an agent is an explicit v1 assumption (CT-A05).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: the session of a run names its pipeline (CT-P01; A3), adapter blocks among default owner acts (CT-A02; A6).

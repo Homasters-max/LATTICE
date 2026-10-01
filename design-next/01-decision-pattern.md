@@ -2,15 +2,17 @@
 
 ## Purpose
 
-Every place where the system needs a semantic judgement (which tool, which model, which blocks, is this a duplicate, does this change break a contract) follows **one execution pattern**, not one engine:
+DP-Z01. Every place where the system needs a semantic judgement (which tool, which model, which blocks, is this a duplicate, does this change break a contract) follows **one execution pattern**, not one engine:
 
-```text
+```text DP-Z02
 candidate source → candidate set → judge → policy → DecisionResult
 ```
 
-Code controls, judge assesses, policy decides, LLM writes. The goal is to make semantic judgement usable in program logic while keeping behaviour deterministic, replayable and bounded.
+DP-Z03. Code controls, judge assesses, policy decides, LLM writes. The goal is to make semantic judgement usable in program logic while keeping behaviour deterministic, replayable and bounded.
 
 ## Roles
+
+DP-Z04. The roles in the pattern:
 
 | Step | Owner | Answers |
 |---|---|---|
@@ -33,9 +35,9 @@ Code controls, judge assesses, policy decides, LLM writes. The goal is to make s
 
 ## Model
 
-`decision-point` is an ordinary block type with a schema — not a new primitive, not a new storage mechanism. `decide()` is a stage capability.
+DP-Z05. `decision-point` is an ordinary block type with a schema — not a new primitive, not a new storage mechanism. `decide()` is a stage capability.
 
-```json
+```json DP-Z06
 { "type": "std/decision-point@1", "id": "acme/pick-tool",
   "candidates": { "source": "acme/tools.allowed@2", "required": [] },
   "question":   { "kind": "choice", "state": { "task": { "max": 4000 }, "context_summary": { "max": 2000 } },
@@ -58,9 +60,9 @@ Code controls, judge assesses, policy decides, LLM writes. The goal is to make s
 
 ## DecisionResult
 
-One contract for every point:
+DP-Z07. One contract for every point:
 
-```json
+```json DP-Z08
 { "status": "selected | none | ambiguous | insufficient | unavailable",
   "reason": "budget | no-candidates | margin | timeout | …",
   "selected": ["<ref@n>"],
@@ -81,11 +83,11 @@ DP-R06. A DecisionResult is the stage outcome of `decide` (PL-C07); its statuses
 | DP-R04 | `insufficient` | not enough candidates or budget to decide |
 | DP-R05 | `unavailable` | the judge gave no valid answer: timeout, network error, answer outside the schema, model retired or not the pinned one (PL-C09), an answer that does not cover exactly the candidate set (a missing or an extra key); a contract test of every judge adapter checks the last case |
 
-Escalation and refusal are not statuses — they are branches of the pipeline dispatcher.
+DP-Z09. Escalation and refusal are not statuses — they are branches of the pipeline dispatcher.
 
 ## Policy operators
 
-Closed set: `threshold`, `top-k`, `margin` (gap between first and second → `ambiguous`), `budget` (reads the run budget, DP-M05), `any`, `all`, `table` (maps the selected value to an output value by a table in the point's policy).
+DP-Z10. Closed set: `threshold`, `top-k`, `margin` (gap between first and second → `ambiguous`), `budget` (reads the run budget, DP-M05), `any`, `all`, `table` (maps the selected value to an output value by a table in the point's policy).
 The operators, together with DP-M05 and DP-R01…R04, form one pure function of module `measure` (ST-M01), **policy evaluation**: policy, evaluations, `required` and budget in; status, reason and `selected` out. `decide`, the gate (DP-L06) and the calibration metrics (DP-C02) call it; `decide` itself keeps only DP-M06, the `judge` port, DP-R05 and the `trace`. A new operator is code there, never an expression in a block, and enters only with a case of a slice or of the stress test that no combination of the existing operators expresses, named in the change.
 
 ## Boundaries
@@ -134,7 +136,7 @@ The operators, together with DP-M05 and DP-R01…R04, form one pure function of 
 
 ## Authority
 
-A point has no stored lifecycle and no `live` fact of its own. Where answers come from and whether a result drives execution are separate axes (PL-K04).
+DP-Z11. A point has no stored lifecycle and no `live` fact of its own. Where answers come from and whether a result drives execution are separate axes (PL-K04).
 
 | ID | Rule |
 |---|---|
@@ -168,7 +170,7 @@ DP-N01. LENS is an instance of the pattern and has no other path to the judge: c
 
 ## Stress test
 
-Internal cases:
+DP-Z12. Internal cases:
 
 | Case | Candidates | Judge | Policy | Note |
 |---|---|---|---|---|
@@ -181,26 +183,10 @@ Internal cases:
 | solve route | domains | score (preference) | top-k | — |
 | agent context | block pool | score, then binary "sufficient?" | budget, required | two points in sequence (DP-D03) |
 
-External cases:
+DP-Z13. External cases:
 
 | Case | Shape | Note |
 |---|---|---|
 | ticket routing | point "queue" (`choice` over queues allowed by account tier) + point "urgency" (`binary`), batched (DP-T05) | priority by `table` |
 | RAG guardrail | `binary` on a composite candidate "answer + sources" | "is the answer supported by the sources", not "is it true" (DP-M07); threshold only after calibration (DP-S03); regeneration is the pipeline's branch |
 | value extraction | does not fit | out of the pattern (DP-X06) |
-
-## Depends on (not yet designed)
-
-| Topic | Document |
-|---|---|
-| where records are stored, retention | resolved: [03-ledger](03-ledger.md) LG-S03, LG-R01…R03 |
-| who owns a point and its bench set | resolved: [04-catalog](04-catalog.md) CT-N04, CT-A02 |
-| verdict and trust model | resolved: [05-trust](05-trust.md) TR-F04…F06, TR-V01…V10 |
-
-## History
-
-- 2026-09-30 — grilled (18 questions); DP-Q01 closed by the external stress test, DP-Q02 closed by DP-N01, DP-Q03 closed by DP-G01…G02.
-- 2026-10-01 — unified-architecture review, grilled: allowed set and pool (DP-M06, DP-B04), one budget (DP-M05), operator `required ⊆ selected` removed, DecisionResult only in the run record (DP-R06), no stored lifecycle — authority is the `live` fact (DP-L01…L06), calibration as a status fact (DP-C01), judge does not escalate (DP-B01), memoization through recording (DP-T03).
-- 2026-10-01 — design v0.6 audit, grilled: `judge@n` fixes model and prompt (DP-M02, DP-T03), match not truth (DP-M07), exact candidate coverage (DP-R05), boundaries checked or measured (DP-B11), `live` gate for pipelines, targets before runs, recompute under new policy (DP-L06), bench set in calibration (DP-C01), escalations only to `tune` (DP-C05), stale calibration (DP-C06).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): judge is a port configured by `judge@n` (Roles, DP-M02, DP-T03…T05; D2); `live` only for pipelines, `shadow` against the `live` baseline (DP-L01…L04; D3 reopens U1 and DP-L01); one gate in module `measure`, always recomputed (DP-L06; D1); calibration keyed by what it applies to (DP-C01, DP-C06); where DP-S02 and DP-S03 are checked; one budget spent once, `scope` as the allowed set (DP-M05, DP-M06, DP-N01); operator `table` (Policy operators, DP-D01, stress test); restatements replaced by references (DP-B02, DP-B10, DP-C05); follow-up: admission of a new operator (Policy operators), semantic judgement and the `llm` port (DP-B13), `binary` in DP-D01.
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: policy evaluation as one function of `measure` (Policy operators; A1), sure band and grey zone (DP-C02), authoritative run with marked output and refused `irreversible` (DP-L01; A5), DP-L03 removed, gate as a step of apply with `holdout` reports and the regression step (DP-L06; A2, A4), ids with namespaces in the example.
