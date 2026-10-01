@@ -1,0 +1,140 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WGFVCQWZ02P32CQ99TNN57",
+  "change": "s0-skeleton",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/s0-skeleton/tasks.md",
+    "openspec/changes/s0-skeleton/design.md",
+    "openspec/changes/s0-skeleton/specs/**"
+  ],
+  "scope": [
+    "src/trust/**",
+    "src/ledger/**",
+    "src/codec/**",
+    "src/runtime/**",
+    "src/adapters/**",
+    "src/assembly/**",
+    "src/cli/**",
+    "test/architecture/**",
+    "test/ledger/**",
+    "test/codec/**",
+    "test/cli/**",
+    "test/e2e/**",
+    "test/fixtures/md/**",
+    "test/fixtures/rules/**",
+    "test/fixtures/structure/matrix/**",
+    "test/fixtures/structure/purity/**",
+    "openspec/changes/s0-skeleton/**"
+  ],
+  "branch": "impl/s0-skeleton",
+  "started_at": "2026-10-01T19:54:01.559Z",
+  "run_state": "RUNNING",
+  "context_hash": "sha256:2e3f96f9086b6663a262d898a8566b6585c37ad3ab9d45d18bc697ca57375a08",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "guard_events": [
+    {
+      "at": "2026-10-01T19:54:47.513Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/s0-skeleton/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:54:55.506Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:55:11.716Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:55:12.699Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:55:17.425Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:55:24.497Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:55:25.505Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:56:03.074Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:56:04.095Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:56:10.269Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:56:19.816Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

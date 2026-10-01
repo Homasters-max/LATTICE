@@ -157,10 +157,11 @@ type Proposal = { intents: readonly (EntityIntent | EventIntent)[] };
 - `parseTable(text): Result<Table>` and `renderTable(table): string` in `table.ts`. A line is accepted only when
   `renderLine(cells)` gives it back exactly; so everything import accepts, export writes back byte for byte, and the
   round trip holds by construction for every accepted file (LG-B04 asks the corpus to be normalized to the codec form).
-- `importMd(bytes, fileName, { namespace, session: { id, at } }): Result<Proposal>` — pure; it runs the steps of
-  REQ-CL-003 in order and refuses with the line of the first deviation: the file name, strict UTF-8 decoding
-  (`TextDecoder` with `fatal: true`, no BOM), the table form, the header and IDs (a row ID equal to the stem gives
-  the line of that row), and every cell through the kernel `checkInput` of its JSON string (NFC, assigned code points). Row type: `<namespace>/
+- `importMd(text, fileName, { namespace, session: { id, at } }): Result<Proposal>` — pure; it runs the steps of
+  REQ-CL-003 in order, each over the whole file, and refuses with the line of the first deviation: the file name, the
+  table form, the header and IDs (a row ID equal to the stem gives the line of that row), and every cell — NFC by
+  `cell.normalize("NFC") === cell`, then the kernel `checkInput` of its JSON string (assigned code points). Step 2,
+  strict UTF-8 without a byte order mark, runs in `assembly` before the call (`TextDecoder` with `fatal: true`, I-4). Row type: `<namespace>/
   table.<slug>@1`, `slug` = the header cells after `ID`, each lower-cased with every run of characters outside
   `[a-z0-9]` replaced by `-` and trimmed of `-`, joined by `.` (`| ID | Rule |` → `lattice/table.rule@1`). Row body:
   `{ "<header cell>": "<cell>" , … }`. Document: `id` `<namespace>/<file stem>`, type `<namespace>/document@1`, body
@@ -237,6 +238,22 @@ apply and commit it into the branch before `VERIFYING`.
 | I-1 | The entity record hash is the existing kernel `hash(<type without @n>, body)`, not OM-H01 over `type@n`. | The issue keeps the kernel as it is; s0-kernel (#55) binds OM-H01; the store is disposable (LG-G05). | design |
 | I-2 | `assembly` formats the `at` of a session with `new Date(ms).toISOString()`. | OM-E03 puts the formatter in the kernel, which has no exported one; it moves with s0-kernel (#55). | design |
 | I-3 | The structure test checks ST-M01 at the granularity of modules; the limits on what `codec`, `runtime` and `capabilities` read of `ledger` are deferred to #76 (P2, milestone S1). | Spec review of this Change, F-13: no stable file boundary in `ledger` yet; `runtime` and `capabilities` hold no code in S0. | design |
+| I-4 | `assembly` decodes the `md` bytes (strict UTF-8; a byte order mark is refused at line 0) and passes text to `codec`; D-6 no longer uses `TextDecoder` in `codec`. Spec unchanged. | Spec review 2 (`EVID-01M3WFZ0WA3PN7KVZVWTC876JR`), F-1: `TextDecoder` is not an allowed global of a pure module (REQ-AR-010). | approval of spec-PR #77 |
+| I-5 | A row ID equal to the stem is refused at the line of that row; SCN-CL-004 edited. | Review 2, F-2: SCN-CL-004 said line 0, step 6 of REQ-CL-003 the row's line. | approval of #77 |
+| I-6 | A cell not in NFC is refused, never repaired (OM-H02); step 7 of REQ-CL-003 edited. | Review 2, F-3: the kernel input check normalizes, so an NFD cell would break the round trip. | approval of #77 |
+| I-7 | Import refuses what apply would reject: a lower-cased stem, ID or row type local part over 128 characters, and a header cell starting with `$`; steps 1, 5, 6 of REQ-CL-003 edited. | Review 2, F-4: the kernel `local` grammar (REQ-KR-005) and the `$ref` / `$enc` keys of REQ-KR-002. | approval of #77 |
+| I-8 | One `LG-P01` rejection per intent, at its first failing check in a fixed order; the table of REQ-CL-004 edited. | Review 2, F-5: the multiplicity decides the bytes of the frozen `expected.json`. | approval of #77 |
+| I-9 | Export refusals enumerated (body form, `columns`, `rows`, references, cells); REQ-CL-005 edited. | Review 2, F-6: "shape" and "skeleton form" were open. | approval of #77 |
+| I-10 | A header whose slugs are not distinct is refused (step 5 of REQ-CL-003). | Review 2, F-7: `Rule` and `rule` gave one type with different fields (LG-B06). | approval of #77 |
+| I-11 | REQ-AR-009 names the import forms `package-import` checks and says that `import(…)` / `require(…)` calls are not checked outside pure modules (REQ-AR-010 refuses them there). | Review 2, F-8. | approval of #77 |
+| I-12 | Wording: `non-ts-file` at line 1 without "as REQ-AR-005"; SCN-AR-016 names the ports; `ledger.jsonl` of a rule fixture is a whole ledger. | Review 2, F-9, F-10, F-11. | approval of #77 |
+| I-13 | A scenario SCN-CL-011 for the `moved` refusal (LG-C03) added to REQ-CL-004. | Review 2, F-12. | approval of #77 |
+| I-14 | The canonical order of intents and the bytes of a proposal file move from D-4 into REQ-CL-003. | Review 2, F-13. | approval of #77 |
+| I-15 | The steps of REQ-CL-003 run in order, each over the whole file; a table without a row is refused at line 3. | Review 2, F-14. | approval of #77 |
+| I-16 | Export compares the `file` names of documents in lower case. | Review 2, F-15: `Fixture.md` and `fixture.md` overwrite each other on Windows. | approval of #77 |
+| I-17 | A printed path outside the project root is absolute, with `/` separators (REQ-CL-001). | Review 2, F-16. | approval of #77 |
+| I-18 | Opening checks the form of each commit: exactly the commit keys and a list of records of the entity or event form. | Review 2, F-17. | approval of #77 |
+| I-19 | Not taken here: the "differing paths" of LG-A02 for `LG-C07` (s0-apply-checks #56); the `sha256:` prefix and re-checking record hashes on open (s0-kernel #55, s0-store #57). | Review 2, F-18, F-19 (INFO). | approval of #77 |
 
 ## Risks / Trade-offs
 

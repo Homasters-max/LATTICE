@@ -297,14 +297,19 @@ file, a file with `parse-error`, or a file outside `src/`:
 - `outside-matrix` — a source file under `src/` that belongs to no module: a file directly in `src/` or in
   `src/adapters/`, a file in a folder of `src/` not in the matrix, a file in a folder of `src/adapters/` not of the form
   `<port>-<name>` with a port of the policy; at line 0;
-- `non-ts-file` — a source file of a module whose name does not end with `.ts`; at line 1, as REQ-AR-005;
+- `non-ts-file` — a source file of a module whose name does not end with `.ts`; at line 1;
 - `import-direction` — an edge (REQ-AR-007) from a file of one module to a path that is neither a file of the same
   module nor a file of a module the first may import: a path of another module not in its list, a path under `src/` in
   no module, or a path outside `src/`; for an adapter, every edge to a path other than its own files and the interface
   file of its port, so adapters never import each other; for `capabilities`, an edge into `runtime` outside
   `src/runtime/ports/`;
-- `package-import` — a non-relative specifier: a `node:` built-in in a module that may not import built-ins; any other
-  non-relative specifier — a package, or a built-in without the `node:` prefix — outside an adapter.
+- `package-import` — the non-relative specifier of a static `import`, `import type`, `export … from`,
+  `import x = require(…)` or `import("…")` in a type position: a `node:` built-in in a module that may not import
+  built-ins; any other non-relative specifier — a package, or a built-in without the `node:` prefix — outside an
+  adapter.
+
+Calls `import(…)` and `require(…)` are not edges (REQ-AR-007) and are not checked by these rules; in pure modules
+REQ-AR-010 refuses them.
 
 A policy without modules runs none of these rules.
 
@@ -346,7 +351,8 @@ Implements: ST-S03, PL-C04
 #### Scenario: Impurity in pure modules is found
 <!-- id: SCN-AR-016 -->
 - **WHEN** the structure test runs on a fixture tree with the sources `src/**`, the entry `src/kernel/index.ts` (a file
-  without violations), the perimeter `src/kernel/**` and the modules of the project policy, where a `ledger` file calls
+  without violations), the perimeter `src/kernel/**` and the modules and ports of the project policy, where a `ledger`
+  file calls
   `Date.now()` (`nondeterminism`), reads `process.env.X` (`forbidden-global`), calls `console.log(1)`
   (`forbidden-global`) and calls `import("./x.ts")` (`dynamic-import`); a `codec` file calls `Math.random()`
   (`nondeterminism`); a `trust` file calls `fetch("…")` (`forbidden-global`); and an `assembly` file, a `cli` file and
@@ -359,7 +365,7 @@ Implements: ST-S03, PL-C04
 
 The rule IDs that apply can name in a rejection SHALL form one closed list, exported by the ledger module; a rejection
 naming a rule outside the list cannot be built. For every rule ID of the list there SHALL be a fixture folder
-`test/fixtures/rules/<RULE-ID>/` holding `ledger.jsonl` (a ledger tail, possibly empty), `proposal.json` (a proposal)
+`test/fixtures/rules/<RULE-ID>/` holding `ledger.jsonl` (a whole ledger from its first commit, possibly empty), `proposal.json` (a proposal)
 and `expected.json` (the expected rejections without their `message`). A test applies the proposal to the tail and
 SHALL get exactly the expected rejections, compared on every field but `message`, every one naming the rule ID of its
 folder, every `message` non-empty. A rule ID of the list without a fixture folder, and a fixture folder whose name is

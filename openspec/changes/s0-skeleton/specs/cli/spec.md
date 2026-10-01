@@ -26,7 +26,8 @@ during the command (LG-C03), a refused export (REQ-CL-005), an unreadable or unw
 decided before anything is written, except a failure of the file system during a write: the skeleton has no lock,
 `fsync` or recovery (LG-C06 comes with the store adapters of S0), so after such a failure the store may hold a partial
 write, and the message names the file. Messages of codes 1 and 2 go to standard error, except the rejections of `apply`
-(REQ-CL-004). A path a command prints is relative to the project root, with `/` as separator.
+(REQ-CL-004). A path a command prints is relative to the project root when it lies under it, otherwise absolute;
+its separator is `/`.
 
 Implements: PL-E02, LG-S05
 
@@ -72,21 +73,24 @@ Implements: CT-N05, LG-S05
 file into `store/proposals/` (REQ-CL-004, **Proposal**), named `<proposal hash>.json`, print its path and exit with code
 0. It writes nothing into the ledger. When a file of that name already exists the command refuses with code 2.
 
-The skeleton form, checked in this order — the first deviation is refused with code 1, its standard error naming the
-line (line 0 for the file name), and nothing is written:
+The skeleton form is checked step by step in this order, each step over the whole file before the next; the first
+deviation is refused with code 1, its standard error naming the line (line 0 for the file name and the encoding), and
+nothing is written:
 1. the file name is `<stem>.md` with `<stem>` matching `[A-Za-z0-9][A-Za-z0-9._-]*`, and `<stem>` in lower case
-   matches `[a-z0-9][a-z0-9.-]*`;
+   matches `[a-z0-9][a-z0-9.-]*` and has at most 128 characters;
 2. the bytes are valid UTF-8 without a byte order mark; lines end with a line feed, the last line too, and no line
    holds a carriage return;
-3. the first line is the header; the second line is the separator; then at least one row; nothing else;
+3. the first line is the header; the second line is the separator; then at least one row; nothing else (a file of two
+   lines is refused at line 3);
 4. every line is written exactly as `| ` + its cells joined by ` | ` + ` |`; no cell holds `|`, and no cell starts or
    ends with a space;
 5. the header has at least two cells; its first cell is `ID`; the other cells are non-empty, distinct, none of them is
-   `ID`, and each gives a non-empty slug (below); the separator has one cell `---` per header cell; every row has as
-   many cells as the header;
-6. the first cell of a row is an ID matching `[A-Z][A-Z0-9]*-[A-Z0-9]+`; IDs are unique in the file, and no ID in lower
-   case equals `<stem>` in lower case;
-7. every cell is text the kernel admits (REQ-KR-002: NFC, assigned code points of Unicode 16.0).
+   `ID` or starts with `$`, each gives a non-empty slug (below), the slugs are distinct, and `table.<slugs>` has at most
+   128 characters; the separator has one cell `---` per header cell; every row has as many cells as the header;
+6. the first cell of a row is an ID matching `[A-Z][A-Z0-9]*-[A-Z0-9]+` of at most 128 characters; IDs are unique in
+   the file, and no ID in lower case equals `<stem>` in lower case (refused at the line of that row);
+7. every cell is in NFC — a cell whose NFC form differs is refused, never repaired (OM-H02) — and holds only code
+   points the kernel admits (REQ-KR-002: assigned code points of Unicode 16.0).
 
 The proposal holds these intents; every intent's `by` is the `id` of the session event:
 - the session event: type `core/session@1`; `id` `<namespace>/<ULID>` with a new ULID; `at` from the clock in the form
@@ -101,6 +105,9 @@ The proposal holds these intents; every intent's `by` is the `id` of the session
 
 The slug of a header cell is the cell in lower case with every run of characters outside `[a-z0-9]` replaced by `-` and
 leading and trailing `-` removed (`Rule` → `rule`). `<namespace>` is the namespace of `store/lattice.json`.
+
+The proposal file is the canonical JSON (RFC 8785) of `{"intents": [...]}` followed by one line feed, its intents in
+canonical order (LG-C07): entity intents by `id`, then event intents by `id`, both by UTF-16 code units.
 
 Implements: LG-B05, LG-B06, LG-B07, LG-P01, LG-B03
 
@@ -119,9 +126,11 @@ Implements: LG-B05, LG-B06, LG-B07, LG-P01, LG-B03
 - **WHEN** `lattice import-md` runs, in an initialised store, on a copy of the fixture whose third line is
   `|FX-A01|text|`; on one with a paragraph after the table; on one with two rows of the ID `FX-A01`; on one whose last
   line has no line feed; on one with a header `| ID | Rule | Rule |`; on one with a header and separator but no row; on
-  a file `fx-a01.md` holding a row `FX-A01`; then on the fixture file in a folder without a store
-- **THEN** every run but the last exits with code 1, its standard error naming the line of the deviation (line 0 for
-  `fx-a01.md`), and `store/proposals/` stays empty; the last run exits with code 2 and creates nothing
+  a file `fx-a01.md` holding a row `FX-A01` on line 3; on one with a header `| ID | Rule | rule |`; then on the fixture
+  file in a folder without a store
+- **THEN** every run but the last exits with code 1, its standard error naming the line of the deviation (line 3 for
+  the table without a row and for `fx-a01.md`, line 1 for the two headers), and `store/proposals/` stays empty; the
+  last run exits with code 2 and creates nothing
 
 ### Requirement: apply turns a proposal into a commit or into rejections
 <!-- id: REQ-CL-004 -->
@@ -136,7 +145,8 @@ its type without the `@n` suffix and its body (OM-H01 over `type@n` comes with t
 proposal — `core/proposal` and the list of its intents in canonical order.
 
 **Opening (LG-C04).** Every line of `store/knowledge.jsonl` is the canonical JSON (RFC 8785) of one commit object
-followed by a line feed; the `seq` of the first commit is at least 1 and every next `seq` is greater than the one before
+followed by a line feed; a commit has exactly the keys of the commit form below, and its `records` is a list of
+objects, each with exactly the keys of the entity record or of the event record form below; the `seq` of the first commit is at least 1 and every next `seq` is greater than the one before
 it; `prev` of the first commit is `null` and `prev` of every other commit is the hash of the commit before it. A ledger
 that breaks any of this SHALL be refused with code 2, the message naming `LG-C04` and the `seq` of the first broken
 commit (or its line, when it has no readable `seq`), and nothing is written.
@@ -157,8 +167,8 @@ into the proposal and `message` a non-empty text. The rejections of the skeleton
 
 | Rule | When | `intent` | `path` | `expected` | `got` |
 |---|---|---|---|---|---|
-| `LG-P01` | the text is not admitted, or the value is not an object with exactly the key `intents` holding a list | `null` | `""`, or `/intents` | `null` | `null` |
-| `LG-P01` | an intent is not an object, has a missing or an extra key, a `kind` other than `entity` / `event`, or a field outside the form above | the intent's `id` if it is a string, else `null` | `/intents/<i>` for the intent itself, `/intents/<i>/<key>` for a key | `null` | `null` |
+| `LG-P01` | the text is not admitted, or the value is not an object with exactly the key `intents` (one rejection); or `intents` is not a list (one rejection) | `null` | `""`; `/intents` when `intents` is not a list | `null` | `null` |
+| `LG-P01` | an intent fails the form above — one rejection per intent, at the first failing check in this order: not an object (`/intents/<i>`); `kind` missing or neither `entity` nor `event` (`/intents/<i>/kind`); the first key of its kind, in the order of the form above, that is missing or outside the form (`/intents/<i>/<key>`); the first extra key by UTF-16 code units (`/intents/<i>/<key>`) | the intent's `id` if it is a string, else `null` | as given in this row | `null` | `null` |
 | `LG-P01` | the proposal does not hold exactly one session event (checked only when every intent passed the row above) | `null` | `/intents` | `1` | the number of session events |
 | `LG-P01` | an intent's `by` is not the `id` of the session (checked only when there is exactly one) | the intent's `id` | `/intents/<i>/by` | the session `id` | the intent's `by` |
 | `LG-C07` | a second intent names an `id` an earlier intent of the list already names | that `id` | `/intents/<i>/id` of the later intent | `null` | `null` |
@@ -208,6 +218,12 @@ Implements: LG-A01, LG-A02, LG-C01, LG-C02, LG-C03, LG-C04, LG-C07, LG-P01, LG-P
   and `path` `/intents/1/by`; the third exactly one `LG-P01` with `path` `/intents/1/by`, the session `id` as `expected`
   and the other `id` as `got`; the fourth exactly one `LG-C07` with `path` `/intents/5/id`
 
+#### Scenario: A tail that moved during apply is refused
+<!-- id: SCN-CL-011 -->
+- **WHEN** `apply` runs on the fixture proposal against a store whose ledger gains a commit between opening and
+  appending, so the store answers that the tail moved
+- **THEN** it exits with code 2, its message names `LG-C03`, it appends nothing and the proposal file stays
+
 #### Scenario: A broken hash chain is refused
 <!-- id: SCN-CL-008 -->
 - **WHEN** a ledger of two commits has one letter of a row text in commit 1 changed, keeping each line canonical JSON,
@@ -225,11 +241,16 @@ body; the separator; then, for every reference of `rows` in its order, the row o
 entity (a floating reference resolves to the latest revision, OM-R01): the local part of its `id` in upper case, then
 the value of each column's field of its body.
 
-Before writing anything, export SHALL refuse with code 2 when a document's `file` is not `<stem>.md` as REQ-CL-003
-step 1 requires; when two documents name the same `file`; when a body lacks `file`, `columns` or `rows` or holds them
-in another shape; when a reference names no entity in the projection; when a row lacks a column's field or holds a
-value that is not a string; or when a rendered line would break the skeleton form (a cell with `|` or a line feed, or
-starting or ending with a space). Otherwise it creates the folder when missing, writes every file into it (an existing
+Before writing anything, export SHALL refuse with code 2, naming the document, when:
+- a document body is not an object with exactly the keys `file`, `columns` and `rows`;
+- `file` is not a string `<stem>.md` as REQ-CL-003 step 1 requires, or two documents name the same `file` compared in
+  lower case;
+- `columns` is not a non-empty list of strings that satisfies step 5 of REQ-CL-003 for the header cells after `ID`;
+- `rows` is not a non-empty list of objects with exactly the key `$ref` holding a floating reference (no `@n`);
+- a reference names no entity in the projection, or an `id` whose local part in upper case is not an ID of step 6 of
+  REQ-CL-003, or two references render the same ID;
+- a referenced body is not an object with a string field for every column, or a cell to write holds `|`, a line feed or
+  a carriage return, or starts or ends with a space. Otherwise it creates the folder when missing, writes every file into it (an existing
 file is overwritten), prints the written paths one per line in the order of the `file` names (UTF-16 code units), and
 exits with code 0.
 
