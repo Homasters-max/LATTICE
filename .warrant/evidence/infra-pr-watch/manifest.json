@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-pr-watch",
-  "commit": "e30b9e823d40e52bbb66d1577fe61742b9a38e5d",
+  "commit": "43fb49375976cec6f5e65251f42e491c1d40a3fd",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -12,9 +12,15 @@
     "EVID-01M3WAKX8QCD8F18CE27HBCSZ9",
     "EVID-01M3WAV5EFRHPTDNBTHQD966AT",
     "EVID-01M3WAWG4FANJ9Q7S1Z1V7WGJM",
-    "EVID-01M3WC89E7JZFBVN3HHNR62NT2"
+    "EVID-01M3WC89E7JZFBVN3HHNR62NT2",
+    "EVID-01M3WCJQQCYZ7DMF70V5R2CNYP",
+    "EVID-01M3WCJTKPTFGGD3P1Z7JGZ60H"
   ],
   "gates": {
+    "adversarial-review": "PASS",
+    "blocking-unknowns-resolved": "PASS",
+    "branch-isolated": "PASS",
+    "human-approval": "PASS",
     "ids-valid": "PASS",
     "required-artifacts-present": "PASS",
     "spec-valid": "PASS"
