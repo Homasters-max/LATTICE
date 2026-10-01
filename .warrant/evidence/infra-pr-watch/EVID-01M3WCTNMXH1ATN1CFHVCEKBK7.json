@@ -1,0 +1,43 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WCTNMXH1ATN1CFHVCEKBK7",
+  "claim": {
+    "text": "tests-passed passed for infra-pr-watch",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "9f7890b3011a0dcf8e0d1c78294a8460f438a626",
+    "base_commit": "43fb49375976cec6f5e65251f42e491c1d40a3fd",
+    "spec_revision": "openspec/changes/infra-pr-watch@9f7890b3011a0dcf8e0d1c78294a8460f438a626",
+    "tree": "aa69b3a5f6f661879355ebca456296084370f99e",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "ci",
+    "ref": "https://github.com/Homasters-max/LATTICE/actions/runs/36909681145/attempts/1"
+  },
+  "context_hash": "sha256:b7997db9e215dcbb4b8cfb9b787278bada66199916fa1407f578dfd72b6ca705",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-01T18:50:01.758Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-pr-watch/raw/tests-passed/junit.xml",
+      "sha256": "sha256:2c383b6c1d42bc94d7fead947728221712f2a38538a4a7cd7e71ee2774a85b46"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 1,
+    "tests": 425
+  }
+}
