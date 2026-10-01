@@ -1,0 +1,30 @@
+[
+  {
+    "intent": "lattice/fixture",
+    "rule": "LG-P02",
+    "path": "/intents/0/base",
+    "expected": 1,
+    "got": 0
+  },
+  {
+    "intent": "lattice/fx-a01",
+    "rule": "LG-P02",
+    "path": "/intents/1/base",
+    "expected": 1,
+    "got": 0
+  },
+  {
+    "intent": "lattice/fx-a02",
+    "rule": "LG-P02",
+    "path": "/intents/2/base",
+    "expected": 1,
+    "got": 0
+  },
+  {
+    "intent": "lattice/fx-a03",
+    "rule": "LG-P02",
+    "path": "/intents/3/base",
+    "expected": 1,
+    "got": 0
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-003",
+  "change": "s0-skeleton",
+  "gate": "spec-approved",
+  "reason": "I-5…I-18: edits of the delta spec answering spec review 2 (EVID-01M3WFZ0WA3PN7KVZVWTC876JR) — codec form steps, LG-P01 multiplicity, export refusals, SCN-CL-011, printed paths, opening checks; the approval of spec-PR #77 is the decision on them",
+  "risk": "LOW",
+  "compensating_controls": [
+    "the impl-PR body lists every edit of the delta spec with its I-N row and review finding",
+    "tests SCN-CL-001…011 and SCN-AR-008…017 pass (tests-passed EVID-01M3WHVQSE1499N5SGY257EDHY)"
+  ],
+  "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
+  "expires_at": "2026-10-15",
+  "waiver_state": "ACTIVE"
+}

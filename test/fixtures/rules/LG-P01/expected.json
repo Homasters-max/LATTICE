@@ -1,0 +1,9 @@
+[
+  {
+    "intent": null,
+    "rule": "LG-P01",
+    "path": "/intents",
+    "expected": 1,
+    "got": 0
+  }
+]

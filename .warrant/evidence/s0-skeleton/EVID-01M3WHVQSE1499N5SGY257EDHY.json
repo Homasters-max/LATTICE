@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WHVQSE1499N5SGY257EDHY",
+  "claim": {
+    "text": "tests-passed passed for s0-skeleton",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "d74ad3193bab741436c5997e1db1f962266c5608",
+    "base_commit": "9c03299aef98c55e3494fefdd0015134b8ca9622",
+    "spec_revision": "openspec/changes/s0-skeleton@d74ad3193bab741436c5997e1db1f962266c5608",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:dbb41ecb1178f483dcc5484bf18309b7f8bf2486ebc319a4d7ef6d403351c2e2",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-10-01T20:17:59.599Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-skeleton/raw/tests-passed/junit.xml",
+      "sha256": "sha256:4e3d088dd891591306cd5b8b36a6e54e7850db253180f81fb1f9380d1a04d890"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 475
+  }
+}
