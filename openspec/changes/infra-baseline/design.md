@@ -23,7 +23,7 @@
 **Goals:**
 - Tests and the type check run on every PR and on every push to `main`.
 - Every artifact written after this Change is English; the rules the agent reads are English.
-- One AREA per capability of the module matrix ST-M01, so parallel Changes of S0 never share an AREA.
+- One AREA per spec of the module matrix ST-M01, so parallel Changes of S0 never share an AREA.
 - A process test keeps the three in place.
 
 **Non-Goals:** — proposal, Non-goals.
@@ -114,7 +114,8 @@ jobs:
   - `env`: the language rule — repository and GitHub in English, Russian only in the chat with the maintainer (Q19).
   - `maintainer-acts`: pushing a freeze tag of `design-next` is a maintainer's act (SL-T01; WARRANT does not list
     tags, so the rule must).
-  - `process`: parallel work — one capability = one AREA = at most one active Change (SL-T08); one worktree and branch
+  - `process`: parallel work — one AREA = at most one active Change (SL-T08; "AREA", not "capability": in
+    `design-next` a capability is a block, PL-C01); one worktree and branch
     per Change; the `implement` Run narrowed with `--scope` to its module; a file shared by modules changes in a
     separate small Change (Q20–Q23).
   - `tracking`: issue area `sw`; English body labels "Why:", "Where:"; a Change's issue names "Depends on:" and sits in
@@ -215,7 +216,8 @@ Records (`.warrant/changes/**`), evidence, waivers, Runs and `openspec/specs/**`
 (`init change`, `classify`, `unknown`, `transition`, `run`, `waive`, `ci fetch`, `archive`); never edit them by hand,
 never call `openspec archive`. Never bypass a guard `deny` through the shell — narrow the work or ask the maintainer.
 
-Parallel work: one capability = one AREA = at most one active Change (`design-next` SL-T08). Each Change works in its
+Parallel work: one AREA (one OpenSpec capability spec and the prefix of its REQ/SCN ids) = at most one active Change
+(`design-next` SL-T08). Each Change works in its
 own git worktree and branch; its `implement` Run is narrowed with `--scope` to the paths of its module. A file shared
 by several modules is changed by a separate small Change.
 

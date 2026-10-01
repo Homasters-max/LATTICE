@@ -21,8 +21,8 @@ acts — so they go together in one Change instead of three:
   ideas design-next does not take (GR grain — NX-06, RL rules — NX-05, CP compose — NX-13) and none for codec, store,
   projections, acts, cli, measure. WARRANT allocates REQ/SCN ids as "maximum + 1" per AREA without reservation:
   two parallel Changes in one AREA collide (`ID_DUPLICATE`, WARRANT WS-23), two Changes modifying one requirement
-  overwrite each other at archive. The rule "one capability = one AREA = at most one active Change" (grilling Q20,
-  design-next SL-T08) needs one AREA per capability of S0.
+  overwrite each other at archive. The rule "one AREA = at most one active Change" (grilling Q20, design-next
+  SL-T08) needs one AREA per spec of S0.
 
 ## What Changes
 
