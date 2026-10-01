@@ -1,0 +1,105 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W1HQYMCDQ5K82PNVB32V78",
+  "change": "pin-v0-10-0",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/pin-v0-10-0",
+  "started_at": "2026-10-01T15:32:54.914Z",
+  "finished_at": "2026-10-01T15:37:45.686Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:6fbc2a435bb6e34560511bcb281fe3338de5d8dc482cb8440dade8b3d8793564",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "spec_tree": "sha256:9ef167ca19472f6862a21a765b623da767b65c474d50e383a0afb12c3ef06860",
+  "evidence": [
+    "EVID-01M3W1TKYJFE6SAQBNMQ671600"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T15:33:14.832Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`cat D:/project/LATTICE/.github/workflows/warrant.yml` under the review Run RUN-01M3W1HQYMCDQ5K82PNVB32V78 of pin-v0-10-0: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:35:18.708Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE show --stat --format=%s 78f34b4 9faefd1` under the review Run RUN-01M3W1HQYMCDQ5K82PNVB32V78 of pin-v0-10-0: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:35:21.278Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:35:59.131Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:36:10.933Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:37:32.101Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:37:33.138Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:37:36.682Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T15:37:43.444Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

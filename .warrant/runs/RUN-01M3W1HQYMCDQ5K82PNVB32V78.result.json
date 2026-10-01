@@ -1,0 +1,152 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3W1HQYMCDQ5K82PNVB32V78",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "D-1 ожидает от локального `warrant ci` `human-approval` в `deferred[]`, а Risks п. 3 говорит «может не примениться», tasks 3.2 — «(если есть)». По `warrant ci` v0.10.0 требования берутся из policy базы HEAD^1 (`core/ci/base.ts`, ADR-0038): на `main` профиля `human-acceptance` нет, а `risk-high` 2.0.0 gate не добавляет (CHANGELOG 0.9.0). Значит, в gates impl-PR `human-approval` не будет вовсе; три места описывают ожидаемый результат по-разному.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md",
+        "openspec/changes/pin-v0-10-0/tasks.md"
+      ],
+      "recommendation": "Явно записать в D-1, Risks п. 3 и tasks 3.2: в impl-PR этого Change `human-approval` нет ни в `gates`, ни в `deferred[]` (у policy базы его нет); профиль действует с PR после merge. Убрать «в deferred[]» из D-1."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "В ожидаемом выводе `warrant ci` (D-1, tasks 3.2, Migration Plan п. 3) нет информационных находок, которые даст этот переход: `NO_HUMAN_ACCEPTANCE` в impl-PR (у базы нет объекта с `human-approval`, SCN-VER-134) и, вероятно, `AGENT_MERGE_CLOSED` в archive-PR (policy M^1 с `core-sdd` `^0.3.4` CLI 0.10 не вычисляет — REQ-VER-011, fail-closed), плюс `APPROVER_IS_AUTHOR`. Код выхода они не меняют, но перечень «ожидаемо» неполон.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md",
+        "openspec/changes/pin-v0-10-0/tasks.md"
+      ],
+      "recommendation": "Добавить в перечень ожидаемых информационных находок `NO_HUMAN_ACCEPTANCE` (impl-PR) и `AGENT_MERGE_CLOSED` (archive-PR, merge делает maintainer — ref верифицируется)."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Проверка патча maintainer'а — «`git diff` называет только эти четыре пути» (D-2, tasks 1.1). Но по D-1 и Context на этом шаге в рабочем дереве ещё лежат незакоммиченные `.warrant/warrant.json`, lock, `config.1.schema.json`, `AGENTS.md` (их коммитит только шаг 3), а также правки `design-next/*.md` maintainer'а. Поэтому `git diff` покажет не меньше девяти путей: как записано, проверка не проходит, а её смысл можно толковать по-разному.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md",
+        "openspec/changes/pin-v0-10-0/tasks.md"
+      ],
+      "recommendation": "Точно описать проверку: например, `git apply --index` или проверку файла патча (`git apply --stat <патч>` — ровно четыре пути), затем `git diff --cached --name-only` равен этим четырём путям и коммитится только индекс; незакоммиченное закрепление и `design-next/*.md` в коммит не входят."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Risks п. 2: «в коммит [spec-PR] идут только `openspec/changes/pin-v0-10-0/**` и `.warrant/changes/pin-v0-10-0.json`». Но коммит 78f34b4 уже несёт `.warrant/runs/RUN-01M3W1DFSYEMWC4R1A3QVDXPJH.json`, а Run review записывает `.warrant/runs/RUN-01M3W1HQYMCDQ5K82PNVB32V78*.json` и evidence `review`, на которые опирается gate `adversarial-review`. Если правило выполнить буквально, Runs и evidence из spec-PR выпадут.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Дополнить перечень путей spec-PR: Runs этого Change (`.warrant/runs/RUN-*`) и его evidence; явно исключить незакоммиченное закрепление и `design-next/*.md`."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "Why и Impact перечисляют изменения 0.9.0, на которые опирается процесс, но не называют WS-14: в `.warrant/warrant.json` LATTICE заданы `paths.src: src` и `paths.tests: test`, поэтому после пина любой PR без Change с правкой `src/` или `test/` получает `SCOPE_VIOLATION` (job красный). Правило `tracking` («Работа без Change — коммит и PR») остаётся как есть и об этом молчит. Не назван и WS-03: `RECORD_MISMATCH` `waiver` для записанных `WAIVED` при прогоне после истечения waiver.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/proposal.md"
+      ],
+      "recommendation": "Добавить в Impact последствие WS-14 для PR без Change (связь с issue #28) и решить, нужно ли уточнить текст `tracking`: «работа без Change — только вне `src/` и `test/`»."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Impact называет `.warrant/schemas/config.1.schema.json` policy-путём, а What Changes описывает профиль `human-acceptance` как пути, правка которых меняет проверку («policy, lock, …»). При этом `match.paths` в D-5 не содержит `.warrant/schemas/**`. Одно понятие «policy-путь» определено по-разному.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/proposal.md",
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Либо добавить `.warrant/schemas/**` в профиль, либо в Impact назвать копии схем сгенерированными файлами, которые держит `sync --check`, а не policy-путями."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "По proposal тест пина проверяет, что «профиль `human-acceptance` держит policy-пути». D-4 проверяет только 3 из 10 путей: `.warrant/warrant.json`, `.warrant/local/**`, `.github/workflows/**`. Удаление `.warrant/waivers/**` (на нём держится доверие к новому waiver, ADR-0051 п. 5), lock или `.claude/**` тест пропустит.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/proposal.md",
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Явно определить, какие пути тест держит: полный список D-5 или как минимум ещё `.warrant/warrant.lock.json`, `.warrant/waivers/**`, `.claude/**`, `**/AGENTS.md`."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "«WAV-2026-002 … истекает неиспользованным» (Impact, D-8). Однако waiver `ACTIVE`, а записанный `WAIVED` `spec-approved` при `MERGED` Change `pin-v0-8-2` опирается именно на него. Формулировка неточна: с 0.9.0 (WS-03) `warrant ci` проверяет основание записанного `WAIVED` на дату прогона.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/proposal.md",
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Сформулировать иначе: «истекает 2026-10-13; основание отклонения (копия) снято этим Change, новых применений нет». Указать, что recovery-прогон `pin-v0-8-2` после этой даты даст `RECORD_MISMATCH`."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "Откат (Migration Plan п. 4, D-7 `reversibility: EASY`) не задаёт порядок шагов. У CLI 0.8.2 нет режима восстановления guard (ADR-0053 п. 2 вошёл в 0.10). Если CLI машины откатить до закрепления, сессия будет заперта. Не сказано и о судьбе профиля `human-acceptance`.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Записать порядок отката: сначала закрепление и `warrant sync` под CLI 0.10, затем CLI машины 0.8.2 из тега; профиль остаётся или удаляется — решение явно."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Не сказано, где строится «локальный merge-коммит `origin/main` + ветка» (D-1, tasks 3.2). Если в рабочем дереве проекта, `git merge --no-ff` создаст merge-коммит на ветке impl, который может уйти в push, и столкнётся с незакоммиченными `design-next/*.md` maintainer'а.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md",
+        "openspec/changes/pin-v0-10-0/tasks.md"
+      ],
+      "recommendation": "Указать: отдельный worktree вне проекта в detached HEAD; рабочее дерево и ветка impl не меняются."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "`security_impact: LOW` (D-7) опирается на «закреплён тегом», но тег git подвижен: `uses …@v0.10.0` и `npm pack …#v0.10.0` не закреплены по SHA. Риск принят ADR-0039 п. 5 и назван в Risks.",
+      "targets": [
+        "openspec/changes/pin-v0-10-0/design.md"
+      ],
+      "recommendation": "Без изменений либо issue на закрепление reusable workflow по SHA коммита тега."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Поведение `warrant ci` v0.10.0 (policy базы HEAD^1, `NO_HUMAN_ACCEPTANCE`, `AGENT_MERGE_CLOSED`) взято из checkout D:/project/SRA на теге v0.10.0 (`packages/cli/src/core/ci/base.ts`, `judge.ts`, `openspec/specs/verification/spec.md`) без запуска CLI."
+    },
+    {
+      "id": "A-2",
+      "statement": "`skip_specs: true` — delta specs нет; предмет review — proposal.md, а design.md и tasks.md выступают контрактом процесса этого Change."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:6fbc2a435bb6e34560511bcb281fe3338de5d8dc482cb8440dade8b3d8793564",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T12:00:00Z",
+    "finished_at": "2026-10-01T12:25:00Z"
+  }
+}
