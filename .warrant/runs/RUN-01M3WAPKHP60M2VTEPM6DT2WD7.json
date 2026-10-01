@@ -1,0 +1,78 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WAPKHP60M2VTEPM6DT2WD7",
+  "change": "infra-pr-watch",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-pr-watch",
+  "started_at": "2026-10-01T18:12:51.422Z",
+  "finished_at": "2026-10-01T18:15:20.787Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:e8140d4d2318f7ef2135f72ccc8201e32369679d794514f9453c99df3ed485d9",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "spec_tree": "sha256:04ee30d98a724d02e580c811c1c1ff026054b5d4fbb664ae62c8165d5e6db970",
+  "evidence": [
+    "EVID-01M3WAV5EFRHPTDNBTHQD966AT"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T18:13:10.338Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE show c36ef1a --stat` under the review Run RUN-01M3WAPKHP60M2VTEPM6DT2WD7 of infra-pr-watch: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:14:08.545Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE show HEAD:AGENTS.md` under the review Run RUN-01M3WAPKHP60M2VTEPM6DT2WD7 of infra-pr-watch: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:15:08.125Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:15:09.096Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:15:12.845Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:15:18.702Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

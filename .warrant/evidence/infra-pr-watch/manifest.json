@@ -1,14 +1,15 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-pr-watch",
-  "commit": "49d3b049aa5d311c7e8dc918fa11a1afcc2f32de",
+  "commit": "7839a12c7a17168be0e62f436adb998d009b9566",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
     "lock_hash": "sha256:c9110723fbc8d9136cab21991dc12b653c4ad077c96cbf7b912cc3254acd34b6",
-    "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8"
+    "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829"
   },
   "evidence": [
-    "EVID-01M3WAKX8QCD8F18CE27HBCSZ9"
+    "EVID-01M3WAKX8QCD8F18CE27HBCSZ9",
+    "EVID-01M3WAV5EFRHPTDNBTHQD966AT"
   ]
 }
