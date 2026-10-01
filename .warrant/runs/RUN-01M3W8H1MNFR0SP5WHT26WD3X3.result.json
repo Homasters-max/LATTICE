@@ -1,0 +1,96 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3W8H1MNFR0SP5WHT26WD3X3",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The red-`main` rule (D-3, `tracking` in the Appendix) has no path the process admits. It says that while `main` is red 'no new Change is dispatched and only the fix is merged', and that 'the fix comes from the Change whose merge broke `main`, otherwise from the coordinator'. A Change breaks `main` by the merge of its impl-PR. After that merge it is VERIFYING, and the `process` rule leaves it only the archive-PR (`ci fetch`, `transition MERGED`, `archive`). The archive-PR has no `implement` Run and no code. Every change of code is a Change (`process`), so the fix is a new Change, and the freeze forbids dispatching it. The fix also touches the AREA of the breaking Change, which that Change holds until ARCHIVED, and 'one Change holds an AREA at a time — a second one waits'. The same rule says the coordinator 'never writes a Change's code', yet 'otherwise from the coordinator' makes it the source of the fix. Read literally, `main` stays red until the breaking Change is archived, and nobody may write the fix.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md",
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "recommendation": "State the form of the fix: for example, a new small Change (or a `skip_specs` Change) is exempt from the freeze and the cap, and may write in an AREA held by the breaking Change. Name its author: the session of the breaking Change, in a new worktree, or a session the coordinator dispatches. Make 'otherwise from the coordinator' mean 'dispatched by the coordinator', so it does not conflict with 'never writes a Change's code'."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The `process` rule (Appendix) holds an AREA 'until it is `ARCHIVED` or `ABANDONED`', and says who holds it is computed from 'the records on the branches `spec|impl|archive/<change>`'. A Change becomes ARCHIVED through `warrant archive` on the branch `archive/<change>`, before the maintainer merges the archive-PR. So the AREA is released while `openspec/specs/<capability>/` on `main` still lacks the requirements of that Change. The next Change in that AREA branches `spec/<next>` from `main`. Its MODIFIED requirements copy the old text, and its ids are allocated as 'maximum + 1' against a `main` that does not yet hold the archived ones. This is the overwrite and the `ID_DUPLICATE` that the proposal's Why gives as the reason for the rule. The same gap exists between a merged archive-PR and a branch that was not rebased.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Bound the hold by the merge: 'until its archive-PR is merged into `main`' (and, for ABANDONED, until the abandoning commit is on `main`). Say that the next Change in the AREA starts its `spec/` branch from a `main` that contains that merge."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The claim rule says 'a `skip_specs` Change declares none' (no AREA) and 'one Change holds an AREA at a time'. The `process` rule keeps `warrant unknown add <change> --area <AREA>`, and an UNKNOWN id carries its AREA (`UNK-KR-001` in `.warrant/changes/kernel-format.json`). An infra or process Change such as this one, or the small Change that edits a skeleton-owned shared file, has no AREA to pass. It must pick one, possibly an AREA another Change holds, and neither rule says whether that counts as holding it. Review 2 F-1 asked 'which AREA its UNKNOWNs use', and the revision does not answer.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Name the AREA of UNKNOWNs for a Change without AREAs, for example AR, and say that an UNKNOWN id does not claim the AREA. Or give such Changes a declared AREA."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "The `process` rule says who holds an AREA and what is in implementation 'is computed from the issues and the records on the branches … (skill `slice`, `status`)'. The skill `slice` comes with process PR #64. Design Context and task 0.1 order this Change only after docs PR #63. They do not order it after #64, so the rule can land citing a skill that does not exist. `status` is also unclear. The same sentence has just said that `warrant status` on `main` does not see an open Change, so the reader cannot tell whether `status` means `warrant status` run on each branch or a mode of the skill.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md",
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "recommendation": "Add #64 to the precondition (task 0.1 or a 0.2) or word the rule so it stands without the skill. Write `status` out in full, for example '`warrant status` on each branch'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-4 says 'the record of an open Change lives on its branches, not on `main`, so `warrant status` on `main` does not see it', and the `process` rule repeats the first half. Once the spec-PR merges, the record is on `main` (SPECIFIED, and VERIFYING after the impl-PR merge). `warrant status` on `main` does see it, but with a state behind the branch. A skill or session that takes the sentence literally ignores the `main` record. One that tests it finds it false.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Write: 'until its spec-PR merges the record is only on its branches; after that the record on `main` lags the branch; the current state is read from the newest branch of the Change'."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-6 has `baseline.test.ts` check the YAML form of `test.yml`: triggers, top-level permissions 'exactly `contents: read`', `node-version: 22` and the step order. `package.json` has no YAML parser, only `@types/node` and `typescript`. Adding one changes `package.json` and `package-lock.json`. Those are human-acceptance paths and files that SL-T08 gives to the skeleton. They are not among the seven paths of D-2 or the Impact list. The design silently assumes the test reads the YAML as text lines, as `pin.test.ts` does.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "State in D-6 that the test matches lines (regex over the file text, as `pin.test.ts`) and adds no dependency."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Review-2 findings F-1…F-13 are resolved in 618f48a: claim in the issue and where it is read (F-1, except the UNKNOWN AREA, see F-3), source subfolders per AREA (F-2), `--scope` plus `openspec/changes/<change>/**` (F-3), concurrency per sha (F-4), README via #63 (F-5), the marker as a fixed token in chat and PRs (F-6), 'prefix' for the issue title (F-7), the red-`main` reaction (F-8, see F-1 here), CT under `s0-bootstrap` (F-9), `clock`/`ids` under RN in S1 (F-10), one worktree with three branches and one session per Change (F-11), milestones by the coordinator (F-12), skeleton only AR and CL (F-13)."
+    },
+    {
+      "id": "A-2",
+      "statement": "The content of docs PR #63 (SL-T07…SL-T09, the launch record) and of process PR #64 (skill `slice`) was not read. The worktree is on `spec/infra-baseline`, and the review guard blocks `git show` of other branches. References to them are taken from the design text and from review 2."
+    },
+    {
+      "id": "A-3",
+      "statement": "F-2 assumes that `warrant archive` sets ARCHIVED in the record on the branch `archive/<change>` before the archive-PR merges, as the `process` rule orders the steps (`warrant archive <change>`, then 'The maintainer merges')."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:672cb034a935ec9b831fc318eb4b31194ff5d117c2b32a18e907e25fb58ed41d",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T18:30:00Z",
+    "finished_at": "2026-10-01T18:55:00Z"
+  }
+}
