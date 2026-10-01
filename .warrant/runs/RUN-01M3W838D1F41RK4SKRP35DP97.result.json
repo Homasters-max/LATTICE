@@ -1,0 +1,183 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3W838D1F41RK4SKRP35DP97",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "The `process` addition (Appendix) says an AREA is active from `warrant init change` until its Change is ARCHIVED or ABANDONED. It also caps Changes in IMPLEMENTING or VERIFYING at three. Neither text says how a Change claims an AREA or where another session reads that claim. At `warrant init change` the record holds no AREA. The AREA appears only with the REQ/SCN ids of delta specs, written later in the specify Run, and a `skip_specs` Change has none. The record lives on `spec/<change>` in the Change's own worktree, which the same rule requires. So until the spec-PR merges, `warrant status` on `main` or in another worktree does not see it. On `main` a Change is never IMPLEMENTING: APPROVED, IMPLEMENTING and VERIFYING all land at the impl-PR merge. After that merge a Change stays VERIFYING until its archive-PR, so it still counts against the cap. The `tracking` rule says where we are is computed from `warrant status`, `git log`, `gh pr list` and `gh issue list`. None of these shows a claimed AREA before a PR exists. Two sessions can init Changes in one AREA on the same day, which gives the `ID_DUPLICATE` this Change sets out to prevent.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md",
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "recommendation": "Name the claim and where it is read. For example: the Change's issue names its AREA(s) (`AREA: LG`) before `warrant init change`, and the coordinator checks open Change issues and PRs before it dispatches. Count the cap from open impl-PRs, or say that VERIFYING after the impl-PR merge counts. Say whether a Change without specs holds an AREA, and which AREA its UNKNOWNs use."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The `process` addition says the `implement` Run 'is narrowed with `--scope` to the paths of its module'. Q21 makes that `src/<module>/** test/<module>/**`. D-5 says a spec is not a module. ST-M01 (docs PR #63) puts commits and apply, projections, and the `store` and `acts` port interfaces all in module `ledger`. So `s0-apply-checks` (LG) and `s0-projections` (PJ), which run in parallel in wave 2, both narrow to `src/ledger/**`, and the narrowing does not separate them. `s0-store` (SR) and `s0-bootstrap` (AC) have no module of their own: they are adapters plus ledger port interfaces, and SL-T08 gives those interfaces to the skeleton. The text has two readings: the scope is the module, so parallel Changes overlap in their writes, or the scope is the files of the AREA, which nothing defines.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Define the scope per AREA, for example a table AREA to write globs, or sub-folders such as `src/ledger/projections/**`. Otherwise state that two Changes whose AREAs share a module do not run in parallel."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "`warrant run start --help` says `--scope` 'narrow[s] write_scope: a path must match both'. The `implement` write_scope is `paths.src`, `paths.tests` and `tasks.md`. A scope of module globs (Q21 `src/<module>/** test/<module>/**`) therefore excludes `openspec/changes/<change>/tasks.md`. The `tracking` rule wants the `[x]` mark there, and D-1 p. 4 makes it inside the Run. The scope also excludes the `I-N` row in `design.md` and the delta-spec edit, which the `process` rule says happen 'inside the `implement` Run'. Those writes are denied, and the same rule forbids bypassing a `deny`. The rule silently assumes the narrowed Run still admits the Change's own artifacts.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Make the rule's scope include the Change's own artifacts (for example `openspec/changes/<change>/**` next to the module globs). Or check how WARRANT treats `tasks.md` under `--scope` and record the result in D-4."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-3 says that cancelling only for pull requests means 'two quick merges into `main` each keep their own run, so a red commit on `main` is never hidden by a cancel'. In a GitHub Actions concurrency group, at most one run is in progress and one is pending. A newly queued run cancels the previous pending run whatever `cancel-in-progress` says. With three quick merges, the run of the middle commit is cancelled while it waits. The guarantee 'never hidden' does not hold as written.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Give push events a group unique per commit, for example `group: test-${{ github.event_name == 'pull_request' && github.ref || github.sha }}`. Or weaken the claim in D-3 to 'the latest commit always has a run'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The root `README.md` is Russian (lines 3–9), and it is the project's front page on GitHub. The language rule's exceptions name history as 'old Russian specs, archived Changes, `design/`', and the proposal's Non-goals list the same. Neither names `README.md`, and no task translates it. The next edit of the README, for example the tag `design-next-v0.2` of SL-T01, must add English text to a Russian file or translate the file. The rule does not say which.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md",
+        "openspec/changes/infra-baseline/proposal.md",
+        "README.md"
+      ],
+      "recommendation": "Translate `README.md` in this Change. It is not a policy path, so the agent can do it inside the Run. Or name it in the exceptions and the Non-goals, together with the PR that will translate it."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The language rule (`env`) says 'the marker «❗ Выполнить» is chat text'. The `maintainer-acts` rule sends the same marker into the PR as well: 'where the rule `process` says to ask in the PR — in the PR too'. The `process` rule asks in the PR for the waiver activation and for the `proposal.md` edit. So the Russian marker is written onto GitHub, which the language rule restricts to English, and the exception does not cover it.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Word the exception as 'the marker «❗ Выполнить» stays as is wherever it appears, in the chat or in a PR'. Or give the PR form an English marker."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "After translation, two notions share one word. The `tracking` rule uses an issue-title 'area' (`<area>: <what>`, with the values `s0`…`s4`, `sw`, `design`, `infra`). The `process` rule uses 'AREA', the WARRANT area that is one spec and an id prefix (`--area <AREA>`). In Russian they were different words: 'область' and AREA. The note to SL-T08 calls for one term, one definition, and that is why it chose 'AREA' over 'capability'. An agent can read `sw` or `infra` as an AREA, or `LG` as an issue area.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Rename the issue-title part in `tracking`, for example `<topic>: <what>`, and keep 'AREA' only for the WARRANT notion."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-3 and the `tracking` rule say the coordinator 'checks the last `test` run of `main` before dispatching'. They do not say what follows when that run is red. Does dispatch stop, do merges stop, or does the check only make sure the `P1` issue exists? They also do not name who fixes `main`, or the title area of the `bug` `P1` issue (`infra` or the slice). The `P1` label means 'blocks the current slice', which suggests blocking. The check itself has no stated outcome.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "State the reaction. For example: on a red `main` the coordinator dispatches no new Change and queues no merge except the fix; the issue is `infra:` `bug` `P1`; the session of the Change whose merge turned `main` red fixes it."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The 'first Change' column of the D-5 table gives `S0 / S3` for CT catalog and names no Change. Q4 and SL-K04 put the project namespace (CT-N05) and the acts of the owner (CT-A03, CT-A05) into S0 work in `s0-bootstrap`. If `s0-bootstrap` specifies catalog requirements, it holds three AREAs, which contradicts D-5's 'takes two AREAs (TR, AC)'. If it does not, nothing says which S0 Change, if any, first opens CT.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Name the S0 Change that first opens CT, or write 'none in S0, first in S3'. Say under which AREA the namespace requirements of `s0-bootstrap` are specified (TR or CT)."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "ST-M02 (docs PR #63) lists `clock` and `ids` among 'the ports of S0', with the adapters `service` and a fixed one (ST-T02). D-5 says only that port adapters are specified with their port, and names SR and AC. No AREA is named for the `clock` and `ids` ports. The natural home, RN runtime, has its first Change in S1 according to the table. The first S0 Change that specifies them has to pick an AREA on the spot.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Name the AREA of the `clock` and `ids` ports and their adapters in D-5 (for example RN, opened in S0 by `s0-skeleton`, or KR), and fix the 'first Change' column to match."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The `process` addition says 'Each Change works in its own git worktree and branch', but the same rule gives each Change three branches: `spec/`, `impl/` and `archive/`. The `tracking` addition says 'Each Change is one Claude Code session'. The `maintainer-acts` rule makes restarting the session a maintainer's act, and D-1 p. 3 requires a restart when `sync` changes `.claude/`. Read literally, both singulars contradict the flow the rules describe.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "Write 'its own worktree, in which its three branches follow in turn'. Say that a restarted session continues the Change's session, for example a session per Change, resumed after a restart."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-actor",
+      "statement": "The `tracking` addition requires the issue of a Change to sit in the milestone of its slice, and a slice to be 'a GitHub milestone and its umbrella issue'. The milestones (S0, SW, S1–S4, from Q17) do not exist yet. Neither the rule nor a task says who creates them and when, or whether that is the agent's work or a maintainer's act. SL-T05 covers the per-slice issues but not the milestones.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md",
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "recommendation": "Name the actor and the moment. For example: the agent creates the milestones with `gh api` before the issue of `s0-skeleton`, and the SL-T05 issue of a slice is its umbrella issue."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "SL-T09 has the walking skeleton cross every seam: apply with a rejection, store, projection and read. D-5 gives `s0-skeleton` only AR and CL. Q21 starts the wave-2 spec-PRs after the skeleton's spec-PR merges and the impl-PRs after its impl-PR merges, not after its archive. That holds only if the skeleton writes no requirement under LG, SR or PJ. Otherwise the AREA rule ('waits for the archive of the first') delays wave 2 until the skeleton is archived.",
+      "targets": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "recommendation": "State in D-5 that the skeleton specifies all its seams under AR and CL, or that wave 2 waits for the skeleton's archive."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Review-1 findings F-1…F-13 are resolved in cb42d60: `git apply --index` (F-1), the language scope with exceptions (F-2, F-3), the activity boundary, the cap and shared files (F-4), Q25–Q28 recorded on docs PR #63 commit 0178623 (F-5), task 0.1 (F-6), the owner of a red `main` (F-7, partly; see F-8), the D-5 source wording (F-8), SR (F-9), Changes outside a slice and `sw` with SL-T07 (F-10), D-6 permissions and Node (F-11), task 3.3 (F-12) and per-PR cancel (F-13, partly; see F-4)."
+    },
+    {
+      "id": "A-2",
+      "statement": "Issue #27 is already closed, as the proposal says. This was not checked with `gh`, which the review guard blocks."
+    },
+    {
+      "id": "A-3",
+      "statement": "SL-T07…SL-T09, ST-M01…ST-M03 and the launch record Q1–Q28 were read from branch `docs/sw-milestone` at 0178623. Docs PR #63 is assumed to merge with this content."
+    },
+    {
+      "id": "A-4",
+      "statement": "The `--scope` intersection rule in F-3 comes from the `warrant run start --help` text. It was not tested against `tasks.md`."
+    },
+    {
+      "id": "A-5",
+      "statement": "F-4 relies on GitHub's documented concurrency behaviour: one running and one pending run per group, and a new queued run cancels the pending one."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:d35bab7fcc82bf00a000a36d097c9d53f9260e56944bc38341f84e902a51ab75",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T17:40:00Z",
+    "finished_at": "2026-10-01T18:15:00Z"
+  }
+}
