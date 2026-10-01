@@ -1,0 +1,119 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3WACHR3R4XVF71DK5MP4QEB",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "The goal 'the maintainer never announces an approval or a merge' (design Goals; proposal Why) contradicts the watcher mapping. D-2 and the Appendix map a spec-PR only to `--until approved`. Under the rule `process`, after approval the session pushes `transition SPECIFIED`, and the spec-PR then waits for the maintainer's merge. The impl-PR branches from `main` with the spec-PR merged, and the start prompt makes the session wait until `status.mjs <change>` prints `startable`. Read literally, the push of the SPECIFIED commit starts `--until approved` again. That watcher exits at once with APPROVED, or, if a push dismisses the approval, waits for a second approval. Nothing watches the spec-PR merge, so the maintainer still has to announce it.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "recommendation": "Define the spec-PR as two waits in D-2 and in the Appendix: before the SPECIFIED commit use `--until approved`; after the push of the SPECIFIED commit use `--until merged`, and then start the impl-PR. Alternatively, say explicitly that the spec-PR merge is announced and drop 'or a merge' from the goal for spec-PRs."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "The proposal says a dependency 'counts as done only then', meaning when the archive-PR is merged and `ARCHIVED` is on `origin/main` (#67). D-3 says a dependency issue counts as done 'when it is closed or its Change is `ARCHIVED` on `origin/main`'. Suppose a Change issue is closed before the archive-PR merges, for example by `Closes #N` in its spec-PR or impl-PR body (the rule `tracking` does not say which PR closes the issue) or by hand. Then D-3 marks the dependency done and the proposal does not. This reopens the hole #67 fixes: the dependent Change can branch from a `main` without the archived requirements. The current code already has this disjunct (`d.state === 'CLOSED' || ...`).",
+      "targets": [
+        "openspec/changes/infra-pr-watch/proposal.md",
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "In D-3, count 'closed' as done only for an issue whose `Where:` names no Change (a docs issue). An issue that names a Change is done only when `ARCHIVED` is on `origin/main`. Also state what an `ABANDONED` dependency means (done, or blocks with a reason). Make `SKILL.md` say the same."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "The rule says the session 'goes on when it reports', and D-2 says 'the session then starts the next PR or the next Change'. Neither distinguishes the watcher's outcomes. D-1 gives `PR #<N> CLOSED` (closed without merge) the same exit code 0 as `MERGED`. Exit 2 (three `gh` errors in a row, e.g. a 3-minute network outage or a wrong PR number) and exit 3 (`--max-hours` reached) have no session behavior. Read literally, an impl-PR closed without merge leads the session to start the archive-PR, and exit 2 or 3 leads it to 'go on' or drop the wait silently.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "recommendation": "Give CLOSED-unmerged its own exit code, or require the session to read the printed state. In the rule paragraph, list what the session does on each outcome: APPROVED or MERGED, go on; CLOSED, stop and report to the maintainer; exit 2, restart the watcher or report; exit 3, report the waiting PR to the maintainer and restart the watcher."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The rule starts a watcher 'right after a push that leaves a PR waiting', and D-2 says 'One watcher per waiting PR'. A waiting PR gets more pushes: CI fixes and review fixes woken by auto-fix, re-pushes after CHANGES_REQUESTED, the SPECIFIED commit. The spec does not say what a push does while a watcher for the same PR is still running: start a second one (breaking 'one per PR', with duplicate wake-ups), keep the running one, or stop it and start a new one. The script has no lock or PID marker that would let a session find a running watcher.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "Say whether a later push to the same PR keeps the running watcher (no new start) or replaces it. Say how the session knows a watcher is running, for example its own background task list. Optionally, make `wait-pr.mjs` refuse a second instance per PR."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "The design assumes the background watcher lives as long as the wait, which can be up to 24 h by default. A background command dies with its session. The rule `process` restarts sessions when the process requires it, the maintainer restarts sessions, and the machine may sleep. Nothing says that a session which resumes or restarts with a PR still waiting must start the watcher again. After a restart, the approval or merge goes unnoticed and the maintainer has to announce it again.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "recommendation": "Add to the rule paragraph: on session start or resume, if the Change's PR is waiting for the maintainer (`gh pr view` or `status.mjs <change>`), start the watcher again. State the session-lifetime assumption in the design Context."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-3 changes only the AREA hold and the dependency rule. In the row state 'ARCHIVED on its branch, not yet on origin/main', `next()` in `status.mjs` checks `r.state === 'ARCHIVED'` before the open PR. So it returns `done`, and the open archive-PR drops out of the maintainer queue (built from rows whose `who` is the maintainer). After D-3, such a row holds its AREA but reads `done`, and its archive-PR merge, the very act #67 waits for, is not queued.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        ".claude/skills/slice/status.mjs"
+      ],
+      "recommendation": "Extend D-3: a Change that is `ARCHIVED` only on its branch shows `merge archive-PR #N` (who: maintainer) when the archive-PR is open, or `open archive-PR` (agent) when it is not, and it appears in the maintainer queue. Only `ARCHIVED` on `origin/main` is `done`."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-actor",
+      "statement": "The rule makes CI failures, conflicts and review comments come only from 'the app's auto-fix of the bound PR' and forbids polling them. Nobody is named to bind the PR to auto-fix. The spec also does not cover a PR with no binding: a CLI session without the desktop app, a PR opened by another session or by the coordinator, or a resumed session. In those cases, red CI on a waiting PR is seen by no one in the session. The maintainer does not merge, and the watcher waits silently until `--max-hours`.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "recommendation": "Name who binds the PR to auto-fix and when, for example the session right after `gh pr create`. Say what replaces auto-fix when there is no binding, for example one CI check at watcher exit, or `status.mjs`."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-1 for `--until approved` prints APPROVED 'or the merged/closed line if that comes first'. It does not say which line wins when one poll sees both, such as an approved PR that is already merged. Task 2.1 expects APPROVED 'on an approved PR' of the real repository, where approved PRs are usually already merged, so the expected output depends on this order.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/tasks.md"
+      ],
+      "recommendation": "Fix the order in D-1 (for example, MERGED or CLOSED before APPROVED). Make task 2.1 name the expected line for a merged and approved PR, and add a check of exit 3 with a small `--max-hours`."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "`reviewDecision` becomes `APPROVED` on this repository's PRs. This requires a review requirement on `main` and an approver other than the PR author (`homasters` machine user vs `Homasters-max`). `status.mjs` already relies on this. Task 2.1 checks it on a real PR."
+    },
+    {
+      "id": "A-2",
+      "statement": "The PR monitor (auto-fix) of the desktop app wakes the session on CI failures, conflicts and review comments, as the proposal states. Not verified."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:e47ee954b7500c539f6ae5dfe537c450cb343f91f1c89457d0092b10c9502bc2",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T12:00:00Z",
+    "finished_at": "2026-10-01T12:20:00Z"
+  }
+}

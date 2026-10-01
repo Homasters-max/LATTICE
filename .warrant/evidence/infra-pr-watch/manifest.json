@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://evidence-manifest/1",
+  "change": "infra-pr-watch",
+  "commit": "49d3b049aa5d311c7e8dc918fa11a1afcc2f32de",
+  "versions": {
+    "warrant": "0.10.0",
+    "openspec": "1.13.1",
+    "lock_hash": "sha256:c9110723fbc8d9136cab21991dc12b653c4ad077c96cbf7b912cc3254acd34b6",
+    "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8"
+  },
+  "evidence": [
+    "EVID-01M3WAKX8QCD8F18CE27HBCSZ9"
+  ]
+}
