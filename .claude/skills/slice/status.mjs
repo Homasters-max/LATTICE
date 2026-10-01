@@ -5,7 +5,7 @@
 import { execFileSync } from 'node:child_process';
 
 const WIP_MAX = 3;
-const WIP = new Set(['IMPLEMENTING', 'VERIFYING']);
+const IMPL = new Set(['APPROVED', 'IMPLEMENTING', 'VERIFYING']);
 const RANK = { PROPOSED: 1, SPECIFIED: 2, APPROVED: 3, IMPLEMENTING: 4, VERIFYING: 5, MERGED: 6, ARCHIVED: 7, ABANDONED: 8 };
 const ACTIVE = (s) => s && RANK[s] < RANK.ARCHIVED;
 const KINDS = ['archive', 'impl', 'spec'];
@@ -76,7 +76,8 @@ function parseIssue(i) {
   return {
     ...i,
     change: where.match(/Change `([^`]+)`/)?.[1] ?? null,
-    areas: where.includes('AREA') ? [...where.split('AREA')[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]) : [],
+    // "AREA `TR` + `AC` + `CT`" — the "+"-joined list right after the word; trailing prose is ignored
+    areas: (where.match(/AREA\s+(`?[A-Z]{2,}`?(?:\s*\+\s*`?[A-Z]{2,}`?)*)/)?.[1] ?? '').match(/[A-Z]{2,}/g) ?? [],
     depIssues: [...deps.matchAll(/#(\d+)/g)].map((m) => Number(m[1])),
     depBranches: [...deps.matchAll(/`([\w.-]+\/[\w.-]+)`/g)].map((m) => m[1]),
     umbrella: /^\s*- \[[ x]\] #\d+/m.test(i.body),
@@ -143,10 +144,28 @@ const rows = items.map((i) => {
   return { ...i, issueState: i.state, state, wt, prs: ip, open, merged, deps };
 });
 
-const wipCount = new Set([...[...live.values()].flatMap((m) => [...m].filter(([, s]) => WIP.has(s)).map(([c]) => c)),
-  ...rows.filter((r) => WIP.has(r.state)).map((r) => r.change)]).size;
+// In implementation (WIP): from the first impl commit until the impl-PR merges, across all slices.
+const implPR = (c, state) => prs.some((p) => p.headRefName === `impl/${c}` && p.state === state);
+const inImpl = (c) => implPR(c, 'OPEN') || (IMPL.has(changeState(c)) && !implPR(c, 'MERGED'));
+const candidates = new Set([...[...live.values()].flatMap((m) => [...m.keys()]), ...rows.map((r) => r.change).filter(Boolean),
+  ...[...refs, ...prs.map((p) => p.headRefName)].map((x) => x.match(/^(?:origin\/)?impl\/(.+)$/)?.[1]).filter(Boolean)]);
+const wip = [...candidates].filter(inImpl);
+const wipCount = wip.length;
+// An AREA is held from `warrant init change` (a record exists) until ARCHIVED or ABANDONED.
 const busy = new Map(); // AREA -> change holding it
-for (const r of rows) if (r.change && (ACTIVE(r.state) || (!r.state && r.wt))) for (const a of r.areas) busy.set(a, r.change);
+for (const r of rows) if (r.change && ACTIVE(r.state)) for (const a of r.areas) busy.set(a, r.change);
+
+// A red main (last completed `test` run on main failed) blocks dispatch.
+function mainHealth() {
+  try {
+    const [run] = gh('run', 'list', '--workflow', 'test.yml', '--branch', 'main', '--status', 'completed', '--limit', '1', '--json', 'conclusion,url');
+    if (!run) return { state: 'unknown', note: 'no completed test run on main yet' };
+    return { state: run.conclusion === 'success' ? 'green' : 'red', note: run.url };
+  } catch {
+    return { state: 'unknown', note: 'workflow test.yml not found — not blocking' };
+  }
+}
+const main = mainHealth();
 
 function next(r) {
   const p = r.open;
@@ -188,6 +207,7 @@ function next(r) {
 for (const r of rows) {
   [r.next, r.who] = next(r);
   r.startable = r.next === 'launch' || r.next === 'launch (docs PR)' || r.next === 'start impl-PR';
+  if (r.startable && main.state === 'red') [r.next, r.who, r.startable] = [`${r.next} — blocked: main is red`, '—', false];
 }
 
 const queue = [
@@ -203,8 +223,8 @@ const pick = (r) => ({ issue: r.number, change: r.change, areas: r.areas, state:
   worktree: r.wt?.path ?? null, url: r.url });
 const shown = focus ? rows.filter((r) => r.number === focus) : flag('--next') ? rows.filter((r) => r.startable) : rows;
 if (flag('--json')) {
-  console.log(JSON.stringify({ slice: slice.title, umbrella: umbrella?.number ?? null, wip: wipCount, wip_max: WIP_MAX,
-    busy_areas: Object.fromEntries(busy), maintainer_queue: queue, rows: shown.map(pick) }, null, 2));
+  console.log(JSON.stringify({ slice: slice.title, umbrella: umbrella?.number ?? null, main, wip: wipCount, wip_max: WIP_MAX,
+    wip_changes: wip, busy_areas: Object.fromEntries(busy), maintainer_queue: queue, rows: shown.map(pick) }, null, 2));
   process.exit(0);
 }
 const cell = (s) => String(s).replace(/\|/g, '\\|');
@@ -212,14 +232,18 @@ const stateCell = (r) => r.state ?? (r.wt ? 'launched' : r.change ? 'not started
 const prCell = (r) => (r.open ? `[#${r.open.number}](${r.open.url}) ${r.open.kind}${r.open.isDraft ? ' draft' : ''} · ${r.open.checks}` : '—');
 const depCell = (r) => r.deps.map((d) => `${d.label} ${d.done ? '✓' : '⏳'}`).join(' ') || '—';
 console.log(`## ${slice.title} — ${slice.description ?? ''}${umbrella ? ` · umbrella [#${umbrella.number}](${umbrella.url})` : ''}`);
-console.log(`WIP ${wipCount}/${WIP_MAX} (IMPLEMENTING + VERIFYING) · busy AREAs: ${[...busy].map(([a, c]) => `${a} (${c})`).join(', ') || '—'}`);
+console.log(`main: ${main.state} (${main.note})${main.state === 'red' ? ' — dispatch blocked' : ''}`);
+console.log(`WIP ${wipCount}/${WIP_MAX} in implementation${wip.length ? ` (${wip.join(', ')})` : ''} · held AREAs: ${[...busy].map(([a, c]) => `${a} (${c})`).join(', ') || '—'}`);
 console.log(queue.length ? `👤 Maintainer queue:\n${queue.map((q) => `- ${q.what} — ${q.url}`).join('\n')}` : '👤 Maintainer queue: empty');
 console.log('');
 if (focus) {
   const r = shown[0];
   console.log(`${r.startable ? 'startable' : 'not startable'}: #${r.number} ${r.change ?? '(no Change)'} — ${r.next}`);
 }
-if (!shown.length) { console.log(flag('--next') ? 'Nothing can start now.' : 'No issues in this milestone.'); process.exit(0); }
+if (!shown.length) {
+  console.log(!flag('--next') ? 'No issues in this milestone.' : main.state === 'red' ? `Nothing can start: main is red (${main.note}).` : 'Nothing can start now.');
+  process.exit(0);
+}
 console.log('| Issue | Change | AREA | State | PR · checks | Depends on | Next | Who |');
 console.log('|---|---|---|---|---|---|---|---|');
 for (const r of shown) {
