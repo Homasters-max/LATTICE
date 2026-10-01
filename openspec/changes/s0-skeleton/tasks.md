@@ -2,14 +2,14 @@
 
 ## 1. Structure test: module matrix and purity
 
-- [ ] 1.1 Policy data `modules` and `ports` in `test/architecture/structure.ts` and the project table of REQ-AR-009 in
+- [x] 1.1 Policy data `modules` and `ports` in `test/architecture/structure.ts` and the project table of REQ-AR-009 in
   `test/architecture/policy.ts`; rules `outside-matrix`, `import-direction`, `package-import` over the parsed tree;
   fixture `test/fixtures/structure/matrix/` (`REQ-AR-009`, design D-3); verified by tests with the token `SCN-AR-015`
   passing, and the tests `SCN-AR-009`…`SCN-AR-014` passing
-- [ ] 1.2 Purity of pure modules — `purity` with its import rules off for `trust`, `measure`, `ledger`, `codec`,
+- [x] 1.2 Purity of pure modules — `purity` with its import rules off for `trust`, `measure`, `ledger`, `codec`,
   `runtime`, `capabilities`; fixture `test/fixtures/structure/purity/` (`REQ-AR-010`, design D-3); verified by tests
   with the token `SCN-AR-016` passing
-- [ ] 1.3 The existing structure tests renamed to the tokens of the English requirements — SCN-AR-001…007 →
+- [x] 1.3 The existing structure tests renamed to the tokens of the English requirements — SCN-AR-001…007 →
   SCN-AR-008…014 (`REQ-AR-005`…`REQ-AR-008`); verified by tests with the tokens `SCN-AR-008`…`SCN-AR-014` passing, no
   test carrying `SCN-AR-001`…`SCN-AR-007` left, `SCN-AR-008` on the project with the modules of the
   project policy

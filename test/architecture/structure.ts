@@ -1,8 +1,9 @@
-// Structure checks (REQ-AR-001…REQ-AR-004, design D-1…D-3) over the TypeScript AST of a file tree and a policy: the
+// Structure checks (REQ-AR-005…REQ-AR-010, design D-3) over the TypeScript AST of a file tree and a policy: the
 // kernel perimeter imports nothing but itself and createHash of node:crypto and uses only the allowed free
 // identifiers; everything reachable from the kernel entry stays in the perimeter; source files import each other
-// without cycles; every node:test test is declared inside a function passed to a suite call. The checks parse source
-// text and never run the checked files.
+// without cycles; modules import each other by the matrix of ST-M01, and the pure ones keep the purity rules of the
+// kernel; every node:test test is declared inside a function passed to a suite call. The checks parse source text and
+// never run the checked files.
 
 import ts from "typescript";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
@@ -11,11 +12,31 @@ import { join, resolve } from "node:path";
 
 export type Violation = { readonly file: string; readonly line: number; readonly rule: string };
 
-/** Globs of the sources and of the kernel perimeter and the path of the kernel entry, relative to the tree root. */
+/**
+ * A module of the matrix (REQ-AR-009): its name, the glob of its files, what it may import — module names, `adapters`
+ * (every adapter) or `<module>:ports` (the port interface files under `src/<module>/ports/`) — and whether it may
+ * import `node:` built-ins and packages. A module that may import neither is pure (REQ-AR-010).
+ */
+export type Module = {
+  readonly name: string;
+  readonly files: string;
+  readonly imports: readonly string[];
+  readonly builtins: boolean;
+  readonly packages: boolean;
+};
+
+/** The modules and the ports (name → path of the interface file); adapters are `src/adapters/<port>-<name>/`. */
+export type Modules = { readonly list: readonly Module[]; readonly ports: Readonly<Record<string, string>> };
+
+/**
+ * Globs of the sources and of the kernel perimeter and the path of the kernel entry, relative to the tree root; the
+ * modules of REQ-AR-009, when given.
+ */
 export type Policy = {
   readonly sources: readonly string[];
   readonly entry: string;
   readonly perimeter: readonly string[];
+  readonly modules?: Modules;
 };
 
 // Closed list of free identifiers of the kernel (UNK-KR-007); Math and Date only in the forms of `nondeterminism`.
@@ -441,25 +462,28 @@ function mathFormOk(id: ts.Identifier): boolean {
 }
 
 /**
- * The purity rules over a perimeter file parsed without errors; an import stays in the kernel as a relative `.ts`
- * path of the perimeter (REQ-AR-001, design D-1).
+ * The purity rules over a file parsed without errors. With `inPerimeter` — a perimeter file: its imports stay in the
+ * kernel as relative `.ts` paths of the perimeter (REQ-AR-005). Without it — a file of a pure module: only
+ * `dynamic-import`, `forbidden-global` and `nondeterminism`, its imports being the matrix's (REQ-AR-010).
  */
 function purity(
   file: Parsed,
-  inPerimeter: (path: string) => boolean,
+  inPerimeter: ((path: string) => boolean) | null,
   report: (line: number, rule: string) => void,
 ): void {
   const sf = file.sf;
-  // every `/// <reference …>` directive of the file head, whatever its attribute (`path`, `types`, `lib`,
-  // `no-default-lib`): the parser keeps only some of them in `referencedFiles` and its siblings
-  for (const c of ts.getLeadingCommentRanges(sf.text, 0) ?? []) {
-    if (REFERENCE.test(sf.text.slice(c.pos, c.end))) report(lineOf(sf, c.pos), "import-outside-kernel");
-  }
-  for (const imp of file.imports) {
-    if (imp.spec === "node:crypto") {
-      if (!imp.hashOnly) report(imp.line, "crypto-import");
-    } else if (imp.target === null || !imp.target.endsWith(".ts") || !inPerimeter(imp.target)) {
-      report(imp.line, "import-outside-kernel");
+  if (inPerimeter !== null) {
+    // every `/// <reference …>` directive of the file head, whatever its attribute (`path`, `types`, `lib`,
+    // `no-default-lib`): the parser keeps only some of them in `referencedFiles` and its siblings
+    for (const c of ts.getLeadingCommentRanges(sf.text, 0) ?? []) {
+      if (REFERENCE.test(sf.text.slice(c.pos, c.end))) report(lineOf(sf, c.pos), "import-outside-kernel");
+    }
+    for (const imp of file.imports) {
+      if (imp.spec === "node:crypto") {
+        if (!imp.hashOnly) report(imp.line, "crypto-import");
+      } else if (imp.target === null || !imp.target.endsWith(".ts") || !inPerimeter(imp.target)) {
+        report(imp.line, "import-outside-kernel");
+      }
     }
   }
   const visit = (node: ts.Node): void => {
@@ -560,12 +584,82 @@ function cycles(nodes: readonly string[], parsed: ReadonlyMap<string, Parsed>, r
   for (const file of nodes) if (!state.has(file)) visit(file);
 }
 
+// ---- REQ-AR-009, REQ-AR-010: the module matrix and pure modules -----------------------------------------------
+
+const ADAPTER = /^([a-z]+)-[a-z0-9][a-z0-9-]*$/;
+
+/** A module a file belongs to: a module of the list, or an adapter `src/adapters/<port>-<name>/` of a known port. */
+type Owner = { readonly module: Module; readonly adapterPort: string | null };
+
+function owners(modules: Modules): (path: string) => Owner | null {
+  const listed = modules.list.map((module) => ({ module, matches: globList([module.files]) }));
+  return (path) => {
+    const segs = path.split("/");
+    if (segs[0] === "src" && segs[1] === "adapters") {
+      const port = segs.length >= 4 ? ADAPTER.exec(segs[2] as string)?.[1] : undefined;
+      if (port === undefined || !Object.hasOwn(modules.ports, port)) return null;
+      const module: Module = { name: `adapters/${segs[2]}`, files: "", imports: [], builtins: true, packages: true };
+      return { module, adapterPort: port };
+    }
+    const hit = listed.find((m) => m.matches(path));
+    return hit === undefined ? null : { module: hit.module, adapterPort: null };
+  };
+}
+
+/** Whether a file of `from` may have an edge to `target` (REQ-AR-009). */
+function mayImport(from: Owner, target: string, ownerOf: (path: string) => Owner | null, modules: Modules): boolean {
+  const to = ownerOf(target);
+  if (to !== null && to.module.name === from.module.name) return true;
+  if (from.adapterPort !== null) return target === normalize(modules.ports[from.adapterPort] as string);
+  if (to === null) return false;
+  const allowed = from.module.imports;
+  if (allowed.includes(to.module.name)) return true;
+  if (to.adapterPort !== null) return allowed.includes("adapters");
+  return allowed.includes(`${to.module.name}:ports`) && target.startsWith(`src/${to.module.name}/ports/`);
+}
+
+/**
+ * `outside-matrix`, `non-ts-file`, `import-direction`, `package-import` (REQ-AR-009) and the purity of pure modules
+ * (REQ-AR-010) over the source files under `src/` that are neither perimeter files nor files with `parse-error`.
+ */
+function matrix(
+  files: readonly string[],
+  parsed: ReadonlyMap<string, Parsed>,
+  modules: Modules,
+  report: Report,
+): void {
+  const ownerOf = owners(modules);
+  for (const file of files) {
+    const owner = ownerOf(file);
+    if (owner === null) {
+      report(file, 0, "outside-matrix");
+      continue;
+    }
+    const facts = parsed.get(file);
+    if (facts === undefined) {
+      report(file, 1, "non-ts-file");
+      continue;
+    }
+    const { builtins, packages } = owner.module;
+    for (const imp of facts.imports) {
+      if (isRelative(imp.spec)) {
+        if (imp.target !== null && !mayImport(owner, imp.target, ownerOf, modules)) {
+          report(file, imp.line, "import-direction");
+        }
+      } else if (imp.spec.startsWith("node:") ? !builtins : !packages) {
+        report(file, imp.line, "package-import");
+      }
+    }
+    if (!builtins && !packages) purity(facts, null, (line, rule) => report(file, line, rule));
+  }
+}
+
 // ---- the check -----------------------------------------------------------------------------------------------
 
 const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
- * Violations of the tree at `root` under `policy` (REQ-AR-001, REQ-AR-003, REQ-AR-004): distinct file–line–rule
+ * Violations of the tree at `root` under `policy` (REQ-AR-005, REQ-AR-007…REQ-AR-010): distinct file–line–rule
  * triples ordered by file (UTF-16 code units), line as a number, rule (UTF-16 code units). `no-kernel` alone, at line
  * 0, by the first condition met: no root directory (named as given), no `*.ts` file in the perimeter (the root), no
  * entry file (the entry path).
@@ -601,6 +695,13 @@ export function checkStructure(root: string, policy: Policy): Violation[] {
   }
   perimeter(entry, parsed, inPerimeter, report);
   cycles(files.filter((file) => inSources(file) && parsed.has(file)), parsed, report);
+  if (policy.modules !== undefined) {
+    const checked = files.filter(
+      (file) =>
+        inSources(file) && file.startsWith("src/") && !inPerimeter(file) && parsed.get(file)?.errorLine == null,
+    );
+    matrix(checked, parsed, policy.modules, report);
+  }
   return [...found.values()].sort(
     (a, b) => byCodeUnits(a.file, b.file) || a.line - b.line || byCodeUnits(a.rule, b.rule),
   );
