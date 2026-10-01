@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "pin-v0-10-0",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-01T15:30:30.414Z",
+      "by": "cli:local"
+    }
+  ]
+}
