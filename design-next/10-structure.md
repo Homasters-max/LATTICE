@@ -23,6 +23,11 @@ How the code is split into modules and which tests keep the split honest. The ru
 | `assembly` | builds the runtime from configuration (PL-A03) | everything above |
 | `cli` | commands (PL-E02) | `assembly` |
 
+| ID | Rule |
+|---|---|
+| ST-M02 | No new module, layer or port without a second real adapter or a named invariant (a rule ID) that needs it; a hypothetical seam is a defect. This generalises NX-24. The ports of S0 satisfy it: `store` (JSONL, memory; LG-S02), `acts` (`init`, `fixture`, `recorded`, `github`; LG-A04), `clock` and `ids` (`service` and a fixed one, ST-T02). |
+| ST-M03 | Records are frozen plain data plus pure functions; there is no class per record type (SL-T02). DDD vocabulary — aggregate, value object, domain event, application service, application layer — is not used in code or documents: `entity` and `event` mean only what OM-K01 says, and ST-M01 is the only module split (domain ≈ the pure modules of ST-S03, infrastructure ≈ `adapters`, orchestration ≈ `assembly` and `cli`). |
+
 ## Structure tests
 
 | ID | Rule |
@@ -44,3 +49,4 @@ How the code is split into modules and which tests keep the split honest. The ru
 - 2026-10-01 — created from the design v0.6 audit (T36), grilled.
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): module `policy` renamed `trust`; module `measure` for operators, metrics and the gate (D1); `codec` and `runtime` imports of `ledger`; judge prompts in `adapters` (D2); DP-B13 in ST-S01; who imports `codec` (ST-S02); `assembly` outside purity (ST-S03); `acts` contract tests (ST-T01).
 - 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: `measure` holds policy evaluation and the target check (A1), the gate is a step of apply in `ledger` (A2), `cite` in `ledger` (A4), `capabilities` reads `ledger` through the read view only.
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): no seam without a second real adapter or a named invariant (ST-M02); records are plain data, no DDD vocabulary, ST-M01 is the only module split (ST-M03).

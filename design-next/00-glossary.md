@@ -55,13 +55,16 @@ One term — one definition. A term already defined by a rule points to that rul
 | `setup`, `bindings` | PL-A01, PL-A02 |
 | adapter block | PL-A05 |
 | `service` (an adapter, not the `live` status fact) | PL-K02 |
-| store commands, `cite`, `bench` | PL-E02 |
+| store commands, `cite`, `bench`, `draft` | PL-E02 |
 | need | LN-N01 |
 | trust evidence | TR-V01 |
 | bench item, bench set, `trap`, `blank` | BN-S01, BN-S02 |
 | `variants` | BN-S03 |
 | `tune`, `holdout` | BN-S05 |
 | report | BN-R02 |
+| switch (SW) | SL-T07, SL-SW |
+| AREA (a WARRANT area) | SL-T08 |
+| walking skeleton | SL-T09 |
 
 ## Terms defined here
 
@@ -88,3 +91,4 @@ One term — one definition. A term already defined by a rule points to that rul
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): block and content block (GL-01), `judge` as a recorded port (GL-02), execution tuple with adapter code hash (GL-07), tail (GL-12); pointers added for record, current revision, referrers, store, evidence, segment, genesis, `upgrade`, md import, namespace policy and the owner-act floor, act, policy of a point, baseline, gate, applies to, `judge@n`, run record, store commands, report; follow-up: semantic judgement (GL-13).
 - 2026-10-01 — corrections F1–F6: pointer for `supersedes` and successor (OM-I07); evidence is whole run records (LG-R02).
 - 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: pointers for policy evaluation, authoritative run, sure band and grey zone, effect, stage and run outcome, fallback, input fingerprint, read view, adapter block, `cite` and `bench`, trust evidence, `variants`, `tune` and `holdout`; adapter blocks in the execution tuple (GL-07); kernel and LATTICE versions (GL-14).
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): pointers for the switch (SL-T07), AREA (SL-T08), the walking skeleton (SL-T09) and the store command `draft` (PL-E02).
