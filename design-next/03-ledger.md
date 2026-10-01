@@ -12,6 +12,7 @@ How records (02) are ordered, stored, verified and changed through the git workf
 | LG-S02 | Storage is behind the `store` port. Adapters: JSONL file, memory (tests). No database until a measurement shows it is needed. One set of contract tests on `store` runs against every adapter; the memory adapter shares one ledger between several writers, so "two writers" and "expired lock" (LG-C06) are tested without a disk. |
 | LG-S03 | A project store is a pair of ledgers of the same format: **`knowledge`** — in git, changed only through proposals (blocks, types, decision points, bench sets, status facts); **`runtime`** — local, append-only, in segments (LG-R05): runs with their tapes (PL-R01, PL-K01) and local verdicts. |
 | LG-S04 | `runtime` references `knowledge` by `ref@n` plus the knowledge commit hash. |
+| LG-S05 | Paths. The project store lives in the repository folder `store/`: the `knowledge` ledger `store/knowledge.jsonl`, proposals `store/proposals/`, evidence `store/evidence/` (LG-R02), the init configuration `store/lattice.json` (CT-N05). Local state — `runtime` segments (LG-R05), the projection cache (LG-J04), `bindings` (PL-A02) — lives in `.lattice/`, ignored by git. The `std` package lives in `std/` (OM-L02, LG-G02). |
 
 ## Commits
 
@@ -84,15 +85,17 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 | LG-G02 | `std` is loaded by the second commit through apply (LG-A07). The hash of the `std` package is a constant of the LATTICE version, verified when the package is loaded and when a store opens. An update `std@n → @n+1` is a proposal made by the store command `upgrade` of a new LATTICE version (PL-E02), in a `machine` session with purpose `init` (TR-B02); it records that version and goes through a PR with an owner act (CT-N03), like any change to `knowledge`. An `upgrade` that changes the hash of a built-in capability (PL-C01) carries, in the same PR, new revisions of the project pipelines that pin it, with their reports (DP-L06). |
 | LG-G03 | A new kernel version appends a separate transition commit. Older records remain valid under the kernel they were written with. History is never rewritten. The mechanics of the transition commit are deferred (LT-01). |
 | LG-G04 | Store init writes commits 1–4: genesis (LG-G01), `std` (LG-G02), the project namespace (CT-N05), `setup@1` with its `live` fact (PL-A01). |
+| LG-G05 | Before the switch (SL-T07) the kernel version is `0` and every store is disposable: it is rebuilt from `md` (LG-B01), and a kernel change is free. At the switch genesis is written under kernel `1`, and md import runs once with the maintainer's act (LG-B07). After the switch a kernel change requires the mechanics of LT-01 first. |
+| LG-G06 | The kernel version is a constant of kernel code: `0` before the switch, `1` from it (LG-G05). The LATTICE version is the package version (semver). `std@1` is loaded at the switch, and its hash is a constant of the LATTICE version (LG-G02). |
 
 ## Bootstrap
 
 | ID | Rule |
 |---|---|
-| LG-B01 | Until the first working slice, `design-next/*.md` is the source, written by hand. |
-| LG-B02 | The first slice imports the `md` files into blocks through an ordinary proposal. From then on `md` is export only, and a hand edit turns CI red (LG-P05). |
+| LG-B01 | Until the switch (SL-T07), `design-next/*.md` is the source, written by hand. |
+| LG-B02 | At the switch (SL-T07) the `md` files are imported into blocks through an ordinary proposal. From then on `md` is export only, and a hand edit turns CI red (LG-P05). |
 | LG-B03 | Therefore `md` is written now so that it parses into blocks: one ID — one block (README conventions). |
-| LG-B04 | Before S0 the `md` files get one normalization pass to the codec format (LG-B06); normalization rewrites every other form into a form of LG-B06. The S0 criterion is the round trip of the normalized files: import, then export, gives the same bytes (SL-S0). Normalization writes the ID of every prose block into the `md` once; it is never recomputed, so later imports never shift references. |
+| LG-B04 | Before S0 the `md` files get one normalization pass to the codec format (LG-B06); normalization rewrites every other form into a form of LG-B06. The S0 criterion is the round trip of the normalized files: import, then export, gives the same bytes (SL-S0). Normalization writes the ID of every prose block (letter `Z`, LG-B06) into the `md` once; it is never recomputed, so later imports never shift references. |
 | LG-B05 | One codec module holds the whole `md` format: md import (`md` → proposal) and export (blocks → `md`). No other code knows the format. |
 | LG-B06 | Mapping of `md` to blocks: |
 
@@ -103,7 +106,7 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 | a table without IDs right after a rule whose text ends with ":" | a field of that rule's block |
 | a table without IDs and without such a rule (01 Roles, stress test) | one prose block |
 | an ID | entity `id` `lattice/<ID in lower case>`: `DP-B01` → `lattice/dp-b01` |
-| a prose paragraph or a list without an ID (Purpose, notes under tables) | one block per paragraph or list; gets its own ID (`DP-P01`, `OM-P01`, …) once, at normalization (LG-B04), and becomes a `knowledge` block |
+| a prose paragraph or a list without an ID (Purpose, notes under tables) | one block per paragraph or list; gets its own ID (`DP-Z01`, `OM-Z01`, `LG-Z01`, …) once, at normalization (LG-B04), and becomes a `knowledge` block; the letter `Z` is reserved for prose IDs, and no rule group uses it |
 | a fenced code block of any language | a block of type `example` (extends `knowledge`); its text is kept verbatim as a string, never parsed |
 | an ID mentioned in text, e.g. "(DP-C04)", and every ID of a range ("DP-C01…C05") | a floating reference (OM-R02) extracted from the text; the text itself is stored verbatim, and export writes it back, never regenerating it from references |
 | a reference to a section or a document ("01 Model", "(04, 05)") | part of the prose text, stored verbatim |
@@ -129,3 +132,4 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): intents carry `id`, `at` and `by`, canonical order inside a commit, `at` of a commit from its session event (LG-P01, LG-C01, LG-C02, LG-C07); gate of a `live` pipeline, namespace policy and trust rules (LG-A03); acts and act record (LG-A04, LG-A05); named exemptions for the session type and the namespace entity (LG-A07); evidence defined, hashes verified by apply (LG-R02); participant events in `runtime` commits (LG-R05); genesis session `id` constant (LG-G01); `upgrade` under `init`, re-pinned pipelines (LG-G02); md → blocks for every form of the corpus, prose verbatim (LG-B04, LG-B06); md import and its act (LG-B05, LG-B07).
 - 2026-10-01 — corrections F1–F6: the unit of evidence is a whole run, written by the `writes-proposal` stage (LG-R02); runs, not segments, are cited (LG-R04).
 - 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: evidence written only by `cite` (LG-R02; A4), report admission among the checks of apply (LG-A03), acts admitted in CI through `github` (LG-P05).
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): paths of the store and local state (LG-S05); the store is disposable before the switch, kernel `0` → `1` at the switch (LG-G05); kernel, LATTICE and `std` versions (LG-G06); `md` is the source until the switch and is imported at it (LG-B01, LG-B02); prose IDs use the letter `Z` (LG-B04, LG-B06).

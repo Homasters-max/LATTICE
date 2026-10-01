@@ -2,7 +2,7 @@
 
 ## Purpose
 
-How the code is split into modules and which tests keep the split honest. The rules of 02–08 say what the system does; this document says where the code for it may live and what it may import.
+How the code is split into modules, which tests keep the split honest, and how audits keep the architecture from degrading. The rules of 02–08 say what the system does; this document says where the code for it may live and what it may import.
 
 ## Modules
 
@@ -23,6 +23,11 @@ How the code is split into modules and which tests keep the split honest. The ru
 | `assembly` | builds the runtime from configuration (PL-A03) | everything above |
 | `cli` | commands (PL-E02) | `assembly` |
 
+| ID | Rule |
+|---|---|
+| ST-M02 | No new module, layer or port without a second real adapter or a named invariant (a rule ID) that needs it; a hypothetical seam is a defect. This generalises NX-24. The ports of S0 satisfy it: `store` (JSONL, memory; LG-S02), `acts` (`init`, `fixture`, `recorded`, `github`; LG-A04), `clock` and `ids` (`service` and a fixed one, ST-T02). |
+| ST-M03 | Records are frozen plain data plus pure functions; there is no class per record type (SL-T02). DDD vocabulary — aggregate, value object, domain event, application service, application layer — is not used in code or documents: `entity` and `event` mean only what OM-K01 says, and ST-M01 is the only module split (domain ≈ the pure modules of ST-S03, infrastructure ≈ `adapters`, orchestration ≈ `assembly` and `cli`). |
+
 ## Structure tests
 
 | ID | Rule |
@@ -39,8 +44,19 @@ How the code is split into modules and which tests keep the split honest. The ru
 | ST-T01 | One set of contract tests per port runs against every adapter of that port: `service`, `recorded`, `fixture` (PL-K02), `store` adapters (LG-S02) and `acts` adapters (LG-A04). A judge adapter's set includes exact coverage of the candidate set (DP-R05). |
 | ST-T02 | Fixtures are keyed by meaning — the need and the ids of the candidates — never by a prompt hash, so a prompt edit does not invalidate every fixture. Deterministic adapters for tests: `clock-fixed`, `ids-counter`. |
 
+## Architecture audit
+
+| ID | Rule |
+|---|---|
+| ST-A01 | Four levels keep the architecture from degrading: (1) fitness tests on every PR in CI — the structure test (ST-S01…S03, ST-K01), the type check, design coverage (SL-T06), a fixture per rule ID (LG-A02); (2) an implementation review on every impl-PR before `VERIFYING` — Standards and Spec against the design, in the deep-module vocabulary; a finding inside the Change is fixed there, one outside it becomes an issue; (3) an **architecture audit** of the whole `src/` against `design-next` at the end of every wave and on a trigger (ST-A02), written to `reviews/` and grilled; (4) refactor Changes after an audit (ST-A04). There is no audit after every Change: on a half-built slice it is noise, and its refactor would touch AREAs other Changes hold (SL-T08). |
+| ST-A02 | Triggers of an audit outside the end of a wave: a change of a file owned by the skeleton (SL-T08, SL-T09), a new module or port (ST-M02), a Change touching three modules or more, and the switch (SL-T07) — the kernel freezes as version `1` after it (LG-G06), so an audit precedes it. |
+| ST-A03 | **Ratchet**: every accepted audit finding that can be checked mechanically becomes a fitness test of level (1) of ST-A01, so it cannot regress; the others become a rule with an ID in `design-next`. Findings are triaged by strength: `Strong` → a refactor Change of the next wave, `Worth exploring` → an issue `P2`, `Speculative` → an issue `P3` or 11-later. |
+| ST-A04 | A refactor Change changes no behaviour (`skip_specs`, or a MODIFIED requirement whose scenarios stay), keeps the tests green before and after, and holds its AREA like any Change (SL-T08); it is never mixed into a feature Change. |
+
 ## History
 
 - 2026-10-01 — created from the design v0.6 audit (T36), grilled.
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): module `policy` renamed `trust`; module `measure` for operators, metrics and the gate (D1); `codec` and `runtime` imports of `ledger`; judge prompts in `adapters` (D2); DP-B13 in ST-S01; who imports `codec` (ST-S02); `assembly` outside purity (ST-S03); `acts` contract tests (ST-T01).
 - 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: `measure` holds policy evaluation and the target check (A1), the gate is a step of apply in `ledger` (A2), `cite` in `ledger` (A4), `capabilities` reads `ledger` through the read view only.
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): no seam without a second real adapter or a named invariant (ST-M02); records are plain data, no DDD vocabulary, ST-M01 is the only module split (ST-M03).
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`), Q29–Q34: four levels against degradation and the architecture audit (ST-A01), its triggers (ST-A02), the ratchet and triage by strength (ST-A03), refactor Changes (ST-A04).
