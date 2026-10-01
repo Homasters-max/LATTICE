@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WA8CH1731JC1V6X1P8CH9S",
+  "claim": {
+    "text": "Homasters-max approved infra-baseline for VERIFYING->MERGED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "f946de2aaeb23c650b550a48e5900e82ee799af4",
+    "base_commit": "6a968ef3403da651bff424bf1af7e24cdf7a3b7e",
+    "spec_revision": "openspec/changes/infra-baseline@f946de2aaeb23c650b550a48e5900e82ee799af4",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/68"
+  },
+  "context_hash": "sha256:3d1f80a18cb35ea884dd3fd0d23ae2811da0daeab16406813872c7e5241544e8",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-01T18:05:05.442Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}
