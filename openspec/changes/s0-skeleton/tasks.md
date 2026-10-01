@@ -52,7 +52,7 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Manual acceptance in an empty temporary folder: `init`, `import-md` of the fixture, `apply`, `export` through
+- [x] 6.1 Manual acceptance in an empty temporary folder: `init`, `import-md` of the fixture, `apply`, `export` through
   `node --experimental-strip-types <repo>/src/cli/main.ts` (SL-T06); verified by the four exit codes 0 and an empty
   `git diff --no-index` between the fixture and the export, recorded in the impl-PR body
 - [ ] 6.2 `npm run typecheck`, `npm test` and `warrant verify s0-skeleton`; verified by all three succeeding, and
