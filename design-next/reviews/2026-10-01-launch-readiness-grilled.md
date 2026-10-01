@@ -3,8 +3,8 @@
 - **Date:** 2026-10-01
 - **Status:** review record — input for decisions, not norm. The norm is the rules it names in 00–11.
 - **Input:** is `design-next` ready to start S0, and how does LATTICE come to run on itself?
-- **How:** grilling in rounds; every decision accepted by the maintainer on 2026-10-01. Applied to `design-next` 00, 03, 06, 09, 10, 11 and the README in the same PR. Q25–Q28 are follow-up decisions of the same day about tracking the work; they are process, not design, so no `design-next` rule holds them.
-- **Outcome:** a switch milestone SW between S0 and S1 (SL-T07, SL-SW); slices start with a walking skeleton and grow per AREA in parallel Changes (SL-T08, SL-T09); development discipline (ST-M02, ST-M03); `import-md --diff` not taken (NX-26). No NX revisited.
+- **How:** grilling in rounds; every decision accepted by the maintainer on 2026-10-01. Applied to `design-next` 00, 03, 06, 09, 10, 11 and the README in the same PR. Q25–Q28 are follow-up decisions of the same day about tracking the work; they are process, not design, so no `design-next` rule holds them. Q29–Q34 ("architecture does not degrade") are follow-up decisions of the same day, recorded as ST-A01…A04.
+- **Outcome:** a switch milestone SW between S0 and S1 (SL-T07, SL-SW); slices start with a walking skeleton and grow per AREA in parallel Changes (SL-T08, SL-T09); development discipline (ST-M02, ST-M03); architecture audit and ratchet (ST-A01…A04); `import-md --diff` not taken (NX-26). No NX revisited.
 
 ## Decisions
 
@@ -36,6 +36,12 @@
 | Q26 | How are sessions organised? | One Claude Code session per Change, in its own worktree, started from the Change's issue as a background-task chip. The current session is the coordinator of the slice — dispatch, review, merge queue — and never writes a Change's code. One sidebar group per slice. | rule `tracking` (Change `infra-baseline`), skill `slice` |
 | Q27 | What supports the coordinator? | A project skill `slice` (status, next, launch), added in a separate process PR. | skill `slice` |
 | Q28 | Where is this model written down? | In the project rule `tracking`, by the Change `infra-baseline` (#28). | rule `tracking` (Change `infra-baseline`) |
+| Q29 | How does the architecture not degrade? | Four levels instead of an audit after each Change: fitness tests on every PR, an implementation review on every impl-PR, an architecture audit of the whole `src/`, refactor Changes after an audit. An audit after each Change is noise on a half-built slice, and its refactor would touch AREAs other Changes hold. | ST-A01 |
+| Q30 | When does an architecture audit run? | At the end of each wave — after the skeleton, after wave 2, before SW — plus on triggers: a change of a file owned by the skeleton, a new module or port, a Change touching three modules or more, and the switch. | ST-A01, ST-A02 |
+| Q31 | What happens to audit findings? | Triage by strength: `Strong` → a refactor Change of the next wave, `Worth exploring` → an issue `P2`, `Speculative` → an issue `P3` or 11-later. Ratchet: a finding that can be checked mechanically becomes a fitness test, the others a rule with an ID. | ST-A03, ST-A04 |
+| Q32 | Is the implementation review mandatory? | Yes, on every impl-PR before `VERIFYING`; its result goes into the impl-PR body. | ST-A01 |
+| Q33 | Where is this recorded? | As ST-A01…A04 in 10-structure, and as row `I-7` of Change `infra-baseline` in the project rule `process`. | ST-A01…A04; rule `process` (Change `infra-baseline`, `I-7`) |
+| Q34 | When is the first audit? | The first audit is the refresh of the kernel review at the start of `s0-kernel` (#55); the first full audit runs after wave 2, before `s0-roundtrip`. | ST-A01, ST-A02; planning, not norm |
 
 ## Development principles reviewed
 

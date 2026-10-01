@@ -65,6 +65,8 @@ One term — one definition. A term already defined by a rule points to that rul
 | switch (SW) | SL-T07, SL-SW |
 | AREA (a WARRANT area) | SL-T08 |
 | walking skeleton | SL-T09 |
+| architecture audit | ST-A01 |
+| ratchet | ST-A03 |
 
 ## Terms defined here
 
@@ -92,3 +94,4 @@ One term — one definition. A term already defined by a rule points to that rul
 - 2026-10-01 — corrections F1–F6: pointer for `supersedes` and successor (OM-I07); evidence is whole run records (LG-R02).
 - 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: pointers for policy evaluation, authoritative run, sure band and grey zone, effect, stage and run outcome, fallback, input fingerprint, read view, adapter block, `cite` and `bench`, trust evidence, `variants`, `tune` and `holdout`; adapter blocks in the execution tuple (GL-07); kernel and LATTICE versions (GL-14).
 - 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): pointers for the switch (SL-T07), AREA (SL-T08), the walking skeleton (SL-T09) and the store command `draft` (PL-E02).
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`), Q29–Q34: pointers for the architecture audit (ST-A01) and the ratchet (ST-A03).
