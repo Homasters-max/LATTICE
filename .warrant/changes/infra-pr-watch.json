@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "infra-pr-watch",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-01T18:06:07.171Z",
+      "by": "cli:local"
+    }
+  ]
+}
