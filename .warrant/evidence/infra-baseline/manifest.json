@@ -17,6 +17,6 @@
   "gates": {
     "ids-valid": "PASS",
     "required-artifacts-present": "PASS",
-    "spec-valid": "PASS"
+    "spec-valid": "BLOCKED"
   }
 }
