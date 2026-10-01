@@ -54,19 +54,23 @@ function warrantStates(cwd) {
 }
 const max = (a, b) => (!a ? b : !b ? a : RANK[b] > RANK[a] ? b : a);
 
+// The state in the record of a Change on a git ref, or null.
+function recordState(ref, change) {
+  if (!refs.has(ref)) return null;
+  const rec = git('show', `${ref}:.warrant/changes/${change}.json`);
+  try { return rec ? JSON.parse(rec).change_state ?? null : null; } catch { return null; }
+}
 const stateCache = new Map();
 function changeState(change) {
   if (stateCache.has(change)) return stateCache.get(change);
   let s = warrantStates(process.cwd()).get(change);
-  for (const ref of ['origin/main', ...KINDS.flatMap((k) => [`${k}/${change}`, `origin/${k}/${change}`])]) {
-    if (!refs.has(ref)) continue;
-    const rec = git('show', `${ref}:.warrant/changes/${change}.json`);
-    if (rec) try { s = max(s, JSON.parse(rec).change_state); } catch { /* ignore */ }
-  }
+  for (const ref of ['origin/main', ...KINDS.flatMap((k) => [`${k}/${change}`, `origin/${k}/${change}`])]) s = max(s, recordState(ref, change));
   for (const w of worktrees) if (KINDS.some((k) => w.branch === `${k}/${change}`)) s = max(s, warrantStates(w.path).get(change));
   stateCache.set(change, s);
   return s;
 }
+// An archive-PR is merged when the record on origin/main is ARCHIVED.
+const archivedOnMain = (change) => recordState('origin/main', change) === 'ARCHIVED';
 const worktreeOf = (name) => worktrees.find((w) => w.branch && w.branch.split('/').slice(1).join('/') === name);
 
 // ---------- issues ----------
@@ -133,8 +137,12 @@ const rows = items.map((i) => {
   const deps = [
     ...i.depIssues.map((n) => {
       const d = issue(n);
-      const done = d.state === 'CLOSED' || (d.change && changeState(d.change) === 'ARCHIVED');
-      return { label: `#${n}`, done };
+      // A Change dependency is done only when its archive-PR is merged; a docs issue when it is closed.
+      if (!d.change) return { label: `#${n}`, done: d.state === 'CLOSED' };
+      const s = changeState(d.change);
+      if (s === 'ABANDONED') return { label: `#${n} abandoned`, done: false, decide: true };
+      if (!s && d.state === 'CLOSED') return { label: `#${n} closed without a Change`, done: false, decide: true };
+      return { label: `#${n}`, done: archivedOnMain(d.change) };
     }),
     ...i.depBranches.map((b) => {
       const p = prs.find((x) => x.headRefName === b);
@@ -151,9 +159,11 @@ const candidates = new Set([...[...live.values()].flatMap((m) => [...m.keys()]),
   ...[...refs, ...prs.map((p) => p.headRefName)].map((x) => x.match(/^(?:origin\/)?impl\/(.+)$/)?.[1]).filter(Boolean)]);
 const wip = [...candidates].filter(inImpl);
 const wipCount = wip.length;
-// An AREA is held from `warrant init change` (a record exists) until ARCHIVED or ABANDONED.
+// An AREA is held from `warrant init change` (a record exists) until the archive-PR is merged into main
+// (the record is ARCHIVED on origin/main) or the Change is ABANDONED.
+const holds = (r) => r.change && (ACTIVE(r.state) || (r.state === 'ARCHIVED' && !archivedOnMain(r.change)));
 const busy = new Map(); // AREA -> change holding it
-for (const r of rows) if (r.change && ACTIVE(r.state)) for (const a of r.areas) busy.set(a, r.change);
+for (const r of rows) if (holds(r)) for (const a of r.areas) busy.set(a, r.change);
 
 // A red main (last completed `test` run on main failed) blocks dispatch.
 function mainHealth() {
@@ -171,21 +181,26 @@ function next(r) {
   const p = r.open;
   const ci = p?.checks === 'running' ? ' (CI running)' : '';
   if (r.state === 'ABANDONED') return ['abandoned', '—'];
-  if (r.state === 'ARCHIVED' || (!r.state && r.issueState === 'CLOSED')) return ['done', '—'];
+  // ARCHIVED on its branch only: the archive-PR is not merged — an open one goes through the PR checks below.
+  if (r.state === 'ARCHIVED' && archivedOnMain(r.change)) return ['done', '—'];
+  if (r.state === 'ARCHIVED' && !p) return ['open archive-PR', 'agent'];
+  if (!r.state && r.issueState === 'CLOSED') return r.change ? ['closed without a Change — needs a decision', '👤 maintainer'] : ['done', '—'];
   if (!r.change && p) {
     return p.checks === 'red' ? [`fix CI on #${p.number}`, 'agent'] : p.isDraft ? ['finish the PR', 'agent'] : [`review + merge #${p.number}${ci}`, '👤 maintainer'];
   }
   if (p && p.checks === 'red') return [`fix CI on #${p.number}`, 'agent'];
   if (p && p.isDraft) return ['finish draft PR (blocking UNKNOWN → 👤 answers in PR)', 'agent'];
   if (p && p.kind === 'spec') {
-    if (p.reviewDecision !== 'APPROVED') return [`approve spec-PR #${p.number}${ci}`, '👤 maintainer'];
-    if (r.state === 'PROPOSED') return ['transition SPECIFIED, push', 'agent'];
-    return [`merge spec-PR #${p.number}${ci}`, '👤 maintainer'];
+    // SPECIFIED is the last commit before the review is asked (rule process, step 1).
+    if (r.state === 'PROPOSED') return ['verify, transition SPECIFIED, push — before the review', 'agent'];
+    return [`${p.reviewDecision === 'APPROVED' ? 'merge' : 'approve + merge'} spec-PR #${p.number}${ci}`, '👤 maintainer'];
   }
   if (p && p.kind === 'impl') return r.state === 'VERIFYING' ? [`merge impl-PR #${p.number}${ci}`, '👤 maintainer'] : ['implement → VERIFYING', 'agent'];
   if (p && p.kind === 'archive') return [`merge archive-PR #${p.number}${ci}`, '👤 maintainer'];
   if (p) return [`review + merge #${p.number}${ci}`, '👤 maintainer'];
   if (!r.state) {
+    const decide = r.deps.filter((d) => d.decide).map((d) => d.label);
+    if (decide.length) return [`decide on ${decide.join(', ')} (dependency)`, '👤 maintainer'];
     const wait = r.deps.filter((d) => !d.done).map((d) => d.label);
     if (wait.length) return [`wait ${wait.join(', ')}`, '—'];
     const held = r.areas.filter((a) => busy.has(a) && busy.get(a) !== r.change);
@@ -211,10 +226,10 @@ for (const r of rows) {
 }
 
 const queue = [
-  ...rows.filter((r) => r.who.startsWith('👤')).map((r) => ({ what: `${r.change ?? `#${r.number}`}: ${r.next}`, url: r.open.url })),
+  ...rows.filter((r) => r.who.startsWith('👤')).map((r) => ({ what: `${r.change ?? `#${r.number}`}: ${r.next}`, url: r.open?.url ?? '' })),
   ...rows.flatMap((r) => r.deps.filter((d) => d.pr?.state === 'OPEN' && !d.pr.isDraft)
     .map((d) => ({ what: `#${d.pr.number} ${d.pr.title} (dependency of #${r.number}, CI ${checks(d.pr)})`, url: d.pr.url }))),
-].filter((q, k, a) => a.findIndex((x) => x.url === q.url) === k);
+].filter((q, k, a) => a.findIndex((x) => (q.url ? x.url === q.url : x.what === q.what)) === k);
 
 // ---------- output ----------
 const pick = (r) => ({ issue: r.number, change: r.change, areas: r.areas, state: r.state ?? (r.wt ? 'launched' : null),
@@ -234,7 +249,7 @@ const depCell = (r) => r.deps.map((d) => `${d.label} ${d.done ? '✓' : '⏳'}`)
 console.log(`## ${slice.title} — ${slice.description ?? ''}${umbrella ? ` · umbrella [#${umbrella.number}](${umbrella.url})` : ''}`);
 console.log(`main: ${main.state} (${main.note})${main.state === 'red' ? ' — dispatch blocked' : ''}`);
 console.log(`WIP ${wipCount}/${WIP_MAX} in implementation${wip.length ? ` (${wip.join(', ')})` : ''} · held AREAs: ${[...busy].map(([a, c]) => `${a} (${c})`).join(', ') || '—'}`);
-console.log(queue.length ? `👤 Maintainer queue:\n${queue.map((q) => `- ${q.what} — ${q.url}`).join('\n')}` : '👤 Maintainer queue: empty');
+console.log(queue.length ? `👤 Maintainer queue:\n${queue.map((q) => `- ${q.what}${q.url ? ` — ${q.url}` : ''}`).join('\n')}` : '👤 Maintainer queue: empty');
 console.log('');
 if (focus) {
   const r = shown[0];
