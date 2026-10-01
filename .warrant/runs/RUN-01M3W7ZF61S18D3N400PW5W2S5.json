@@ -1,0 +1,164 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W7ZF61S18D3N400PW5W2S5",
+  "change": "infra-baseline",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/infra-baseline/**"
+  ],
+  "scope": [],
+  "branch": "spec/infra-baseline",
+  "started_at": "2026-10-01T17:25:16.142Z",
+  "finished_at": "2026-10-01T17:27:05.028Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:a7e44bd9c9550aedbdc19d722b0de8ccb59b471c133a7823ae4d465c4d6f31da",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "guard_events": [
+    {
+      "at": "2026-10-01T17:26:28.905Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:30.044Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-10-01T17:26:35.484Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:46.900Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:47.849Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:48.797Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:49.727Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:50.731Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:51.755Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:52.791Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:53.796Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:26:54.810Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:27:01.961Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

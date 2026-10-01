@@ -1,0 +1,132 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W838D1F41RK4SKRP35DP97",
+  "change": "infra-baseline",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-baseline",
+  "started_at": "2026-10-01T17:27:20.263Z",
+  "finished_at": "2026-10-01T17:32:36.984Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:d35bab7fcc82bf00a000a36d097c9d53f9260e56944bc38341f84e902a51ab75",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "spec_tree": "sha256:0f237283d430ec622a2aba59655cdeae88d52e5eedcce0fd175dce5cd890e638",
+  "evidence": [
+    "EVID-01M3W8CXQMVNHMJRDH37TPT6Z8"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T17:27:47.658Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`ls D:/project/LATTICE/.warrant/local D:/project/LATTICE/.warrant/local/rules D:/project/LATTICE/design-next D:/project/LATTICE/design-next/reviews D:/project/LATTICE/test/process` under the review Run RUN-01M3W838D1F41RK4SKRP35DP97 of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:27:59.745Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:28:03.218Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`MSYS_NO_PATHCONV=1 git show docs/sw-milestone:design-next/reviews/2026-10-01-launch-readiness-grilled.md` under the review Run RUN-01M3W838D1F41RK4SKRP35DP97 of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:28:05.954Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:28:11.365Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:28:15.267Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:29:20.097Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:30:28.235Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:32:24.261Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:32:25.328Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:32:28.895Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:32:34.806Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

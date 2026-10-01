@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3W7Y0AT7TD6HYB6XKSA4Y77",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of infra-baseline: 0 BLOCKER, 7 MAJOR, 5 MINOR, 1 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "467ddb20e6d896ed7193855f9f3d0c5211890da6",
+    "spec_revision": "openspec/changes/infra-baseline@467ddb20e6d896ed7193855f9f3d0c5211890da6",
+    "spec_tree": "sha256:6a3f47e3bcf82049dc9ca7f2a9254962c7a5857c8b9fb802b21c573a74b044ce",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3W7MRTCYN76PTZ06EJ20A4V"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:3d8fe6fdfe77df161d24cda133709d02c14c05206d7acbba5682eb06bc536352",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "created_at": "2026-10-01T17:24:28.122Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3W7MRTCYN76PTZ06EJ20A4V.result.json",
+      "sha256": "sha256:69a79efdac63404923008ef070263ceb44688e075962ed5acd7e4f937b980d77"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 1,
+    "MAJOR": 7,
+    "MINOR": 5
+  }
+}

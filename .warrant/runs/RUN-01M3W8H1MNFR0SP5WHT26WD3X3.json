@@ -1,0 +1,58 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W8H1MNFR0SP5WHT26WD3X3",
+  "change": "infra-baseline",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-baseline",
+  "started_at": "2026-10-01T17:34:52.097Z",
+  "finished_at": "2026-10-01T17:38:14.801Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:672cb034a935ec9b831fc318eb4b31194ff5d117c2b32a18e907e25fb58ed41d",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "spec_tree": "sha256:0f237283d430ec622a2aba59655cdeae88d52e5eedcce0fd175dce5cd890e638",
+  "evidence": [
+    "EVID-01M3W8Q7MEAYAZRHXE8923NN07"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T17:38:01.715Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:38:02.776Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:38:06.598Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:38:12.542Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
