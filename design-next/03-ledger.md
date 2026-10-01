@@ -103,11 +103,11 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 |---|---|
 | a table row with an ID | a block whose project type is given by the table header: one type per distinct header, its columns are the fields |
 | a paragraph starting with an ID ("DP-R06. …") | the block of that ID; its text is the paragraph |
-| a table without IDs right after a rule whose text ends with ":" | a field of that rule's block |
-| a table without IDs and without such a rule (01 Roles, stress test) | one prose block |
+| a table or a list without IDs right after a block whose text ends with ":" — a rule or a prose block | a field of that block |
+| a table or a list without IDs after no such block | rewritten by normalization (LG-B04): a prose block whose text ends with ":" is written before it, so it becomes a field of that block |
 | an ID | entity `id` `lattice/<ID in lower case>`: `DP-B01` → `lattice/dp-b01` |
-| a prose paragraph or a list without an ID (Purpose, notes under tables) | one block per paragraph or list; gets its own ID (`DP-Z01`, `OM-Z01`, `LG-Z01`, …) once, at normalization (LG-B04), and becomes a `knowledge` block; the letter `Z` is reserved for prose IDs, and no rule group uses it |
-| a fenced code block of any language | a block of type `example` (extends `knowledge`); its text is kept verbatim as a string, never parsed |
+| a prose paragraph without an ID (Purpose, notes under tables) | one block per paragraph; gets its own ID (`DP-Z01`, `OM-Z01`, `LG-Z01`, …) once, at normalization (LG-B04), written at its start as for a rule ("DP-Z01. …"), and becomes a `knowledge` block; the letter `Z` is reserved for prose IDs, and no rule group uses it; the prefix is the document's, in 11 the section's (`LT`, `NX`), and `RM` in the README, which has no rule group |
+| a fenced code block of any language | a block of type `example` (extends `knowledge`); its ID (letter `Z`) is written once, at normalization, after the language in the info string (`` ```json DP-Z04 ``); its text is kept verbatim as a string, never parsed |
 | an ID mentioned in text, e.g. "(DP-C04)", and every ID of a range ("DP-C01…C05") | a floating reference (OM-R02) extracted from the text; the text itself is stored verbatim, and export writes it back, never regenerating it from references |
 | a reference to a section or a document ("01 Model", "(04, 05)") | part of the prose text, stored verbatim |
 | a section | a composition of references and headings (OM-C01) |
@@ -115,7 +115,7 @@ The `knowledge` ledger lives in the repository. Only one writer applies to it, a
 
 | ID | Rule |
 |---|---|
-| LG-B07 | In S0 **md import** is a store command next to apply (PL-E02), run in a `machine` session with purpose `import`; the maintainer's act naming the proposal hash (CT-A05) gives its records basis `derived` (TR-B02). `reviews/` and the review table of the README are not part of the corpus. |
+| LG-B07 | In S0 **md import** is a store command next to apply (PL-E02), run in a `machine` session with purpose `import`; the maintainer's act naming the proposal hash (CT-A05) gives its records basis `derived` (TR-B02). `reviews/`, with its index `reviews/README.md`, is not part of the corpus. |
 
 ## Depends on (not yet designed)
 
