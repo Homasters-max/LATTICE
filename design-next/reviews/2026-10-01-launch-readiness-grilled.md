@@ -3,7 +3,7 @@
 - **Date:** 2026-10-01
 - **Status:** review record — input for decisions, not norm. The norm is the rules it names in 00–11.
 - **Input:** is `design-next` ready to start S0, and how does LATTICE come to run on itself?
-- **How:** grilling in rounds; every decision accepted by the maintainer on 2026-10-01. Applied to `design-next` 00, 03, 06, 09, 10, 11 and the README in the same PR.
+- **How:** grilling in rounds; every decision accepted by the maintainer on 2026-10-01. Applied to `design-next` 00, 03, 06, 09, 10, 11 and the README in the same PR. Q25–Q28 are follow-up decisions of the same day about tracking the work; they are process, not design, so no `design-next` rule holds them.
 - **Outcome:** a switch milestone SW between S0 and S1 (SL-T07, SL-SW); slices start with a walking skeleton and grow per AREA in parallel Changes (SL-T08, SL-T09); development discipline (ST-M02, ST-M03); `import-md --diff` not taken (NX-26). No NX revisited.
 
 ## Decisions
@@ -27,11 +27,15 @@
 | Q15 | What does the skeleton of S0 run on? | A synthetic fixture `md` (one table with IDs), not the corpus; the corpus comes in the closing Change of the slice. | SL-T09 |
 | Q16 | What happens to the existing specs `architecture` and `kernel`? | The skeleton replaces spec `architecture`; `s0-kernel` replaces spec `kernel`. The kernel review is refreshed at the start of `s0-kernel`. | SL-T03; WARRANT Changes |
 | Q17, Q19 | Which language, and how is the work tracked? | Everything project-side is in English; Russian only in chat with the maintainer. GitHub milestones S0, SW, S1–S4; one issue per Change with "Depends on"; an issue for SW with the SL-T07 checklist. | README Language; GitHub, not design |
-| Q20 | What is the unit of parallel work? | A capability (an OpenSpec spec) is one WARRANT AREA and has at most one active Change. Areas rewritten: AR architecture, KR kernel, LG ledger, PJ projections, ST store, CD codec, TR trust, AC acts, CL cli, CT catalog, AD adapters, BN bench, LN lens, RN runtime, MS measure, CA capabilities; GR, RL, CP removed — not taken by NX-06, NX-05, NX-13. | SL-T08; `areas.json` in `infra-baseline` |
+| Q20 | What is the unit of parallel work? | A capability (an OpenSpec spec) is one WARRANT AREA and has at most one active Change. Areas rewritten: AR architecture, KR kernel, LG ledger, PJ projections, SR store, CD codec, TR trust, AC acts, CL cli, CT catalog, AD adapters, BN bench, LN lens, RN runtime, MS measure, CA capabilities; GR, RL, CP removed — not taken by NX-06, NX-05, NX-13. The store is `SR`, not `ST`: `ST` clashes with the prefix `ST-` of 10-structure (spec review F-9 of `infra-baseline`). | SL-T08; `areas.json` in `infra-baseline` |
 | Q21 | In which order do the Changes of S0 run? | In waves: the spec-PRs of wave 2 after the skeleton's spec-PR merges; the impl-PRs of wave 2 after its impl-PR merges. One worktree per Change; `implement` Runs narrowed with `--scope src/<module>/** test/<module>/**`. | SL-T09; process, not design |
 | Q22 | How many Changes at once? | At most three in implementation: the maintainer's acts are the bottleneck. | SL-T08 |
 | Q23 | Who owns files shared by several modules? | The skeleton: the module matrix of the structure test, the CLI entry, `package.json`, the port interfaces; a later change to one is a separate small Change. | SL-T08 |
 | Q24 | In what order does the work start? | `infra-baseline` in parallel with this docs PR → normalization → tag `design-next-v0.2`; the skeleton starts after `infra-baseline`. | SL-T01; planning, not norm |
+| Q25 | Where does the state of a slice live? | It is computed, never stored in a file. A slice is a GitHub milestone plus its umbrella issue: the plan, the list of Changes, and slice-level decisions as comments linking to `I-N` rows and PRs. Rejected: a state file per slice — it goes stale and is a second source next to `warrant status`, PRs and issues. | rule `tracking` (Change `infra-baseline`), skill `slice` |
+| Q26 | How are sessions organised? | One Claude Code session per Change, in its own worktree, started from the Change's issue as a background-task chip. The current session is the coordinator of the slice — dispatch, review, merge queue — and never writes a Change's code. One sidebar group per slice. | rule `tracking` (Change `infra-baseline`), skill `slice` |
+| Q27 | What supports the coordinator? | A project skill `slice` (status, next, launch), added in a separate process PR. | skill `slice` |
+| Q28 | Where is this model written down? | In the project rule `tracking`, by the Change `infra-baseline` (#28). | rule `tracking` (Change `infra-baseline`) |
 
 ## Development principles reviewed
 
