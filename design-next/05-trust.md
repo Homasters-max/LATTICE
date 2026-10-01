@@ -2,7 +2,7 @@
 
 ## Purpose
 
-What to believe and how much: bases of records, facts, status facts, "what is in force", verdicts, findings. Trust is computed, never assigned.
+TR-Z01. What to believe and how much: bases of records, facts, status facts, "what is in force", verdicts, findings. Trust is computed, never assigned.
 
 ## Bases
 
@@ -91,12 +91,3 @@ What to believe and how much: bases of records, facts, status facts, "what is in
 | TR-N02 | Every finding is raised by a registered check named by the ID of its rule: OM-R04 (reference to retired), TR-F03 (overridden), TR-S02 (missing), TR-V06 (vote threshold), BN-G03 (regression), DP-L02 (shadow disagreement), DP-S03 (report of an uncalibrated `binary` point), DP-C06 (stale calibration). A finding without a rule ID does not exist. |
 | TR-N03 | Signals born in `runtime` (DP-L02, DP-S03) become findings only after they are cited in `knowledge` (LG-R04). A shadow disagreement has basis `observed`: the store command `cite` packages the `live` and `shadow` runs in a `machine` session with purpose `check` (PL-E02), and code compares the `shadow` revision with its baseline (DP-L02). A report of an uncalibrated point is a hint written by its own run, whose pipeline has a `decide` stage, so its basis is `inferred` (TR-B02, TR-I02). |
 | TR-N04 | A finding closes when its cause disappears, or by a `dismissed` fact keyed by rule ID and subject `ref@n` (TR-F05). A new revision of the subject raises it again. |
-
-## History
-
-- 2026-09-30 — grilled (12 questions).
-- 2026-10-01 — unified-architecture review (`reviews/2026-10-01-unified-architecture.md`), grilled (41 questions): status facts TR-F04…F06, explicit revocation in TR-F02, one basis table in TR-B02, promotion by owner act in TR-I04, one `hint` base type in TR-I02, findings TR-N01…N04; TR-V07 removed (now LG-R04).
-- 2026-10-01 — design v0.6 audit, grilled: purpose `init` and confirmed `human` (TR-B02), fact no-op (TR-F07), directed `alias`, `live` for pipelines and `setup`, bench set in `calibration` (TR-F05), policy at `seq` (TR-I01), no decay (TR-V08), `via` (TR-V09), usefulness is not truth (TR-V10), source listing (TR-S03), stale calibration finding (TR-N02).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): basis only through an act, a run with `judge` or `llm` is `inferred`, `upgrade` under `init` (TR-B02; D4 reopens G10); `in_force` never rejects (TR-B03, TR-I02); in force and current revision for entities (TR-I01); `live` only for pipelines and `setup` (TR-F05; D3); `calibration` keyed by what it applies to, value references the report (TR-F05); owner-act floor, verdict `origin` (TR-F06, TR-V09); promotion as a consequence, `draft` (TR-I04); trust evidence (TR-V01, TR-V06); baseline (TR-N03).
-- 2026-10-01 — corrections F1–F6: lineage is a reference, not a status (TR-F04); the vote threshold is a constant of the LATTICE version (TR-V06).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: row 2 of the basis table by the pipeline revision, not the tape (TR-B02; A3); shadow disagreements packaged by `cite`, hints by their run (TR-N03; A4); `calibration` references the `holdout` report (TR-F05).

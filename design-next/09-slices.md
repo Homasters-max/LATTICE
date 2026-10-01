@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Order of implementation and the transition from the v0.6 architecture. Every slice ends with numbers or an end-to-end check in CI, not with code.
+SL-Z01. Order of implementation and the transition from the v0.6 architecture. Every slice ends with numbers or an end-to-end check in CI, not with code.
 
 ## Transition
 
@@ -39,12 +39,4 @@ Order of implementation and the transition from the v0.6 architecture. Every sli
 | SL-S3 | **First live point** | calibration, gates, owner act through CI (04, 08) | a pipeline that pins one calibrated point becomes `live` through the gate on `holdout` (DP-L06); the path "owner act → CI" works end to end |
 | SL-S4 | **Foreign corpus** | source adapter, re-import (05 TR-S01…S02) | WARRANT corpus imported; second point "scenario coverage" in `shadow` |
 
-Out of these slices: everything in [11-later](11-later.md) — each item returns only when its trigger fires.
-
-## History
-
-- 2026-09-30 — grilled (9 questions).
-- 2026-10-01 — unified-architecture review, grilled: S0 proves apply and the codec on normalized `md` (SL-S0), S2 proves recording (SL-S2), bench items by owner act (SL-K03).
-- 2026-10-01 — design v0.6 audit, grilled: TypeScript lessons (SL-T02), IDs bound to tests and manual acceptance (SL-T06), bench set sized by BN-M05 and written from real tasks (SL-K03), recording seams and starting values in S1 (SL-S1), deferred items moved to 11-later.
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): S0 proves the bootstrap (SL-S0); `solve` `live` through the gate in S1 (SL-S1); `shadow` and `live` through pipelines (SL-S2, SL-S3); bench items by act (SL-K03).
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): edits after a freeze and the tag `design-next-v0.2` (SL-T01); specs reference IDs with `Implements:` and never become blocks (SL-T03); the `design-coverage` test (SL-T06); the switch SW and its trigger (SL-T07, SL-SW), `md` export only from SW, not from S0 (SL-S0); one active Change per AREA, shared files, at most three Changes in implementation (SL-T08); the walking skeleton (SL-T09); design edits inside a Change after SW (SL-T10); the project namespace (SL-K04).
+SL-Z02. Out of these slices: everything in [11-later](11-later.md) — each item returns only when its trigger fires.

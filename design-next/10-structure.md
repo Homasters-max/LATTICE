@@ -2,7 +2,7 @@
 
 ## Purpose
 
-How the code is split into modules, which tests keep the split honest, and how audits keep the architecture from degrading. The rules of 02–08 say what the system does; this document says where the code for it may live and what it may import.
+ST-Z01. How the code is split into modules, which tests keep the split honest, and how audits keep the architecture from degrading. The rules of 02–08 say what the system does; this document says where the code for it may live and what it may import.
 
 ## Modules
 
@@ -52,11 +52,3 @@ How the code is split into modules, which tests keep the split honest, and how a
 | ST-A02 | Triggers of an audit outside the end of a wave: a change of a file owned by the skeleton (SL-T08, SL-T09), a new module or port (ST-M02), a Change touching three modules or more, and the switch (SL-T07) — the kernel freezes as version `1` after it (LG-G06), so an audit precedes it. |
 | ST-A03 | **Ratchet**: every accepted audit finding that can be checked mechanically becomes a fitness test of level (1) of ST-A01, so it cannot regress; the others become a rule with an ID in `design-next`. Findings are triaged by strength: `Strong` → a refactor Change of the next wave, `Worth exploring` → an issue `P2`, `Speculative` → an issue `P3` or 11-later. |
 | ST-A04 | A refactor Change changes no behaviour (`skip_specs`, or a MODIFIED requirement whose scenarios stay), keeps the tests green before and after, and holds its AREA like any Change (SL-T08); it is never mixed into a feature Change. |
-
-## History
-
-- 2026-10-01 — created from the design v0.6 audit (T36), grilled.
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): module `policy` renamed `trust`; module `measure` for operators, metrics and the gate (D1); `codec` and `runtime` imports of `ledger`; judge prompts in `adapters` (D2); DP-B13 in ST-S01; who imports `codec` (ST-S02); `assembly` outside purity (ST-S03); `acts` contract tests (ST-T01).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: `measure` holds policy evaluation and the target check (A1), the gate is a step of apply in `ledger` (A2), `cite` in `ledger` (A4), `capabilities` reads `ledger` through the read view only.
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): no seam without a second real adapter or a named invariant (ST-M02); records are plain data, no DDD vocabulary, ST-M01 is the only module split (ST-M03).
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`), Q29–Q34: four levels against degradation and the architecture audit (ST-A01), its triggers (ST-A02), the ratchet and triage by strength (ST-A03), refactor Changes (ST-A04).

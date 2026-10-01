@@ -2,9 +2,9 @@
 
 ## Purpose
 
-How blocks are selected for a need. LENS is an instance of the decision pattern (DP-N01) inside the `solve` pipeline (PL-E01).
+LN-Z01. How blocks are selected for a need. LENS is an instance of the decision pattern (DP-N01) inside the `solve` pipeline (PL-E01).
 
-```text
+```text LN-Z02
 need → candidates (BM25 + ids from the need) → decide(score) → top-k + budget → expand by edges → decide("sufficient?") → context
 ```
 
@@ -49,12 +49,3 @@ need → candidates (BM25 + ids from the need) → decide(score) → top-k + bud
 | ID | Rule |
 |---|---|
 | LN-B01 | Budget is counted in characters of card text, not in model tokens: characters are deterministic and independent of the model, whose tokenizer changes with it. A rough ratio to tokens is a stage param. |
-
-## History
-
-- 2026-09-30 — grilled (10 questions).
-- 2026-10-01 — unified-architecture review, grilled: need budget is the run budget (LN-N01), exclusion by status facts (LN-C04), allowed set of `lens-rank` (LN-C06).
-- 2026-10-01 — design v0.6 audit, grilled: ids in the need are guaranteed candidates, not `required` (LN-C02), one output rule (LN-O04, LN-C04, LN-X01, LN-O03), usefulness feedback is not a verdict (LN-C05), fallback marked and text wrapped as data (LN-O01).
-- 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): ids from the need in the diagram, `scope` as the allowed set (LN-C06), expansion stops at the remainder until S2 (LN-X03), output rule by current revision (LN-O04), `std` blocks (LN-N03), restatements replaced by references (LN-C05, LN-O01).
-- 2026-10-01 — corrections F1–F6: successors of a retired block in the output rule (LN-O04); the need is kept in the run record (LN-N02); `supersedes` among edge labels (LN-X02).
-- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: the tokenizer is code of `lens.candidates` (LN-C03); no slice named for the point "sufficient?" (LN-X03).
