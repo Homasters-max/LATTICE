@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "pin-v0-10-0",
-  "change_state": "IMPLEMENTING",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
@@ -78,6 +78,14 @@
       "gates": {
         "branch-isolated": "PASS"
       },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-01T16:03:30.044Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+      "gates": {},
       "evidence": []
     }
   ]
