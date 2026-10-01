@@ -265,41 +265,46 @@ Implements: ST-S01
 ### Requirement: Imports between modules follow the module matrix
 <!-- id: REQ-AR-009 -->
 
-When the policy names modules, the structure test SHALL check every source `*.ts` file against them. A module has a
-name, a glob of its files, the list of modules it may import, and whether it may import `node:` built-ins and packages.
-A port is a name and the path of its interface file. An adapter is a module of its own: the files under
-`src/adapters/<adapter>/`, where `<adapter>` is `<port>-<name>` and `<port>` is a port of the policy.
+When the policy names modules, the structure test SHALL check every source file under `src/` outside the kernel
+perimeter against them. A module has a name, a glob of its files, the modules it may import, and whether it may import
+`node:` built-ins and packages. A port is a name matching `[a-z]+` and the path of its interface file. An adapter is a
+module of its own: the files under `src/adapters/<port>-<name>/`, where `<port>` is a port of the policy and `<name>`
+matches `[a-z0-9][a-z0-9-]*`.
 
-The project policy SHALL be the matrix of `design-next` ST-M01; it changes only by an edit of this requirement:
+The project policy SHALL be the matrix of `design-next` ST-M01 at the granularity of modules; it changes only by an edit
+of this requirement:
 
 | Module | Files | May import | `node:` built-ins | Packages |
 |---|---|---|---|---|
-| `kernel` | `src/kernel/**` | — (REQ-AR-005) | `node:crypto` by REQ-AR-005 | no |
+| `kernel` | `src/kernel/**` | checked by REQ-AR-005, not by this requirement | — | — |
 | `trust` | `src/trust/**` | `kernel` | no | no |
 | `measure` | `src/measure/**` | `kernel` | no | no |
 | `ledger` | `src/ledger/**` | `kernel`, `trust`, `measure` | no | no |
 | `codec` | `src/codec/**` | `kernel`, `ledger` | no | no |
 | `runtime` | `src/runtime/**` | `kernel`, `ledger` | no | no |
-| `capabilities` | `src/capabilities/**` | `kernel`, the port interface files of `runtime`, `measure`, `ledger` | no | no |
-| adapter `<port>-<name>` | `src/adapters/<port>-<name>/**` | the interface file of `<port>` only | yes | yes |
-| `assembly` | `src/assembly/**` | every module above | yes | no |
+| `capabilities` | `src/capabilities/**` | `kernel`, `measure`, `ledger`, and of `runtime` only its port interface files | no | no |
+| adapter `<port>-<name>` | `src/adapters/<port>-<name>/**` | only the interface file of `<port>` | yes | yes |
+| `assembly` | `src/assembly/**` | `kernel`, `trust`, `measure`, `ledger`, `codec`, `runtime`, `capabilities`, every adapter | yes | no |
 | `cli` | `src/cli/**` | `assembly` | yes | no |
 
 The ports of the project policy are `store` (`src/ledger/ports/store.ts`), `acts` (`src/ledger/ports/acts.ts`),
-`clock` (`src/runtime/ports/clock.ts`) and `ids` (`src/runtime/ports/ids.ts`). A module may always import its own
-files.
+`clock` (`src/runtime/ports/clock.ts`) and `ids` (`src/runtime/ports/ids.ts`); the port interface files of `runtime`
+are those under `src/runtime/ports/`. A module may always import its own files. The finer limits ST-M01 puts on what
+`codec`, `runtime` and `capabilities` read of `ledger` (the proposal format, the read view) are not checked in S0.
 
-The rules, each refusal with the file and the line of the import (REQ-AR-005):
-- `outside-matrix` — a source `*.ts` file under `src/` that belongs to no module: a file directly in `src/` or in
-  `src/adapters/`, a file in a folder of `src/` not in the matrix, a file in an adapter folder whose `<port>` is not a
-  port of the policy; the refusal is at line 0;
-- `import-direction` — an edge (REQ-AR-007) from a file of one module to a path of another module that the first may
-  not import, or to a path under `src/` outside every module; for an adapter, every edge to a path other than its own
-  files and the interface file of its port, so adapters never import each other; for `capabilities`, an edge into
-  `runtime` other than its port interface files;
-- `package-import` — a non-relative specifier in a file outside `kernel`: a `node:` built-in in a module that may not
-  import built-ins; any other non-relative specifier (a package, or a built-in without the `node:` prefix) outside an
-  adapter. Kernel files are checked by REQ-AR-005 only.
+The rules, each refusal with the file and the line of the import (REQ-AR-005); none of them applies to a perimeter
+file, a file with `parse-error`, or a file outside `src/`:
+- `outside-matrix` — a source file under `src/` that belongs to no module: a file directly in `src/` or in
+  `src/adapters/`, a file in a folder of `src/` not in the matrix, a file in a folder of `src/adapters/` not of the form
+  `<port>-<name>` with a port of the policy; at line 0;
+- `non-ts-file` — a source file of a module whose name does not end with `.ts`; at line 1, as REQ-AR-005;
+- `import-direction` — an edge (REQ-AR-007) from a file of one module to a path that is neither a file of the same
+  module nor a file of a module the first may import: a path of another module not in its list, a path under `src/` in
+  no module, or a path outside `src/`; for an adapter, every edge to a path other than its own files and the interface
+  file of its port, so adapters never import each other; for `capabilities`, an edge into `runtime` outside
+  `src/runtime/ports/`;
+- `package-import` — a non-relative specifier: a `node:` built-in in a module that may not import built-ins; any other
+  non-relative specifier — a package, or a built-in without the `node:` prefix — outside an adapter.
 
 A policy without modules runs none of these rules.
 
@@ -307,23 +312,25 @@ Implements: ST-M01, ST-M02, ST-S01, ST-S02
 
 #### Scenario: Matrix violations are found
 <!-- id: SCN-AR-015 -->
-- **WHEN** the structure test runs on a fixture tree with the modules and ports of the project policy, where (the
+- **WHEN** the structure test runs on a fixture tree with the sources `src/**`, the entry `src/kernel/index.ts` (a
+  file without violations), the perimeter `src/kernel/**` and the modules and ports of the project policy, where (the
   expected rule in parentheses): a `ledger` file imports a `codec` file (`import-direction`); a `codec` file imports an
-  adapter file (`import-direction`); a `cli` file imports a `ledger` file (`import-direction`); a file of adapter
-  `store-x` imports a file of adapter `clock-y` (`import-direction`); a file of adapter `store-x` imports
-  `src/ledger/index.ts` (`import-direction`); a file of adapter `clock-y` imports the `ids` interface file
-  (`import-direction`); a `capabilities` file imports a `runtime` file that is not a port interface file
-  (`import-direction`); a `trust` file imports `node:fs` (`package-import`); a `ledger` file imports a package
-  (`package-import`); an `assembly` file imports a package (`package-import`); a `cli` file imports `fs`
-  (`package-import`); the files `src/top.ts`, `src/misc/x.ts` and `src/adapters/judge-x/a.ts` (`outside-matrix`); and
-  files without violations: an `assembly` file importing an adapter, `ledger`, `codec` and `node:fs`; a `cli` file
-  importing `assembly` and `node:process`; a file of adapter `store-x` importing the `store` interface file, another
-  file of its own adapter, `node:fs` and a package; a `codec` file importing `ledger` and `kernel`; a `ledger` file
-  importing `trust`, `measure` and `kernel`; a `capabilities` file importing the `clock` interface file; then on the
-  same tree with a policy without modules
+  adapter file (`import-direction`); a `cli` file imports a `ledger` file (`import-direction`); a `ledger` file imports
+  `../../test/x.ts` (`import-direction`); a file of adapter `store-x` imports a file of adapter `clock-y`
+  (`import-direction`); a file of adapter `store-x` imports `src/ledger/index.ts` (`import-direction`); a file of
+  adapter `clock-y` imports the `ids` interface file (`import-direction`); a `capabilities` file imports a `runtime` file
+  outside `src/runtime/ports/` (`import-direction`); a `trust` file imports `node:fs` (`package-import`); a `ledger`
+  file imports a package (`package-import`); an `assembly` file imports a package (`package-import`); a `cli` file
+  imports `fs` (`package-import`); the files `src/top.ts`, `src/misc/x.ts`, `src/adapters/judge-x/a.ts` and
+  `src/adapters/store/a.ts` (`outside-matrix`); a file `src/ledger/x.js` (`non-ts-file`); and files without
+  violations: an `assembly` file importing an adapter, `ledger`, `codec` and `node:fs`; a `cli` file importing
+  `assembly` and `node:process`; a file of adapter `store-x` importing the `store` interface file, another file of its
+  own adapter, `node:fs` and a package; a `codec` file importing `ledger` and `kernel`; a `ledger` file importing
+  `trust`, `measure` and `kernel`; a `capabilities` file importing the `clock` interface file; then on the same tree
+  with a policy without modules
 - **THEN** every file with a violation is named with its line and expected rule, and files without violations are not
   named; with the policy without modules none of the rules `outside-matrix`, `import-direction`, `package-import` is
-  reported
+  reported, and `src/ledger/x.js` is not named
 
 ### Requirement: Modules outside adapters, assembly and cli are pure
 <!-- id: REQ-AR-010 -->
@@ -332,14 +339,15 @@ When the policy names modules, every source `*.ts` file of a module that may imp
 packages (REQ-AR-009: `trust`, `measure`, `ledger`, `codec`, `runtime`, `capabilities`) SHALL be refused by the rules
 `dynamic-import`, `forbidden-global` and `nondeterminism` exactly as REQ-AR-005 defines them for perimeter files: no
 I/O, clock, randomness or environment. Files of adapters, `assembly` and `cli` are not refused by these rules; kernel
-files are checked by REQ-AR-005.
+files are checked by REQ-AR-005; a file of another extension is refused by `non-ts-file` (REQ-AR-009).
 
 Implements: ST-S03, PL-C04
 
 #### Scenario: Impurity in pure modules is found
 <!-- id: SCN-AR-016 -->
-- **WHEN** the structure test runs on a fixture tree with the modules of the project policy, where a `ledger` file
-  calls `Date.now()` (`nondeterminism`), reads `process.env.X` (`forbidden-global`), calls `console.log(1)`
+- **WHEN** the structure test runs on a fixture tree with the sources `src/**`, the entry `src/kernel/index.ts` (a file
+  without violations), the perimeter `src/kernel/**` and the modules of the project policy, where a `ledger` file calls
+  `Date.now()` (`nondeterminism`), reads `process.env.X` (`forbidden-global`), calls `console.log(1)`
   (`forbidden-global`) and calls `import("./x.ts")` (`dynamic-import`); a `codec` file calls `Math.random()`
   (`nondeterminism`); a `trust` file calls `fetch("…")` (`forbidden-global`); and an `assembly` file, a `cli` file and
   an adapter file each call `Date.now()`, read `process.env.X` and call `console.log(1)`
@@ -349,11 +357,13 @@ Implements: ST-S03, PL-C04
 ### Requirement: Every rejection rule of apply has a fixture
 <!-- id: REQ-AR-011 -->
 
-The rule IDs that apply can name in a rejection SHALL form a closed list declared by the ledger. For every rule ID of
-the list there SHALL be a fixture folder `test/fixtures/rules/<RULE-ID>/` holding a ledger tail, a proposal and the
-expected rejections; a test applies the proposal to the tail and SHALL get exactly the expected rejections, each one
-naming that rule ID. A rule ID of the list without a fixture folder, and a fixture folder whose name is not on the
-list, SHALL fail the test, naming the rule ID or the folder.
+The rule IDs that apply can name in a rejection SHALL form one closed list, exported by the ledger module; a rejection
+naming a rule outside the list cannot be built. For every rule ID of the list there SHALL be a fixture folder
+`test/fixtures/rules/<RULE-ID>/` holding `ledger.jsonl` (a ledger tail, possibly empty), `proposal.json` (a proposal)
+and `expected.json` (the expected rejections without their `message`). A test applies the proposal to the tail and
+SHALL get exactly the expected rejections, compared on every field but `message`, every one naming the rule ID of its
+folder, every `message` non-empty. A rule ID of the list without a fixture folder, and a fixture folder whose name is
+not on the list, SHALL fail the test, naming the rule ID or the folder.
 
 Implements: LG-A02, ST-A01
 
@@ -361,6 +371,6 @@ Implements: LG-A02, ST-A01
 <!-- id: SCN-AR-017 -->
 - **WHEN** the rule test runs on the project, then on a declared list holding a rule ID that has no fixture folder,
   then with a fixture folder whose name is not on the declared list
-- **THEN** on the project every fixture gives exactly its expected rejections, each naming the rule of its folder, and
-  every declared rule ID has a folder; the missing folder is reported with its rule ID; the extra folder is reported
-  with its name
+- **THEN** on the project the list is `LG-C07`, `LG-P01`, `LG-P02`, every fixture gives exactly its expected
+  rejections, each naming the rule of its folder, and every declared rule ID has a folder; the missing folder is
+  reported with its rule ID; the extra folder is reported with its name

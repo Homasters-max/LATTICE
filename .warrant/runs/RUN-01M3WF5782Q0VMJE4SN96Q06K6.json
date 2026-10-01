@@ -1,0 +1,189 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WF5782Q0VMJE4SN96Q06K6",
+  "change": "s0-skeleton",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-skeleton/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-skeleton",
+  "started_at": "2026-10-01T19:30:44.651Z",
+  "finished_at": "2026-10-01T19:35:03.091Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:9ea37ab6673c97a658cf93d37beed2bbab3289d48adf3d6c847ef5c2448a2791",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "guard_events": [
+    {
+      "at": "2026-10-01T19:31:46.564Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:31:47.631Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:32:04.262Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:32:33.084Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:32:34.176Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:33:00.915Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:33:36.161Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:04.512Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:05.575Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:10.867Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:24.091Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:25.137Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:28.068Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:29.098Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:39.255Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:40.221Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:43.194Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:34:49.276Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:35:00.622Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

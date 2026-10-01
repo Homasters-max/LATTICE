@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://evidence-manifest/1",
+  "change": "s0-skeleton",
+  "commit": "3dc5268ca1d23ce7923ecfd51bd3b64cd2e71d02",
+  "versions": {
+    "warrant": "0.10.0",
+    "openspec": "1.13.1",
+    "lock_hash": "sha256:b79619e949853201f8ef5850f6b42f17894b170f20ed882522efcb8bed13e55e",
+    "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31"
+  },
+  "evidence": [
+    "EVID-01M3WF0TNN9NXQRBD21HY7RA87"
+  ]
+}

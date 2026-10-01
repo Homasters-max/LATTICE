@@ -26,7 +26,7 @@ replaces it with the rules of `design-next` 10-structure.
   needs: a minimal JSONL store, a system and a fixed clock, a ULID and a counter id source (ST-M02, ST-T02).
 - **CLI** `lattice` with a command table, one file per command: `init`, `import-md`, `apply`, `export` (PL-E02).
 - **The thin path**: `import-md` turns a synthetic `md` fixture — one table with IDs — into a proposal; `apply` turns
-  it into a commit of a hash-chained JSONL ledger, or into rejections naming a rule ID (LG-P01, LG-P02), each rule with
+  it into a commit of a hash-chained JSONL ledger, or into rejections naming a rule ID (LG-P01, LG-P02, LG-C07), each rule with
   its fixture; `export` renders the `md` again from the latest-revision projection; the round trip gives the same
   bytes, checked in CI.
 - **Spec `architecture` replaced**: REQ-AR-001…004 are removed and written anew in English against 10-structure as
@@ -64,8 +64,9 @@ replaces it with the rules of `design-next` 10-structure.
 
 - The real corpus: `design-next/*.md` is not imported; every `md` form other than one table with IDs is refused by the
   codec (s0-codec-forms #58, s0-roundtrip #61).
-- Apply checks beyond LG-P01 and LG-P02: tail and `seq` (LG-C03), one intent per key and the permutation test
-  (LG-C07), uniqueness, pinned targets, no-op and re-apply (s0-apply-checks #56).
+- Apply checks beyond LG-P01, LG-P02 and the duplicate `id` of LG-C07: tail and `seq` as an apply check (LG-C03), fact
+  keys and the permutation test (LG-C07), uniqueness, pinned targets, no-op and re-apply (s0-apply-checks #56).
+- The finer limits of ST-M01 on what `codec`, `runtime` and `capabilities` read of `ledger` (design I-3, #76).
 - Store hardening: lock, fencing, `fsync`, `recovered/`, the memory adapter and the store contract tests (s0-store
   #57).
 - Kernel changes: the envelope OM-E01…E04, `hash` over `type@n` (OM-H01), the schema subset, the meta-type (s0-kernel

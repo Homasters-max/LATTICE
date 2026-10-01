@@ -83,18 +83,26 @@ Adapters are not listed one by one: a file `src/adapters/<port>-<name>/…` with
 `adapters/<port>-<name>` that may import only `ports[<port>]`, with `builtins` and `packages`; `assembly` lists
 `adapters` and so may import every adapter. `test/architecture/policy.ts` holds the table of REQ-AR-009 as this data.
 
-Three new rules are functions over the parsed tree, next to `purity`, `perimeter` and `cycles`:
-- `moduleOf(path)` — the module of a path or `null`;
-- `matrix` — `outside-matrix` (line 0) for every `src/` source file with no module; `import-direction` for every edge
-  (the same edges as REQ-AR-007) from a file of module A to a path whose module is not A, not in A's `imports`, or
-  `null` under `src/`; `package-import` for every non-relative specifier outside `kernel` against `builtins` /
-  `packages` (`node:` prefix → built-in; anything else → package);
+The new rules are functions over the parsed tree, next to `purity`, `perimeter` and `cycles`; they skip perimeter
+files, files with `parse-error` and files outside `src/` (REQ-AR-009):
+- `moduleOf(path)` — the module of a path or `null`; an adapter folder must match `<port>-<name>` with `<port>` a key
+  of `ports` (`[a-z]+`) and `<name>` `[a-z0-9][a-z0-9-]*`;
+- `matrix` — `outside-matrix` (line 0) for every `src/` source file with no module; `non-ts-file` (line 1) for a
+  source file of a module not named `*.ts` (the loader already lists such files, it parses only `*.ts`);
+  `import-direction` for every edge (the same edges as REQ-AR-007) from a file of module A to a path not in A and not
+  in a module A may import — another module, `null` under `src/`, or outside `src/`; `package-import` for every
+  non-relative specifier against `builtins` / `packages` (`node:` prefix → built-in; anything else → package);
 - purity of pure modules (REQ-AR-010) reuses the `purity` function of the kernel with its import rules switched off:
   `forbidden-global`, `nondeterminism`, `dynamic-import` only. A pure module is one with `builtins: false` and
   `packages: false`, except `kernel` (checked by REQ-AR-005).
 
-Facts already parsed per file (imports with their specifier and line) are enough; no second walk or parse. Without
-`modules` none of the three runs, so every existing fixture keeps its result under SCN-AR-009…014.
+The fixture trees of SCN-AR-015 and SCN-AR-016 carry a clean `src/kernel/index.ts`, so `no-kernel` does not stop the
+check. Facts already parsed per file (imports with their specifier and line) are enough; no second walk or parse.
+Without `modules` none of the new rules runs, so every existing fixture keeps its result under SCN-AR-009…014.
+
+The finer limits of ST-M01 on what `codec`, `runtime` and `capabilities` read of `ledger` (proposal format, read view)
+are not encoded: `ledger` has no stable file boundary for them yet, and `runtime` and `capabilities` hold no code in S0.
+Row `I-3`, issue #76.
 
 Rejected: a regex over import lines — the existing parse already gives every form of REQ-AR-007 (type positions,
 `require`, re-exports); a third-party dependency-cruiser — a new dependency for what the graph already holds.
@@ -107,12 +115,16 @@ type EventIntent  = { kind: "event";  id: Id; type: string; by: Id; at: string; 
 type Proposal = { intents: readonly (EntityIntent | EventIntent)[] };
 ```
 
-- A proposal file is the canonical JSON of `Proposal` with intents in canonical order and one line feed.
-  `parseProposal(text)` admits the text with the kernel `checkInput` (I-JSON, NFC) and checks the form of LG-P01; every
-  deviation is a rejection `LG-P01` with the JSON pointer of the part (`/intents/2/by`).
-- Field checks reuse the kernel: `id` and `by` through `formatRef(id)` (a `namespace/local`), `type` through
-  `parseRef` with a version (a pinned `type@n`, OM-E02), `base` a safe integer ≥ 0, `at` matching
-  `YYYY-MM-DDTHH:MM:SS.mmmZ`.
+- A proposal file written by `import-md` is the canonical JSON of `Proposal` with intents in canonical order and one
+  line feed. `parseProposal(text)` admits the text with the kernel `checkInput` (I-JSON, NFC) and checks the form of
+  REQ-CL-004 in the order of its table: the text and the top level, then every intent, then (only if all passed) the
+  session count, then (only with one session) every `by`; each deviation is a rejection `LG-P01` with the fields the
+  table gives.
+- Field checks reuse the kernel: `id` and `by` through `parseRef` without a version and a `namespace/local` id (not a
+  value id), `type` through `parseRef` with a version (a pinned `type@n`, OM-E02), `base` a safe integer ≥ 0, `at`
+  matching `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`.
+- Duplicates (LG-C07, the part the skeleton needs): a second intent naming an `id` already named earlier in the list
+  is a rejection `LG-C07` at its `/intents/<i>/id`. The permutation test and fact keys stay with s0-apply-checks (#56).
 - Canonical order (LG-C07): entity intents by `id`, then event intents by `id`, by UTF-16 code units. Fact keys come with
   the first fact type (s0-bootstrap).
 - Proposal hash: kernel `hash("core/proposal", intents in canonical order)`.
@@ -121,12 +133,12 @@ type Proposal = { intents: readonly (EntityIntent | EventIntent)[] };
 
 - `apply(ledger: Ledger, proposal: Proposal): { outcome: "commit"; commit: Commit; text: string } | { outcome:
   "rejected"; rejections: readonly Rejection[] }` — pure (ST-S03). It never assigns an `id`, `by` or `at` (LG-P01).
-- `rules.ts`: `const REJECTION_RULES = ["LG-P01", "LG-P02"] as const`; `type RuleId = typeof REJECTION_RULES[number]`;
+- `rules.ts`: `const REJECTION_RULES = ["LG-C07", "LG-P01", "LG-P02"] as const`; `type RuleId = typeof REJECTION_RULES[number]`;
   the only constructor `reject(rule: RuleId, …)`, so a rejection with a rule outside the list does not type-check
   (REQ-AR-011). Rejections are sorted as REQ-CL-004 says.
 - `openLedger(stored: readonly StoredCommit[]): { ok: true; ledger: Ledger } | { ok: false; seq: number; message:
-  string }` — admits each text with `checkInput`, requires `canonical(parsed) === text`, `seq` growing, `prev` equal to
-  the hash of the commit before (`null` first): LG-C04. `Ledger` holds the commits, the tail (`seq`, hash) and the
+  string }` — admits each text with `checkInput`, requires `canonical(parsed) === text`, `seq` ≥ 1 and growing, `prev` equal
+  to the hash of the commit before (`null` first): LG-C04. `Ledger` holds the commits, the tail (`seq`, hash) and the
   `latest` projection.
 - Commit hash: kernel `hash("core/commit", commit)` — `sha256(JCS({body: commit, type: "core/commit"}))`.
 - Entity record hash: kernel `hash(<type without @n>, body)`. This is not yet OM-H01 (which covers `type@n`): the
@@ -145,15 +157,20 @@ type Proposal = { intents: readonly (EntityIntent | EventIntent)[] };
 - `parseTable(text): Result<Table>` and `renderTable(table): string` in `table.ts`. A line is accepted only when
   `renderLine(cells)` gives it back exactly; so everything import accepts, export writes back byte for byte, and the
   round trip holds by construction for every accepted file (LG-B04 asks the corpus to be normalized to the codec form).
-- `importMd(text, fileName, { namespace, session: { id, at } }): Result<Proposal>` — pure. Row type: `<namespace>/
+- `importMd(bytes, fileName, { namespace, session: { id, at } }): Result<Proposal>` — pure; it runs the steps of
+  REQ-CL-003 in order and refuses with the line of the first deviation: the file name, strict UTF-8 decoding
+  (`TextDecoder` with `fatal: true`, no BOM), the table form, the header and IDs (a row ID equal to the stem gives
+  the line of that row), and every cell through the kernel `checkInput` of its JSON string (NFC, assigned code points). Row type: `<namespace>/
   table.<slug>@1`, `slug` = the header cells after `ID`, each lower-cased with every run of characters outside
   `[a-z0-9]` replaced by `-` and trimmed of `-`, joined by `.` (`| ID | Rule |` → `lattice/table.rule@1`). Row body:
   `{ "<header cell>": "<cell>" , … }`. Document: `id` `<namespace>/<file stem>`, type `<namespace>/document@1`, body
   `{ "file": "<file name>", "columns": [ … ], "rows": [ { "$ref": "<row id>" }, … ] }` — a floating reference, as the
   kernel `refsOf` reads it. Session event: type `core/session@1`, body `{ "of": {}, "participant": "lattice",
   "kind": "machine", "purpose": "import" }` (OM-E04, CT-P01, TR-B02).
-- `exportMd(view: ReadView): readonly { file: string; text: string }[]` — every entity whose type is
-  `<namespace>/document@1` (namespace from its `id`), rows resolved through `view.get` (floating → latest, OM-R01).
+- `exportMd(view: ReadView, namespace): Result<readonly { file: string; text: string }[]>` — every entity whose type
+  is `<namespace>/document@1`, rows resolved through `view.get` (floating → latest, OM-R01), the ID cell as the local
+  part of the row `id` in upper case; every refusal of REQ-CL-005 is found before the result is returned, so assembly
+  writes either every file or none.
 - The types named here are names only: no type entity exists before s0-bootstrap, and the skeleton's apply does not
   check that a type exists (OM-R03 is #56).
 
@@ -167,7 +184,10 @@ needs its own export form or the round trip breaks; that is the normalization wo
 "rejected", … } | { kind: "refused", message }`. Default ports: `store-jsonl` on `<root>/store/knowledge.jsonl`,
 `clock-system`, `ids-ulid`. It reads and writes `store/lattice.json` and `store/proposals/*` with `node:fs` (ST-S03:
 `assembly` reads configuration; proposals are files of the git workflow, not the ledger, so they are not behind
-`store`). It validates the init options (REQ-CL-002) and the namespace of the session `id` through kernel `newId`.
+`store`). It validates the init options and the configuration (REQ-CL-002) and builds the session `id` through kernel `newId`.
+`apply` takes only a file directly in `<root>/store/proposals/` (REQ-CL-004); `importMd` refuses an existing proposal
+file of the same name; a `moved` answer of the store is a refusal naming LG-C03; an error of `node:fs` while writing is
+a refusal naming the file (no atomicity before s0-store, REQ-CL-001).
 
 ### D-8. CLI: entry, table, commands
 
@@ -194,7 +214,7 @@ needs its own export form or the round trip breaks; that is the normalization wo
 |---|---|
 | `test/architecture/structure.test.ts` (changed), `policy.ts` (modules, ports) | SCN-AR-008…016 (the old tests renamed from SCN-AR-001…007) |
 | `test/fixtures/structure/matrix/**`, `test/fixtures/structure/purity/**` | trees of SCN-AR-015, SCN-AR-016, marked `// expect: <rule>` like the kernel fixtures |
-| `test/architecture/rules.test.ts`, `test/fixtures/rules/{LG-P01,LG-P02}/{ledger.jsonl,proposal.json,expected.json}` | SCN-AR-017 |
+| `test/architecture/rules.test.ts`, `test/fixtures/rules/{LG-C07,LG-P01,LG-P02}/{ledger.jsonl,proposal.json,expected.json}` | SCN-AR-017 |
 | `test/ledger/*.test.ts`, `test/codec/*.test.ts` | units under the tokens of the CL scenarios they serve |
 | `test/cli/*.test.ts` — `run(argv, io)` in process, temporary folders, `clock-fixed`, `ids-counter` | SCN-CL-001…009 |
 | `test/e2e/roundtrip.test.ts` — the entry as a child process (`process.execPath --experimental-strip-types src/cli/main.ts`) | SCN-CL-010 |
@@ -216,6 +236,7 @@ apply and commit it into the branch before `VERIFYING`.
 |---|---|---|---|
 | I-1 | The entity record hash is the existing kernel `hash(<type without @n>, body)`, not OM-H01 over `type@n`. | The issue keeps the kernel as it is; s0-kernel (#55) binds OM-H01; the store is disposable (LG-G05). | design |
 | I-2 | `assembly` formats the `at` of a session with `new Date(ms).toISOString()`. | OM-E03 puts the formatter in the kernel, which has no exported one; it moves with s0-kernel (#55). | design |
+| I-3 | The structure test checks ST-M01 at the granularity of modules; the limits on what `codec`, `runtime` and `capabilities` read of `ledger` are deferred to #76 (P2, milestone S1). | Spec review of this Change, F-13: no stable file boundary in `ledger` yet; `runtime` and `capabilities` hold no code in S0. | design |
 
 ## Risks / Trade-offs
 
@@ -228,8 +249,9 @@ apply and commit it into the branch before `VERIFYING`.
 - [A shebang with `env -S` and a `.ts` bin may not run through the npm shim on Windows] → the manual acceptance and CI
   use `node --experimental-strip-types src/cli/main.ts`; the `bin` is checked on Linux in CI by the e2e test only
   through `node`.
-- [Two rejections only] → enough for the seam (SL-T09); s0-apply-checks (#56) adds rule IDs to `REJECTION_RULES`, and
-  REQ-AR-011 forces a fixture for each.
+- [Three rejection rules only] → enough for the seam (SL-T09); s0-apply-checks (#56) adds rule IDs to
+  `REJECTION_RULES`, and REQ-AR-011 forces a fixture for each.
+- [No atomicity of a write before s0-store] → stated in REQ-CL-001; the store is disposable (LG-G05).
 
 ## Migration Plan
 

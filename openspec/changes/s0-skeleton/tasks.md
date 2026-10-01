@@ -24,13 +24,13 @@
 
 ## 3. Ledger: proposal, apply, projection
 
-- [ ] 3.1 `ledger/proposal.ts` — intents, `parseProposal` with `LG-P01` rejections, canonical order, proposal hash
-  (`REQ-CL-004`, `REQ-CL-003`, design D-4); verified by tests with the token `SCN-CL-007` passing
+- [ ] 3.1 `ledger/proposal.ts` — intents, `parseProposal` with the `LG-P01` and `LG-C07` rejections, canonical order,
+  proposal hash (`REQ-CL-004`, `REQ-CL-003`, design D-4); verified by tests with the token `SCN-CL-007` passing
 - [ ] 3.2 `ledger/commit.ts`, `ledger/projections/latest.ts`, `ledger/apply.ts`, `ledger/rules.ts` — `openLedger` with
   the LG-C04 chain check, the latest-revision projection and read view, `apply` with `LG-P02`, the commit form
   (`REQ-CL-004`, `REQ-CL-005`, design D-5); verified by tests with the tokens `SCN-CL-005`, `SCN-CL-006`, `SCN-CL-008`
   passing
-- [ ] 3.3 Rule fixtures `test/fixtures/rules/LG-P01/`, `test/fixtures/rules/LG-P02/` and `test/architecture/rules.test.ts`
+- [ ] 3.3 Rule fixtures `test/fixtures/rules/{LG-C07,LG-P01,LG-P02}/` and `test/architecture/rules.test.ts`
   (`REQ-AR-011`, design D-5, D-10); verified by tests with the token `SCN-AR-017` passing
 
 ## 4. Codec
