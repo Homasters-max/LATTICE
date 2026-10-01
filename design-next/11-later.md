@@ -27,7 +27,7 @@ What is deliberately not in the design yet, and what is deliberately never taken
 | LT-17 | References across projects. | after S1, when a second project needs them | CT-M03 |
 | LT-18 | A numeric trust score. | the bench shows it improves LENS selection | TR-V01 |
 | LT-19 | Consumer cues: phrasings that boost a block. | the bench shows a recall gap | LN-C05 |
-| LT-20 | Contract test: `std` applies cleanly on every kernel version. | the second kernel version | LG-G02, CT-N02 |
+| LT-20 | Contract test: `std` applies cleanly on every kernel version. | the first kernel change after the switch (LG-G05) | LG-G02, CT-N02, LG-G05 |
 | LT-21 | Pluggable projections: each module owns its projection, assembly passes the list when the store opens, so the ledger does not depend on every module. | a projection owned by a module other than `trust` | LG-J01, ST-M01 |
 | LT-22 | Address of one decision inside a run (run `id` plus stage index) as a reference form, so a verdict on an outcome (DP-B05, DP-C04) can name that decision. Not a separate DecisionResult event (NX-25). | the first verdict on a decision outcome (S3) | OM-I05, TR-F05, PL-R03, DP-R06 |
 | LT-23 | Runs on `holdout` only in CI on `recorded` answers, so the run count of BN-S05 is verifiable. | the first `live` pipeline that pins a point (S3) | BN-S05, BN-R01 |
@@ -71,4 +71,4 @@ Ideas of `design/` v0.6 that add a second mechanism next to a question already d
 
 - 2026-10-01 — created from the design v0.6 audit (`reviews/2026-10-01-design-v06-audit.md`), grilled: items L, G09, and the items deferred by 09 moved here; groups X recorded as not taken.
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): LT-22 (address of a decision inside a run, R08), LT-23 (verifiable holdout, R16), LT-24 (capability hash below the seam, R17); LT-21 trigger rewritten, LT-15 through pipelines; NX-21…NX-25 from the review's list of ideas not proposed; follow-up: LT-25 (an act posted by an agent).
-- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): LT-01 fires on the first kernel change after the switch (LG-G05); NX-24 generalised by ST-M02; NX-26 (`import-md --diff`) not taken.
+- 2026-10-01 — launch-readiness grilling (`reviews/2026-10-01-launch-readiness-grilled.md`): LT-01 and LT-20 fire on the first kernel change after the switch (LG-G05); NX-24 generalised by ST-M02; NX-26 (`import-md --diff`) not taken.
