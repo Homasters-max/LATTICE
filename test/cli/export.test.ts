@@ -51,6 +51,11 @@ describe("SCN-CL-009 export follows the latest revision of a row", () => {
   it("SCN-CL-009 a document that breaks the form is refused before anything is written", () => {
     const cases: readonly Json[] = [
       { body: { file: "../escape.md", columns: ["Rule"], rows: [{ $ref: "lattice/fx-a01" }] } },
+      { body: { file: "fixture.md", columns: [" Rule"], rows: [{ $ref: "lattice/fx-a01" }] } },
+      { body: { file: "fixture.md", columns: ["Rule"], rows: [{ $ref: "lattice/fx-a01" }, { $ref: "lattice/fx-a01" }] } },
+      { body: { file: "fixture.md", columns: ["Rule"], rows: [{ $ref: "lattice/plain" }] }, plain: true },
+      { body: { file: "fixture.md", columns: ["Rule"], rows: [{ $ref: "lattice/fx-a01" }] }, cell: "a | b" },
+      { body: { file: "fixture.md", columns: ["Rule"], rows: [{ $ref: "lattice/fx-a01" }] }, cell: " lead" },
       { body: { file: "fixture.md", columns: ["Rule"], rows: [] } },
       { body: { file: "fixture.md", columns: ["Rule", "Rule"], rows: [{ $ref: "lattice/fx-a01" }] } },
       { body: { file: "fixture.md", columns: ["Rule"], rows: [{ $ref: "lattice/fx-a01@1" }] } },
@@ -62,13 +67,31 @@ describe("SCN-CL-009 export follows the latest revision of a row", () => {
       const p = initialised();
       try {
         applied(p);
-        assert.equal(applyEntities(p, [{ id: "lattice/fixture", type: "lattice/document@1", base: 1, ...c }]), 0);
+        const { body, plain, cell } = c as { body: Json; plain?: boolean; cell?: string };
+        const extra: Json[] = [];
+        if (plain === true) extra.push({ id: "lattice/plain", type: "lattice/table.rule@1", base: 0, body: { Rule: "x" } });
+        if (cell !== undefined) extra.push({ id: "lattice/fx-a01", type: "lattice/table.rule@1", base: 1, body: { Rule: cell } });
+        const doc = { id: "lattice/fixture", type: "lattice/document@1", base: 1, body };
+        assert.equal(applyEntities(p, [doc, ...extra]), 0);
         const r = p.lattice("export", "--out", "out");
         assert.equal(r.code, 2, JSON.stringify(c));
+        assert.match(r.err.join("\n"), /lattice\/fixture/, "the refusal names the document");
         assert.equal(p.exists("out"), false, JSON.stringify(c));
       } finally {
         p.dispose();
       }
+    }
+  });
+
+  it("SCN-CL-009 a ledger without documents exports nothing and still creates the folder", () => {
+    const p = initialised();
+    try {
+      const r = p.lattice("export", "--out", "out");
+      assert.equal(r.code, 0);
+      assert.deepEqual(r.out, []);
+      assert.ok(p.exists("out"));
+    } finally {
+      p.dispose();
     }
   });
 

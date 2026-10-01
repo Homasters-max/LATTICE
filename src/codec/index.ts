@@ -3,5 +3,6 @@
 
 export type { Imported, Session } from "./import.ts";
 export { importMd } from "./import.ts";
+export { stemOf } from "./table.ts";
 export type { Exported, ExportedFile } from "./export.ts";
 export { exportMd } from "./export.ts";

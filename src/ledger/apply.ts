@@ -6,14 +6,14 @@
 import { canonical } from "../kernel/index.ts";
 import type { Ledger } from "./commit.ts";
 import { commitHash, KERNEL_VERSION, recordHash } from "./commit.ts";
-import type { EventIntent, Proposal } from "./proposal.ts";
-import { orderedIntents, proposalHash, SESSION_TYPE } from "./proposal.ts";
+import type { Proposal } from "./proposal.ts";
+import { orderedIntents, proposalHash } from "./proposal.ts";
 import type { Commit, LedgerRecord } from "./records.ts";
 import type { Rejection } from "./rules.ts";
 import { reject, sortRejections } from "./rules.ts";
 
 export type Applied =
-  | { readonly outcome: "commit"; readonly commit: Commit; readonly text: string; readonly hash: string }
+  | { readonly outcome: "commit"; readonly commit: Commit; readonly text: string }
   | { readonly outcome: "rejected"; readonly rejections: readonly Rejection[] };
 
 export function apply(ledger: Ledger, proposal: Proposal): Applied {
@@ -35,10 +35,10 @@ export function apply(ledger: Ledger, proposal: Proposal): Applied {
   });
   if (found.length > 0) return { outcome: "rejected", rejections: sortRejections(found) };
 
-  const session = proposal.intents.find((x) => x.kind === "event" && x.type === SESSION_TYPE) as EventIntent;
+  const { at, id: by } = proposal.session;
   const records: LedgerRecord[] = orderedIntents(proposal.intents).map((x) =>
     x.kind === "entity"
-      ? { id: x.id, rev: x.base + 1, type: x.type, hash: recordHash(x.type, x.body), by: x.by, at: session.at, body: x.body }
+      ? { id: x.id, rev: x.base + 1, type: x.type, hash: recordHash(x.type, x.body), by: x.by, at, body: x.body }
       : { id: x.id, type: x.type, by: x.by, at: x.at, body: x.body },
   );
   const tail = ledger.tail;
@@ -48,11 +48,11 @@ export function apply(ledger: Ledger, proposal: Proposal): Applied {
     kernel: KERNEL_VERSION,
     base: tail === null ? 0 : tail.seq,
     proposal: proposalHash(proposal),
-    by: session.id,
-    at: session.at,
+    by,
+    at,
     records,
   };
   const text = canonical(commit);
   if (!text.ok) throw new Error("commit: not JSON");
-  return { outcome: "commit", commit, text: text.value, hash: commitHash(commit) };
+  return { outcome: "commit", commit, text: text.value };
 }

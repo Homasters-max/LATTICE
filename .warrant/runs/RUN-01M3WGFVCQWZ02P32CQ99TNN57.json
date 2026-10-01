@@ -1179,6 +1179,429 @@
       "decision": "allow",
       "findings": [],
       "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:10:32.276Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:10:46.464Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:10:59.479Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:08.599Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:33.282Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:33.728Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:38.063Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:38.434Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:38.756Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:41.425Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:43.466Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:48.682Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:49.924Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:11:57.860Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:04.403Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:09.068Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:10.094Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:16.887Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:24.609Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:33.937Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:42.367Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:12:57.484Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:13:05.054Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:13:11.924Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:13:17.315Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:13:46.281Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:33.032Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:34.015Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:37.281Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:38.227Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:42.675Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:14:43.657Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:06.880Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:07.813Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:20.309Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:21.225Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:29.014Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:29.940Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:32.656Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:33.542Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:15:53.215Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:16:17.162Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:16:45.700Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:16:46.682Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:16:55.676Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:17:08.348Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:17:23.436Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
     }
   ]
 }

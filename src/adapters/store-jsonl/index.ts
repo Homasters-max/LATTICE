@@ -1,6 +1,7 @@
 // JSONL adapter of the `store` port (LG-S02, design D-9): one commit per line, each line ended by a line feed — the
 // commit end marker; a last line without one is the torn tail (LG-C06). Minimal in the walking skeleton: no lock,
-// fencing, fsync or recovery — s0-store (#57) adds them.
+// fencing, fsync or recovery — s0-store (#57) adds them. A file that is not valid UTF-8 is not read at all: `read`
+// throws, and the caller refuses the ledger.
 
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import type { AppendResult, Store, StoredCommit, StoredLedger } from "../../ledger/ports/store.ts";
@@ -17,7 +18,7 @@ function seqOf(text: string): number {
 
 export function jsonlStore(file: string): Store {
   const read = (): StoredLedger => {
-    const text = existsSync(file) ? readFileSync(file, "utf8") : "";
+    const text = existsSync(file) ? new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(file)) : "";
     if (text === "") return { commits: [], torn: null };
     const lines = text.split("\n");
     const last = lines.pop() as string; // "" when the file ends with a line feed

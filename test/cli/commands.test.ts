@@ -35,9 +35,11 @@ describe("SCN-CL-002 a store is created once", () => {
       assert.equal(p.file("store/knowledge.jsonl"), "");
       assert.deepEqual(p.proposals(), []);
       assert.ok(p.exists("store/proposals"));
-      const second = p.lattice("init", "--namespace", "other", "--owner", "someone");
+      p.write("store/proposals/kept.json", "{}");
+      const before = [p.file("store/lattice.json"), p.file("store/knowledge.jsonl"), p.proposals().join()];
+      const second = p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max");
       assert.equal(second.code, 2);
-      assert.equal(p.file("store/lattice.json"), '{"namespace":"lattice","owner":"Homasters-max"}\n');
+      assert.deepEqual([p.file("store/lattice.json"), p.file("store/knowledge.jsonl"), p.proposals().join()], before);
     } finally {
       p.dispose();
     }

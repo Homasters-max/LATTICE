@@ -7,9 +7,16 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { canonical, checkInput, newId } from "../kernel/index.ts";
 import type { Ledger, Rejection } from "../ledger/index.ts";
-import { apply as applyProposal, openLedger, parseProposal, proposalHash, proposalText } from "../ledger/index.ts";
+import {
+  apply as applyProposal,
+  openLedger,
+  parseProposal,
+  proposalHash,
+  proposalText,
+  unreadableProposal,
+} from "../ledger/index.ts";
 import type { Store } from "../ledger/ports/store.ts";
-import { exportMd, importMd as importTable } from "../codec/index.ts";
+import { exportMd, importMd as importTable, stemOf } from "../codec/index.ts";
 import type { Clock } from "../runtime/ports/clock.ts";
 import type { Ids } from "../runtime/ports/ids.ts";
 import { jsonlStore } from "../adapters/store-jsonl/index.ts";
@@ -20,7 +27,10 @@ export type Ports = { readonly store?: Store; readonly clock?: Clock; readonly i
 
 export type { Rejection };
 
-/** `done` — exit 0 with lines for standard output; `rejected` — exit 1; `refused` — exit 2 (REQ-CL-001). */
+/**
+ * `done` — exit 0 with lines for standard output; `rejected` — exit 1 with the rejections of apply; `refused-input` —
+ * exit 1, the codec refused the md file; `refused` — exit 2 (REQ-CL-001).
+ */
 export type Outcome =
   | { readonly kind: "done"; readonly output: readonly string[] }
   | { readonly kind: "rejected"; readonly rejections: readonly Rejection[] }
@@ -98,9 +108,24 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
     return `${shown(configFile)} is not the init configuration`;
   };
 
-  const open = (): Ledger | string => {
-    const opened = openLedger(store().read());
-    return opened.ok ? opened.ledger : opened.message;
+  /** Strict UTF-8: a file whose bytes are not text is refused, never repaired with U+FFFD. */
+  const decode = (bytes: Uint8Array): string | null => {
+    try {
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch {
+      return null;
+    }
+  };
+
+  /** Opens the ledger of `s` (LG-C04); an unreadable ledger file is a refusal too (REQ-CL-001). */
+  const open = (s: Store): Ledger | string => {
+    if (ports.store === undefined && !existsSync(ledgerFile)) return `${shown(ledgerFile)} is missing`;
+    try {
+      const opened = openLedger(s.read());
+      return opened.ok ? opened.ledger : opened.message;
+    } catch (e) {
+      return `cannot read ${shown(ledgerFile)}: ${(e as Error).message}`;
+    }
   };
 
   return {
@@ -126,12 +151,12 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       } catch {
         return refused(`cannot read ${shown(path)}`);
       }
-      let text: string;
-      try {
-        text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-      } catch {
-        return { kind: "refused-input", message: `${shown(path)}:0: the file is not valid UTF-8` };
+      // step 1 (the file name) before step 2 (the encoding), REQ-CL-003
+      if (stemOf(basename(path)) === null) {
+        return { kind: "refused-input", message: `${shown(path)}:0: the file name is not <stem>.md of the form` };
       }
+      const text = decode(bytes);
+      if (text === null) return { kind: "refused-input", message: `${shown(path)}:0: the file is not valid UTF-8` };
       const ulid = ids.ulid();
       const session = newId(config.namespace, ulid);
       if (!session.ok) return refused(`the ids port gave a ULID the kernel refuses: ${ulid}`);
@@ -149,20 +174,21 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       if (typeof config === "string") return refused(config);
       const path = resolve(root, file);
       if (dirname(path) !== resolve(proposalsDir)) return refused(`${shown(path)} is not a file in store/proposals/`);
-      let text: string;
+      let bytes: Uint8Array;
       try {
-        text = readFileSync(path, "utf8");
+        bytes = readFileSync(path);
       } catch {
         return refused(`cannot read ${shown(path)}`);
       }
       const s = store();
-      const opened = openLedger(s.read());
-      if (!opened.ok) return refused(opened.message);
-      const parsed = parseProposal(text);
+      const ledger = open(s);
+      if (typeof ledger === "string") return refused(ledger);
+      const text = decode(bytes);
+      const parsed = text === null ? unreadableProposal() : parseProposal(text);
       if (!parsed.ok) return { kind: "rejected", rejections: parsed.rejections };
-      const applied = applyProposal(opened.ledger, parsed.proposal);
+      const applied = applyProposal(ledger, parsed.proposal);
       if (applied.outcome === "rejected") return { kind: "rejected", rejections: applied.rejections };
-      const after = opened.ledger.tail?.seq ?? 0;
+      const after = ledger.tail?.seq ?? 0;
       let appended: ReturnType<Store["append"]> | undefined;
       const failed = writing(ledgerFile, () => {
         appended = s.append({ seq: applied.commit.seq, text: applied.text }, after);
@@ -177,18 +203,17 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
     exportTo(out) {
       const config = readConfig();
       if (typeof config === "string") return refused(config);
-      const ledger = open();
+      const ledger = open(store());
       if (typeof ledger === "string") return refused(ledger);
       const exported = exportMd(ledger.view, config.namespace);
       if (!exported.ok) return refused(`export refused: ${exported.message}`);
       const dir = resolve(root, out);
+      const made = writing(dir, () => mkdirSync(dir, { recursive: true }));
+      if (made !== null) return refused(made);
       const written: string[] = [];
       for (const { file, text } of exported.files) {
         const target = join(dir, file);
-        const failed = writing(target, () => {
-          mkdirSync(dir, { recursive: true });
-          writeFileSync(target, text);
-        });
+        const failed = writing(target, () => writeFileSync(target, text));
         if (failed !== null) return refused(failed);
         written.push(shown(target));
       }

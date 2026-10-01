@@ -105,6 +105,9 @@ describe("SCN-CL-004 input outside the skeleton form is refused", () => {
       const r = p.lattice("import-md", "bytes.md");
       assert.equal(r.code, 1);
       assert.ok(r.err.join("\n").startsWith("bytes.md:0: "));
+      assert.match(r.err.join("\n"), /UTF-8/);
+      writeFileSync(join(p.dir, "Bad_Name.md"), Buffer.from([0xff]));
+      assert.match(p.lattice("import-md", "Bad_Name.md").err.join("\n"), /^Bad_Name\.md:0: the file name/);
       assert.deepEqual(p.proposals(), []);
     } finally {
       p.dispose();

@@ -2,6 +2,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { canonical, hash } from "../../src/kernel/index.ts";
 import { jsonlStore } from "../../src/adapters/store-jsonl/index.ts";
@@ -198,6 +199,20 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
     }
   });
 
+  it("SCN-CL-007 a proposal file that is not UTF-8 is rejected by LG-P01 at the top level", () => {
+    const p = initialised();
+    try {
+      const proposal = imported(p);
+      writeFileSync(join(p.dir, proposal), Buffer.from([0x7b, 0xff, 0x7d]));
+      const r = p.lattice("apply", proposal);
+      assert.equal(r.code, 1);
+      const one = JSON.parse(r.out[0] as string) as Json[];
+      assert.deepEqual(one.map((x) => [x.rule, x.path, x.intent]), [["LG-P01", "", null]]);
+    } finally {
+      p.dispose();
+    }
+  });
+
   it("SCN-CL-007 a file outside store/proposals/ is a usage refusal", () => {
     const p = initialised();
     try {
@@ -254,6 +269,35 @@ describe("SCN-CL-008 a broken hash chain is refused", () => {
       assert.match(r.err.join("\n"), /seq 2/);
       assert.equal(p.file("store/knowledge.jsonl"), tampered);
       assert.ok(p.exists(third));
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it("SCN-CL-008 a complete commit without its line feed is named by its seq", () => {
+    const p = initialised();
+    try {
+      assert.equal(p.lattice("apply", imported(p)).code, 0);
+      const line = p.file("store/knowledge.jsonl");
+      const proposal = imported(p);
+      p.write("store/knowledge.jsonl", line + line.slice(0, -1).replace('"seq":1', '"seq":2'));
+      assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: seq 2: a tail without a commit end marker/);
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it("SCN-CL-008 a ledger that is not UTF-8, a directory, or missing is refused with code 2", () => {
+    const p = initialised();
+    try {
+      const proposal = imported(p);
+      writeFileSync(join(p.dir, "store", "knowledge.jsonl"), Buffer.from([0xff, 0x0a]));
+      assert.equal(p.lattice("apply", proposal).code, 2);
+      rmSync(join(p.dir, "store", "knowledge.jsonl"));
+      assert.equal(p.lattice("apply", proposal).code, 2);
+      mkdirSync(join(p.dir, "store", "knowledge.jsonl"));
+      assert.equal(p.lattice("apply", proposal).code, 2);
+      assert.ok(p.exists(proposal));
     } finally {
       p.dispose();
     }

@@ -2,6 +2,8 @@
 // build a rejection, so a rule outside the list does not type-check. Every rule ID has a fixture in
 // test/fixtures/rules/<RULE-ID>/.
 
+import { byCodeUnits } from "./records.ts";
+
 export const REJECTION_RULES = ["LG-C07", "LG-P01", "LG-P02"] as const;
 
 export type RuleId = (typeof REJECTION_RULES)[number];
@@ -25,8 +27,6 @@ export function reject(
 ): Rejection {
   return Object.freeze({ intent, rule, message, path, expected, got });
 }
-
-const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The order of REQ-CL-004: `intent` (`null` first), `rule`, `path`, then the order they were found in. */
 export function sortRejections(found: readonly Rejection[]): readonly Rejection[] {

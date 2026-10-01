@@ -16,14 +16,15 @@ function isObject(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function hasExactly(value: unknown, keys: readonly string[]): value is Readonly<Record<string, unknown>> {
+/** An object with exactly these keys. */
+function exactly(value: unknown, keys: readonly string[]): value is Readonly<Record<string, unknown>> {
   return isObject(value) && Object.keys(value).length === keys.length && keys.every((k) => Object.hasOwn(value, k));
 }
 
 /** The rendered file of one document, or why it is refused. */
 function render(doc: EntityRecord, view: ReadView): ExportedFile | string {
   const body = doc.body;
-  if (!hasExactly(body, ["file", "columns", "rows"])) return "the body is not exactly file, columns and rows";
+  if (!exactly(body, ["file", "columns", "rows"])) return "the body is not exactly file, columns and rows";
   const { file, columns, rows } = body;
   if (typeof file !== "string" || stemOf(file) === null) return "file is not <stem>.md of the form";
   if (!Array.isArray(columns) || !columns.every((c): c is string => typeof c === "string")) {
@@ -31,11 +32,12 @@ function render(doc: EntityRecord, view: ReadView): ExportedFile | string {
   }
   const problem = columnsProblem(columns);
   if (problem !== null) return problem;
+  if (!columns.every(cellOk)) return "a column breaks the skeleton form";
   if (!Array.isArray(rows) || rows.length === 0) return "rows is not a non-empty list";
   const out: string[][] = [];
   const ids = new Set<string>();
   for (const ref of rows) {
-    if (!hasExactly(ref, ["$ref"]) || typeof ref.$ref !== "string") return "a row is not exactly {$ref}";
+    if (!exactly(ref, ["$ref"]) || typeof ref.$ref !== "string") return "a row is not exactly {$ref}";
     const parsed = parseRef(ref.$ref);
     if (!parsed.ok || parsed.value.version !== undefined) return `the row reference ${ref.$ref} is not floating`;
     const entity = view.get(ref.$ref);

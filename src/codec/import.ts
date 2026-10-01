@@ -2,12 +2,13 @@
 // event, one entity intent per row and one for the document. The steps run in order, each over the whole file; the
 // first deviation is refused with its line. Strict UTF-8 decoding (step 2) runs in `assembly` (design I-4).
 
+import type { Id } from "../kernel/index.ts";
 import { checkInput } from "../kernel/index.ts";
 import type { Intent, Proposal } from "../ledger/index.ts";
-import { orderedIntents, SESSION_TYPE } from "../ledger/index.ts";
+import { SESSION_TYPE } from "../ledger/index.ts";
 import { columnsProblem, isId, splitLine, stemOf, typeLocal } from "./table.ts";
 
-export type Session = { readonly id: string; readonly at: string };
+export type Session = { readonly id: Id; readonly at: string };
 
 export type Imported =
   | { readonly ok: true; readonly proposal: Proposal }
@@ -70,11 +71,13 @@ export function importMd(text: string, fileName: string, namespace: string, sess
     }
   }
 
+  // every local part passed the kernel grammar above (steps 1, 5, 6), so these are identifiers
+  const name = (local: string): Id => `${namespace}/${local}` as Id;
   const rowType = `${namespace}/${typeLocal(columns)}@1`;
-  const rowIds = rows.map((row) => `${namespace}/${(row[0] as string).toLowerCase()}`);
+  const rowIds = rows.map((row) => name((row[0] as string).toLowerCase()));
   const intents: Intent[] = rows.map((row, i) => ({
     kind: "entity",
-    id: rowIds[i] as string,
+    id: rowIds[i] as Id,
     type: rowType,
     base: 0,
     by: session.id,
@@ -82,19 +85,20 @@ export function importMd(text: string, fileName: string, namespace: string, sess
   }));
   intents.push({
     kind: "entity",
-    id: `${namespace}/${stem}`,
+    id: name(stem),
     type: `${namespace}/document@1`,
     base: 0,
     by: session.id,
     body: { file: fileName, columns, rows: rowIds.map((id) => ({ $ref: id })) },
   });
-  intents.push({
+  const event = {
     kind: "event",
     id: session.id,
     type: SESSION_TYPE,
     by: session.id,
     at: session.at,
     body: { of: {}, participant: "lattice", kind: "machine", purpose: "import" },
-  });
-  return { ok: true, proposal: { intents: orderedIntents(intents) } };
+  } as const;
+  intents.push(event);
+  return { ok: true, proposal: { intents, session: event } };
 }
