@@ -2,7 +2,7 @@
 
 ## 0. Precondition
 
-- [ ] 0.1 The docs PR #63 (`docs/sw-milestone`: SL-T07…SL-T09, the launch record) is merged before this spec-PR is
+- [x] 0.1 The docs PR #63 (`docs/sw-milestone`: SL-T07…SL-T09, the launch record) is merged before this spec-PR is
   marked `SPECIFIED` (design, Context); verified by `gh pr view 63 --json state` = `MERGED`
 
 ## 1. Policy paths and generated files
