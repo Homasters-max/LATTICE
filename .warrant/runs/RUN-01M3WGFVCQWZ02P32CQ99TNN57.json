@@ -31,7 +31,8 @@
   ],
   "branch": "impl/s0-skeleton",
   "started_at": "2026-10-01T19:54:01.559Z",
-  "run_state": "RUNNING",
+  "finished_at": "2026-10-01T20:28:47.205Z",
+  "run_state": "SUCCEEDED",
   "context_hash": "sha256:2e3f96f9086b6663a262d898a8566b6585c37ad3ab9d45d18bc697ca57375a08",
   "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
   "guard_events": [
@@ -1794,6 +1795,42 @@
     },
     {
       "at": "2026-10-01T20:23:10.713Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:28:20.110Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:28:26.166Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:28:30.394Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T20:28:42.190Z",
       "phase": "pre",
       "action": "shell",
       "paths": [],

@@ -48,7 +48,7 @@
   `REQ-CL-005`, design D-8); verified by tests with the tokens `SCN-CL-001`…`SCN-CL-009` passing
 - [x] 5.3 Fixture `test/fixtures/md/fixture.md` and `test/e2e/roundtrip.test.ts` through the entry as a child process
   (`REQ-CL-006`, design D-10); verified by the test with the token `SCN-CL-010` passing
-- [ ] 5.4 Maintainer's patch of `package.json` (`bin` `lattice`, design D-8, D-10) attached to the impl-PR and applied
+- [x] 5.4 Maintainer's patch of `package.json` (`bin` `lattice`, design D-8, D-10) attached to the impl-PR and applied
   by the maintainer; verified by `git diff main -- package.json` showing only the `bin` entry
 
 ## 6. Verification
@@ -56,5 +56,5 @@
 - [x] 6.1 Manual acceptance in an empty temporary folder: `init`, `import-md` of the fixture, `apply`, `export` through
   `node --experimental-strip-types <repo>/src/cli/main.ts` (SL-T06); verified by the four exit codes 0 and an empty
   `git diff --no-index` between the fixture and the export, recorded in the impl-PR body
-- [ ] 6.2 `npm run typecheck`, `npm test` and `warrant verify s0-skeleton`; verified by all three succeeding, and
+- [x] 6.2 `npm run typecheck`, `npm test` and `warrant verify s0-skeleton`; verified by all three succeeding, and
   `git diff main -- src/kernel test/kernel` being empty
