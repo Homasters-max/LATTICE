@@ -339,11 +339,6 @@ fixed in it, one outside it becomes an issue, and the impl-PR body states the fi
 commit — `warrant verify <change>` and `warrant transition <change> VERIFYING`. The verdict is the job `warrant` in CI;
 merge — only a merge commit, by the maintainer.
 
-Architecture (`design-next` ST-A01…ST-A04): at the end of every wave and on a trigger of ST-A02 the coordinator runs an
-architecture audit of `src/` against `design-next` into `design-next/reviews/`, grilled with the maintainer; an
-accepted finding that can be checked mechanically becomes a fitness test, the others a rule with an ID; a refactor is a
-separate Change that changes no behaviour.
-
 An implementation question is an `I-N` row in `design.md` with the maintainer's decision, not `warrant unknown`. A spec
 change after approval only by the maintainer's decision: inside the `implement` Run an `I-N` row in `design.md` and an
 edit of the delta spec; `proposal.md` is outside `write_scope` — a human edits it on the maintainer's decision, the
@@ -358,6 +353,11 @@ for it in the PR; without an `ACTIVE` waiver (or with one expired by `MERGED`) t
 impl-PR>`, `warrant transition <change> MERGED --ref <URL of the impl-PR>` — without `--by`; only if `warrant` answers
 `USAGE` because the profile `human-acceptance` puts the gate `human-approval` on `VERIFYING->MERGED` — with
 `--by <maintainer>`; `warrant archive <change>`. The maintainer merges.
+
+Architecture (`design-next` ST-A01…ST-A04): at the end of every wave and on a trigger of ST-A02 the coordinator runs an
+architecture audit of `src/` against `design-next` into `design-next/reviews/`, grilled with the maintainer; an
+accepted finding that can be checked mechanically becomes a fitness test, the others a rule with an ID; a refactor is a
+separate Change that changes no behaviour.
 
 The maintainer is `roles.maintainer` in `.warrant/warrant.json`. Commit and push go to your own branch; `main` and
 `gh pr merge` are the maintainer's only.
