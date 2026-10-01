@@ -1,0 +1,98 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WAN5D30NB67MMD03V2JD99",
+  "change": "infra-pr-watch",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/infra-pr-watch/**"
+  ],
+  "scope": [],
+  "branch": "spec/infra-pr-watch",
+  "started_at": "2026-10-01T18:12:04.170Z",
+  "finished_at": "2026-10-01T18:12:47.913Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:5101ce11cf5176f22209cecdb0a2afc0b212502719d8bbe2ade31118da9cb7b9",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-10-01T18:12:26.668Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:12:34.946Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-10-01T18:12:35.883Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:12:36.882Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:12:37.767Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:12:38.784Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-pr-watch/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T18:12:46.600Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

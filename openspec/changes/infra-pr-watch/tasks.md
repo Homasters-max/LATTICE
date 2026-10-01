@@ -10,9 +10,9 @@
 
 ## 2. Checks
 
-- [ ] 2.1 `wait-pr.mjs` on the real repository: `--until merged` on a merged PR exits 0 at once with `MERGED`;
-  `--until approved` on an approved PR exits 0 with `APPROVED`; `status.mjs S0` runs and shows no AREA held by an
-  archived Change; verified by the pasted outputs in the impl-PR body
+- [ ] 2.1 `wait-pr.mjs` on the real repository: `--until merged` and `--until approved` on the merged PR #65 both exit 0
+  at once with `MERGED` (terminal states win, D-1); `--until approved` on an open approved PR exits 0 with `APPROVED`
+  (the spec-PR of this Change); `status.mjs S0` runs; verified by the pasted outputs in the impl-PR body
 - [ ] 2.2 `warrant check infra-pr-watch tests-passed` `PROVEN` (the rule-delivery block of `pin.test.ts` sees the new
   text); `npm run typecheck` green
 - [ ] 2.3 Implementation review (rule `process`), result in the impl-PR body; `warrant verify infra-pr-watch`

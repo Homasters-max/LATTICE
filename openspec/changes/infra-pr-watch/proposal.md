@@ -14,13 +14,15 @@ go together.
 
 ## What Changes
 
-- **New script `.claude/skills/slice/wait-pr.mjs`**: waits until a PR is approved (`--until approved`) or merged or
-  closed (`--until merged`), checking GitHub once a minute; prints the final state and exits. No dependencies.
-- **Rule `process`** (`.warrant/local/rules/process.json`): after a push that leaves a PR waiting for the maintainer's
-  approval or merge, the session starts `wait-pr.mjs` in the background and goes on when it reports; CI failures,
-  conflicts and review comments come from the app's auto-fix, not from polling. `warrant sync` regenerates `AGENTS.md`.
+- **New script `.claude/skills/slice/wait-pr.mjs`**: waits until a PR is merged or closed, or (`--until approved`)
+  approved, checking GitHub once a minute; prints the outcome and exits. No dependencies.
+- **Rule `process`** (`.warrant/local/rules/process.json`): every PR that waits for the maintainer is watched in the
+  background for its whole wait (a spec-PR: approval, then merge), one watcher per PR, each outcome with its next step,
+  watchers restarted on resume; the PR is bound in the desktop app with auto-fix on, so CI failures, conflicts and
+  review comments arrive without polling. `warrant sync` regenerates `AGENTS.md`.
 - **Skill `slice`**: `SKILL.md` documents `wait-pr.mjs`; `status.mjs` holds an AREA until the archive-PR is merged into
-  `main` (a record `ARCHIVED` on `origin/main`), and a dependency counts as done only then (#67).
+  `main` (a record `ARCHIVED` on `origin/main`), a Change dependency is done only then, and an archive-PR waiting for
+  its merge stays in the maintainer queue (#67).
 
 ## Capabilities
 
