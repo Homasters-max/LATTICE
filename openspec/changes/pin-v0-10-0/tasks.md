@@ -18,7 +18,7 @@
 
 ## 3. Проверка
 
-- [ ] 3.1 `warrant verify pin-v0-10-0`; проверка — завершается успешно
+- [x] 3.1 `warrant verify pin-v0-10-0`; проверка — завершается успешно
 - [ ] 3.2 После коммита `VERIFYING`, до push — `warrant ci` CLI 0.10.0 на локальном merge-коммите (design D-1); проверка —
   код 1 только с `GATE_NOT_PASSED` gates с `ATTESTATION_REQUIRED` и `human-approval` (если есть) в `deferred[]`; иначе
   остановка
