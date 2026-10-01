@@ -1,0 +1,26 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WDPV3M77M9ND95WTDHA9N4",
+  "change": "s0-skeleton",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-skeleton/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-skeleton",
+  "started_at": "2026-10-01T19:05:24.890Z",
+  "run_state": "RUNNING",
+  "context_hash": "sha256:3ecf65eeb397b875470925b7c9a80e02a9686f2176eb0246d27bba080f1b0a3e",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-10-01T19:05:42.831Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
