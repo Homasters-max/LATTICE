@@ -254,6 +254,9 @@ apply and commit it into the branch before `VERIFYING`.
 | I-17 | A printed path outside the project root is absolute, with `/` separators (REQ-CL-001). | Review 2, F-16. | approval of #77 |
 | I-18 | Opening checks the form of each commit: exactly the commit keys and a list of records of the entity or event form. | Review 2, F-17. | approval of #77 |
 | I-19 | Not taken here: the "differing paths" of LG-A02 for `LG-C07` (s0-apply-checks #56); the `sha256:` prefix and re-checking record hashes on open (s0-kernel #55, s0-store #57). | Review 2, F-18, F-19 (INFO). | approval of #77 |
+| I-20 | The `store` port reads `{ commits, torn }`: a last line without its line feed is handed over as `torn`, never as a commit, and `append` answers `moved` while a torn tail exists. D-2 had `read(): readonly StoredCommit[]`. | REQ-CL-004 refuses a line without a line feed (LG-C04), which a list of commits cannot show; `torn` is the hook s0-store (#57) uses for `recovered/` (LG-C06). | implementation, this impl-PR |
+| I-21 | The separator of the skeleton form is `\| --- \| --- \|`, as step 4 of REQ-CL-003 says for every line; the fixture uses it. `design-next/*.md` writes `\|---\|---\|`, so the normalization (#53) or s0-codec-forms (#58) decides the separator of the corpus. | Found while generating the rule fixtures: the spec is followed as approved. | implementation, this impl-PR |
+| I-22 | Tests live in `test/cli/` (in process through `run`, helper `project.ts`), `test/e2e/`, `test/architecture/rules.test.ts`; the refused inputs of SCN-CL-004 are built in the test from the fixture, not kept as files in `test/fixtures/md/refused/`; no separate `test/ledger/` or `test/codec/` units — the CL scenarios cover `ledger` and `codec` through the commands. | One input per case next to its expected line is easier to read than a folder of near-copies. | implementation, this impl-PR |
 
 ## Risks / Trade-offs
 

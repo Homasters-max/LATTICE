@@ -1,0 +1,9 @@
+[
+  {
+    "intent": "lattice/fx-a01",
+    "rule": "LG-C07",
+    "path": "/intents/5/id",
+    "expected": null,
+    "got": null
+  }
+]
