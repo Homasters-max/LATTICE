@@ -2,8 +2,9 @@
 
 ## 0. Precondition
 
-- [x] 0.1 The docs PR #63 (`docs/sw-milestone`: SL-T07…SL-T09, the launch record) is merged before this spec-PR is
-  marked `SPECIFIED` (design, Context); verified by `gh pr view 63 --json state` = `MERGED`
+- [x] 0.1 The docs PR #63 (`docs/sw-milestone`: SL-T07…SL-T09, the launch record) and the process PR #64 (skill
+  `slice`, design I-4) are merged before this spec-PR is marked `SPECIFIED` (design, Context); verified by
+  `gh pr view 63 --json state` and `gh pr view 64 --json state` = `MERGED`
 
 ## 1. Policy paths and generated files
 

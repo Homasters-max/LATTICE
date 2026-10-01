@@ -111,8 +111,8 @@ jobs:
   (GitHub keeps only one pending run per group, so a shared group would drop the middle of three quick merges).
 - **A red `main`** is owned by the rule `tracking` (Appendix): the first session that sees it opens a `bug` `P1` issue
   `infra: main red — <failing test>`; the coordinator checks the last `test` run of `main` before dispatching; while
-  `main` is red no new Change is dispatched and only the fix is merged; the fix is a PR of the Change whose merge broke
-  it, or, if none, of the coordinator. GitHub also mails the author of the failed push.
+  `main` is red no new Change is dispatched and only the fix is merged; the fix is a Change `fix-main-<issue>` (I-1).
+  GitHub also mails the author of the failed push.
 - On a Change PR the tests run twice — here and inside `warrant` (`tests-passed`). Accepted: a minute of CI against a
   second mechanism for "which PR needs tests".
 - Actions pinned by major tag (`@v4`), as the reusable workflow is pinned by tag (`pin-v0-10-0`, I-11).
@@ -140,11 +140,11 @@ jobs:
     tags, so the rule must).
   - `process`: parallel work (Q20–Q23, SL-T08):
     - **claim** — the AREAs of a Change are declared in its issue ("Where: … AREA …") before `warrant init change`;
-      a `skip_specs` Change declares none. An AREA is held from that `init` until the Change is `ARCHIVED` or
-      `ABANDONED`; one Change holds an AREA at a time.
-    - **where it is read** — the record of an open Change lives on its branches, not on `main`, so `warrant status` on
-      `main` does not see it. Who holds an AREA and what is in implementation is computed from the issues and the
-      records on the branches `spec|impl|archive/<change>` (skill `slice`, `status`).
+      a `skip_specs` Change declares none (I-3). An AREA is held from that `init` until the archive-PR of the Change
+      is merged into `main` or the Change is `ABANDONED` (I-2); one Change holds an AREA at a time.
+    - **where it is read** — the record of an open Change runs ahead on its branches and lags on `main` (I-5). Who
+      holds an AREA and what is in implementation is computed from the issues and the records on the branches
+      `spec|impl|archive/<change>` by the skill `slice` (command `status`).
     - **cap** — at most three Changes in implementation: from the first commit of the impl-PR until its merge (a
       `VERIFYING` Change waiting only for its archive-PR does not count).
     - **scope** — the `implement` Run is narrowed with `--scope` to the source and test paths its design names plus
@@ -255,7 +255,8 @@ The Appendix below holds the final texts with these rows applied.
 | I-6 | F-6: `baseline.test.ts` matches the lines of `test.yml` as text, like `pin.test.ts` — no YAML parser, no change of `package.json` |
 | I-7 | Q29–Q34 (ST-A01…ST-A04, merged with #63): rule `process` gains the implementation review before `VERIFYING` (skill `code-review`, result in the impl-PR body) and the architecture audit at the end of a wave and on a trigger of ST-A02; refactor Changes per ST-A04 |
 | I-8 | D-1 order: Run `implement` 1 writes these rows and the final Appendix (the source of the patch), then the patch (D-2) and `warrant sync`, then Run `implement` 2 writes the test — the test reads the patched files |
-| I-9 | The skill `slice` (#64) holds an AREA until `ARCHIVED`; I-2 moves the end to the merge of the archive-PR. Its script is a `.claude/**` path outside this Change's seven paths — a follow-up issue, not this Change |
+| I-9 | The skill `slice` (#64) holds an AREA until `ARCHIVED`; I-2 moves the end to the merge of the archive-PR. Its script is a `.claude/**` path outside this Change's seven paths — issue #67, not this Change |
+| I-10 | Implementation review (I-7, skill `code-review`): Standards — no violation; Spec — the seven files equal D-2…D-5 and the Appendix exactly. Taken: D-3 and D-4 aligned with I-1, I-2, I-3, I-5; task 0.1 names #64; the test checks the whole top-level `permissions` block, every `run:` line, `node-version` inside the `setup-node` step and the trigger keys of `on:` in any order, drops a check of its own constant, and also checks `concurrency` (D-3) and that no job sets its own `permissions`. Not taken: the rule `env` cites SL-K03 and BN-M04 but not SL-S2 (D-4 lists all three) — the meaning is the same and a new patch of a policy path is not worth one reference; shared test helpers with `pin.test.ts` — at a third copy (ST-M02) |
 
 ## Appendix — texts of the project rules
 

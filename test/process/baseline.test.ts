@@ -1,7 +1,7 @@
 // Process baseline (Change infra-baseline, design D-6): the job `test` runs the tests
 // and the type check on every PR and on push to main (D-3); artifacts are English
 // (D-4); one AREA per spec (D-5). Lines of test.yml are matched as text, like
-// pin.test.ts (I-6). No spec scenarios (skip_specs), so no SCN tokens.
+// pin.test.ts (I-6, I-10). No spec scenarios (skip_specs), so no SCN tokens.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -9,50 +9,56 @@ import { readFileSync } from "node:fs";
 const root = new URL("../../", import.meta.url);
 const read = (path: string): string => readFileSync(new URL(path, root), "utf8");
 
-// Comment lines dropped; trailing spaces trimmed.
-const testWorkflow = read(".github/workflows/test.yml")
+// Comment and blank lines dropped; trailing spaces trimmed.
+const workflow = read(".github/workflows/test.yml")
   .split("\n")
-  .filter((line) => !line.trimStart().startsWith("#"))
-  .map((line) => line.trimEnd());
+  .map((line) => line.trimEnd())
+  .filter((line) => line.trim() !== "" && !line.trimStart().startsWith("#"));
 
-const indexOf = (line: string): number => testWorkflow.indexOf(line);
+const indent = (line: string): number => line.length - line.trimStart().length;
+
+// The lines nested under the line `header` (deeper indentation), up to the next sibling.
+const block = (header: string): string[] => {
+  const start = workflow.indexOf(header);
+  assert.ok(start >= 0, `no line ${JSON.stringify(header)}`);
+  const body: string[] = [];
+  for (const line of workflow.slice(start + 1)) {
+    if (indent(line) <= indent(header)) break;
+    body.push(line);
+  }
+  return body;
+};
 
 describe("baseline: the job test", () => {
   it("runs on every pull request and on push to main", () => {
-    const on = indexOf("on:");
-    assert.ok(on >= 0, "no on:");
-    assert.equal(testWorkflow[on + 1], "  pull_request:");
-    assert.equal(testWorkflow[on + 2], "  push:");
-    assert.equal(testWorkflow[on + 3], "    branches: [main]");
+    const keys = block("on:").filter((line) => indent(line) === 2).map((line) => line.trim());
+    assert.deepEqual([...keys].sort(), ["pull_request:", "push:"]);
+    assert.deepEqual(block("  push:").map((line) => line.trim()), ["branches: [main]"]);
   });
 
-  it("has exactly the top-level permission contents: read", () => {
-    const permissions = indexOf("permissions:");
-    assert.ok(permissions >= 0, "no top-level permissions:");
-    assert.equal(testWorkflow[permissions + 1], "  contents: read");
-    assert.ok(!/^\s{2}\S/.test(testWorkflow[permissions + 2] ?? ""), "more than one top-level permission");
-    assert.equal(testWorkflow.filter((line) => /^\s*permissions:/.test(line)).length, 1, "a job-level permissions block");
+  it("has exactly the top-level permission contents: read, and no job sets its own", () => {
+    assert.deepEqual(block("permissions:").map((line) => line.trim()), ["contents: read"]);
+    const jobLevel = workflow.filter((line) => line.trim() === "permissions:" && indent(line) > 0);
+    assert.deepEqual(jobLevel, [], "a job-level permissions block");
   });
 
-  it("sets up Node 22", () => {
-    assert.ok(testWorkflow.includes("      - uses: actions/setup-node@v4"), "no actions/setup-node@v4");
-    assert.ok(testWorkflow.includes("          node-version: 22"), "node-version is not 22");
+  it("sets up Node 22 in the setup-node step", () => {
+    const step = block("      - uses: actions/setup-node@v4").map((line) => line.trim());
+    assert.ok(/^node-version: "?22"?$/.test(step.find((line) => line.startsWith("node-version:")) ?? ""), "not Node 22");
   });
 
-  it("runs npm ci, the type check and the tests, in this order", () => {
-    const runs = testWorkflow.filter((line) => /^\s*- run: /.test(line)).map((line) => line.trim());
-    assert.deepEqual(runs, ["- run: npm ci", "- run: npm run typecheck", "- run: npm test"]);
+  it("runs npm ci, the type check and the tests, in this order, and nothing else", () => {
+    const runs = workflow
+      .map((line) => /^\s*(?:- )?run:\s*(.*)$/.exec(line)?.[1])
+      .filter((command) => command !== undefined);
+    assert.deepEqual(runs, ["npm ci", "npm run typecheck", "npm test"]);
   });
 
   it("cancels a run in progress only for a pull request, and groups a push to main by commit", () => {
-    assert.ok(
-      testWorkflow.includes("  group: test-${{ github.event_name == 'pull_request' && github.ref || github.sha }}"),
-      "concurrency group is not per ref for a PR and per commit for a push",
-    );
-    assert.ok(
-      testWorkflow.includes("  cancel-in-progress: ${{ github.event_name == 'pull_request' }}"),
-      "cancel-in-progress is not limited to pull requests",
-    );
+    assert.deepEqual(block("concurrency:").map((line) => line.trim()), [
+      "group: test-${{ github.event_name == 'pull_request' && github.ref || github.sha }}",
+      "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
+    ]);
   });
 });
 
@@ -64,7 +70,8 @@ describe("baseline: language of artifacts", () => {
   });
 
   it("the generated openspec/config.yaml carries the same line", () => {
-    assert.ok(read("openspec/config.yaml").split("\n").includes("  Language: English"), "config.yaml lacks Language: English");
+    const config = read("openspec/config.yaml").split("\n");
+    assert.ok(config.includes("  Language: English"), "config.yaml lacks Language: English");
   });
 });
 
@@ -98,10 +105,5 @@ describe("baseline: AREAs", () => {
         .map(([key, value]) => [key, (value as { capability: string }).capability]),
     );
     assert.deepEqual(actual, areas);
-  });
-
-  it("no two AREAs name the same spec", () => {
-    const specs = Object.values(areas);
-    assert.equal(new Set(specs).size, specs.length);
   });
 });
