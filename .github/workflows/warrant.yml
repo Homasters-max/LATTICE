@@ -1,18 +1,11 @@
-# Verdict of every PR of LATTICE (WARRANT ADR-0039 п. 6): an adapted copy of
-# the job `warrant` of Homasters-max/SRA (.github/workflows/ci.yml), taken from
-# warrant-slice. The kind of the PR and its Change come from the record in the
-# diff; an impl-PR is judged by the checks of VERIFYING->MERGED on the merge
-# result (node:test runs inside `warrant ci` as the check tests-passed; Node 22
-# runs the TypeScript tests with --experimental-strip-types, no build step),
-# its evidence is uploaded as
-# the artifact `evidence-<change>-<attempt>`. It commits nothing. A red job is
-# the maintainer's signal not to merge (no branch protection, ADR-0039 п. 8).
+# Verdict of every PR of LATTICE: a call of the reusable workflow of WARRANT by the tag of
+# the CLI (SRA docs/06-verification.md §8; Change pin-v0-10-0, design D-3), no copy of the
+# job here. The tag is the same in `uses` and in the input `warrant` (test/process/pin.test.ts).
+# `setup: npm ci` — typescript for the structure test. The check in GitHub is `warrant / warrant`.
 name: warrant
 
 on:
   pull_request:
-  # Recovery run of an impl-PR after its merge (WARRANT ADR-0037 п. 4): its
-  # evidence is STALE (main moved before the merge) or the artifact expired.
   workflow_dispatch:
     inputs:
       merge_commit:
@@ -20,9 +13,6 @@ on:
         required: true
         type: string
 
-# `warrant ci` reads PRs, runs and artifacts of this repository through gh;
-# issues: the comments of a PR are a resource of the issues API — the decision
-# of an UNKNOWN `warrant ci` reads (WARRANT v0.8.0, ADR-0040 п. 3).
 permissions:
   contents: read
   actions: read
@@ -36,100 +26,14 @@ concurrency:
 jobs:
   warrant:
     name: warrant
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      # The PR head (or M of a recovery run) with full history: the merge below
-      # needs the base branch, `warrant ci` the parents of HEAD and the base tree.
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.merge_commit || github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      # The job computes the merge itself: the tip of the base branch at the
-      # start of the job, so a Re-run before the merge judges the current main.
-      # HEAD^1 — the base, HEAD^2 — the PR head. A recovery run judges M itself.
-      - name: Merge the PR into the tip of its base
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
-          git checkout --quiet --detach "origin/$BASE_REF"
-          if ! git -c user.name=warrant-ci -c user.email=warrant-ci@users.noreply.github.com \
-              merge --no-ff --no-edit "$HEAD_SHA"; then
-            git merge --abort || true
-            echo "::error::the PR head $HEAD_SHA does not merge into $BASE_REF without conflicts: update the branch"
-            exit 3
-          fi
-          echo "merge result $(git rev-parse HEAD): base $(git rev-parse HEAD^1), head $(git rev-parse HEAD^2)"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      # The test runner is node:test (built into Node); the project's own
-      # dependencies (typescript for the type check) come from the lock file,
-      # once the first Change adds one.
-      - name: Install project dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else echo "no package-lock.json: nothing to install"; fi
-
-      - name: Install OpenSpec
-        run: npm i -g @fission-ai/openspec@1.13.1
-
-      # The judge is pinned to a release tag (ADR-0039 п. 5): the pin lives in
-      # this policy path, a new tag is a factory-change Change of this project.
-      # `npm i -g github:…` skips `prepare` of a git dependency (no dist/): the
-      # tag is packed first (prepare builds), then the tarball is installed.
-      - name: Install warrant (pinned)
-        working-directory: ${{ runner.temp }}
-        run: |
-          tgz=$(npm pack github:Homasters-max/SRA#v0.8.2 | tail -1)
-          npm i -g "./$tgz"
-
-      - name: warrant --version
-        run: warrant --version
-
-      # The output goes outside the checkout: the checks of VERIFYING->MERGED
-      # run on the working tree.
-      - name: warrant ci
-        id: ci
-        run: |
-          set +e
-          warrant ci > "$RUNNER_TEMP/ci.json"
-          code=$?
-          set -e
-          cat "$RUNNER_TEMP/ci.json"
-          node -e '
-            const fs = require("fs");
-            let j = {};
-            try { j = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch {}
-            const d = j.data ?? {};
-            const a = d.artifact ?? {};
-            const out = [`change=${j.change ?? ""}`, `artifact_name=${a.name ?? ""}`, `artifact_path=${a.path ?? ""}`];
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, out.join("\n") + "\n");
-            const errors = (j.errors ?? []).map((e) => e.code).join(", ");
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-              `warrant ci: exit ${process.argv[2]}, kind ${d.kind ?? "?"}, change ${j.change ?? "none"}` +
-              (errors ? `, errors ${errors}` : "") + "\n");
-          ' "$RUNNER_TEMP/ci.json" "$code"
-          exit "$code"
-
-      # The whole directory, raw/ included; `warrant ci fetch` imports only the
-      # EVID-*.json of the chosen run. The name carries the attempt: artifacts v4
-      # are immutable, and a Re-run is a new attempt of the same run.
-      - name: Upload evidence
-        if: always() && steps.ci.outputs.change != '' && steps.ci.outputs.artifact_name != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.ci.outputs.artifact_name }}
-          path: ${{ steps.ci.outputs.artifact_path }}/
-          include-hidden-files: true
-          if-no-files-found: warn
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: read
+    uses: Homasters-max/SRA/.github/workflows/warrant.yml@v0.10.0
+    with:
+      warrant: v0.10.0
+      setup: npm ci
+      merge_commit: ${{ inputs.merge_commit || '' }}
