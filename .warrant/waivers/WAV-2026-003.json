@@ -10,6 +10,7 @@
     "tests SCN-CL-001…011 and SCN-AR-008…017 pass (tests-passed EVID-01M3WHVQSE1499N5SGY257EDHY)"
   ],
   "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
   "expires_at": "2026-10-15",
-  "waiver_state": "PROPOSED"
+  "waiver_state": "ACTIVE"
 }

@@ -10,7 +10,8 @@
   `runtime`, `capabilities`; fixture `test/fixtures/structure/purity/` (`REQ-AR-010`, design D-3); verified by tests
   with the token `SCN-AR-016` passing
 - [x] 1.3 The existing structure tests renamed to the tokens of the English requirements — SCN-AR-001…007 →
-  SCN-AR-008…014 (`REQ-AR-005`…`REQ-AR-008`); verified by tests with the tokens `SCN-AR-008`…`SCN-AR-014` passing, no
+  SCN-AR-008…014 (`REQ-AR-005`, `REQ-AR-006`, `REQ-AR-007`, `REQ-AR-008`); verified by tests with the tokens
+  `SCN-AR-008`, `SCN-AR-009`, `SCN-AR-010`, `SCN-AR-011`, `SCN-AR-012`, `SCN-AR-013`, `SCN-AR-014` passing, no
   test carrying `SCN-AR-001`…`SCN-AR-007` left, `SCN-AR-008` on the project with the modules of the
   project policy
 
