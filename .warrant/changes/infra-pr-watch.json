@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "infra-pr-watch",
-  "change_state": "PROPOSED",
+  "change_state": "SPECIFIED",
   "classification": {
     "profiles": [
       "chore",
@@ -36,6 +36,20 @@
       "to": "PROPOSED",
       "at": "2026-10-01T18:06:07.171Z",
       "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-10-01T18:40:04.286Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3WC89E7JZFBVN3HHNR62NT2"
+      ]
     }
   ]
 }

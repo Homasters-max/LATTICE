@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WC89E7JZFBVN3HHNR62NT2",
+  "claim": {
+    "text": "openspec-validate passed for infra-pr-watch",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "e30b9e823d40e52bbb66d1577fe61742b9a38e5d",
+    "base_commit": "5b56d836645c378e437d7d438c296782652a516d",
+    "spec_revision": "openspec/changes/infra-pr-watch@e30b9e823d40e52bbb66d1577fe61742b9a38e5d",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:9cbdf27150fd9c1b57f33bd6d4f382b7812192330aa850ed88d3591ca1184a49",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-01T18:39:59.433Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-pr-watch/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:06d55c9e2a126bc77695ecec04c8481a98ce00717210cf99dea5999e822af687"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}
