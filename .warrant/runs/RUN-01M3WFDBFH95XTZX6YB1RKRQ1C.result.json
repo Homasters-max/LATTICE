@@ -1,0 +1,299 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3WFDBFH95XTZX6YB1RKRQ1C",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-AR-010 applies to every pure module the closed list of allowed globals that REQ-AR-005 wrote for the kernel ('the list grows only by an edit of this requirement'). That list has no `TextDecoder`, `TextEncoder`, `Promise`, `RegExp`, `WeakSet` or typed arrays other than `Uint8Array`. Design D-6 has `importMd` in `codec`, a pure module, decode strictly with `TextDecoder` (`fatal: true`) to meet step 2 of REQ-CL-003. Built that way, `codec` gets `forbidden-global` and SCN-AR-008 (the project passes) fails. The spec stays consistent only if the decoder is hand-written over `Uint8Array` or the list grows.",
+      "targets": [
+        "REQ-AR-010",
+        "REQ-AR-005",
+        "SCN-AR-008",
+        "REQ-CL-003",
+        "openspec/changes/s0-skeleton/design.md"
+      ],
+      "recommendation": "Choose one of two fixes. Either add `TextDecoder` to the allowed list of REQ-AR-005, scoped to pure modules outside the kernel (decoding with `fatal: true` is deterministic), and add a passing line for it to SCN-AR-016. Or change design D-6 to validate UTF-8 by hand over `Uint8Array` inside `codec`."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "SCN-CL-004 expects line 0 for `fx-a01.md` holding a row `FX-A01`. In REQ-CL-003 that deviation belongs to step 6 (a row ID equal to the stem), not to step 1. The requirement gives line 0 only 'for the file name', and design D-6 says 'a row ID equal to the stem gives the line of that row'. An implementation built from the design fails the scenario test, and one built from the scenario contradicts the design.",
+      "targets": [
+        "SCN-CL-004",
+        "REQ-CL-003",
+        "openspec/changes/s0-skeleton/design.md"
+      ],
+      "recommendation": "Pick one line and write it in step 6 of REQ-CL-003, e.g. 'a row whose ID in lower case equals the stem is refused at the line of that row'. Then align SCN-CL-004 and design D-6 with it."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Step 7 of REQ-CL-003 requires 'text the kernel admits (REQ-KR-002: NFC, assigned code points)'. REQ-KR-002 `checkInput` does not refuse text that is not NFC: it normalises every string to NFC and succeeds. A cell written in NFD can therefore be read two ways. (a) It is refused with code 1. (b) It is admitted: then the proposal and records hold NFC, export writes NFC, and the round trip is not byte-identical, against the design claim that 'everything import accepts, export writes back byte for byte'. The observable outcomes differ, and no scenario covers the case.",
+      "targets": [
+        "REQ-CL-003",
+        "REQ-CL-006",
+        "REQ-KR-002"
+      ],
+      "recommendation": "State in step 7 that a cell is refused (code 1, its line) when it differs from its NFC form or holds a code point not assigned in Unicode 16.0, so the check is not delegated to `checkInput`'s normalisation. Add an NFD cell to the refused fixtures of SCN-CL-004."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The skeleton form of REQ-CL-003 admits files whose proposal REQ-CL-004 then rejects as LG-P01. (1) Lengths: the kernel `local` is at most 128 characters (REQ-KR-005), but neither the stem (`[A-Za-z0-9][A-Za-z0-9._-]*`), nor the row ID, nor the row type `table.<slugs>` (which grows with the number of columns) is bounded. (2) Keys: a header cell `$ref` or `$enc` becomes a body key. `checkInput` refuses the body as `reserved-enc`, or as `bad-ref` unless the cell text happens to be a valid reference, in which case the row body silently becomes a reference object. Step 7 checks each cell as a JSON string, not as a key. import-md exits 0 and apply then exits 1 on its own output.",
+      "targets": [
+        "REQ-CL-003",
+        "REQ-CL-004",
+        "REQ-KR-005"
+      ],
+      "recommendation": "Add a step to REQ-CL-003: the id and type locals built from the stem, the IDs and the slugs are at most 128 characters, and a header cell starting with `$` is refused (code 1, line 1). Alternatively state that import-md refuses with code 1 any file whose proposal would get an LG-P01 rejection."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The LG-P01 rows of the REQ-CL-004 rejection table do not fix how many rejections one deviating input gives, or which path each takes. Several cases are open. An intent with both a missing `by` and an extra key: one rejection per key or one per intent? An intent with a `kind` other than `entity`/`event`: which key set is then checked, and is there one rejection at `/kind` only? Row 1 allows path `\"\"` or `/intents`, but does not say which applies to an object with `intents` plus an extra key, or to text that `checkInput` refuses at a deeper path (e.g. a duplicate key at `/intents/0/id`). The printed rejection list differs between readings, and the frozen `expected.json` of the LG-P01 rule fixture (REQ-AR-011) encodes one of them.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-AR-011",
+        "SCN-CL-007"
+      ],
+      "recommendation": "State that there is one rejection per deviating key, in key order. A missing or invalid `kind` gives only the `/intents/<i>/kind` rejection. Path `\"\"` is used when the text is not admitted or the value is not an object with exactly the key `intents`, and `/intents` when `intents` is not a list. Add one multi-deviation intent to SCN-CL-007 or to the LG-P01 fixture."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-CL-005 refuses 'when a rendered line would break the skeleton form' but lists only line-level cases (`|`, a line feed, a leading or trailing space). It also refuses a body that holds `file`, `columns` or `rows` 'in another shape' without defining that shape. Open cases: `rows: []` (step 3 requires a row); `columns` empty, duplicated or containing `ID` (step 5); a row referencing an entity whose upper-cased local part is not an ID (e.g. the document itself, step 6); two references to the same row (duplicate IDs); a cell holding a carriage return (step 2); a pinned reference `{\"$ref\": \"lattice/fx-a01@1\"}` (export cannot resolve it from a latest-only projection, OM-R01); extra keys in the body. Each is code 0 under the line-level reading and code 2 under the whole-form reading. Export can also write a file that import-md refuses, which breaks the round trip outside the fixture.",
+      "targets": [
+        "REQ-CL-005",
+        "REQ-CL-003"
+      ],
+      "recommendation": "Define the refusal by one criterion: export refuses with code 2, writing nothing, when the rendered file would not pass steps 1–7 of REQ-CL-003. Define the shape: `file` a string; `columns` a non-empty list of strings; `rows` a non-empty list of floating references `{\"$ref\": \"<id>\"}`, with a pinned reference refused."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-CL-003 states 'one type per distinct header' (LG-B06), but its slug rule is not injective. The headers `| ID | Rule |` and `| ID | rule |` (or `| ID | Rule! |`) are distinct yet both give `lattice/table.rule@1`, with body fields `Rule` and `rule` respectively. One type then carries two body shapes, which the schemas of s0-kernel (#55) will not accept.",
+      "targets": [
+        "REQ-CL-003"
+      ],
+      "recommendation": "State which rule decides. One option: name the body fields by the slugs (the document's `columns` already keeps the header text for export), so a type always has one field set. The other: replace 'one type per distinct header' with 'one type per distinct list of slugs' and say that headers differing only in case or punctuation share a type."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-007 does not count a dynamic `import(\"…\")` or `require(…)` as an edge, and REQ-AR-010 refuses `dynamic-import` only in pure modules. In `cli`, `assembly` and adapters, `await import(\"../ledger/apply.ts\")` or `await import(\"../clock-y/index.ts\")` therefore escapes `import-direction` (ST-S01: adapters never import each other; ST-S02). `package-import` also does not name the syntactic forms it covers (static only? `import type`? dynamic calls with a literal?).",
+      "targets": [
+        "REQ-AR-009",
+        "REQ-AR-007",
+        "REQ-AR-010"
+      ],
+      "recommendation": "Name the forms `package-import` checks: the forms of REQ-AR-007 plus `import(\"…\")` and `require(\"…\")` with a string literal. Either refuse `dynamic-import` in every module file under `src/`, or treat a literal dynamic specifier as an edge for `import-direction`."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-009 gives `non-ts-file` 'at line 1, as REQ-AR-005', but the `non-ts-file` bullet of REQ-AR-005 states no line. Line 1 comes only from the code (`structure.ts`) and from design row I-5 of the archived Change deepen-kernel-2.",
+      "targets": [
+        "REQ-AR-005",
+        "REQ-AR-009"
+      ],
+      "recommendation": "Write 'at line 1' into the `non-ts-file` bullet of REQ-AR-005."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "SCN-AR-016 runs with 'the modules of the project policy', while SCN-AR-015 says 'the modules and ports'. Without the ports, the adapter file of SCN-AR-016 belongs to no module and gets `outside-matrix`, contradicting its THEN ('the adapter files are not named').",
+      "targets": [
+        "SCN-AR-016"
+      ],
+      "recommendation": "Write 'the modules and ports of the project policy' in SCN-AR-016."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AR-011 has three problems. It calls `ledger.jsonl` 'a ledger tail', but the opening of REQ-CL-004 requires the first commit to have `prev` null, so a real tail starting at a later `seq` is refused as LG-C04: the fixture must be a whole ledger. 'A rejection naming a rule outside the list cannot be built' has no scenario and can only be checked by the type check. It does not say whether the test applies through pure `apply` or the CLI.",
+      "targets": [
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "Say 'a whole ledger, possibly empty'. Bind 'cannot be built' to the type check (e.g. a `@ts-expect-error` line under SCN-AR-017) or drop it. Name the entry point the test uses."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "The LG-C03 refusal of REQ-CL-004 (tail moved between opening and appending: code 2, nothing written) has no scenario. Task 2.2 tests only the adapter's `moved` answer. LG-A02 wants a fixture for every rule ID apply enforces, and REQ-AR-011 covers only rejections, not the code-2 refusals LG-C03 and LG-C04.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-CL-001",
+        "REQ-AR-011"
+      ],
+      "recommendation": "Add a scenario in which an injected store answers `moved` and `apply` exits 2 with a message naming LG-C03, leaving the ledger and the proposal unchanged."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Some bytes that are observable are defined only in design D-4. The 'canonical order' of intents, which the proposal hash and so the proposal file name depend on, is defined in REQ-CL-004 for records but not for intents. The bytes of the proposal file that import-md writes (canonical JSON plus a line feed, intents in canonical order) are not stated at all. SCN-CL-007 relies on 'the intent at position 1', which follows from the file order.",
+      "targets": [
+        "REQ-CL-003",
+        "REQ-CL-004",
+        "SCN-CL-007"
+      ],
+      "recommendation": "State in REQ-CL-004 that the canonical order of intents is entity intents by `id`, then event intents by `id` (UTF-16 code units). State in REQ-CL-003 that the proposal file is the canonical JSON of `{\"intents\": [...]}` in that order, followed by one line feed."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "For a deviation that is a missing line, REQ-CL-003 does not say which line is named. SCN-CL-004 has two such cases: a header and separator with no row (line 2 or line 3?) and a last line without a line feed. The order 'checked in this order' is also open when two lines deviate under different steps (step-major or line-major).",
+      "targets": [
+        "REQ-CL-003",
+        "SCN-CL-004"
+      ],
+      "recommendation": "Say that a missing row is reported at the line after the last line, and that steps are applied in order over the whole file before the next step (or line by line)."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-CL-005 refuses only two documents naming 'the same `file`', compared exactly, and step 1 of REQ-CL-003 admits upper-case stems. A ledger with documents `Fixture.md` and `fixture.md` (possible through a hand-written proposal, as in SCN-CL-009) passes the check, and on a case-insensitive file system (Windows, the maintainer's environment; macOS) one file overwrites the other.",
+      "targets": [
+        "REQ-CL-005",
+        "REQ-CL-003"
+      ],
+      "recommendation": "Compare `file` names in lower case for the duplicate refusal."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-CL-001 says every printed path is relative to the project root with `/`, but `export --out <folder>` may name a folder outside the root, or on another drive on Windows, where no relative path exists.",
+      "targets": [
+        "REQ-CL-001",
+        "REQ-CL-005"
+      ],
+      "recommendation": "Say that a path outside the project root is printed absolute with `/`, or require `--out` to lie under the root (code 2 otherwise)."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "The opening paragraph of REQ-CL-004 checks canonical JSON, `seq` and `prev`, and calls each line 'one commit object', but does not say whether the commit and record keys and field forms are checked. A line such as `{\"prev\":null,\"seq\":1}` without `records`, or a record without `rev`, is not clearly refused with LG-C04, and the projection or export then has no defined outcome.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-CL-005"
+      ],
+      "recommendation": "State that opening also checks that each line has exactly the commit keys and that each record has the entity or event keys of the Commit paragraph, refusing otherwise with code 2 naming LG-C04 and the `seq`."
+    },
+    {
+      "id": "F-18",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "LG-A02 says that a duplicate rejection 'also names the `id` it collided with and the differing paths'. The LG-C07 row of REQ-CL-004 gives only `{intent, rule, message, path, expected: null, got: null}`, with the path of the later intent and neither the earlier position nor the differing paths. It is also positional, so a permutation of intents changes the rejection set, against LG-C07's 'same set of rejections'. That deviation is not listed among the deferred parts in the proposal's Non-goals.",
+      "targets": [
+        "REQ-CL-004",
+        "SCN-CL-007",
+        "openspec/changes/s0-skeleton/proposal.md"
+      ],
+      "recommendation": "Either put the earlier intent's path in `expected` (e.g. `/intents/1/id`), or name this LG-A02 detail in Non-goals as deferred to s0-apply-checks (#56) together with the permutation test."
+    },
+    {
+      "id": "F-19",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "The commit example of LG-C02 in `design-next/03-ledger.md` writes `prev` and `proposal` as `\"sha256:…\"`, while REQ-CL-004 writes bare 64 hex digits. Opening also never checks a record's `hash` against its body, so an edit of the last commit's bodies passes LG-C04. Both are acceptable for a disposable store (LG-G05), but s0-kernel (#55) and s0-store (#57) should settle them.",
+      "targets": [
+        "REQ-CL-004"
+      ],
+      "recommendation": "Optionally note in design I-1 that the hash string format (prefix or not) and the record-hash check at opening are settled by #55 and #57."
+    },
+    {
+      "id": "F-20",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "REQ-AR-009 deliberately checks ST-M01 only at the granularity of modules: the read-view and proposal-format limits on `codec`, `runtime` and `capabilities` are not checked in S0. This is stated in the spec, in design D-3 and in row I-3, and deferred to issue #76. It closes F-13 of the first review as a recorded deferral.",
+      "targets": [
+        "REQ-AR-009",
+        "openspec/changes/s0-skeleton/design.md"
+      ],
+      "recommendation": "None."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-skeleton/specs/cli/spec.md",
+      "change": "REQ-CL-003: give the line of a step-6 stem collision (F-2), refuse non-NFC cells explicitly (F-3), bound the lengths and refuse `$`-prefixed header cells (F-4), resolve 'one type per distinct header' against the slug rule (F-7), and fix the proposal file bytes and the canonical order of intents (F-13)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-skeleton/specs/cli/spec.md",
+      "change": "REQ-CL-004: fix the LG-P01 rejection multiplicity and paths (F-5). REQ-CL-005: refuse any rendered file that import-md would refuse, and define the body shape (F-6)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-skeleton/specs/architecture/spec.md",
+      "change": "REQ-AR-005/REQ-AR-010: settle `TextDecoder` for pure modules (F-1); `non-ts-file` at line 1 (F-9); 'modules and ports' in SCN-AR-016 (F-10)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The status of the earlier findings was checked against the current text of the Context Pack items and the diff 3dc5268..e917c79 of the architecture delta. Issue #76 was not opened, because `gh` is outside the review guard."
+    },
+    {
+      "id": "A-2",
+      "statement": "No test was run (the review Run forbids commands). Existing behaviour was read from `test/architecture/structure.ts` (e.g. `non-ts-file` at line 1)."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Does `codec` decode UTF-8 with `TextDecoder` (the allowed globals of pure modules grow by one), or by hand over `Uint8Array` (the list stays the kernel list)?",
+      "options": [
+        "Allow `TextDecoder` in pure modules outside the kernel (edit REQ-AR-005/REQ-AR-010)",
+        "Hand-written strict UTF-8 validation in `codec`, design D-6 edited"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:09e2e2800491728164b3cf11420a94d052442741549a218874f9d73d7995dc15",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T11:00:00Z",
+    "finished_at": "2026-10-01T11:50:00Z"
+  }
+}
