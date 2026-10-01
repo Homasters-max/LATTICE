@@ -36,13 +36,13 @@ Code controls, judge assesses, policy decides, LLM writes. The goal is to make s
 `decision-point` is an ordinary block type with a schema — not a new primitive, not a new storage mechanism. `decide()` is a stage capability.
 
 ```json
-{ "type": "decision-point", "id": "pick-tool",
-  "candidates": { "source": "tools.allowed@2", "required": [] },
+{ "type": "std/decision-point@1", "id": "acme/pick-tool",
+  "candidates": { "source": "acme/tools.allowed@2", "required": [] },
   "question":   { "kind": "choice", "state": { "task": { "max": 4000 }, "context_summary": { "max": 2000 } },
                   "criteria": "Which tool best advances the task?" },
-  "judge":      "judge.semantic@3",
+  "judge":      "acme/judge.semantic@3",
   "policy":     { "op": "margin", "min": 0.2 },
-  "bench":      "pick-tool-set@4",
+  "bench":      "acme/pick-tool-set@4",
   "targets":    { "precision": 0.9 } }
 ```
 
@@ -86,7 +86,7 @@ Escalation and refusal are not statuses — they are branches of the pipeline di
 ## Policy operators
 
 Closed set: `threshold`, `top-k`, `margin` (gap between first and second → `ambiguous`), `budget` (reads the run budget, DP-M05), `any`, `all`, `table` (maps the selected value to an output value by a table in the point's policy).
-The operators are code of module `measure` (ST-M01), shared by `decide` and the gate (DP-L06). A new operator is code there, never an expression in a block, and enters only with a case of a slice or of the stress test that no combination of the existing operators expresses, named in the change.
+The operators, together with DP-M05 and DP-R01…R04, form one pure function of module `measure` (ST-M01), **policy evaluation**: policy, evaluations, `required` and budget in; status, reason and `selected` out. `decide`, the gate (DP-L06) and the calibration metrics (DP-C02) call it; `decide` itself keeps only DP-M06, the `judge` port, DP-R05 and the `trace`. A new operator is code there, never an expression in a block, and enters only with a case of a slice or of the stress test that no combination of the existing operators expresses, named in the change.
 
 ## Boundaries
 
@@ -138,19 +138,18 @@ A point has no stored lifecycle and no `live` fact of its own. Where answers com
 
 | ID | Rule |
 |---|---|
-| DP-L01 | A revision of a point drives execution iff the `live` revision of a pipeline (TR-F05, PL-P06) pins it. Every other revision runs only in `shadow` or on the bench. |
+| DP-L01 | A run is **authoritative** iff its `pipeline@n` and `setup@n` are the revisions named by `live` facts (TR-F05) in force at the knowledge commit it read (PL-K05) — a pure function of the run record, never stored. Only an authoritative run drives execution, so a revision of a point drives execution only through the `live` pipeline revision that pins it (PL-P06). The output and outcome of a run that is not authoritative are marked `non-authoritative`, as a fallback is (PL-R01), and a stage with the `irreversible` effect (PL-C05) refuses in it: the run ends `refused`. |
 | DP-L02 | **`shadow`** is a pipeline revision that is not `live`, run next to the `live` revision on the same input. The `live` revision decides and is the **baseline**; disagreements are reported (TR-N02). A pipeline without a `live` revision has no `shadow`: its revisions run only on the bench, whose baselines are the expected answers of the set (BN-S01). |
-| DP-L03 | A result of a pipeline revision that is not `live` never drives execution (DP-L01). |
 | DP-L04 | Changing the judge — a new `judge@n` (PL-C09) — reaches execution only through a new revision of the point that pins it, a calibration that applies to that revision (DP-C01) and a new `live` pipeline revision that pins the point (DP-L06). There is no automatic switch. |
 | DP-L05 | If the pinned model is retired by the vendor, the point answers `unavailable` and the pipeline falls back until the owner migrates it (DP-L04). |
-| DP-L06 | **Gate.** Apply admits a `live` fact for a pipeline revision only if the gate passes. The gate is code of module `measure` (ST-M01) and always does the same, with no judge calls: (1) the hashes of the cited evidence match (LG-R02); (2) the metrics of the pipeline's report (BN-R02) are recomputed from that evidence under the pinned revisions and meet the pipeline's `targets` (PL-P01), counted only as BN-G04 allows; (3) every judge answer in the evidence came from the `service` adapter of the pinned `judge@n` (GL-07); (4) every pinned decision point revision whose policy uses an absolute threshold (DP-S02) or whose question is `binary` (DP-S03) has a `calibration` in force that applies to it (DP-C01), whose report, recomputed the same way under that revision's policy, meets the point's `targets`. The `live` fact still needs the owner's act (TR-F06). |
+| DP-L06 | **Gate.** Apply admits a `live` fact for a pipeline revision only if the gate passes. The gate is a step of apply (LG-A03) that composes `trust` (what is in force) and `measure` (whether numbers meet targets), and always does the same, with no judge calls: (1) the hashes of the cited evidence match (LG-R02); (2) the pipeline's `holdout` report (BN-R02) is admitted (BN-R04), and its metrics, recomputed by `measure` from that evidence under the pinned revisions, meet the pipeline's `targets` (PL-P01), counted only as BN-G04 allows; (3) every judge answer in the evidence came from the `service` adapter of the pinned `judge@n` (GL-07); (4) every pinned decision point revision whose policy uses an absolute threshold (DP-S02) or whose question is `binary` (DP-S03) has a `calibration` in force that applies to it (DP-C01, TR-I01), whose `holdout` report, recomputed the same way under that revision's policy, meets the point's `targets`; (5) no finding BN-G03 on the pipeline revision is open without a `dismissed` fact (TR-N04). The `live` fact still needs the owner's act (TR-F06). |
 
 ## Calibration
 
 | ID | Rule |
 |---|---|
 | DP-C01 | Calibration binds to `question + judge@n` and to the bench set revision the point pins (`bench`). It is a `calibration` status fact keyed by the point `id`, the hash of `question`, `judge@n` and `set@n` (TR-F05); its value references the report (BN-R02). It **applies to** a revision of the point iff that revision has the same `question`, `judge@n` and `set@n` — its key matches. So calibrations of coexisting revisions never replace each other; changing criteria, judge or bench set needs a new calibration; changing policy (thresholds, `top-k`) needs none, because the gate recomputes the report under the policy of the revision (DP-L06). |
-| DP-C02 | Measured on the bench set: precision in the "sure" band per answer value, share of the grey zone, size of the set. |
+| DP-C02 | Measured on the `holdout` report of the bench set (BN-R02): precision in the **sure band** — items whose status is `selected` — per answer value; share of the **grey zone** — items whose status is `ambiguous` or `insufficient`; size of the set. Both come from policy evaluation (Policy operators) under the point revision. |
 | DP-C03 | The precision target is data of the point, set by its owner (BN-G01). Calibration takes effect only by the owner's act (TR-F06), never automatically. |
 | DP-C04 | Verdicts that count: acts of participants (human, consumer) and deterministic checks (tests pass, schema holds). A verdict from an LLM or the judge is `inferred` and never counts for calibration. |
 | DP-C05 | A human decision (in `shadow` or after escalation) is recorded as a participant verdict. It enters a bench set only as BN-S04 allows. |
@@ -204,3 +203,4 @@ External cases:
 - 2026-10-01 — unified-architecture review, grilled: allowed set and pool (DP-M06, DP-B04), one budget (DP-M05), operator `required ⊆ selected` removed, DecisionResult only in the run record (DP-R06), no stored lifecycle — authority is the `live` fact (DP-L01…L06), calibration as a status fact (DP-C01), judge does not escalate (DP-B01), memoization through recording (DP-T03).
 - 2026-10-01 — design v0.6 audit, grilled: `judge@n` fixes model and prompt (DP-M02, DP-T03), match not truth (DP-M07), exact candidate coverage (DP-R05), boundaries checked or measured (DP-B11), `live` gate for pipelines, targets before runs, recompute under new policy (DP-L06), bench set in calibration (DP-C01), escalations only to `tune` (DP-C05), stale calibration (DP-C06).
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): judge is a port configured by `judge@n` (Roles, DP-M02, DP-T03…T05; D2); `live` only for pipelines, `shadow` against the `live` baseline (DP-L01…L04; D3 reopens U1 and DP-L01); one gate in module `measure`, always recomputed (DP-L06; D1); calibration keyed by what it applies to (DP-C01, DP-C06); where DP-S02 and DP-S03 are checked; one budget spent once, `scope` as the allowed set (DP-M05, DP-M06, DP-N01); operator `table` (Policy operators, DP-D01, stress test); restatements replaced by references (DP-B02, DP-B10, DP-C05); follow-up: admission of a new operator (Policy operators), semantic judgement and the `llm` port (DP-B13), `binary` in DP-D01.
+- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: policy evaluation as one function of `measure` (Policy operators; A1), sure band and grey zone (DP-C02), authoritative run with marked output and refused `irreversible` (DP-L01; A5), DP-L03 removed, gate as a step of apply with `holdout` reports and the regression step (DP-L06; A2, A4), ids with namespaces in the example.
