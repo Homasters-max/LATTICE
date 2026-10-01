@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WJMRA76TSP0SGB0KMS5J71",
+  "claim": {
+    "text": "openspec-validate passed for s0-skeleton",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "b7ee20c60195a6774cfd7d691e4246ac687b2ed9",
+    "base_commit": "9c03299aef98c55e3494fefdd0015134b8ca9622",
+    "spec_revision": "openspec/changes/s0-skeleton@b7ee20c60195a6774cfd7d691e4246ac687b2ed9",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:3bfed215fe218f51ecc872bf2b717a0ff601f65b5b11412694dcc2504dad3e31",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-01T20:31:39.336Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-skeleton/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:179caf4a52fdf6d6affcc326087594f5f35088e6f7ef06ff5a5f8cfcec6ae6a2"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 0
+  }
+}
