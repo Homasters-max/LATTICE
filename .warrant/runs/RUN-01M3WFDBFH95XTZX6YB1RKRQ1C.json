@@ -1,0 +1,115 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3WFDBFH95XTZX6YB1RKRQ1C",
+  "change": "s0-skeleton",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/s0-skeleton",
+  "started_at": "2026-10-01T19:35:11.128Z",
+  "finished_at": "2026-10-01T19:44:50.062Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:09e2e2800491728164b3cf11420a94d052442741549a218874f9d73d7995dc15",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "spec_tree": "sha256:fec4492ffb8cc4cb3bdb4a944f1a463daafc6fa99aa83b0a2507bf2eb9f46779",
+  "evidence": [
+    "EVID-01M3WFZ0WA3PN7KVZVWTC876JR"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T19:36:47.442Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`ls openspec/specs` under the review Run RUN-01M3WFDBFH95XTZX6YB1RKRQ1C of s0-skeleton: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:36:51.784Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE-wt/s0-skeleton log --oneline -6` under the review Run RUN-01M3WFDBFH95XTZX6YB1RKRQ1C of s0-skeleton: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:40:26.022Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE-wt/s0-skeleton show HEAD:design-next/05-trust.md` under the review Run RUN-01M3WFDBFH95XTZX6YB1RKRQ1C of s0-skeleton: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:40:44.432Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:43:29.770Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:43:30.799Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:44:35.040Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:44:36.205Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:44:41.120Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T19:44:47.863Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
