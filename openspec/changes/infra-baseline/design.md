@@ -15,15 +15,19 @@
   use only AR and KR (plus `ING`, `KRN` in archived Changes, outside the map today).
 - Every path above except the generated files is a policy path: the guard denies the agent, `maintainer-acts` makes it
   the maintainer's act, CI admits it only in a Change PR classified `factory-change`.
-- The decisions behind this Change: launch grilling 2026-10-01, Q8, Q9, Q18, Q19, Q20, Q21
-  (`design-next/reviews/2026-10-01-launch-readiness-grilled.md`).
+- The decisions behind this Change: launch grilling 2026-10-01, Q8, Q9, Q17–Q23, and its follow-up Q25–Q28 on state per
+  slice; record `design-next/reviews/2026-10-01-launch-readiness-grilled.md` and the rules SL-T07…SL-T09 come with the
+  docs PR [#63](https://github.com/Homasters-max/LATTICE/pull/63) (`docs/sw-milestone`).
+- **Order with #63:** the rule texts below cite SL-T08 and the record. #63 merges before this spec-PR is marked
+  `SPECIFIED`; if it has not, the spec-PR waits (task 0.1). Nothing in this Change depends on #63 at run time — only the
+  references in the rule texts.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Tests and the type check run on every PR and on every push to `main`.
-- Every artifact written after this Change is English; the rules the agent reads are English.
-- One AREA per spec of the module matrix ST-M01, so parallel Changes of S0 never share an AREA.
+- Tests and the type check run on every PR and on every push to `main`; a red `main` has an owner.
+- New text in the repository and on GitHub is English; the rules the agent reads are English.
+- One AREA per spec of LATTICE (grilling Q20), so parallel Changes never share an AREA.
 - A process test keeps the three in place.
 
 **Non-Goals:** — proposal, Non-goals.
@@ -36,15 +40,17 @@ Branch `impl/infra-baseline` from `main` with the spec-PR merged.
 
 1. First commit — `warrant transition infra-baseline APPROVED --ref <spec-PR URL> --by Homasters-max` and
    `IMPLEMENTING`; record only.
-2. The maintainer's act (D-2): the patch of policy paths; the agent checks `git diff --cached --name-only` — exactly the
-   seven paths of D-2 — and commits.
-3. `warrant sync`: `openspec/config.yaml`, `AGENTS.md`, `.warrant/warrant.lock.json`; check — `warrant validate` and
-   `warrant sync --check` green, `config.yaml` carries "Language: English", `AGENTS.md` carries the English rules. If
-   `sync` changes `.claude/`, the maintainer restarts the session before the Run.
+2. The maintainer's act (D-2): `git apply --index <patch>` — the patch is applied and staged, the new `test.yml`
+   included. The agent checks `git diff --cached --name-only` — exactly the seven paths of D-2 — and commits.
+3. `warrant sync` (outside a Run, as in `pin-v0-10-0`, D-1 p. 3): `openspec/config.yaml`, `AGENTS.md`,
+   `.warrant/warrant.lock.json`; check — `warrant validate` and `warrant sync --check` green, `config.yaml` carries
+   "Language: English", `AGENTS.md` carries the English rules. If `sync` changes `.claude/`, the maintainer restarts the
+   session before the Run.
 4. Run `implement`: `test/process/baseline.test.ts` (D-6), marks in `tasks.md`; `warrant run finish`;
    `warrant check infra-baseline tests-passed` `PROVEN`; `npm run typecheck`; commit.
 5. Last commit — `warrant verify infra-baseline` and `transition VERIFYING`. After push, the job `test` runs on the
    impl-PR itself (the `pull_request` event takes the workflow from the merge result) — the first evidence it works.
+   The PR body carries `Closes #28`.
 
 Rejected: the patch and `sync` in one commit — the patch is the maintainer's act, `sync` output is the agent's; one
 commit would blur who wrote what.
@@ -60,7 +66,8 @@ differ. Paths:
   Appendix);
 - `.warrant/local/areas.json` — D-5.
 
-The maintainer applies it with one command `git apply <path>`; the agent checks the diff and commits.
+The maintainer applies it with one command `git apply --index <path>` (plain `git apply` stages nothing and leaves the
+new file untracked); the agent checks the staged diff and commits.
 
 ### D-3. The job `test`
 
@@ -79,7 +86,7 @@ permissions:
 
 concurrency:
   group: test-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -99,10 +106,16 @@ jobs:
 - A separate file, not a second job in `warrant.yml`: the pin test requires `warrant.yml` to be a call without
   `steps:` (Change `pin-v0-10-0`, D-4), and the judge and the project's own checks change for different reasons.
 - `push` only to `main`: a push to a branch is covered by its PR; this catches a red `main` (issue #21).
+- Cancelling a run in progress only for pull requests: two quick merges into `main` each keep their own run, so a red
+  commit on `main` is never hidden by a cancel.
+- **A red `main`** is owned by the rule `tracking` (Appendix): the first session that sees it opens a `bug` `P1`
+  issue; the coordinator session checks the last `test` run of `main` before dispatching work. GitHub also mails the
+  author of the failed push.
 - On a Change PR the tests run twice — here and inside `warrant` (`tests-passed`). Accepted: a minute of CI against a
   second mechanism for "which PR needs tests".
 - Actions pinned by major tag (`@v4`), as the reusable workflow is pinned by tag (`pin-v0-10-0`, I-11).
-- Rejected: a WARRANT check gate for the type check (issue #27) — the job is enough until a gate must depend on it.
+- Rejected: a WARRANT check gate for the type check (issue #27, closed as not taken) — the job is enough until a gate
+  must depend on it.
 
 ### D-4. Language and the project rules
 
@@ -110,34 +123,44 @@ jobs:
   `"Language: English\nAll artifacts must be written in English.\nKeep OpenSpec structural headings and SHALL/MUST keywords in English."`
   Rejected: keeping Russian — specs reference English design IDs and become judge-read text after the switch (SW);
   two languages would mean two copies of the norm.
-- The four rules are translated faithfully (Appendix). Additions, each from the grilling:
-  - `env`: the language rule — repository and GitHub in English, Russian only in the chat with the maintainer (Q19).
+- **Scope of the language rule** (`env`, Appendix): new text written into the repository and onto GitHub is English.
+  Exceptions, named in the rule:
+  - Russian as **data** where the design requires it: Russian variants of bench items (SL-K03) and the RU↔EN
+    consistency measurement (BN-M04, SL-S2);
+  - **history** — existing Russian specs, archived Changes, `design/` — is replaced by the Changes that touch it, never
+    translated;
+  - files **generated by WARRANT** (`.claude/agents/warrant-reviewer.md`) keep the language WARRANT writes them in;
+  - the marker «❗ Выполнить» is chat text addressed to the maintainer.
+- The four rules are translated faithfully (Appendix). Additions from the grilling:
+  - `env`: the language rule with its scope (Q19).
   - `maintainer-acts`: pushing a freeze tag of `design-next` is a maintainer's act (SL-T01; WARRANT does not list
     tags, so the rule must).
-  - `process`: parallel work — one AREA = at most one active Change (SL-T08; "AREA", not "capability": in
-    `design-next` a capability is a block, PL-C01); one worktree and branch
-    per Change; the `implement` Run narrowed with `--scope` to its module; a file shared by modules changes in a
-    separate small Change (Q20–Q23).
-  - `tracking`: issue area `sw`; English body labels "Why:", "Where:"; a Change's issue names "Depends on:" and sits in
-    the milestone of its slice (Q17). State per slice is computed, never stored: a slice is a milestone and its umbrella
-    issue; each Change is one session in its own worktree, started from its issue; the coordinator session holds the
-    slice and never writes a Change's code (Q25, Q26, Q28). Rejected: a state file per slice — it goes stale and is a
-    second source next to `warrant status`, PRs and issues.
-- The marker «❗ Выполнить» stays Russian: it is chat text addressed to the maintainer.
+  - `process`: parallel work (Q20–Q23, SL-T08) — an AREA is active from `warrant init change` until its Change is
+    `ARCHIVED` or `ABANDONED`; one active Change per AREA; at most three Changes in `IMPLEMENTING` or `VERIFYING` at
+    once; one worktree and branch per Change; the `implement` Run narrowed with `--scope` to its module; files shared by
+    several modules are owned by the skeleton of the slice, and a later change of one is a separate small Change.
+    "AREA", not "capability": in `design-next` a capability is a block (PL-C01).
+  - `tracking`: issue area `sw` (the switch, SL-T07); English body labels "Why:", "Where:"; the issue of a Change names
+    "Depends on:" and sits in the milestone of its slice, a Change outside a slice (infra, process) in the milestone of
+    the slice it unblocks, otherwise in none (Q17); state per slice is computed, never stored — a slice is a milestone
+    and its umbrella issue, each Change is one session in its own worktree started from its issue, the coordinator
+    session holds the slice and never writes a Change's code (Q25, Q26, Q28); a red `test` on `main` (D-3). Rejected:
+    a state file per slice — it goes stale and is a second source next to `warrant status`, PRs and issues.
 - This Change's own artifacts are English already: the language context switches in its impl-PR, and its artifacts
   follow the decision, not the old context.
 
 ### D-5. AREAs
 
-`.warrant/local/areas.json` — one AREA per capability; a capability is the spec folder `openspec/specs/<capability>/`:
+`.warrant/local/areas.json` — one AREA per spec `openspec/specs/<capability>/` (OpenSpec's word), as decided in grilling
+Q20:
 
-| AREA | capability | first Change |
+| AREA | spec | first Change |
 |---|---|---|
 | AR | architecture | `s0-skeleton` |
 | KR | kernel | `s0-kernel` |
 | LG | ledger | `s0-apply-checks` |
 | PJ | projections | `s0-projections` |
-| ST | store | `s0-store` |
+| SR | store | `s0-store` |
 | CD | codec | `s0-codec-forms` |
 | TR | trust | `s0-bootstrap` |
 | AC | acts | `s0-bootstrap` |
@@ -150,6 +173,11 @@ jobs:
 | LN | lens | S1 |
 | BN | bench | S1 |
 
+- Not a copy of the module matrix ST-M01: a spec describes observable behaviour, a module holds code. `assembly` has no
+  AREA — its observable behaviour, the start-up checks (PL-A03), is specified under CL; `adapters` of a port are
+  specified with their port (SR, AC) except judge adapters (AD, S2).
+- `SR` for the store, not `ST`: `ST-` is the prefix of 10-structure in `design-next`, and an id `REQ-ST-…` would read as
+  a structure rule.
 - Removed: GR identity-grain (NX-06), RL rules (NX-05), CP compose (NX-13) — no id uses them.
 - Renamed: RN `run` → `runtime` (module of ST-M01) — no id uses RN.
 - Kept codes AR, KR: existing REQ/SCN ids keep their meaning.
@@ -158,12 +186,13 @@ jobs:
 ### D-6. Process test
 
 `test/process/baseline.test.ts`, every test inside `describe()`, no `SCN-…` tokens (`skip_specs`):
-- `test.yml` triggers on `pull_request` and on `push` to `main`, and runs `npm ci`, `npm run typecheck`, `npm test` in
-  this order;
+- `test.yml` triggers on `pull_request` and on `push` to `main`; its top-level permissions are exactly
+  `contents: read`; `setup-node` takes `node-version: 22`; it runs `npm ci`, `npm run typecheck`, `npm test` in this
+  order;
 - the context of `.warrant/local/openspec/rules.json` starts with `Language: English`, and `openspec/config.yaml`
   carries the same line;
-- the keys and capabilities of `.warrant/local/areas.json` equal the table of D-5 (a change of the map changes the test
-  in the same Change).
+- the keys and specs of `.warrant/local/areas.json` equal the table of D-5 (a change of the map changes the test in the
+  same Change).
 
 Bounds: the test sees the form of the files, not the execution; the execution shows the job `test` on the impl-PR.
 `pin.test.ts` is unchanged: its rule-delivery block checks the new texts in `AGENTS.md` as it checked the old.
@@ -173,7 +202,7 @@ Bounds: the test sees the form of the files, not the execution; the execution sh
 `chore` + `factory-change` (policy paths). `blast_radius: SYSTEM` — floor for `.warrant/**` and
 `.github/workflows/**`; `compatibility: COMPATIBLE` — a new non-required check, no id loses its AREA, rules keep their
 meaning; `reversibility: EASY` — revert of the patch; `data_loss: NONE`; `security_impact: LOW` — a new workflow with
-`contents: read`, third-party actions by tag, no secrets. `MERGED` — by the rule `process`.
+`contents: read` (checked by D-6), third-party actions by tag, no secrets. `MERGED` — by the rule `process`.
 
 ## Risks
 
@@ -182,6 +211,7 @@ meaning; `reversibility: EASY` — revert of the patch; `data_loss: NONE`; `secu
 2. The language switch lands while another Change is open with Russian artifacts. None is open (`warrant status`).
 3. A path matched by `human-acceptance` (`.warrant/local/**`, `.github/workflows/**`, `AGENTS.md`) puts
    `human-approval` on `VERIFYING->MERGED`: the maintainer merges, as for `pin-v0-10-0`.
+4. #63 is not merged when this spec-PR is ready: the rule texts would cite SL-T08 before it exists. Control: task 0.1.
 
 ## Appendix — texts of the project rules
 
@@ -195,8 +225,13 @@ command longer than ~7 thousand characters (a commit message, a PR body, JSON) g
 project file is edited with Edit/Write, not `sed -i`/`perl -i`; a function with a regex or quotes — Read it whole and
 replace the block once; after a change of data shape — grep the usages; a literal `\uXXXX` — `perl -Mutf8 -CSD` with
 `\x5c`. At most 20 subagents at once (HTTP 429 breaks them all). A long call runs in the background, with an interim
-status to the human. Language: everything in the repository and on GitHub — artifacts, code, comments, commits, PRs,
-issues — is English; Russian is used only in the chat with the maintainer.
+status to the human.
+
+Language: new text written into the repository and onto GitHub — artifacts, code, comments, commits, PRs, issues — is
+English; Russian is used in the chat with the maintainer. Exceptions: Russian as data where the design requires it
+(Russian variants of bench items, SL-K03, BN-M04); history (old Russian specs, archived Changes, `design/`) is replaced
+by the Changes that touch it, never translated; files generated by WARRANT keep the language WARRANT writes them in;
+the marker «❗ Выполнить» is chat text.
 
 ### maintainer-acts
 
@@ -216,10 +251,12 @@ Records (`.warrant/changes/**`), evidence, waivers, Runs and `openspec/specs/**`
 (`init change`, `classify`, `unknown`, `transition`, `run`, `waive`, `ci fetch`, `archive`); never edit them by hand,
 never call `openspec archive`. Never bypass a guard `deny` through the shell — narrow the work or ask the maintainer.
 
-Parallel work: one AREA (one OpenSpec capability spec and the prefix of its REQ/SCN ids) = at most one active Change
-(`design-next` SL-T08). Each Change works in its
-own git worktree and branch; its `implement` Run is narrowed with `--scope` to the paths of its module. A file shared
-by several modules is changed by a separate small Change.
+Parallel work (`design-next` SL-T08): an AREA (one spec and the prefix of its REQ/SCN ids) is active from
+`warrant init change` until its Change is `ARCHIVED` or `ABANDONED`; at most one active Change per AREA, a second one
+waits. At most three Changes in `IMPLEMENTING` or `VERIFYING` at once. Each Change works in its own git worktree and
+branch; its `implement` Run is narrowed with `--scope` to the paths of its module. Files shared by several modules (the
+module matrix of the structure test, the CLI entry, `package.json`, port interfaces) are owned by the skeleton of the
+slice; a later change of one is a separate small Change.
 
 1. spec-PR (branch `spec/<change>` from `main`): `warrant init change <change>`; the artifacts proposal, specs,
 design, tasks are written inside the Run `warrant run start <change> --operation specify` (then `warrant run finish`);
@@ -277,13 +314,15 @@ Slices: the state of a slice is computed, never stored in a file. A slice is a G
 (plan, list of Changes, slice-level decisions as comments linking to `I-N` rows and PRs). Each Change is one Claude Code
 session in its own worktree, started from the Change's issue; it reads its issue, the `design-next` IDs it implements
 and the merged specs it depends on, not the context of other Changes. The coordinator session holds the slice —
-dispatch, review, merge queue — and never writes a Change's code.
+dispatch, review, merge queue — checks the last `test` run of `main` before dispatching, and never writes a Change's
+code. A red `test` on `main` is a `bug` `P1` issue, opened by the first session that sees it.
 
 LATTICE debt outside the current Change (a defect, an idea, something deferred) is a GitHub Issue; the agent opens it
 itself (`gh issue create --body-file`) and names its number in the report. In code — `#N`. Title — `<area>: <what>`,
-area: `s0`…`s4` (slice), `sw` (switch), `design`, `infra` (process, WARRANT, CI). Body — "Why:" a source link (PR,
-commit, I-N, `design-next/…`), "Where:" the Change, slice or trigger; the issue of a Change also names "Depends on:"
-and sits in the milestone of its slice. Labels — one type and one priority: `bug` defect · `enhancement` idea ·
-`question` needs the maintainer's answer; `P1` blocks the current slice or the honesty of the process · `P2` before
-the slice closes · `P3` some day. Closing — `Closes #N` in the PR body; refusal — label `wontfix` and a comment with
-the reason. Queue — `gh issue list --label P1`.
+area: `s0`…`s4` (slice), `sw` (the switch between S0 and S1, SL-T07), `design`, `infra` (process, WARRANT, CI). Body —
+"Why:" a source link (PR, commit, I-N, `design-next/…`), "Where:" the Change, slice or trigger; the issue of a Change
+also names "Depends on:" and sits in the milestone of its slice — a Change outside a slice (infra, process) in the
+milestone of the slice it unblocks, otherwise in none. Labels — one type and one priority: `bug` defect ·
+`enhancement` idea · `question` needs the maintainer's answer; `P1` blocks the current slice or the honesty of the
+process · `P2` before the slice closes · `P3` some day. Closing — `Closes #N` in the PR body; refusal — label
+`wontfix` and a comment with the reason. Queue — `gh issue list --label P1`.

@@ -31,10 +31,11 @@ acts — so they go together in one Change instead of three:
 - **Language**: `.warrant/local/openspec/rules.json` context — English; `warrant sync` regenerates
   `openspec/config.yaml`.
 - **Project rules in English**: `.warrant/local/rules/env.json`, `maintainer-acts.json`, `process.json`,
-  `tracking.json` — translated; meaning unchanged except four additions from the grilling (design D-4): the language
-  rule, a freeze tag of `design-next` as a maintainer's act, parallel work by AREA and worktree, issue area `sw` with
-  milestone and "Depends on:". `warrant sync` regenerates `AGENTS.md`.
-- **AREAs**: `.warrant/local/areas.json` rewritten to the capabilities of the module matrix ST-M01 (design D-5).
+  `tracking.json` — translated; meaning unchanged except the additions from the grilling listed in design D-4: the
+  language rule with its scope, a freeze tag of `design-next` as a maintainer's act, parallel work by AREA, WIP and
+  worktree, issue area `sw`, milestones and "Depends on:", state per slice and one session per Change, the owner of a
+  red `main`. `warrant sync` regenerates `AGENTS.md`.
+- **AREAs**: `.warrant/local/areas.json` rewritten — one AREA per spec of LATTICE (grilling Q20, design D-5).
 - **Process test** `test/process/baseline.test.ts`: the form of `test.yml`, the language context, the AREA map.
 
 ## Capabilities
@@ -57,7 +58,9 @@ None: the product LATTICE does not change; the CI and the process of the project
   `main` is issue #20.
 - From the merge on, every new artifact, commit, PR and issue is English. Existing Russian specs `architecture` and
   `kernel` stay until `s0-skeleton` and `s0-kernel` replace them (grilling Q16); archived Changes are history and stay.
-- Closes #28. Issue #27 is closed as not taken (grilling Q8).
+- Closes #28. Issue #27 is already closed as not taken (grilling Q8, 2026-10-01).
+- The rule texts cite `design-next` SL-T08 and the launch record, which come with the docs PR #63; it merges before
+  this spec-PR is marked `SPECIFIED` (design, Context).
 
 ## Non-goals
 
