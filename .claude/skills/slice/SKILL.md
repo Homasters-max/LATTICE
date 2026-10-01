@@ -15,7 +15,7 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 - **One worktree per Change**, `D:/project/LATTICE-wt/<change>`; its session makes the three branches there in turn: `spec/<change>`, `impl/<change>`, `archive/<change>`, each from fresh `origin/main`.
 - **State is computed, never stored**: Change state from warrant records (refs and worktrees), PRs and checks from GitHub, worktrees from `git worktree list`, health of `main` from its last completed `test.yml` run. `status.mjs` computes all of it.
 - **Rules**, enforced by `next`:
-  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until ARCHIVED or ABANDONED; MERGED still holds it;
+  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED; a Change dependency is done only then, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
   - at most 3 Changes **in implementation**: from the first commit of the impl-PR until it merges (impl-PR open, or record APPROVED…VERIFYING without a merged impl-PR); a Change waiting only for its archive-PR is out;
   - a **red** `main` (last `test` run on main failed) blocks dispatch; no `test.yml` yet = unknown, a warning only;
   - shared files belong to the skeleton Change; `implement` Runs are narrowed with `--scope <source and test paths named by its design>,openspec/changes/<change>/**`.
@@ -26,7 +26,7 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 
 ### status `<slice>`
 
-Run `status.mjs <slice>`. Header: `main` health, WIP of 3, held AREAs, 👤 maintainer queue with PR URLs. Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
+Run `status.mjs <slice>`. Header: `main` health, WIP of 3, held AREAs, 👤 maintainer queue (with the PR URL where a PR is open; a decision on a dependency has none). Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
 
 ### next `<slice>`
 
@@ -59,3 +59,7 @@ Acts of the maintainer (approval, merge, UNKNOWN decision): ask as AGENTS.md say
 ```
 
 docs phase: replace the Process line with "a docs PR closing #<N>, no Change".
+
+### wait `<N>`
+
+`node .claude/skills/slice/wait-pr.mjs <N> [--max-hours <h>]` — run in the background right after the push that makes PR <N> wait for the maintainer's merge (rule `process`, "Waiting for the maintainer"); a spec-PR is offered only with `SPECIFIED` as its last commit, so every PR waits only for a merge. Prints `PR #<N> MERGED <sha> <url>` or `PR #<N> CLOSED <url>` and exits 0; exit 2 after three `gh` errors in a row, exit 3 after `--max-hours` (default 24) — report and start it again; exit 64 on a usage error. Only the session that opened the PR watches it.
