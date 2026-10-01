@@ -1,0 +1,186 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W9PV2WW6GRMD5W0TZ3SFG9",
+  "change": "infra-baseline",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/infra-baseline/tasks.md",
+    "openspec/changes/infra-baseline/design.md",
+    "openspec/changes/infra-baseline/specs/**"
+  ],
+  "scope": [
+    "test/process/**",
+    "openspec/changes/infra-baseline/**"
+  ],
+  "branch": "impl/infra-baseline",
+  "started_at": "2026-10-01T17:55:30.563Z",
+  "finished_at": "2026-10-01T17:56:27.614Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:752d177bfacc2e03f23fac3de54107f7624b248e81e4a51e259c27c10c1a0138",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "guard_events": [
+    {
+      "at": "2026-10-01T17:55:46.554Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "test/process/baseline.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:55:48.291Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "test/process/baseline.test.ts"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-10-01T17:55:49.631Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`node --experimental-strip-types --test test/process/baseline.test.ts 2>&1` runs check tests-passed directly (prefix `node {--experimental-strip-types, --test}`, execution.exclusive: true): it runs only through warrant check",
+      "findings": [],
+      "rules_shown": [],
+      "argv": [
+        "cd",
+        "D:/project/LATTICE",
+        "&&",
+        "node",
+        "--experimental-strip-types",
+        "--test",
+        "test/process/baseline.test.ts",
+        "2>&1",
+        "|",
+        "grep",
+        "-E",
+        "^# (tests|pass|fail)|not ok",
+        ";",
+        "npm",
+        "run",
+        "typecheck",
+        "2>&1",
+        "|",
+        "tail",
+        "-2"
+      ]
+    },
+    {
+      "at": "2026-10-01T17:55:54.188Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:05.539Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:12.211Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:16.224Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:20.948Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:21.916Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:23.026Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:24.003Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:25.168Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/infra-baseline/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:56:26.193Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

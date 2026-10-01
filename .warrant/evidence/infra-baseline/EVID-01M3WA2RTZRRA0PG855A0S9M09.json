@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WA2RTZRRA0PG855A0S9M09",
+  "claim": {
+    "text": "tests-passed passed for infra-baseline",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "e1a151ba10df3e227d4844003c81675dab739666",
+    "base_commit": "5b56d836645c378e437d7d438c296782652a516d",
+    "spec_revision": "openspec/changes/infra-baseline@e1a151ba10df3e227d4844003c81675dab739666",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:6fb42f26ab6d9162a7953d0742b19b8dd90dc67b60bf0e2b4b3e60389c4477f7",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-01T18:02:01.440Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-baseline/raw/tests-passed/junit.xml",
+      "sha256": "sha256:e54cb62e065502d3c1dd150b60ad7fb52e3ef80ea841f633807554cd0acdf733"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 425
+  }
+}

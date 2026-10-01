@@ -111,8 +111,8 @@ jobs:
   (GitHub keeps only one pending run per group, so a shared group would drop the middle of three quick merges).
 - **A red `main`** is owned by the rule `tracking` (Appendix): the first session that sees it opens a `bug` `P1` issue
   `infra: main red — <failing test>`; the coordinator checks the last `test` run of `main` before dispatching; while
-  `main` is red no new Change is dispatched and only the fix is merged; the fix is a PR of the Change whose merge broke
-  it, or, if none, of the coordinator. GitHub also mails the author of the failed push.
+  `main` is red no new Change is dispatched and only the fix is merged; the fix is a Change `fix-main-<issue>` (I-1).
+  GitHub also mails the author of the failed push.
 - On a Change PR the tests run twice — here and inside `warrant` (`tests-passed`). Accepted: a minute of CI against a
   second mechanism for "which PR needs tests".
 - Actions pinned by major tag (`@v4`), as the reusable workflow is pinned by tag (`pin-v0-10-0`, I-11).
@@ -140,11 +140,11 @@ jobs:
     tags, so the rule must).
   - `process`: parallel work (Q20–Q23, SL-T08):
     - **claim** — the AREAs of a Change are declared in its issue ("Where: … AREA …") before `warrant init change`;
-      a `skip_specs` Change declares none. An AREA is held from that `init` until the Change is `ARCHIVED` or
-      `ABANDONED`; one Change holds an AREA at a time.
-    - **where it is read** — the record of an open Change lives on its branches, not on `main`, so `warrant status` on
-      `main` does not see it. Who holds an AREA and what is in implementation is computed from the issues and the
-      records on the branches `spec|impl|archive/<change>` (skill `slice`, `status`).
+      a `skip_specs` Change declares none (I-3). An AREA is held from that `init` until the archive-PR of the Change
+      is merged into `main` or the Change is `ABANDONED` (I-2); one Change holds an AREA at a time.
+    - **where it is read** — the record of an open Change runs ahead on its branches and lags on `main` (I-5). Who
+      holds an AREA and what is in implementation is computed from the issues and the records on the branches
+      `spec|impl|archive/<change>` by the skill `slice` (command `status`).
     - **cap** — at most three Changes in implementation: from the first commit of the impl-PR until its merge (a
       `VERIFYING` Change waiting only for its archive-PR does not count).
     - **scope** — the `implement` Run is narrowed with `--scope` to the source and test paths its design names plus
@@ -238,6 +238,26 @@ meaning; `reversibility: EASY` — revert of the patch; `data_loss: NONE`; `secu
    `human-approval` on `VERIFYING->MERGED`: the maintainer merges, as for `pin-v0-10-0`.
 4. #63 is not merged when this spec-PR is ready: the rule texts would cite SL-T08 before it exists. Control: task 0.1.
 
+## Implementation Notes
+
+From review 3 (`EVID-01M3W8Q7MEAYAZRHXE8923NN07`, `PROVEN`: MAJOR F-1, F-2; MINOR F-3…F-6) and the follow-up decision
+Q29–Q34 — rows, not a new round; the maintainer's decision is the approval of the spec-PR
+([PR #65](https://github.com/Homasters-max/LATTICE/pull/65#pullrequestreview-5383240849), whose body lists I-1…I-7).
+The Appendix below holds the final texts with these rows applied.
+
+| # | Decision |
+|---|---|
+| I-1 | F-1: a red `main` is fixed by a Change `fix-main-<issue>`, exempt from the dispatch freeze, the WIP cap and the AREA hold of the breaking Change; the coordinator opens its issue and launches its session and writes none of its code (rules `tracking`, `process`) |
+| I-2 | F-2: an AREA is held until the archive-PR is merged into `main` (or the Change is `ABANDONED`), not until `ARCHIVED` on the archive branch — otherwise the next Change branches from a `main` without the archived requirements (rule `process`) |
+| I-3 | F-3: a `skip_specs` Change declares no AREA; if it needs an UNKNOWN it declares and holds AR (rule `process`) |
+| I-4 | F-4: task 0.1 also waits for PR #64 (skill `slice`, merged 2026-10-01 with #63); the rule says "computed … by the skill `slice` (command `status`)" |
+| I-5 | F-5: the record of an open Change runs ahead on its branches; `main` has it after the spec-PR merges and lags; the state is read from the furthest branch (rule `process`) |
+| I-6 | F-6: `baseline.test.ts` matches the lines of `test.yml` as text, like `pin.test.ts` — no YAML parser, no change of `package.json` |
+| I-7 | Q29–Q34 (ST-A01…ST-A04, merged with #63): rule `process` gains the implementation review before `VERIFYING` (skill `code-review`, result in the impl-PR body) and the architecture audit at the end of a wave and on a trigger of ST-A02; refactor Changes per ST-A04 |
+| I-8 | D-1 order: Run `implement` 1 writes these rows and the final Appendix (the source of the patch), then the patch (D-2) and `warrant sync`, then Run `implement` 2 writes the test — the test reads the patched files |
+| I-9 | The skill `slice` (#64) holds an AREA until `ARCHIVED`; I-2 moves the end to the merge of the archive-PR. Its script is a `.claude/**` path outside this Change's seven paths — issue #67, not this Change |
+| I-10 | Implementation review (I-7, skill `code-review`): Standards — no violation; Spec — the seven files equal D-2…D-5 and the Appendix exactly. Taken: D-3 and D-4 aligned with I-1, I-2, I-3, I-5; task 0.1 names #64; the test checks the whole top-level `permissions` block, every `run:` line, `node-version` inside the `setup-node` step and the trigger keys of `on:` in any order, drops a check of its own constant, and also checks `concurrency` (D-3) and that no job sets its own `permissions`. Not taken: the rule `env` cites SL-K03 and BN-M04 but not SL-S2 (D-4 lists all three) — the meaning is the same and a new patch of a policy path is not worth one reference; shared test helpers with `pin.test.ts` — at a third copy (ST-M02) |
+
 ## Appendix — texts of the project rules
 
 ### env
@@ -277,11 +297,14 @@ Records (`.warrant/changes/**`), evidence, waivers, Runs and `openspec/specs/**`
 never call `openspec archive`. Never bypass a guard `deny` through the shell — narrow the work or ask the maintainer.
 
 Parallel work (`design-next` SL-T08). An AREA is one spec and the prefix of its REQ/SCN ids. The AREAs of a Change are
-declared in its issue ("Where: … AREA …") before `warrant init change`; the Change holds them from that `init` until it
-is `ARCHIVED` or `ABANDONED`, and one Change holds an AREA at a time — a second one waits. At most three Changes are in
-implementation at once: from the first commit of the impl-PR until its merge. The record of an open Change lives on its
-branches, not on `main`; who holds an AREA and what is in implementation is computed from the issues and the records on
-the branches `spec|impl|archive/<change>` (skill `slice`, `status`). One worktree per Change, in which its three
+declared in its issue ("Where: … AREA …") before `warrant init change`; a `skip_specs` Change declares none, and if it
+needs an UNKNOWN it declares and holds AR. The Change holds its AREAs from that `init` until its archive-PR is merged
+into `main` (or it is `ABANDONED`), and one Change holds an AREA at a time — a second one waits. At most three Changes
+are in implementation at once: from the first commit of the impl-PR until its merge. The record of an open Change runs
+ahead on its branches: `main` has it only after the spec-PR merges, and then it lags, so its state is read from the
+furthest branch (archive, impl, spec, then `main`). Who holds an AREA and what is in implementation is computed from
+the issues and those records by the skill `slice` (command `status`). A fix of a red `main` (rule `tracking`) is exempt
+from the cap and from the AREA hold of the Change that broke it. One worktree per Change, in which its three
 branches are made in turn; one session per Change, restarted when the process requires it. The `implement` Run is
 narrowed with `--scope` to the source and test paths its design names plus `openspec/changes/<change>/**`; two
 parallel Changes never share a source path. Files shared by several modules (the module matrix of the structure test,
@@ -311,9 +334,11 @@ becomes an `I-N` row.
 `warrant transition <change> IMPLEMENTING`; code and tests — inside the Run
 `warrant run start <change> --operation implement` (at the end `warrant run finish`; one active Run per worktree);
 `node:test` tests carry the token `SCN-…` of their scenario in the test name, every test inside `describe()` (a `skip`
-/ `todo` test with an `SCN-…` token is `NOT_PROVEN`); last commit — `warrant verify <change>` and
-`warrant transition <change> VERIFYING`. The verdict is the job `warrant` in CI; merge — only a merge commit, by the
-maintainer.
+/ `todo` test with an `SCN-…` token is `NOT_PROVEN`); before the last commit — an implementation review (skill
+`code-review`: Standards and Spec, in the deep-module vocabulary of `codebase-design`): a finding inside the Change is
+fixed in it, one outside it becomes an issue, and the impl-PR body states the findings and how each is closed; last
+commit — `warrant verify <change>` and `warrant transition <change> VERIFYING`. The verdict is the job `warrant` in CI;
+merge — only a merge commit, by the maintainer.
 
 An implementation question is an `I-N` row in `design.md` with the maintainer's decision, not `warrant unknown`. A spec
 change after approval only by the maintainer's decision: inside the `implement` Run an `I-N` row in `design.md` and an
@@ -329,6 +354,11 @@ for it in the PR; without an `ACTIVE` waiver (or with one expired by `MERGED`) t
 impl-PR>`, `warrant transition <change> MERGED --ref <URL of the impl-PR>` — without `--by`; only if `warrant` answers
 `USAGE` because the profile `human-acceptance` puts the gate `human-approval` on `VERIFYING->MERGED` — with
 `--by <maintainer>`; `warrant archive <change>`. The maintainer merges.
+
+Architecture (`design-next` ST-A01…ST-A04): at the end of every wave and on a trigger of ST-A02 the coordinator runs an
+architecture audit of `src/` against `design-next` into `design-next/reviews/`, grilled with the maintainer; an
+accepted finding that can be checked mechanically becomes a fitness test, the others a rule with an ID; a refactor is a
+separate Change that changes no behaviour.
 
 The maintainer is `roles.maintainer` in `.warrant/warrant.json`. Commit and push go to your own branch; `main` and
 `gh pr merge` are the maintainer's only.
@@ -346,8 +376,9 @@ session in its own worktree, started from the Change's issue; it reads its issue
 and the merged specs it depends on, not the context of other Changes. The coordinator session holds the slice — its
 milestone, dispatch, review, merge queue — checks the last `test` run of `main` before dispatching, and never writes a
 Change's code. A red `test` on `main` is a `bug` `P1` issue `infra: main red — <failing test>`, opened by the first
-session that sees it; while `main` is red no new Change is dispatched and only the fix is merged; the fix comes from the
-Change whose merge broke `main`, otherwise from the coordinator.
+session that sees it; while `main` is red no new Change is dispatched and only the fix is merged. The fix is a Change
+`fix-main-<issue>`, exempt from that freeze, from the cap and from the AREA hold of the Change that broke `main`; the
+coordinator opens its issue and launches its session, and writes none of its code.
 
 LATTICE debt outside the current Change (a defect, an idea, something deferred) is a GitHub Issue; the agent opens it
 itself (`gh issue create --body-file`) and names its number in the report. In code — `#N`. Title — `<prefix>: <what>`,

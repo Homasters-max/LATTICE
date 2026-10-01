@@ -1,32 +1,33 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "infra-baseline",
-  "change_state": "SPECIFIED",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
-      "factory-change"
+      "factory-change",
+      "human-acceptance"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "SYSTEM",
-        "from": "proposer"
+        "from": "floor:core-sdd:2"
       },
       "security_impact": {
         "value": "LOW",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
@@ -49,6 +50,44 @@
       "evidence": [
         "EVID-01M3W9B9AYVZZA6591ZSYD44ND"
       ]
+    },
+    {
+      "to": "APPROVED",
+      "at": "2026-10-01T17:51:39.794Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+      "gates": {
+        "adversarial-review": "PASS",
+        "blocking-unknowns-resolved": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3W8Q7MEAYAZRHXE8923NN07",
+        "EVID-01M3W9F1VZS607FY0H58ADJP09",
+        "EVID-01M3W9FMJ30CADWZB6ASMQ016A"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/65"
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-10-01T17:51:49.390Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+      "gates": {
+        "branch-isolated": "PASS"
+      },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-01T17:59:57.720Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+      "gates": {},
+      "evidence": []
     }
   ]
 }

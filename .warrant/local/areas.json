@@ -1,5 +1,8 @@
 {
   "$schema": "warrant://areas/1",
+  "AC": {
+    "capability": "acts"
+  },
   "AD": {
     "capability": "adapters"
   },
@@ -9,14 +12,17 @@
   "BN": {
     "capability": "bench"
   },
-  "CP": {
-    "capability": "compose"
+  "CA": {
+    "capability": "capabilities"
+  },
+  "CD": {
+    "capability": "codec"
+  },
+  "CL": {
+    "capability": "cli"
   },
   "CT": {
     "capability": "catalog"
-  },
-  "GR": {
-    "capability": "identity-grain"
   },
   "KR": {
     "capability": "kernel"
@@ -27,11 +33,17 @@
   "LN": {
     "capability": "lens"
   },
-  "RL": {
-    "capability": "rules"
+  "MS": {
+    "capability": "measure"
+  },
+  "PJ": {
+    "capability": "projections"
   },
   "RN": {
-    "capability": "run"
+    "capability": "runtime"
+  },
+  "SR": {
+    "capability": "store"
   },
   "TR": {
     "capability": "trust"

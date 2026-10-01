@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3W9FMJ30CADWZB6ASMQ016A",
+  "claim": {
+    "text": "openspec-validate passed for infra-baseline",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "6a968ef3403da651bff424bf1af7e24cdf7a3b7e",
+    "base_commit": "5b56d836645c378e437d7d438c296782652a516d",
+    "spec_revision": "openspec/changes/infra-baseline@6a968ef3403da651bff424bf1af7e24cdf7a3b7e",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:1815ce01b22b7852a41b817c65180eb5a9b5a5b228691e0d4566349dbda7b947",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "created_at": "2026-10-01T17:51:34.468Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-baseline/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:d4ca65eecb7f2664e659b76ce15ed7822e286855268c01d6cb72a5c86bc35dc9"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}
