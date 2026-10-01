@@ -166,6 +166,29 @@ policy-путей требует акта maintainer'а, коды выхода C
 Waiver Change `pin-v0-8-2` (в архиве) истекает 2026-10-13 неиспользованным: после merge impl-PR копии job нет. Record и
 waiver не правятся (их пишет только `warrant`).
 
+## Implementation Notes
+
+По находкам review 1 (EVID-01M3W1TKYJFE6SAQBNMQ671600, `PROVEN`: MAJOR F-1, F-3, F-4, F-5; MINOR F-2, F-6…F-10; INFO
+F-11) — строками, не новым раундом; решение maintainer'а — одобрение spec-PR
+([PR #49](https://github.com/Homasters-max/LATTICE/pull/49#pullrequestreview-5381837266)). Строки уточняют исполнение
+D-1…D-8 и решений spec не меняют.
+
+| # | Решение |
+|---|---|
+| I-1 | F-1: `warrant ci` берёт требования `VERIFYING->MERGED` из policy базы impl-PR (`main` до merge): профиля `human-acceptance` там нет, `risk-high` 2.0.0 gate не добавляет — `human-approval` у этого impl-PR не появится ни в `gates`, ни в `deferred[]`. D-1 («`human-approval` в `deferred[]`»), Risks п. 3 («может не примениться») и задача 3.2 («если есть») читаются так. Merge — всё равно maintainer (правило `process`); со следующего Change с policy-путями профиль уже в базе |
+| I-2 | F-2: информационные находки `warrant ci`, не меняющие код выхода: `NO_HUMAN_ACCEPTANCE` (база без профиля), `APPROVER_IS_AUTHOR` / `SHARED_IDENTITY` — если форж сводит учётки; в archive-PR возможна `AGENT_MERGE_CLOSED` (policy базы M^1 — pack `^0.3.4`, CLI 0.10 её не грузит) — merge impl-PR делает maintainer, ref `MERGED` засчитывается как раньше |
+| I-3 | F-3: проверка задачи 1.1 — по индексу, не по дереву: патч maintainer'а — четыре пути (`git apply --check`, `--numstat` правил — одна строка каждое), коммит патча — `git diff --cached --name-only` ровно эти четыре пути; незакоммиченное закрепление и `design-next/*` в коммит не входят |
+| I-4 | F-4: Risks п. 2 — в коммиты spec-PR входят пути Change (`openspec/changes/pin-v0-10-0/**`, `.warrant/changes/pin-v0-10-0.json`), его Runs (`.warrant/runs/RUN-…`) и evidence (`.warrant/evidence/pin-v0-10-0/**`) — их пишет `warrant` и требует gate `adversarial-review`; не входят закрепление и `design-next/*` |
+| I-5 | F-5: последствия 0.9.0 для LATTICE: WS-14 — PR без Change с правкой `src/` или `test/` (`paths.src`, `paths.tests` уже заданы) — `SCOPE_VIOLATION`; совпадает с правилом `process` («каждое изменение кода — Change»), фраза `tracking` «работа без Change — коммит и PR» относится к путям вне кода и тестов — правка правил не нужна. WS-03 — `RECORD_MISMATCH` `waiver` / `not_applicable`, если записанный `WAIVED` или `NOT_APPLICABLE` теряет основание на дату прогона: касается PR Change с такими записями, у этого Change их нет |
+| I-6 | F-6: `.warrant/schemas/**` в профиль не входит: файлы сгенерированы `warrant sync`, их хеши — в `.warrant/warrant.lock.json` (в профиле), ручная правка — `GENERATED_DRIFT` в `validate` job. Impact называет `config.1.schema.json` среди путей diff, не среди путей профиля |
+| I-7 | F-7: тест «pin: human acceptance» сверяет весь список `match.paths` профиля (отсортированный), а не три пути: удаление или добавление пути меняет тест в том же Change |
+| I-8 | F-8: WAV-2026-002 — `ACTIVE`, основание записанного `WAIVED` `spec-approved` Change `pin-v0-8-2` (в архиве); истекает 2026-10-13, новых PR под ним нет: копии job, которую он покрывал, после merge нет. Proposal («истекает неиспользованным») читается так |
+| I-9 | F-9: откат — порядок: (1) pin-Change на `v0.8.2` в ветке при CLI 0.10 (режим восстановления пускает правку `warrant.json` и `sync`): `kernel: "0.8"`, `^0.3.4`, копия job, профиль удаляется патчем maintainer'а, `identities.agents` — по решению; (2) после merge — CLI машины `0.8.2` из tarball тега. Обратный порядок запирает сессию: у CLI 0.8.2 режима восстановления нет |
+| I-10 | F-10: локальный `warrant ci` (задача 3.2) — в отдельном detached worktree вне проекта от `origin/main`, merge ветки `--no-ff`, `node_modules` проекта — копия; затем `git worktree remove --force` и проверка, что `node_modules` проекта цел; ветка impl-PR и рабочее дерево проекта не трогаются |
+| I-11 | F-11: принято — тег git переносим, `security_impact: LOW` опирается на ADR-0039 п. 5 (тег релиза публичного репозитория); SHA-пин — вне объёма |
+| I-12 | Решение maintainer'а в сессии (открытый вопрос handoff SRA `lattice.md`, PR #49): агент LATTICE — машинный пользователь `homasters` (WARRANT-ADR-0049 п. 3), коллаборатор `write`; `.warrant/warrant.json` — `identities.agents: [{ login: "homasters", kind: "machine-user" }]`. Защита `main` и CODEOWNERS — #20 |
+| I-13 | `.warrant/warrant.json` при загруженной policy правит только человек: guard — «no Run operation writes this path» (ADR-0040 п. 7). `identities.agents` (I-12) внесён вторым патчем maintainer'а поверх незакоммиченного закрепления; закрепление (сделано в режиме восстановления, Context) и `identities` — один коммит с `warrant sync` (D-1 п. 3) |
+
 ## Risks / Trade-offs
 
 - [Spec-PR судит копия `v0.8.2`, а record пишет CLI 0.10.0] → схема `change-record/1` в `sync` не изменилась (изменена

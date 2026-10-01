@@ -1,0 +1,31 @@
+{
+  "$schema": "warrant://profile/1",
+  "id": "human-acceptance",
+  "version": "1.0.0",
+  "description": "Paths whose change alters the check itself: policy, project rules, waivers, agent protection, the CI judge and the toolchain of the tests. A human merges such an impl-PR (WARRANT ADR-0050 p. 3, ADR-0051 p. 2).",
+  "match": {
+    "paths": [
+      ".warrant/warrant.json",
+      ".warrant/warrant.lock.json",
+      ".warrant/local/**",
+      ".warrant/waivers/**",
+      ".claude/**",
+      "**/AGENTS.md",
+      ".github/workflows/**",
+      "package.json",
+      "package-lock.json",
+      "**/tsconfig*.json"
+    ]
+  },
+  "gates": {
+    "VERIFYING->MERGED": [
+      "human-approval"
+    ]
+  },
+  "approvals": [
+    {
+      "role": "maintainer",
+      "at": "VERIFYING->MERGED"
+    }
+  ]
+}
