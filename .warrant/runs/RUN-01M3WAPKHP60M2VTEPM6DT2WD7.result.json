@@ -1,0 +1,96 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3WAPKHP60M2VTEPM6DT2WD7",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-actor",
+      "statement": "D-2 resume makes two sessions watch the same PR. A Change session watches the PRs of its Change, and the coordinator watches the PRs of its slice. The 'one watcher per PR' check only looks at the session's own background commands, so it does not prevent this. The outcome list is the same for every session. On APPROVED, both the coordinator and the Change session would 'commit SPECIFIED, push'. On MERGED, both would take 'the next step (impl-PR, archive-PR, the next Change)'. The rule 'Parallel work' and `status.mjs` give 'start impl-PR' and 'launch' to the coordinator, gated by the WIP cap of 3 and by the red-main check. Read literally, a Change session that sees its spec-PR MERGED starts its impl-PR itself and bypasses both gates. The Appendix (the delivered rule text) says only 'the PRs it owns' and does not define ownership.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md",
+        "openspec/changes/infra-pr-watch/proposal.md"
+      ],
+      "recommendation": "In D-2 and the Appendix, name which session acts on each outcome. For example: the Change session watches its own PRs and acts on APPROVED and on an archive-PR's MERGED. On a spec-PR's MERGED, it hands over to the coordinator's dispatch (`status.mjs <change>` startable), and 'the next Change' is always the coordinator's. Then either the coordinator does not start watchers of Change PRs, or its watchers only report. Define 'the PRs it owns' in the Appendix."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Task 2.1 checks that `--until approved` on an open approved PR exits 0 with APPROVED, and names 'the spec-PR of this Change' as that PR. Task 2.1 runs on the impl-PR, because `wait-pr.mjs` comes from the maintainer's patch (task 1.1) and its outputs are pasted in the impl-PR body. The impl-PR branches from `main` with the spec-PR merged (rule `process`, step 2). So when 2.1 runs, the spec-PR is MERGED, and by D-1 (terminal states win) the command prints MERGED, not APPROVED. The APPROVED path, which is the main new behavior of D-1, cannot be checked as the task is written.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/tasks.md",
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "Name a PR that is open and approved when the impl phase runs. For example, the impl-PR of this Change after the maintainer approves it, with the output added to the PR body or a PR comment before merge. Or the next spec-PR of the slice, recorded as a follow-up check. Say which one, and where its output goes."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-3 says `next()` reports a Change that is `ARCHIVED` only on its branch as 'merge archive-PR' for the maintainer. It does not cover that state with no open archive-PR. That happens between the push of the archive commit and `gh pr create`, or after the archive-PR is closed without merge (the watcher outcome CLOSED: 'stop that line of work'). Read literally, the row names the maintainer and a merge of a PR that does not exist. The current queue code dereferences `r.open.url` for every maintainer row. Meanwhile the AREA stays held with no visible next step.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "In D-3, give 'merge archive-PR #N' (maintainer) only when an archive-PR is open. With none open, show 'open archive-PR' (agent), or, after a closed archive-PR, 'archive-PR closed — needs a decision'."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-3 now says a dependency on a Change issue is done only when that Change is `ARCHIVED` on `origin/main`, and it handles `ABANDONED`. It does not cover a Change issue that is closed with no Change record at all, for example dropped or wontfix before `warrant init change`. That dependency is never done and is not reported as needing a decision. The dependent Change shows `wait #N` forever. For the same issue's own row, `next()` reads 'done' (no state, issue CLOSED).",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "Treat a closed Change issue with no record like `ABANDONED`: show 'needs a decision' rather than an endless wait."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "On exit 2 (three `gh` errors in a row, i.e. about three minutes, which can happen when a laptop wakes without network), D-2 and the Appendix say only 'report the error'. The watcher is not restarted, so the PR is no longer watched. The approval or merge that follows goes unnoticed until the maintainer announces it, which is against the goal 'the maintainer never announces an approval or a merge'. Exit 3 restarts the watcher; exit 2 does not.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "On exit 2: report, then start the watcher again, unless the error is permanent (for example an unknown PR or `gh` not authenticated). Or say that after exit 2 the maintainer is asked to announce."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "The rule makes the desktop app's binding with auto-fix the only channel for CI failures, conflicts and review comments, and it forbids polling CI. It assumes that every session runs in the desktop app and that the session itself can bind a PR. It does not say what happens when binding is not possible, for example in a CLI session or a subagent worktree. In that case red CI on a waiting PR is seen by nobody until the watcher's exit 3 after 24 h, and that report does not mention CI.",
+      "targets": [
+        "openspec/changes/infra-pr-watch/design.md"
+      ],
+      "recommendation": "Add a fallback for an unbound PR: the session reports to the maintainer that the PR is unbound, or reads CI once when the watcher exits. Or state in the Context that every session of this project runs in the desktop app."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Review 1 findings F-1..F-8 checked against the current text. F-1 is resolved: the spec-PR waits twice, approved then merged (D-2, Appendix). F-2 is resolved: D-3 says closing a Change issue does not count, and ABANDONED needs a decision. F-3 is resolved: an outcome list covers APPROVED, MERGED, CLOSED, exit 3 and exit 2. F-4 is resolved: a running watcher of the same PR and mode is kept. F-5 is resolved: watchers are restarted on start or resume, and the Context states that a background command dies with its session. F-6 is resolved: an archive-PR waiting for its merge stays in the maintainer queue. F-7 is resolved: the session binds the PR (the remaining no-binding case is F-6 of this review). F-8 is resolved: terminal states win, and task 2.1 names MERGED for PR #65."
+    },
+    {
+      "id": "A-2",
+      "statement": "A background command of a Claude Code session is not killed by a tool timeout before `--max-hours` (24 h) runs out. Not verified."
+    },
+    {
+      "id": "A-3",
+      "statement": "The app's PR monitor wakes the session on CI failures, conflicts and review comments of a bound PR, and the session can bind a PR to itself. This was stated by the maintainer on 2026-10-01 and is not verified here."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:e8140d4d2318f7ef2135f72ccc8201e32369679d794514f9453c99df3ed485d9",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-01T18:40:00Z",
+    "finished_at": "2026-10-01T18:58:00Z"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3WAKX8QCD8F18CE27HBCSZ9",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of infra-pr-watch: 2 BLOCKER, 5 MAJOR, 1 MINOR, 0 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "NOT_PROVEN",
+  "subject": {
+    "commit": "49d3b049aa5d311c7e8dc918fa11a1afcc2f32de",
+    "spec_revision": "openspec/changes/infra-pr-watch@49d3b049aa5d311c7e8dc918fa11a1afcc2f32de",
+    "spec_tree": "sha256:1b461b288918ea2a0581fa3b8cced534138cda11ae9af8aa1396d55df576a69e",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3WACHR3R4XVF71DK5MP4QEB"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:e47ee954b7500c539f6ae5dfe537c450cb343f91f1c89457d0092b10c9502bc2",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "created_at": "2026-10-01T18:11:23.032Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3WACHR3R4XVF71DK5MP4QEB.result.json",
+      "sha256": "sha256:eaec5c1031d046cbeecced83679070931577f30a9af93321006c6ce36a12524a"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 2,
+    "INFO": 0,
+    "MAJOR": 5,
+    "MINOR": 1
+  }
+}
