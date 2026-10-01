@@ -7,17 +7,17 @@
 
 ## 1. Policy paths and generated files
 
-- [ ] 1.1 The maintainer's patch (design D-2…D-5), applied with `git apply --index`: `.github/workflows/test.yml`,
+- [x] 1.1 The maintainer's patch (design D-2…D-5), applied with `git apply --index`: `.github/workflows/test.yml`,
   `.warrant/local/openspec/rules.json`, `.warrant/local/rules/{env,maintainer-acts,process,tracking}.json`,
   `.warrant/local/areas.json`; verified by `git apply --check` on the patch and `git diff --cached --name-only` naming
   exactly these seven paths
-- [ ] 1.2 `warrant sync` (design D-1 p. 3): `openspec/config.yaml`, `AGENTS.md`, `.warrant/warrant.lock.json`; verified
+- [x] 1.2 `warrant sync` (design D-1 p. 3): `openspec/config.yaml`, `AGENTS.md`, `.warrant/warrant.lock.json`; verified
   by `warrant validate` and `warrant sync --check` green, `config.yaml` carrying `Language: English`, `AGENTS.md`
   carrying the four English rule texts of the design Appendix
 
 ## 2. Process test
 
-- [ ] 2.1 `test/process/baseline.test.ts` (design D-6): the form of `test.yml` (triggers, `contents: read`, Node 22,
+- [x] 2.1 `test/process/baseline.test.ts` (design D-6): the form of `test.yml` (triggers, `contents: read`, Node 22,
   steps), the language context, the AREA map, all tests inside `describe()`; verified by
   `warrant check infra-baseline tests-passed` `PROVEN` and `npm run typecheck` green
 

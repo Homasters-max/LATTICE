@@ -1,11 +1,11 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-baseline",
-  "commit": "6a968ef3403da651bff424bf1af7e24cdf7a3b7e",
+  "commit": "2ff3845fb9eab9e17b016c4ed6faafbe1236b01f",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
-    "lock_hash": "sha256:386110bcccfc84ce7e0565b46a64f4ca0d0d7a2cba5f756ba09ff7cdfe81a38b",
+    "lock_hash": "sha256:c9110723fbc8d9136cab21991dc12b653c4ad077c96cbf7b912cc3254acd34b6",
     "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3"
   },
   "evidence": [
@@ -15,7 +15,8 @@
     "EVID-01M3W8RGF7YQA1AH32BTZ3S98N",
     "EVID-01M3W9B9AYVZZA6591ZSYD44ND",
     "EVID-01M3W9F1VZS607FY0H58ADJP09",
-    "EVID-01M3W9FMJ30CADWZB6ASMQ016A"
+    "EVID-01M3W9FMJ30CADWZB6ASMQ016A",
+    "EVID-01M3W9QQ5P6F3CBPV336Q89GQS"
   ],
   "gates": {
     "adversarial-review": "PASS",
