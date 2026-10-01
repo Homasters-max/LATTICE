@@ -1,8 +1,9 @@
-// Pin invariant of the WARRANT judge (Change pin-v0-8-1, design D-3): the CI tag
-// equals the CLI version that wrote the lock. Delivery of project rules (Change
-// fix-pin-test, design D-1): every rule in .warrant/local/rules/ is a rule/1 for
-// every path and its text is in AGENTS.md. No spec scenarios (skip_specs), so no
-// SCN tokens.
+// Pin invariant of the WARRANT judge (Change pin-v0-10-0, design D-4): the CI tag
+// equals the CLI version that wrote the lock. Human acceptance (design D-5): the
+// profile human-acceptance puts human-approval on the merge of the policy paths.
+// Delivery of project rules (Change fix-pin-test, design D-1): every rule in
+// .warrant/local/rules/ is a rule/1 for every path and its text is in AGENTS.md.
+// No spec scenarios (skip_specs), so no SCN tokens.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -10,26 +11,76 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 const root = new URL("../../", import.meta.url);
 const read = (path: string): string => readFileSync(new URL(path, root), "utf8");
 
-// The judge is a copy of the job that packs the tag and installs the tarball
-// (Change pin-v0-8-2, design I-5, D-4): the reusable workflow of WARRANT v0.8.2
-// installs the CLI by a bare `npm i -g github:…`, which leaves a binary without
-// dependencies on the runner. Comment lines are dropped before the checks.
-const workflow = read(".github/workflows/warrant.yml")
+// The judge is a call of the reusable workflow of WARRANT by the tag (06 §8):
+// the tag in `uses` and the input `warrant` (indent 6, the block `with:`) are one
+// version. Comment lines are dropped before the checks.
+const workflowLines = read(".github/workflows/warrant.yml")
   .split("\n")
-  .filter((line) => !line.trimStart().startsWith("#"))
-  .join("\n");
+  .filter((line) => !line.trimStart().startsWith("#"));
+const workflow = workflowLines.join("\n");
 const lockKernel = (JSON.parse(read(".warrant/warrant.lock.json")) as { kernel: string }).kernel;
 
 describe("pin: CI judge and lock", () => {
-  it("the single CLI tag in warrant.yml equals v + kernel of the lock", () => {
-    const tags = [...workflow.matchAll(/npm pack github:Homasters-max\/SRA#v(\d+\.\d+\.\d+)/g)].map((m) => m[1]);
+  it("the single tag of the called workflow equals v + kernel of the lock", () => {
+    const tags = [
+      ...workflow.matchAll(/^\s*uses:\s*Homasters-max\/SRA\/\.github\/workflows\/warrant\.yml@v(\d+\.\d+\.\d+)\s*$/gm),
+    ].map((m) => m[1]);
     assert.deepEqual(tags, [lockKernel]);
   });
 
-  it("the CLI is installed from the packed tarball, not by a bare git install", () => {
-    assert.ok(/npm i -g "\.\/\$tgz"/.test(workflow), "install of the tarball not found");
-    assert.ok(!/npm i -g\s+"?github:/.test(workflow), "bare npm i -g github: found");
-    assert.ok(!/^\s*uses:\s*Homasters-max\/SRA\//m.test(workflow), "call of the reusable workflow found");
+  it("the single input warrant of the call equals v + kernel of the lock", () => {
+    const inputs = workflowLines
+      .map((line) => /^ {6}warrant:\s*v(\d+\.\d+\.\d+)\s*$/.exec(line))
+      .filter((m) => m !== null)
+      .map((m) => m[1]);
+    assert.deepEqual(inputs, [lockKernel]);
+  });
+
+  it("warrant.yml is a call, not a copy of the job", () => {
+    assert.ok(!/^\s*steps:/m.test(workflow), "steps: found");
+    assert.ok(!workflow.includes("npm pack"), "npm pack found");
+  });
+});
+
+// The list of paths is the whole match of the profile (design D-5, I-7): a path
+// dropped from the profile or added to it changes this test in the same Change.
+const humanAcceptancePaths = [
+  ".warrant/warrant.json",
+  ".warrant/warrant.lock.json",
+  ".warrant/local/**",
+  ".warrant/waivers/**",
+  ".claude/**",
+  "**/AGENTS.md",
+  ".github/workflows/**",
+  "package.json",
+  "package-lock.json",
+  "**/tsconfig*.json",
+];
+
+describe("pin: human acceptance", () => {
+  const profile = JSON.parse(read(".warrant/local/profiles/human-acceptance.json")) as {
+    $schema: string;
+    id: string;
+    match: { paths: string[] };
+    gates: Record<string, string[]>;
+    approvals: { role: string; at: string }[];
+  };
+
+  it("the profile human-acceptance is a warrant://profile/1", () => {
+    assert.equal(profile.$schema, "warrant://profile/1");
+    assert.equal(profile.id, "human-acceptance");
+  });
+
+  it("the merge of its paths needs human-approval and the maintainer", () => {
+    assert.ok(profile.gates["VERIFYING->MERGED"]?.includes("human-approval"), "no human-approval on VERIFYING->MERGED");
+    assert.ok(
+      profile.approvals.some((a) => a.role === "maintainer" && a.at === "VERIFYING->MERGED"),
+      "no approval of the maintainer on VERIFYING->MERGED",
+    );
+  });
+
+  it("its paths are the policy, the rules, the waivers, the agent protection, the judge and the toolchain", () => {
+    assert.deepEqual([...profile.match.paths].sort(), [...humanAcceptancePaths].sort());
   });
 });
 
