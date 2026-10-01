@@ -14,11 +14,11 @@ How the code is split into modules and which tests keep the split honest. The ru
 |---|---|---|
 | `kernel` | envelope, canonical form and hash, meta-type, schema subset, references (OM-L04) | — |
 | `trust` | namespace policy and trust rules as pure functions over records: basis, writers and owner acts, in force, findings (04, 05) | `kernel` |
-| `measure` | the closed set of policy operators (01), bench metrics (BN-M01…M06), the gate: targets and BN-G04 (DP-L06) | `kernel` |
-| `ledger` | commits, apply, projections, the `store` and `acts` port interfaces (03) | `kernel`, `trust`, `measure` |
+| `measure` | policy evaluation: the closed set of operators with DP-M05 and DP-R01…R04 (01 Policy operators); bench metrics (BN-M01…M06); whether metrics meet targets, with the floors of BN-G05 (DP-L06) | `kernel` |
+| `ledger` | commits, apply with its gate step (DP-L06) and report admission (BN-R04), projections, packaging of runs as evidence (`cite`, LG-R02), the `store` and `acts` port interfaces (03) | `kernel`, `trust`, `measure` |
 | `codec` | md import and export (LG-B05) | `kernel`, `ledger` (proposal format, read view) |
 | `runtime` | pipelines, runs, recording, port interfaces (06) | `kernel`, `ledger` (read view, PL-K05; append of a `runtime` commit, LG-R05; tape lookup, PL-K03) |
-| `capabilities` | built-in capabilities, `decide` (01, 07) | `kernel`, `runtime` port interfaces, `measure` |
+| `capabilities` | built-in capabilities, `decide` (01, 07) | `kernel`, `runtime` port interfaces, `measure`, `ledger` (read view only, PL-K05) |
 | `adapters` | one module per adapter; vendor SDKs; the prompts of `judge` adapters (PL-C09) | the port interface it implements |
 | `assembly` | builds the runtime from configuration (PL-A03) | everything above |
 | `cli` | commands (PL-E02) | `assembly` |
@@ -43,3 +43,4 @@ How the code is split into modules and which tests keep the split honest. The ru
 
 - 2026-10-01 — created from the design v0.6 audit (T36), grilled.
 - 2026-10-01 — final review (`reviews/2026-10-01-design-next-final-review.md`), grilled (24 questions): module `policy` renamed `trust`; module `measure` for operators, metrics and the gate (D1); `codec` and `runtime` imports of `ledger`; judge prompts in `adapters` (D2); DP-B13 in ST-S01; who imports `codec` (ST-S02); `assembly` outside purity (ST-S03); `acts` contract tests (ST-T01).
+- 2026-10-01 — deepening review (`reviews/2026-10-01-design-next-deepening.md`), grilled: `measure` holds policy evaluation and the target check (A1), the gate is a step of apply in `ledger` (A2), `cite` in `ledger` (A4), `capabilities` reads `ledger` through the read view only.
