@@ -24,7 +24,7 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `warrant verify infra-baseline`; verified by a successful exit
+- [x] 3.1 `warrant verify infra-baseline`; verified by a successful exit
 - [ ] 3.2 After push of the impl-PR — the check `test / test` on it is green (design D-1 p. 5); verified by
   `gh pr checks <impl-PR>`
 - [ ] 3.3 The body of the impl-PR carries `Closes #28`; verified by `gh pr view <impl-PR> --json body`
