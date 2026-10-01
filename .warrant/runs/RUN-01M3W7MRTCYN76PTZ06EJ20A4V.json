@@ -1,0 +1,171 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3W7MRTCYN76PTZ06EJ20A4V",
+  "change": "infra-baseline",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-baseline",
+  "started_at": "2026-10-01T17:19:25.555Z",
+  "finished_at": "2026-10-01T17:24:28.125Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:3d8fe6fdfe77df161d24cda133709d02c14c05206d7acbba5682eb06bc536352",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "spec_tree": "sha256:6a3f47e3bcf82049dc9ca7f2a9254962c7a5857c8b9fb802b21c573a74b044ce",
+  "evidence": [
+    "EVID-01M3W7Y0AT7TD6HYB6XKSA4Y77"
+  ],
+  "guard_events": [
+    {
+      "at": "2026-10-01T17:19:29.357Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`cat C:/Users/Xiaomi/AppData/Local/Temp/claude/D--project-LATTICE/aef08c7f-592b-4caf-a39b-4ca53347e376/scratchpad/review-infra-baseline.json` under the review Run RUN-01M3W7MRTCYN76PTZ06EJ20A4V of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:19:46.290Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`cat D:/project/LATTICE/.warrant/local/areas.json` under the review Run RUN-01M3W7MRTCYN76PTZ06EJ20A4V of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:31.500Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE ls-files .claude` under the review Run RUN-01M3W7MRTCYN76PTZ06EJ20A4V of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:43.546Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git -C D:/project/LATTICE log --oneline --all -6 -- design-next/09-slices.md design-next/reviews/2026-10-01-launch-readiness-grilled.md` under the review Run RUN-01M3W7MRTCYN76PTZ06EJ20A4V of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:46.169Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:49.042Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "deny",
+      "reason": "`git branch -a --contains ec52b14` under the review Run RUN-01M3W7MRTCYN76PTZ06EJ20A4V of infra-baseline: a review Run runs only `warrant run submit`, the cancel `warrant run finish --state CANCELLED` and commands that write nothing (`warrant status`, `warrant gate`, `--help`, `git status|log|diff|show`, `cd` inside the project), joined only by `&&`, `||`, `;` or a newline",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:51.631Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:21:54.480Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:22:03.032Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:23:26.417Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:23:27.377Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:23:31.118Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:24:17.506Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:24:18.511Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:24:19.479Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-01T17:24:25.689Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
