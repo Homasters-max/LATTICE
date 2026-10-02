@@ -47,13 +47,25 @@ describe("baseline: the job test", () => {
     assert.ok(/^node-version: "?22"?$/.test(step.find((line) => line.startsWith("node-version:")) ?? ""), "not Node 22");
   });
 
-  // Only the steps of the job `test`: other jobs of the workflow (projections-windows, s0-projections design D-9)
-  // have their own commands.
-  it("runs npm ci, the type check and the tests, in this order, and nothing else", () => {
-    const runs = block("  test:")
+  // Each job checks its own `run:` steps (s0-projections design I-6): `test`, and `projections-windows` of
+  // s0-projections design D-9 (LG-J02 on a second operating system).
+  const runsOf = (job: string): string[] =>
+    block(`  ${job}:`)
       .map((line) => /^\s*(?:- )?run:\s*(.*)$/.exec(line)?.[1])
       .filter((command) => command !== undefined);
-    assert.deepEqual(runs, ["npm ci", "npm run typecheck", "npm test"]);
+
+  it("runs npm ci, the type check and the tests, in this order, and nothing else", () => {
+    assert.deepEqual(runsOf("test"), ["npm ci", "npm run typecheck", "npm test"]);
+  });
+
+  it("runs npm ci and the projection tests on Windows in the job projections-windows, and nothing else", () => {
+    assert.deepEqual(block("  projections-windows:").map((line) => line.trim()).filter((line) => line.startsWith("runs-on:")), [
+      "runs-on: windows-latest",
+    ]);
+    assert.deepEqual(runsOf("projections-windows"), [
+      "npm ci",
+      'node --experimental-strip-types --test "test/projections/**/*.test.ts"',
+    ]);
   });
 
   it("cancels a run in progress only for a pull request, and groups a push to main by commit", () => {
