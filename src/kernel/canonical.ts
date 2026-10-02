@@ -1,10 +1,12 @@
-// Canonical form — JCS, RFC 8785 (REQ-KR-003, design D-2). The walk keeps an explicit stack of frames instead of
-// recursion, so a value of any depth built in code is serialised without exhausting the call stack. Two operations
-// share the walk through a visitor: canonical builds the text, eachObject hands every object to a function.
+// Canonical form — JCS, RFC 8785 (REQ-KR-010, OM-H01, OM-H05): own code, no package. The walk keeps an explicit stack
+// of frames instead of recursion, so a value of any depth built in code is serialised without exhausting the call
+// stack; it reports to a visitor, which builds the text.
 
-import type { Refusal, Result } from "./types.ts";
+import type { CanonicalCode, Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
-import { hasLoneSurrogate } from "./admit.ts";
+import { hasLoneSurrogate } from "./strings.ts";
+
+type Found = Refusal<CanonicalCode>;
 
 /** What the walk reports, in walk order; every reported value has passed its own checks. */
 type Visitor = {
@@ -28,8 +30,6 @@ type ArrFrame = {
 };
 type Frame = ObjFrame | ArrFrame;
 
-const nothing = (): void => {};
-
 function isIndexKey(k: string, len: number): boolean {
   const n = Number(k);
   return String(n) === k && Number.isInteger(n) && n >= 0 && n < len;
@@ -39,14 +39,14 @@ function isIndexKey(k: string, len: number): boolean {
  * Walk a JSON value depth first — object members in canonical key order, array elements by index — checking that
  * it is a JSON value and reporting it to the visitor; the first place that is not gives `not-json` with its path.
  */
-function walk(root: unknown, visitor: Visitor): Refusal | null {
+function walk(root: unknown, visitor: Visitor): Found | null {
   const frames: Frame[] = [];
   const segs: string[] = [];
   const onPath = new Set<object>();
   const here = (): string => segs.join("");
-  const notJson = (seg: string): Refusal => refusal("not-json", here() + seg);
+  const notJson = (seg: string): Found => refusal<CanonicalCode>("not-json", here() + seg);
 
-  const visit = (value: unknown, seg: string): Refusal | null => {
+  const visit = (value: unknown, seg: string): Found | null => {
     switch (typeof value) {
       case "string":
         if (hasLoneSurrogate(value)) return notJson(seg);
@@ -142,8 +142,8 @@ function walk(root: unknown, visitor: Visitor): Refusal | null {
   return error;
 }
 
-/** Canonical form of a JSON value: JCS without changes; strings are not normalised (NFC belongs to checkInput). */
-export function canonical(value: unknown): Result<string> {
+/** Canonical form of a JSON value: JCS without changes; strings are not normalised (NFC belongs to the parse). */
+export function canonical(value: unknown): Result<string, CanonicalCode> {
   const out: string[] = [];
   const error = walk(value, {
     scalar: (v) => out.push(typeof v === "string" ? JSON.stringify(v) : String(v)),
@@ -157,17 +157,3 @@ export function canonical(value: unknown): Result<string> {
   return error === null ? ok(out.join("")) : fail([error]);
 }
 
-/**
- * Walk a value like canonical and call `fn` on entering each plain object, after its own checks and before its
- * members, with its path; the result is the `not-json` refusal of canonical or `null`.
- */
-export function eachObject(value: unknown, fn: (obj: object, path: string) => void): Refusal | null {
-  return walk(value, {
-    scalar: nothing,
-    enter: (container, isArray, path) => {
-      if (!isArray) fn(container, path());
-    },
-    child: nothing,
-    leave: nothing,
-  });
-}

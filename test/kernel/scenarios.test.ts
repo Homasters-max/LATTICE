@@ -1,4 +1,4 @@
-// Kernel scenarios driven by the vectors of format v1 (test/kernel/vectors.ts): exact refusals or values.
+// Kernel scenarios driven by the vectors of test/kernel/vectors.ts: exact refusals or values.
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -6,20 +6,21 @@ import * as kernel from "../../src/kernel/index.ts";
 import { cases, deepCases } from "./vectors.ts";
 import type { Case } from "./vectors.ts";
 
-export function call(c: Case): unknown {
-  const fn = kernel[c.fn] as (...args: unknown[]) => unknown;
-  return fn(...c.args());
+export function call(c: Case, args: unknown[]): unknown {
+  const fn = kernel[c.fn] as (...a: unknown[]) => unknown;
+  return fn(...args);
 }
 
 function assertCase(c: Case): void {
-  const res = call(c) as { ok: boolean; value?: unknown; errors?: unknown };
+  const args = c.args();
+  const res = call(c, args) as { ok: boolean; value?: unknown; errors?: unknown };
   if (c.errors !== undefined) {
     assert.deepEqual(res, { ok: false, errors: c.errors });
     return;
   }
   assert.equal(res.ok, true, JSON.stringify(res).slice(0, 300));
   if ("value" in c) assert.deepEqual(res.value, c.value);
-  if (c.check !== undefined) c.check(res.value);
+  if (c.check !== undefined) c.check(res.value, args);
 }
 
 const byScenario = new Map<string, Case[]>();

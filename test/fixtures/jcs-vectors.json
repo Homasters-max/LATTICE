@@ -52,5 +52,31 @@
       ["becbf647612f3696", "-0.0000033333333333333333"],
       ["43143ff3c1cb0959", "1424953923781206.2"]
     ]
+  },
+  "nfc": {
+    "section": "NFC vectors (spec kernel REQ-KR-011): input code points, their NFC form",
+    "vectors": [
+      [[101,769], [233]],
+      [[65,778], [197]],
+      [[8491], [197]],
+      [[8490], [75]],
+      [[7835,803], [7835,803]],
+      [[4352,4449], [44032]],
+      [[2392], [2325,2364]],
+      [[233], [233]]
+    ]
+  },
+  "hash": {
+    "section": "for each NFC vector, the hash admit gives to {\"s\": <string>} under test/s@1, schema {type: object, properties: {s: {type: string}}, required: [s]}",
+    "vectors": [
+      "sha256:6d9ca7170bd07c7120a9f1730d4fb3012570a07a61dc8d7a295988b61084b57e",
+      "sha256:309ae4854f40dd0214aaeab5d0826dc520ff02ced7b5b64d7e5402a7700be499",
+      "sha256:309ae4854f40dd0214aaeab5d0826dc520ff02ced7b5b64d7e5402a7700be499",
+      "sha256:6f6a8e8eb452c5475537fca068a1f3b588640f6ba86895b1e8a79cf72c2bce81",
+      "sha256:ce23f31e389f38a533be1e3ddfc05124d77f23b7d535a70933f93a6f223a2f0d",
+      "sha256:1fb19e50faf47a3d0b601d2149d9a9b385266bf2620958658151ef512b4bd557",
+      "sha256:08fd4243e6ede8d4f79a875fbdc7f802af3be853eca27d4f9c1f7c96c60e1219",
+      "sha256:6d9ca7170bd07c7120a9f1730d4fb3012570a07a61dc8d7a295988b61084b57e"
+    ]
   }
 }
