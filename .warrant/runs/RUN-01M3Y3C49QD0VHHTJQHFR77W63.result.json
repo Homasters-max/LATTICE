@@ -1,0 +1,280 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y3C49QD0VHHTJQHFR77W63",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "missing-boundary",
+      "statement": "Steps 2 and 3 of the references of a record overlap for events, and the spec does not say whether the overlap gives one edge or two. Step 2 yields every reference value of body.of at /body/of/<role>. Step 3 yields every element of refs of the admission at /body + path. REQ-KR-017 (main kernel spec) says the of roles 'are in refs of the admission only where the event type declares them as ref nodes'. So when an event type declares a role of `of` as a ref node, which is the intended way for std event types, the same {from, path, ref} is produced twice. Under one reading referrers(id) holds two identical edges; under the other it holds one. referrers(id), the serialized `referrers` member and index.json differ between the two readings. SCN-PJ-002 cannot fix this because it does not say whether test/note@1 declares `subject`/`about` as ref nodes, and it says referrers(\"test/e0\") 'is the edge' (exactly one).",
+      "targets": [
+        "REQ-PJ-002",
+        "SCN-PJ-002",
+        "REQ-PJ-004",
+        "openspec/specs/kernel/spec.md"
+      ],
+      "recommendation": "State that the references of a record are a set keyed by (from, path): an edge produced by step 2 and by step 3 at the same path is listed once. Alternatively, say step 2 covers only roles that step 3 did not list. Then make test/note@1 in the `typed` ledger declare at least one `of` role as a ref node, and have SCN-PJ-002 assert that that role gives exactly one edge."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-PJ-002 identifies an event source by its bare `id` and treats `referrers(id)` as one target namespace for entities and events. This silently assumes that event ids are unique across the ledger and never equal an entity id. Neither apply nor opening guarantees that. Apply's LG-C07 check (REQ-LG-002) only covers ids within one proposal, event ids come with the intent (LG-P01), and opening (REQ-CL-004) checks no ids. A ledger can therefore hold two events with the same id in different commits, or an event and an entity sharing an id. The spec does not say whether both events are sources: design D-4's bySource map keyed by `from` would let the second overwrite the first. It also does not say whether referrers(\"x/a\") mixes references to the event x/a and to the entity x/a.",
+      "targets": [
+        "REQ-PJ-002",
+        "openspec/specs/ledger/spec.md"
+      ],
+      "recommendation": "Either state the assumption and say what the index does when it fails: every event is a source even with a repeated id, and its edges are kept with a tie-break order (for example ledger order). Or key event sources by something unique (for example the commit seq plus the id) and say so. Add a sentence on whether a target id names an entity, an event, or both."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-PJ-001 and REQ-PJ-002 assume that the revisions of an id are 1, 2, 3, … with exactly one record each: 'the record of the highest rev', 'revision(id, rev)', 'a new revision replaces the edges of its previous revision'. Opening (REQ-CL-004, main cli spec) does not check this: it checks canonical form, key sets, growing seq and the prev chain, not the rev of entity records. A ledger that opens may therefore hold a rev gap (1 then 3), a repeated rev, or a lower rev after a higher one. For such a ledger, 'previous revision' (rev−1, or the record before it in ledger order) and the answers of get/revision are undefined. Design D-4 (array index rev−1, removing source id@(rev−1)) is only one of the readings. The current latest.ts ('last record wins') differs from 'highest rev written' exactly on these ledgers.",
+      "targets": [
+        "REQ-PJ-001",
+        "REQ-PJ-002",
+        "openspec/specs/cli/spec.md"
+      ],
+      "recommendation": "Either state the precondition (each entity record's rev is one more than the previous record of its id, rev 1 first) and say what rebuild does when it is broken. Or define 'previous revision' as the record of the same id before it in ledger order, and get as the last record in ledger order. If the precondition is to be enforced, open an issue for the opening check (REQ-CL-004)."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "'Equal view' is used without a criterion. REQ-PJ-001 says 'gives an equal view (REQ-PJ-004)' and REQ-PJ-003 says 'a new read view equal to the view rebuilt'. The only comparison the scenarios make is serialize text (SCN-PJ-005, SCN-PJ-006), and serialize leaves out what revision(id, rev) answers. So the incremental-vs-scratch check (LG-J02) and the 'view itself does not change' check of SCN-PJ-005 cannot detect a copy-on-write defect in the revisions. Example: extending the two-commit view with commit 3 appends test/n1@2 to an array the old view shares, and the old view's revision(\"test/n1\", 2) changes from none to a record while its serialize text stays the same.",
+      "targets": [
+        "REQ-PJ-001",
+        "REQ-PJ-003",
+        "SCN-PJ-005",
+        "SCN-PJ-006"
+      ],
+      "recommendation": "Define equality of views: same seq, same answers of get, entities, revision and referrers for every id and rev, and the same serialize text. Then extend SCN-PJ-005 with 'revision(\"test/n1\", 2) of the two-commit view is none before and after both calls'. Alternatively, add every revision (id → rev → hash) to the serialized form so that the byte comparison covers it."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-PJ-005 calls the index 'verified by meaning: SCN-PJ-001…SCN-PJ-004 assert it on these ledgers', but those scenarios assert the view returned by openLedger, not the bytes or content of index.json. SCN-PJ-008 only compares index.json with serialize(view) from the same code, and the generator (design D-8) writes index.json with that code. No scenario checks what serialize puts in the text beyond the member names (SCN-PJ-007): latest → {rev, type, hash}, referrers → edges in order. A serialize that drops `hash`, or writes edges unordered, passes every scenario once its index.json is regenerated. So the reference ledgers are frozen regression snapshots, not the 'verified index' LG-J02 asks for, and the `skeleton` index is not checked by meaning at all except for referrers.",
+      "targets": [
+        "REQ-PJ-005",
+        "REQ-PJ-004",
+        "SCN-PJ-008",
+        "SCN-PJ-007"
+      ],
+      "recommendation": "Add a scenario that reads index.json of `typed` (and `skeleton`) as JSON and checks its content independently of serialize. For example: latest[\"test/n1\"] is {rev: 3, type, hash of the rev-3 record}; every entity of entities() has a member; referrers[\"test/n2\"] equals view.referrers(\"test/n2\"); no target with zero edges is present. Or define 'verified' as exactly that check."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-PJ-002 resolves T@n by 'the chain that starts with revision(T, n) and follows each record's extends through revision', without a bound. Apply in S0 does not check type records, and REQ-KR-014 says a cycle inside one commit 'is found by apply when it resolves the chain'. A ledger can therefore hold A@1 extends B@1 and B@1 extends A@1. Followed as written, that walk never ends, and opening the store hangs. Design D-4 stops at 5 records, but the spec does not. The spec also does not say what happens when extends is present but not a pinned reference string.",
+      "targets": [
+        "REQ-PJ-002"
+      ],
+      "recommendation": "Bound the walk in the spec: stop after five records (the depth limit of REQ-KR-014), or when extends is absent or not a pinned reference, then call typeOf, which refuses a cycle, an over-long chain or a dangling extends, so the type does not resolve. Add the cycle case to the `typed` ledger and to SCN-PJ-004."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-actor",
+      "statement": "The THEN of SCN-PJ-008 includes 'the same test passes in the jobs test (Linux) and projections-windows (Windows) of the pull request'. No node:test test carrying SCN-PJ-008 can observe that. The Windows half depends on actors the spec does not name: the maintainer, who has to commit the patch of the policy path .github/workflows/test.yml, and branch protection, where the job is not required (design D-9). If the patch is not made, or the Windows job is red, the Linux test still passes with the token SCN-PJ-008 and the scenario is reported as proven. 'CI SHALL run this check on two operating systems' (REQ-PJ-005) then has no evidence that can fail.",
+      "targets": [
+        "SCN-PJ-008",
+        "REQ-PJ-005"
+      ],
+      "recommendation": "Split the two-OS clause out of SCN-PJ-008 into its own scenario or acceptance criterion and name its actor and evidence: the maintainer adds the job projections-windows, and the impl-PR shows it green with the test name SCN-PJ-… in its log. Alternatively, make the test itself assert the platform it ran on and require a test report from both jobs. Say whether projections-windows becomes a required check."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-PJ-005 says the reference files 'change only in a pull request whose diff shows them — when the kernel or the meaning of a projection changes'. The parallel Change s0-bootstrap (#59) changes the commit form (field acts) and the opening checks (genesis), and design D-8 and the Risks section plan to regenerate the fixtures for exactly that reason. Neither is a kernel change or a change of projection meaning, so the stated trigger list contradicts the planned regeneration. The sentence is also not testable: every change in git is shown by some diff.",
+      "targets": [
+        "REQ-PJ-005"
+      ],
+      "recommendation": "Replace the trigger list with the actual triggers (the kernel, the commit or record form, the opening checks, the meaning of a projection). Or drop the sentence from the requirement and keep it as a process note in design.md, since it has no observable check."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-PJ-004 lets rebuild take a list ('the full list by default') but defines only the full list and its permutations. It does not say what the view does when the list omits `referrers` (referrers(id) returns empty or refuses?) or `latest` (does get still answer from the revisions?). It also does not cover a list that repeats a projection, or one holding a projection with a name serialize already uses.",
+      "targets": [
+        "REQ-PJ-004",
+        "REQ-PJ-001"
+      ],
+      "recommendation": "Restrict the list argument to permutations of PROJECTIONS (any other list refused) or define the view's answers for a partial list. Say that names in a list are distinct."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Step 2 of REQ-PJ-002 ('every value of body.of that is a reference, at /body/of/<role>') does not cover a body that is not an object, a missing `of`, an `of` that is an array or a scalar, or a role name containing '/' or '~'. Stored events are not built by the kernel's event() in S0, so these shapes can occur. The JSON Pointer escaping of <role> (RFC 6901) is not stated, so a role 'a/b' could give the path /body/of/a/b or /body/of/a~1b. Design D-4 covers only the first cases ('a body that is an object with an object of').",
+      "targets": [
+        "REQ-PJ-002"
+      ],
+      "recommendation": "State that step 2 applies only when body is an object whose `of` is an object (not an array), visits roles in UTF-16 code-unit order, and escapes <role> as a JSON Pointer token (RFC 6901)."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "SCN-PJ-005 needs the `typed` ledger to have at least four commits ('extended with its fourth commit, and then with its third'). REQ-PJ-005 does not say this, which leaves the scenario undefined for a three-commit `typed` ledger. Only design D-8 records it ('except SCN-PJ-005, which needs at least four').",
+      "targets": [
+        "REQ-PJ-005",
+        "SCN-PJ-005"
+      ],
+      "recommendation": "Add to the `typed` case in REQ-PJ-005: 'at least four commits'."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "'The successors of an entity (OM-I07) are the sources of the edges of its referrers at a supersedes path' does not define a 'supersedes path'. It could be exactly /body/supersedes/<i>, any path whose first body member is supersedes, or any path containing a supersedes segment (a nested member). It also does not say whether a type that is not a base entity type can name a field supersedes.",
+      "targets": [
+        "REQ-PJ-002",
+        "SCN-PJ-003"
+      ],
+      "recommendation": "Define it as the edges whose path is /body/supersedes/<i> (OM-I07 declares supersedes as a top-level list in base entity types), or as the edges whose first body member is supersedes, matching the edge label of LN-X02."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "implementation-leakage",
+      "statement": "REQ-PJ-004 contains internal code structure rather than observable behaviour: 'A projection reads only the commit it folds, the revisions and its own state, never another projection' and 'it iterates maps only in an order it sorts'. No scenario can test either one. The observable property is byte-identical serialization under permutation (SCN-PJ-007). The clock, environment and randomness ban already applies to src/ledger/** through REQ-AR-010.",
+      "targets": [
+        "REQ-PJ-004"
+      ],
+      "recommendation": "Keep the observable SHALL (same text for every permutation, no dependence on clock, ids, randomness, environment or traversal order, enforced by REQ-AR-010). Move the projection-isolation and map-iteration rules to design.md."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-PJ-003 says extend 'SHALL refuse, naming the seq of the view and the base of the commit' but not in what form: a returned refusal value (the kernel convention, REQ-KR-008) or a thrown error, with which fields. SCN-PJ-008 likewise does not say what happens when a fixture folder lacks ledger.jsonl or index.json, or its ledger does not open. REQ-AR-011's rule fixtures fail the test naming the folder.",
+      "targets": [
+        "REQ-PJ-003",
+        "SCN-PJ-005",
+        "SCN-PJ-008"
+      ],
+      "recommendation": "State that extend returns a refusal value {ok: false, seq, base} and never throws. State that a fixture folder missing either file, or whose ledger does not open, fails the test naming the folder."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-PJ-003 makes the incremental path refuse a commit whose base is not the view's seq, while rebuild (and openLedger) folds any chain that opens. REQ-CL-004 Opening checks only that seq grows and prev chains; it checks neither base nor seq = previous seq + 1. For an openable ledger whose base and previous seq differ, rebuild succeeds where commit-by-commit extend refuses. The equivalence 'incremental = from scratch' (LG-J02) then holds only for ledgers written by apply, which the spec does not state.",
+      "targets": [
+        "REQ-PJ-003",
+        "SCN-PJ-006"
+      ],
+      "recommendation": "State that the equivalence holds for ledgers whose every commit has base equal to the seq of the commit before (as apply writes them). Or have rebuild apply the same base check and refuse, and say what openLedger does then."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "'Records handed out by the view are the frozen records of the commits (SL-T02)' holds only when rebuild/extend get frozen commits, as openLedger gives them. rebuild and extend are callable with commits built in memory (tests, the generator), and the spec does not say whether they freeze or require frozen input.",
+      "targets": [
+        "REQ-PJ-001"
+      ],
+      "recommendation": "Say either that rebuild and extend hand out the records they are given (frozen only when the commits are), or that they freeze what they hand out."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "The `typed` case holds records that apply will reject once #83 admits bodies under their types and checks pinned targets (OM-R03): test/n5 of an unwritten type and test/n6 whose body admit refuses. The generator (design D-8) writes the ledger through apply. After #83 it can no longer regenerate the records SCN-PJ-004 relies on, yet D-8 expects #83 to regenerate the fixtures.",
+      "targets": [
+        "REQ-PJ-005",
+        "SCN-PJ-004"
+      ],
+      "recommendation": "Note in design (or a later Change's issue) that the SCN-PJ-004 records are frozen as written under kernel 0, or that the generator writes them without apply."
+    },
+    {
+      "id": "F-18",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "OM-R05 defines referrers as 'the reverse index of all references, pinned and floating, from entities and events'. REQ-PJ-002 narrows the entity sources to the latest revision (design D-5). This is a reasonable reading but an interpretation of design-next, not a restatement. Old revisions' references, including pinned references made by a revision a later one drops, leave the index.",
+      "targets": [
+        "REQ-PJ-002"
+      ],
+      "recommendation": "Have the maintainer confirm the narrowing in the spec-PR (or note it as a design-next clarification of OM-R05), so later readers of referrers (OM-R04 findings) do not assume all revisions are indexed."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-002: after the three steps add 'The references of a record are a set: two steps that give the same path give one edge.' Make test/note@1 in `typed` declare `of/subject` as a pinned ref node, and add to SCN-PJ-002: 'referrers(\"test/n1\") holds exactly one edge from test/e1'."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-001: define 'equal views' (same seq and the same answers of get, entities, revision, referrers, and the same serialize text). In SCN-PJ-005 add that revision(\"test/n1\", 2) of the two-commit view stays none."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-005: add a scenario that checks the content of index.json of `typed` and `skeleton` against the view (latest members, referrers members), independently of serialize. Add 'at least four commits' to `typed`. Widen the regeneration triggers to the commit/record form and the opening checks."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-002: bound the extends walk at five records. State step 2's shape preconditions and JSON Pointer escaping. State the assumption on rev contiguity and on event-id uniqueness, or define the behaviour when either fails."
+    },
+    {
+      "id": "P-5",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "SCN-PJ-008: keep the byte check, and move the Windows clause to a separate acceptance criterion naming the maintainer's workflow patch and the evidence, the green projections-windows job of the impl-PR."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Apply in S0 does not admit bodies under their types and does not check event-id uniqueness across commits. This is read from src/ledger/apply.ts and REQ-LG-002/REQ-LG-003, not executed."
+    },
+    {
+      "id": "A-2",
+      "statement": "Opening (REQ-CL-004, src/ledger/commit.ts) checks neither entity rev contiguity nor commit base, as read from the code and the main cli spec."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "When an event's type declares an `of` role as a ref node, the role is found by step 2 and by step 3 at the same path. Should the index hold one edge or two?",
+      "options": [
+        "One edge: the references of a record are a set keyed by (from, path)",
+        "Step 2 only for roles step 3 did not list (same result, stated as a rule)",
+        "Two edges (keep the multiset; the readers deduplicate)"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:eeb12ce37611d783348daa547669f8e02af6ee67a8e550dfbc44e0350974799a",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:40:00Z"
+  }
+}

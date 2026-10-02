@@ -1,0 +1,206 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y401FY21KR7RMC423RV61K",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "SCN-PJ-002 was changed to close review-1 F-1 (steps 2 and 3 overlap), but it cannot tell the merge of the two steps apart from a failed admission. The scenario says test/note@1 declares `of` with the role `subject` only. The event test/e1 has `of` = {subject, about}. REQ-KR-014 says that below the top level every node is closed by its own `properties`, so admitting e1's body refuses `unknown-field` at /text/of/about. Then step 3 gives no edge, and step 2 alone gives the one edge at /body/of/subject. If admission succeeds, steps 2 and 3 both give /body/of/subject and the one-edge-per-path rule keeps one. Both cases end with the same single edge. So 'referrers(\"test/n1\") holds exactly one edge from test/e1' passes whether or not the merge rule is implemented, and the property F-1 asked for is still untested.",
+      "targets": [
+        "SCN-PJ-002",
+        "REQ-PJ-002",
+        "REQ-PJ-005"
+      ],
+      "recommendation": "In the `typed` ledger, make test/note@1 declare every role e1 uses (`about` as a floating `ref` node, or a plain string). Give e1 one more reference that only step 3 can produce, for example a body member `cites` declared as a ref node. Then have SCN-PJ-002 assert that edge as well, which proves the admission succeeded, together with exactly one edge at /body/of/subject."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-PJ-003 matches a view to the tail by `seq` alone: extend accepts a commit when `commit.base === view.seq`, and it justifies this with 'LG-J03: a view that does not match the tail is never read as if it did'. The main ledger spec defines matching the tail as `seq` plus hash. REQ-LG-004 says the ledger's tail is the one a commit was built on when 'its seq equals the commit's base and its commit hash the commit's prev', and `Ledger.tail` is {seq, hash}. A commit from another history, or one written after a tail was replaced at the same seq (REQ-LG-004 names checkout and hand edit), has a `base` equal to the view's `seq`. extend accepts it, and the result matches no real ledger. The view does not carry the hash of its tail, so it cannot check `prev`. A related gap: extend does not require `commit.seq > view.seq`, so it accepts {base: 2, seq: 2}, which opening would refuse.",
+      "targets": [
+        "REQ-PJ-003",
+        "SCN-PJ-005",
+        "openspec/specs/ledger/spec.md"
+      ],
+      "recommendation": "Either let the view carry its tail as {seq, hash}: the hash is the commit hash of the last commit folded, computed with the kernel `hash` of type `core/commit` so that commit.ts is not imported. Then extend checks `base` and `prev` as REQ-LG-004 does, refuses with {ok: false, seq, base}, and SCN-PJ-005 gets a case with a right base and a wrong prev. Or narrow the sentence to what is checked ('a view is extended only by a commit whose base is its seq') and drop the LG-J03 claim. In either case, say what extend does when commit.seq <= view.seq."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-PJ-001 and REQ-PJ-002 now define revisions, `get`, `revision` and edge replacement by ledger order, and they claim the definitions 'hold for any order', so 'a ledger that opening lets through with gaps in rev (#114) still has one answer'. No scenario or reference ledger has a gap, a repeated (id, rev) or a lower rev after a higher one, so nothing tests the claim. Design D-4 also conflicts with the spec in this case. D-4 caches a resolved type by `T@n` because 'revisions never change, so the cache never goes stale'. With a repeated (T, n), REQ-PJ-001 makes `revision(T, n)` the last record with that rev, so a later record changes it. REQ-PJ-002 resolves each record's type 'from the revisions as they stand after the record's own commit is added'. The same holds for an ancestor P@m of the chain. The cached type then admits later bodies under the old schema, so their step-3 edges differ from what the spec defines, and nothing detects it.",
+      "targets": [
+        "REQ-PJ-001",
+        "REQ-PJ-002",
+        "openspec/changes/s0-projections/design.md"
+      ],
+      "recommendation": "Add a reference case, or a case of SCN-PJ-001 and SCN-PJ-003, with a ledger that opens and holds an entity at rev 1, 3, 1 and a type written twice at the same rev with different schemas, followed by a block of that type. Assert get, revision and the edges. In design D-4, drop the cache, or invalidate it whenever a record with the id of any type in a cached chain is folded."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "SCN-PJ-004 says that in the `skeleton` view the referrers of each row id are empty because 'a `$ref` marker is not a reference, NX-15'. The main cli spec says the opposite. REQ-CL-003: the document body is `{\"file\", \"columns\", \"rows\": [{\"$ref\": \"<row id>\"}, …]}` — 'one floating reference per row (OM-C01, OM-R02)'. SCN-CL-003: the document 'body references the three rows'. REQ-CL-005: rows hold 'a floating reference (no @n)' that export resolves (OM-R01). OM-R05 asks for all references. The real cause of the empty referrers is that `lattice/document@1` has no type record in S0, so step 3 does not run. NX-15 only defers finding a `$ref` marker without the schema. As written, the delta redefines a term the main spec uses. It also hides the consequence: for every ledger the S0 commands write, referrers holds only `/type` edges and no body reference, even though the proposal names navigation and expansion (LN-X01, LN-X02, OM-I07) as its readers.",
+      "targets": [
+        "SCN-PJ-004",
+        "REQ-PJ-002",
+        "openspec/specs/cli/spec.md",
+        "openspec/changes/s0-projections/proposal.md"
+      ],
+      "recommendation": "Reword the skeleton clause of SCN-PJ-004 as follows: the row references of a document are not indexed because its type `lattice/document@1` has no record, so step 3 gives nothing; reading a `$ref` marker without the schema is NX-15. In the proposal (Why or Non-goals), state that until types are in the ledger (#59, #83), the references of REQ-CL-003 documents are absent from referrers."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-actor",
+      "statement": "Review-1 F-7 is only partly closed. The Windows clause moved from SCN-PJ-008 to SCN-PJ-010, but the THEN of SCN-PJ-010 still contains 'on the impl-PR that job passes'. The test that carries the token (design D-10, ci.test.ts) only reads test.yml as text, and it passes on Linux in the job `test` whatever the Windows job does. Design D-9 and D-10 say `projections-windows` is not a required check. So a red Windows run neither fails the scenario's test nor blocks the merge. After the impl-PR, a later Change that breaks determinism on Windows merges with the check red. That leaves 'Tests check it … on two operating systems' (LG-J02) without evidence that can fail. Branch protection, the actor that would make it binding, belongs to the maintainer and is not named in the spec.",
+      "targets": [
+        "SCN-PJ-010",
+        "REQ-PJ-005"
+      ],
+      "recommendation": "Remove 'on the impl-PR that job passes' from the THEN of SCN-PJ-010 and keep the static check there. State the Windows result as an acceptance criterion with its evidence (the green `projections-windows` check of the impl-PR, its log naming SCN-PJ-008). Then have the maintainer decide whether `projections-windows` becomes a required check of `main` (see decisions_required D-1), and state the outcome in REQ-PJ-005."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-PJ-001 folds a commit in two steps so that a type and blocks of that type written in one commit see each other (LG-C07). The only same-commit case in the fixture is test/leaf@1 with test/n3 (design D-8, commit 2). Records in a commit are in canonical order by entity `id`, and 'test/leaf' sorts before 'test/n3', so the type comes first. A naive record-by-record fold, which adds each record and then reads its references, also resolves test/leaf@1 for test/n3 and passes SCN-PJ-002. The two-step rule is never exercised.",
+      "targets": [
+        "REQ-PJ-001",
+        "SCN-PJ-002"
+      ],
+      "recommendation": "In the `typed` ledger, write in one commit a type and a block whose id sorts before the type's id (for example a block `test/a1` of type `test/leaf@1`). Have SCN-PJ-002 assert that block's step-3 edges."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "SCN-PJ-005 and SCN-PJ-006 depend on a layout of `typed` that the spec does not state. SCN-PJ-005 expects the first two commits to give `seq` 2 and the fourth commit to have `base` 3 ({ok: false, seq: 2, base: 3}). It expects the third commit to write test/n1@2, because the two-commit view must answer none for revision(\"test/n1\", 2) and the three-commit view the record. SCN-PJ-006 needs every commit's `base` to equal the seq before it, or extend refuses. REQ-PJ-005 asks only for 'at least four commits', and `typed` is built without apply (design D-8), so seq, base and the commit of n1@2 are only fixed in design D-8. A genesis check added by #59 would shift the numbering of the first commits.",
+      "targets": [
+        "SCN-PJ-005",
+        "SCN-PJ-006",
+        "REQ-PJ-005"
+      ],
+      "recommendation": "In REQ-PJ-005, state that the commits of `typed` have seq 1…n, base = seq − 1 and prev chained, as apply writes them, and name the commit that writes test/n1@2. Or phrase SCN-PJ-005 relative to that commit ('the view up to the commit before the one writing test/n1@2')."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The last clause of SCN-PJ-002, 'the block of type test/leaf@1 written with its type has the references its type declares', names neither the block nor its expected edges. Unlike the other clauses, it gives no observable list to compare. SCN-PJ-009 must check 'the edges SCN-PJ-002…SCN-PJ-004 assert, in the same order', so this clause is filled in by the implementer from the fixture they write.",
+      "targets": [
+        "SCN-PJ-002",
+        "SCN-PJ-009"
+      ],
+      "recommendation": "Name the block (test/n3) and its edges, for example `referrers(\"test/n1\")` holds {from: \"test/n3@1\", path: \"/body/uses/0\", ref: \"test/n1\"}."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "Two facts asserted of the `skeleton` reference ledger, empty row referrers and a `lattice/document` edge from 'the document', hold only while the ledger the commands write has no type records. Design D-8 plans to regenerate the fixtures when #59 lands (it brings types and a genesis check) and when #83 lands. If either writes a `lattice/document` type that declares `rows` items as ref nodes, the regenerated `skeleton` breaks SCN-PJ-004. After approval, fixing that needs a spec change and a waiver.",
+      "targets": [
+        "SCN-PJ-004",
+        "REQ-PJ-005"
+      ],
+      "recommendation": "Tie the skeleton clause to its condition ('while the ledger holds no record of lattice/document@1'), or state in REQ-PJ-005 that `skeleton` is the S0 ledger without type records and is regenerated only together with a revision of this scenario."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-PJ-003 says extend 'never throws', and REQ-PJ-004 defines serialize(view). `ReadView` is an exported structural type, so a caller can pass a view that rebuild or extend did not make. Design D-3 keeps the state in a module-private WeakMap keyed by the view, so such a view has no state. The spec does not say what extend or serialize do then. It also does not say whether the arrays that entities() and referrers() return may be changed by the caller without changing later answers. Today latest.ts returns one shared array from entities(), and REQ-PJ-003 requires the view to 'stay equal to what it was'.",
+      "targets": [
+        "REQ-PJ-003",
+        "REQ-PJ-004",
+        "REQ-PJ-001"
+      ],
+      "recommendation": "State that extend and serialize accept only views made by rebuild or extend, and say what happens otherwise (a refusal value, or a thrown error that is an exception to 'never throws'). State that entities() and referrers() return frozen arrays of frozen edges, or fresh copies."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "Several definitions assume record fields of the right JSON type: `from` = `id@rev`, entities ordered by `id` in UTF-16 code units, `revision(id, rev)`, and `serialize` mapping `id` to {rev, type, hash}. Opening (REQ-CL-004; `isCommitForm` in src/ledger/commit.ts) checks only the key sets of records, not that `id` is a string, `rev` an integer ≥ 1 or `type` a string. A ledger that opens can hold `rev: \"1\"` or `id: 5`. Then `x@\"1\"` and `x@1` give the same `from`, and the number 5 and the string \"5\" give one `latest` key. The spec names #114 for rev order but not for field types.",
+      "targets": [
+        "REQ-PJ-001",
+        "REQ-PJ-002",
+        "REQ-PJ-004"
+      ],
+      "recommendation": "State the precondition (records of a ledger that opens have identifier ids, integer revs and string types) and widen #114 to check them at opening, or define what the view does with such a record (for example, it is skipped)."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "SCN-PJ-002: test/note@1 declares `of/subject` (pinned ref node) and `of/about` (floating ref node), plus a body member `cites` as a ref node; e1 sets `cites`; the THEN asserts the `cites` edge from test/e1 and exactly one edge at /body/of/subject. Add a block whose id sorts before its type's id, written in the same commit as that type, and name its edges. Name test/n3 and its expected edges in place of 'has the references its type declares'."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-003: either the view carries `tail` {seq, hash} and extend checks base and prev (REQ-LG-004), or narrow the LG-J03 sentence to the base check. Add a case to SCN-PJ-005 accordingly. Say what extend does when commit.seq <= view.seq."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "REQ-PJ-005: `typed` commits have seq 1…n, base = seq − 1 and chained prev, and test/n1@2 is in the third commit. Add an out-of-order reference case (entity revs 1, 3, 1; a type rewritten at the same rev with another schema, then a block of it) with its assertions. Reword the skeleton clause of SCN-PJ-004 to name the missing type record as the reason, not 'a $ref marker is not a reference'."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/s0-projections/specs/projections/spec.md",
+      "change": "SCN-PJ-010: drop 'on the impl-PR that job passes' from the THEN; put the Windows result in REQ-PJ-005 as an acceptance criterion with its evidence and the maintainer's decision on the required check."
+    },
+    {
+      "id": "P-5",
+      "target": "openspec/changes/s0-projections/design.md",
+      "change": "D-4: remove the `T@n` type cache, or invalidate it when a record with the id of any type in a cached chain is folded; 'revisions never change' is false for the ledgers of #114 that REQ-PJ-001 covers."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Review-1 findings F-2, F-4, F-6, F-8 to F-17 are closed by the current text: one edge per path, events as union sources, the target namespace stated, equality defined with `revision`, SCN-PJ-009 checking the parsed index independently of serialize, the bounded extends walk, permutation-only lists, step-2 shape and escaping, 'at least four commits', the supersedes path, the refusal value of extend, the folder failure, the base precondition of rebuild, records handed out as given, and `typed` built without apply. F-1 and F-3 are closed in wording but not exercised (F-1, F-3 here); F-7 is partly closed (F-5 here); F-18 is deferred by design D-5 to the merge of the spec-PR."
+    },
+    {
+      "id": "A-2",
+      "statement": "The content of s0-bootstrap (#59), namely the genesis check and the type records it writes, was not read: no artifact of it is in this worktree. F-7 and F-9 assume from design D-1 and D-8 that it changes the first commits and brings type records."
+    },
+    {
+      "id": "A-3",
+      "statement": "Opening checks of records were read from src/ledger/commit.ts (`isCommitForm` checks only key sets) and REQ-CL-004, not executed."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Should `projections-windows` be a required check of `main`, so that the two-OS determinism of LG-J02 can block a merge?",
+      "options": [
+        "Required: the maintainer adds it to branch protection after the impl-PR; REQ-PJ-005 says so",
+        "Not required: REQ-PJ-005 states that a red Windows check is reported and does not block, and LG-J02 is checked only by observation",
+        "Run every projection test in a matrix of job `test` (Linux and Windows) under the existing required name"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:25f802b68222cf34fddd7897dfcc0a8479945899311f5cca58f6877d6a0627d1",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T12:00:00Z",
+    "finished_at": "2026-10-02T12:45:00Z"
+  }
+}
