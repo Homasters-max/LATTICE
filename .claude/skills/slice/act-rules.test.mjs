@@ -439,6 +439,17 @@ describe('the local judge: no informational exception (#128 ended by pin-v0-10-1
     assert.equal(v.ok, true);
     assert.deepEqual(v.waits, ['factory-golden-passed', 'human-approval', 'tests-passed']);
   });
+  it('a gate WAIVED by an ACTIVE waiver and its findings are no violation (pin-v0-10-1, I-16)', () => {
+    const waived = structuredClone(at123);
+    waived.data.findings = waived.data.findings.filter((f) => f.code !== 'FRONTEND_HOOKS_INACTIVE');
+    waived.data.gates['spec-approved'] = 'WAIVED';
+    waived.data.findings.push({ code: 'SPEC_CHANGED_AFTER_APPROVAL', gate: 'spec-approved' }, { code: 'WAIVED_BY', gate: 'spec-approved' });
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: waived });
+    assert.equal(v.ok, true);
+    assert.deepEqual(v.waits, ['factory-golden-passed', 'human-approval', 'tests-passed']);
+    waived.data.gates['spec-approved'] = 'FAIL';
+    assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: waived }).ok, false);
+  });
   it('warrant ci failed with no gate and no finding is a violation, not a pass (pin-v0-10-1, I-15)', () => {
     const bare = { ok: false, data: { kind: 'impl', gates: {}, findings: [] }, errors: [{ code: 'USAGE', message: 'HEAD has 1 parent' }] };
     const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: bare });

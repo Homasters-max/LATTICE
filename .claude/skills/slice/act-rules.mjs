@@ -332,8 +332,12 @@ export function judgeVerdict({ validate, syncCheck, ci }) {
   const kind = ci?.data?.kind ?? '?';
   if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [] }; }
   if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [] }; }
-  const gates = Object.entries(ci.data?.gates ?? {}).filter(([, v]) => v !== 'PASS').map(([g]) => g);
-  const findings = ci.data?.findings ?? [];
+  // A gate WAIVED by an ACTIVE waiver passes, as in the job; its findings (the change it waives, WAIVED_BY) are no
+  // violation (Change pin-v0-10-1, I-16).
+  const states = Object.entries(ci.data?.gates ?? {});
+  const waived = new Set(states.filter(([, v]) => v === 'WAIVED').map(([g]) => g));
+  const gates = states.filter(([, v]) => v !== 'PASS' && v !== 'WAIVED').map(([g]) => g);
+  const findings = (ci.data?.findings ?? []).filter((f) => !waived.has(f.gate));
   const violations = [
     ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED').map((e) => e.code),
     ...(kind === 'impl' ? gates.filter((g) => !WAITS_ON_CI.has(g)) : gates).map((g) => `gate ${g}`),
