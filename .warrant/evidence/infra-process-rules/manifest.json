@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://evidence-manifest/1",
+  "change": "infra-process-rules",
+  "commit": "11d232818ae281cbf9ac5f201cb4f8af4adb2903",
+  "versions": {
+    "warrant": "0.10.0",
+    "openspec": "1.13.1",
+    "lock_hash": "sha256:b79619e949853201f8ef5850f6b42f17894b170f20ed882522efcb8bed13e55e",
+    "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829"
+  },
+  "evidence": [
+    "EVID-01M3XX1ZKSWPMXX73JW6CSDDH7"
+  ]
+}
