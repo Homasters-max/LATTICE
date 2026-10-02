@@ -1,0 +1,254 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XWPJDCST3JDTP60A4FQDPK",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "Who authors and who applies the patches is stated two incompatible ways. Proposal Impact says all five paths \"come as the maintainer's patches\". Design D-6 item 3 says the slice patch is \"written by the agent outside the repository\", and D-6 says \"The agent commits the staged result as the maintainer's patch\" after `git apply --index`, which includes `.warrant/local/rules/*.json`. The accepted rule `maintainer-acts` lists \"editing policy paths (`.github/workflows/**`, `.warrant/local/**`)\" among acts \"never performed by the agent\". The rule `process` says \"Never bypass a guard `deny` through the shell\". Applying through the shell a change to paths outside the `implement` write scope (`.warrant/local/**`, `.claude/**`) is exactly that. The two readings differ observably: (a) the maintainer applies and commits; (b) the agent applies, commits and labels its own `status.mjs` code as the maintainer's patch. The precedent `infra-pr-watch` (D-4) only says \"One maintainer's patch\" and never has the agent commit it.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md",
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/tasks.md"
+      ],
+      "recommendation": "Make D-6 and tasks 1.2 match the rule: the agent prepares `3-slice.patch` and says so in the proposal (\"two maintainer's patches and one agent-written patch adopted by the maintainer\"). The maintainer runs `git apply --index` of the three patches and the commit (a «❗ Выполнить» block, one command per block). The agent checks `git diff --cached --name-only` (or `git show --name-only`) and then runs `warrant sync`. Otherwise get an explicit maintainer decision that the agent may apply policy-path patches, and record it as a D-row."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Proposal Why and the new `maintainer-acts` text (Appendix) assert that \"every PR is opened under the maintainer's account\" / \"PRs are opened under the maintainer's account, which cannot approve its own\". `.warrant/warrant.json` declares `identities.agents: [homasters]` (\"Claude Code sessions of the maintainer, GH_TOKEN of this account\"). The precedent `infra-pr-watch` design Context says \"the agent account `homasters` authors the PRs, the maintainer `Homasters-max` approves (seen on PR #65)\". Both cannot hold. If the premise is true, WARRANT `warrant ci` (`core/ci/refs.ts`: with non-empty `identities.agents`, `merged_by` equal to the PR author is `REF_NOT_VERIFIED`, INV-03) refuses the ref of `APPROVED` for every spec-PR the maintainer authored and merged. \"The merge is the approval\" then does not pass CI. If the premise is false, the rule text records an untrue reason.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md",
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Before the patch is adopted, establish which account opens the PRs (e.g. `gh pr view 95 --json author` against a Change PR such as #89). If the agent account opens them, the maintainer rewords the rule's reason (the merge is the approval by choice, not because approve is impossible). If the maintainer's account opens them, state the INV-03 consequence and the fix (restore GH_TOKEN of `homasters` in the sessions) in the proposal."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The proposal redefines a red `main` (\"`main` is red when `warrant validate` fails on `origin/main`, not only when `test.yml` fails\"). The rule `tracking`, kept unchanged apart from the inbox sentence (D-1, Appendix), still defines the red main and its procedure only by `test`: \"checks the last `test` run of `main` before dispatching\", \"A red `test` on `main` is a `bug` `P1` issue `infra: main red — <failing test>`\", freeze and `fix-main-<issue>`. For a `main` that fails only `warrant validate`, the rules do not say whether the issue, the freeze-except-fix and the `fix-main` Change apply. `status.mjs` blocks dispatch while the rule tells the coordinator to look only at `test`.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md",
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Have the maintainer's `tracking` patch say that a red main is a failed `test` run or a failed `warrant validate` on `main`, with the issue title for the latter (e.g. `infra: main red — warrant validate <CODE>`). Alternatively, state in the proposal that the `tracking` procedure applies to a validate-red main unchanged and record that as a D-row."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The fix of a red main is not modelled. The rule `process` says \"A fix of a red `main` (rule `tracking`) is exempt from the cap and from the AREA hold of the Change that broke it\". The rule `tracking` says it is exempt \"from that freeze\". D-3 makes any two holders of one AREA a collision that is \"not startable\" for both rows and replaces their next action. The new `process` sentence makes the session \"stop and ask on the umbrella\" when another Change holds one of its AREAs. D-2 keeps \"A red `main` blocks dispatch as today\" for every startable row, the `fix-main-*` Change included. So the Change meant to unfreeze `main` is told to stop. The Change that broke `main` is also frozen by a collision with its own fix.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md",
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Add to D-2/D-3 that a Change named `fix-main-<issue>` (or an issue labelled `bug` titled `infra: main red — …`) is not blocked by a red main. Also state that its sharing an AREA with the Change that broke `main` is not a collision. Ask the maintainer whether the new `process` sentence (\"it stops and asks\") needs the same exception."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "D-3 is symmetric: every holder of a collided AREA gets \"AREA collision … — needs a decision\", not startable, and the collision \"replaces its other next action\". The established holder therefore loses e.g. `merge impl-PR #N` from the maintainer queue as soon as a newcomer runs `warrant init change`. SL-T08 and the rule `process` say \"one Change holds an AREA at a time — a second one waits\", and the new sentence makes the newcomer stop. The justification \"a PR of a Change in a collision waits for the decision, rule `process`\" is not in the rule: `process` stops a PR only after a slice decision turns it to draft.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Decide and write down whether the first holder keeps its next action (with a ⚠ note) while only the later holders are blocked. One way to order them is the commit time of the `init change` record or the spec-PR number. If symmetric blocking is kept, cite a maintainer decision for it instead of the rule `process`."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "D-2 defines the outcome only for `warrant` missing from `PATH` and for non-JSON output (\"unknown\"). It does not say what happens when `git worktree add --detach` fails (the temp path is left over from a killed run, the ref passed to `--main-ref` is invalid, `origin/main` is missing, the disk is full). The same gap covers a failed `git worktree remove --force` in `finally`, and a killed process leaving a registered worktree that later `git worktree add` calls trip over. The script's `git()` helper swallows errors (`ok: true`), so as built today validate would run in a missing directory and its result is undefined: red, unknown, or a crash. An invalid `--main-ref` is not a usage error (exit 64) either.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Add to D-2: a failure to create the worktree is `unknown` with the git error as the note, never green or red. An unresolvable `--main-ref` exits 64. A failed removal is a warning line. Stale temp worktrees are pruned (`git worktree prune`) before `add`."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-2 treats any `ok: false` of `warrant validate` as a red `main`. It assumes that the `warrant` on `PATH` is the version pinned by `origin/main` (or by the `--main-ref` commit), and that validate has no environment-dependent failures. After a pin Change merges, a machine with an older or newer CLI can report config, pack or generated-file errors (e.g. `AGENTS.md`/lock rendered differently) that are not defects of `main`. Those would block all dispatch. Replaying an old ref with today's CLI (task 2.1) has the same exposure.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "State the assumption and its handling. Either compare `warrant --version` with the version in the lock of the validated ref and report `unknown (CLI x ≠ pinned y)` on mismatch, or list which error codes count as red (e.g. `ID_*`, schema and record errors) and treat the rest as unknown."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "Task 2.1 builds an AREA collision with a throwaway local branch `spec/s0-store-2` carrying a `PROPOSED` record from `warrant init change`. `s0-store-2` is a real queued Change (#57, AREA `CL`). All worktrees share one `.git`, so for the length of the check every session's `status.mjs` shows `s0-store-2` holding `CL`. The coordinator and `s0-apply-checks` would see a live collision and \"not startable\" (the new rule makes a session stop on it). A real `spec/s0-store-2` branch, if launched meanwhile, would clash with it. The task also does not say in which worktree `warrant init change` runs (records are written only by `warrant`). Inside this Change's impl worktree it would leave a foreign record in the `implement` Run's tree.",
+      "targets": [
+        "openspec/changes/infra-process-rules/tasks.md",
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Use a fictitious Change and AREA on a scratch clone (not a worktree of the shared repository), or feed `status.mjs` recorded fixtures. If the shared repository is used, name the worktree, announce the window on the umbrella and give the cleanup command."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-2 header example prints `warrant validate 59711ac: ID_DUPLICATE ×9`. The Context of the same design says validate on `59711ac` exits 0 and the nine `ID_DUPLICATE` come from `ed52281`.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Use `ed52281` in the example (the replay of task 2.1)."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-2 creates a detached worktree \"in the OS temp directory\" without saying the path is unique. After this Change `status.mjs` runs concurrently in several places: the coordinator, every session right after `init` (new `process` sentence), and every session after a `MERGED` watcher report. With a fixed path, concurrent runs collide or remove each other's worktree in `finally`.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "State a unique directory per run (`mkdtemp`). Removal touches only that directory."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-4 gives an open `question` issue without a Change the row \"needs a fix Change or a PR that closes it\", who `—`. The rule `tracking` defines `question` as \"needs the maintainer's answer\". A question is answered by the maintainer, not by a fix Change, and with who `—` it never reaches the maintainer queue.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Split by label: `bug` keeps the D-4 row; `question` is `answer #N`, who `👤 maintainer`, in the maintainer queue."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "AREA holders (D-3) and the `Open P1 without a Change` line (D-4) are computed from the issues of one milestone. The rule `tracking` puts a Change outside a slice \"in the milestone of the slice it unblocks, otherwise in none\". A `skip_specs` Change that holds `AR`, a Change of another slice on the same AREA, and a P1 `bug` (e.g. `infra: main red — …`) with no milestone are invisible. So the collision and P1 views of the proposal are complete only within the milestone.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Either compute holders and open P1 bugs across all open issues (`gh issue list --label P1`, all Change issues), or state the milestone limit in D-3/D-4 and in SKILL.md."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The new `process` sentences (\"reads the umbrella comments newer than its last push\", \"it stops and asks on the umbrella\") assume every Change has an umbrella. An infra or process Change outside a slice may sit in no milestone (rule `tracking`) and has none. The rule does not say where such a Change reads decisions or asks.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md",
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Have the maintainer's patch name the fallback (its own issue, or the umbrella of the slice it unblocks), or note in the proposal that the sentence applies to slice Changes only."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "D-1 forbids editing the rule texts and D-6 relies on `44a3cb3` and `3c51478` applying cleanly (checked on `59711ac`). The design does not say what happens if `main` moves before the impl-PR and `git apply --check` of task 1.1 fails, e.g. another Change edits `process.json`. The agent may not merge the texts by hand.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/tasks.md"
+      ],
+      "recommendation": "Add: on a failed `--check` the agent stops and asks the maintainer for a rebased patch, recorded as an `I-N` row."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "D-7 `security_impact: NONE` counts only the `gh` reads and the temp worktree. The new `tracking` text makes the agent publish to a public repository (`Homasters-max/SRA`), with \"Found in:\" links to LATTICE PRs, Runs and commits. The mitigation \"facts about WARRANT's behaviour only\" is a disclosure control, which the classification does not mention.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Mention the public-issue disclosure and its control in D-7, or raise `security_impact` to LOW."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-error-behavior",
+      "statement": "The motivating case #92 is a decision that came two minutes after the merge. The new draft-on-decision rule covers only decisions on an open PR. After a merge, the only remaining guard is detection by `warrant validate` (D-2), followed by the red-main procedure. The proposal does not say this explicitly.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "One sentence in the proposal: a decision that lands after a merge is caught by the validate check of `main` and handled as a red `main`."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "`skip_specs: true`: there are no delta specs. The subject of review is `proposal.md`, with `design.md` and `tasks.md` read as the contract of this process Change, as in earlier reviews of `infra-*` Changes."
+    },
+    {
+      "id": "A-2",
+      "statement": "The texts of the maintainer's patches `44a3cb3` and `3c51478` are taken from the design Appendix. The commits themselves were not read, because the review guard allows no shell command except `warrant run submit`."
+    },
+    {
+      "id": "A-3",
+      "statement": "The behaviour of `warrant ci` on refs (INV-03 with `identities.agents`) is taken from `D:/project/SRA/packages/cli/src/core/ci/refs.ts` at its current checkout, not from the pinned 0.10.0 tag. The CLI was not run."
+    },
+    {
+      "id": "A-4",
+      "statement": "The agent account can open issues in `Homasters-max/SRA` and set labels on them. Setting labels needs triage permission there; this was not checked."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Who applies and commits the three patches touching `.warrant/local/**` and `.claude/**` (F-1)?",
+      "options": [
+        "The maintainer runs `git apply --index` and the commit; the agent verifies and runs `warrant sync`",
+        "The agent applies and commits under an explicit maintainer decision recorded as a D-row, and the proposal says patch 3 is agent-written"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "Which account opens PRs, `homasters` (`identities.agents`) or `Homasters-max` (F-2)?",
+      "options": [
+        "`homasters`: reword the reason in `maintainer-acts` (merge is the approval by choice)",
+        "`Homasters-max`: restore the agent's GH_TOKEN, since INV-03 makes `warrant ci` refuse refs merged by their author"
+      ]
+    },
+    {
+      "id": "D-3",
+      "question": "In an AREA collision, are all holders blocked or only the later ones (F-5)?",
+      "options": [
+        "Symmetric: all holders blocked until the maintainer decides",
+        "Ordered: the first holder (earliest record) keeps its next action, later holders are blocked"
+      ]
+    },
+    {
+      "id": "D-4",
+      "question": "Does a `main` that fails only `warrant validate` follow the `tracking` red-main procedure (P1 issue, freeze, `fix-main-<issue>` exempt from freeze, cap and AREA hold) (F-3, F-4)?",
+      "options": [
+        "Yes: the maintainer's `tracking` patch says so, and `status.mjs` exempts `fix-main-*`",
+        "No: a separate procedure, to be written"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:613e0782905ce66d6f68bc61b27de42a311e543d0ab04279043d0862b1ad11fb",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:45:00Z"
+  }
+}
