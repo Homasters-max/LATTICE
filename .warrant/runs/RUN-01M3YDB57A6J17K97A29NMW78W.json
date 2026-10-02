@@ -40,7 +40,8 @@
   ],
   "branch": "impl/s0-bootstrap",
   "started_at": "2026-10-02T13:37:30.915Z",
-  "run_state": "RUNNING",
+  "finished_at": "2026-10-02T14:08:46.076Z",
+  "run_state": "SUCCEEDED",
   "context_hash": "sha256:83ea19a2a898b43e0e6a0e7fa7588919d1595e147212f3b61bac1d451880a68e",
   "effective_policy_hash": "sha256:ab00f02ce88318bb2498f30a161fea025f3ca03d0ca09e5f5f0936007d57b964",
   "guard_events": []

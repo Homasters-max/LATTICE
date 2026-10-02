@@ -1,31 +1,32 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-bootstrap",
-  "change_state": "IMPLEMENTING",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
+      "chore",
       "feature"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "SYSTEM",
-        "from": "proposer"
+        "from": "record"
       },
       "security_impact": {
         "value": "LOW",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "BREAKING",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
@@ -77,6 +78,14 @@
       "gates": {
         "branch-isolated": "PASS"
       },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T14:10:46.199Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:ab00f02ce88318bb2498f30a161fea025f3ca03d0ca09e5f5f0936007d57b964",
+      "gates": {},
       "evidence": []
     }
   ]
