@@ -1,0 +1,175 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XSYK4H2M94GR7MXEWTB8RM",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-015 gives two rules for `refs` under a chain, and they disagree in one case. Rule 1: 'one entry per path, from the first schema of the chain that declares a `ref` node there'. Rule 2: 'a parent's `ref` target at a path the child also declares is not listed'. Take a child that declares the member `x` as a plain `{\"type\":\"string\"}` and a parent that declares `x` as `{\"type\":\"string\",\"ref\":\"std/need\",\"pinned\":true}`. Rule 1 lists `x`, because the parent is the first schema with a `ref` node at that path. Rule 2 read literally drops it, because the child declares the path. Validation (REQ-KR-014) still applies the parent's node, so the pin is enforced, yet under rule 2 the reference never reaches apply's existence check (OM-R03, the input named in D-11). OM-T03 is not checked here (Non-goals), so this chain is accepted by `typeOf` and the case can occur. No scenario covers it. Rule 2 most likely means 'also declares a `ref` node', which is what F-18 of review 1 was about, so this is MAJOR and not BLOCKER.",
+      "targets": [
+        "REQ-KR-015",
+        "REQ-KR-014",
+        "SCN-KR-053"
+      ],
+      "recommendation": "Reword rule 2 as 'a parent's `ref` target at a path where a schema earlier in the chain also declares a `ref` node is not listed', or state the opposite rule explicitly. Add to SCN-KR-049 or SCN-KR-053 a chain where the child's node at a path is plain and the parent's is a pinned `ref` node, with the expected `refs`."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "Member order is fixed in words only for refusals of a body ('ordered by member name in UTF-16 code unit order'). Two other walks leave it open. (a) The schema check walks 'the keywords of each node in UTF-16 code unit order', but the members of a `properties` value are names, not keywords, and their order is never given. When `admit(text, metaType)` gets a type body whose `properties` are not in code unit order in the text, e.g. `{\"b\":{\"type\":\"x\"},\"a\":{\"type\":\"y\"}}`, the two refusals can come in text order or in code unit order. SCN-KR-051 does not decide this, because its members `a`…`k` are in both orders at once. `typeOf` hides the problem because it admits the canonical form, which is already sorted. (b) `refs` are listed 'in walk order', but the order of members in that walk is never defined. SCN-KR-053 expects `any, fl, list, pin` for a text written `pin, fl, any, list`, so code unit order is implied only by the scenario.",
+      "targets": [
+        "REQ-KR-015",
+        "SCN-KR-051",
+        "SCN-KR-053"
+      ],
+      "recommendation": "State once, for both walks: the members of an object (of the body, and of a `properties` value in a schema) are visited in UTF-16 code unit order of their names (after NFC). In SCN-KR-051, write two `properties` members in reverse code unit order."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "The `of` references of an event are checked by `event` (REQ-KR-017) and then dropped. They appear in `refs` (REQ-KR-015) only when the event type declares each role as a `ref` node, and nothing requires that. In SCN-KR-057 the roles are plain strings, so `refs` is empty while `of.a` holds the pinned `lattice/x@1`. D-11 names `refs` as the input of OM-R03 for #56, and REQ-KR-017 says only that 'whether a target exists is decided by apply (OM-R03)'. Apply could therefore skip the hard check of OM-R03 for every pinned `of` target, unless it parses `of` again itself. That second parse is a second way of finding references next to the fields of a type, which NX-15 rejects.",
+      "targets": [
+        "REQ-KR-017",
+        "REQ-KR-015",
+        "SCN-KR-057"
+      ],
+      "recommendation": "Say in REQ-KR-017 how apply gets the `of` targets. Options: `refs` of an admission also lists every `of` value that is a reference (path `/of/<role>`, no `target`); or REQ-KR-017 states that `of` references are not in `refs` and apply reads them from `body.of` of the event record. Note the choice for #56."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-014: a member's 'refusals are those of the first of these nodes that refuses it — one refusal per place across the chain'. Every scenario of SCN-KR-049 tests a top-level string, where the two halves of the sentence agree. Take a member that is an object or an array declared by both child and parent, e.g. child `l: {items: {maxLength: 3}}` and parent `l: {items: {enum: [\"a\",\"bbbb\"]}}` with the value `[\"bbbb\",\"c\"]`. The main clause gives only `too-long /l/0`. The summary 'one refusal per place' can be read to also give the parent's `not-in-enum /l/1`, which is at a different place. The main clause decides it, but no scenario pins the nested case.",
+      "targets": [
+        "REQ-KR-014",
+        "SCN-KR-049"
+      ],
+      "recommendation": "Add a clause such as 'refusals of later nodes are dropped even at other places below the member', and add a nested member declared by both schemas to SCN-KR-049."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "proposal.md, What Changes, lists the field types of the subset as 'object, array, string, integer, number, boolean, null' and says 'Anything else is refused when a type is admitted'. REQ-KR-015 adds an eighth field type, `schema`, and the meta-type of REQ-KR-016 depends on it (`\"schema\":{\"type\":\"schema\"}`). Read as written, the proposal refuses the meta-type's own body.",
+      "targets": [
+        "openspec/changes/s0-kernel/proposal.md",
+        "REQ-KR-015",
+        "REQ-KR-016"
+      ],
+      "recommendation": "Add `schema` (a field whose value is itself a schema of the subset, OM-T01) to the list in proposal.md, What Changes."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "The Migration of removed REQ-KR-002 and proposal.md Impact say that `lattice apply` no longer rejects by LG-P01 'a proposal with a `$enc` key or a `$ref` object with other keys'. The removed `bad-ref` also covered a `$ref` whose value is not a string (`{\"$ref\":5}`), a lone-surrogate or unassigned string, and a string that is not a reference (`{\"$ref\":\"x\"}`, `{\"$ref\":\"#g1:ab\"}`). Every one of these is now admitted too. The stated change in behaviour is narrower than the real one.",
+      "targets": [
+        "REQ-KR-002",
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "recommendation": "Say 'a proposal with a `$enc` key or any `$ref` member' in the REQ-KR-002 Migration and in proposal.md Impact."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-error-behavior",
+      "statement": "`typeOf` folds every failure of admitting a record body under `metaType` into `not-type /<i>` (REQ-KR-014; SCN-KR-050, the `pattern` case). The `bad-keyword`, `unknown-keyword` and `wrong-type` refusals of REQ-KR-015, with their places, are lost. #59, which loads `std` with `typeOf`, cannot report why a type body is outside the subset unless it first admits each body under `metaType` itself.",
+      "targets": [
+        "REQ-KR-014",
+        "SCN-KR-050"
+      ],
+      "recommendation": "Either note in design D-6 or D-11 that a loader admits each type body under `metaType` first to get the refusals, or keep the refusals of the meta admission under `/<i>/body/...`."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "The main spec `cli` (REQ-CL-003) has `import-md` write the document body `rows` as `[{\"$ref\": \"<row id>\"}, …]`, 'one floating reference per row (OM-C01, OM-R02)', and `codec/export.ts` reads them back that way. After this Change no kernel function treats `$ref` as a reference (NX-15), so these are ordinary members. They are not in `refs` and are never resolved. proposal.md Impact lists only the stale ids REQ-KR-002 and REQ-KR-005 in `cli`.",
+      "targets": [
+        "openspec/specs/cli/spec.md",
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "recommendation": "Add to proposal.md Impact that the `$ref` rows of the `cli` document body stop being references for the kernel, and that #83 (or the Change that brings the document type) moves them to a `ref` field of the document type."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "proposal.md Impact says the Purpose of the spec `kernel` is one 'which a delta cannot replace', and in the same paragraph that '#83 … rewrites the Purpose'. #83 is also a Change with a delta. The paragraph assumes #83 has a way to write a Purpose that this Change lacks, without naming it.",
+      "targets": [
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "recommendation": "Name the mechanism (for example a WARRANT feature or an issue for one), or record the Purpose rewrite as an issue instead of a task of #83."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-kernel/specs/kernel/spec.md",
+      "change": "REQ-KR-015, `refs` paragraph: replace 'a parent's `ref` target at a path the child also declares is not listed' with 'a `ref` target of a later schema at a path where an earlier schema of the chain declares a `ref` node is not listed' (F-1). Before 'A schema is checked when…', add: 'Every walk of this requirement visits the members of an object — of a body and of a `properties` value — in UTF-16 code unit order of their names' (F-2)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-kernel/specs/kernel/spec.md",
+      "change": "REQ-KR-017, after the `of` bullet: 'The references in `of` are not in `refs` of the admission unless the event type declares them as `ref` nodes; apply reads them from `body.of` for OM-R03' (or the alternative chosen in decision D-1) (F-3)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-kernel/proposal.md",
+      "change": "What Changes, Schema subset: add the field type `schema` (F-5). Impact: 'a proposal with a `$enc` key or any `$ref` member is no longer rejected by LG-P01' (F-6), and the `$ref` rows of the `cli` document body (F-8)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The sha256 literals of SCN-KR-044 (1fc8a412…2e14), SCN-KR-045 (57d33254…1e53) and SCN-KR-046 (aaad863b…864a) were not recomputed: the review guard allows no command except `warrant run submit`. The caller reports that the author computed them with Node's crypto. Their canonical strings were checked by hand against JCS: `body` before `type`, members `code` before `name`, U+00E9 written raw. The literal of SCN-KR-060 is the one already in test/kernel/vectors.ts."
+    },
+    {
+      "id": "A-2",
+      "statement": "D-12 of review 1 was checked finding by finding against the spec text. F-1 is closed: per node `wrong-type`, `too-long`, `not-in-enum`, `bad-ref`; across the chain the first node that refuses; SCN-KR-049 (fifth and seventh texts) and SCN-KR-052 (sixth text). F-2: closed by SCN-KR-055 (`{\"schema\":5}`, `{\"schema\":[]}`). F-3: SCN-KR-051 `e`, `j`. F-4: REQ-KR-016 and SCN-KR-054. F-5: REQ-KR-014 and the NFD key of SCN-KR-049. F-6: REQ-KR-008, SCN-KR-048, SCN-KR-058. F-7, F-13: proposal Impact. F-8, F-9, F-15: SCN-KR-050, whose expected refusals were recomputed by hand. F-10: closed. F-11: closed. F-12: closed. F-14: closed by sentences under the Implements lines. F-16: closed. F-17: closed. F-18: closed, but its wording introduced F-1 above. The expected refusals of SCN-KR-027, SCN-KR-048, SCN-KR-051, SCN-KR-052, SCN-KR-053, SCN-KR-055, SCN-KR-057 and SCN-KR-058 were recomputed by hand from the requirement text and agree with it."
+    },
+    {
+      "id": "A-3",
+      "statement": "The byte counts of SCN-KR-047 were checked by arithmetic: 6 + 1 048 568 + 2 = 1 048 576; 8 + 3 × 349 522 = 1 048 574; 8 + 3 × 349 524 = 1 048 580. The `at` literals of SCN-KR-056 and SCN-KR-059 are those already tested by SCN-KR-014."
+    },
+    {
+      "id": "A-4",
+      "statement": "Issue #83 and its scope were not read: `gh` is outside the review guard. The spec relies on #83 to re-point the `cli` references, rewrite the Purpose, move the callers and remove REQ-KR-018; this was taken from proposal.md and design.md as written. UNK-KR-009 was found in .warrant/changes/s0-kernel.json as non-blocking."
+    },
+    {
+      "id": "A-5",
+      "statement": "No caller in src/ledger, src/codec, src/assembly or test/cli imports `valueId`, `refsOf`, `revision` or `Revision`. None of them relies on a `$enc` or `$ref` refusal of `checkInput`, or on `reserved-scheme`: `ledger/proposal.ts` refuses a leading `#` itself, and `codec/export.ts` checks `{$ref}` rows itself. `.gitattributes` sets `eol=lf`, so the sha256 of the bytes of the vector file (REQ-KR-011) does not depend on the platform."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "How does apply (#56) get the references in `of` of an event body for OM-R03 (F-3)?",
+      "options": [
+        "`refs` of an admission also lists every `of` value that is a reference, with path `/of/<role>` and no `target`",
+        "`refs` stays schema-only; REQ-KR-017 states that apply reads `of` from the event record",
+        "Every event type must declare its `of` roles as `ref` nodes; that rule belongs to `std` (#59), and the kernel does not check it"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:04dd114bb029e7b03a2d9d48343bd1c3e959419bef2fbf21efe58abca5088a6c",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T12:00:00Z",
+    "finished_at": "2026-10-02T12:50:00Z"
+  }
+}
