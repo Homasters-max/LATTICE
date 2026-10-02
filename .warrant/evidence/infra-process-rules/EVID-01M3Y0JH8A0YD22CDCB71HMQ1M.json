@@ -1,0 +1,43 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3Y0JH8A0YD22CDCB71HMQ1M",
+  "claim": {
+    "text": "tests-passed passed for infra-process-rules",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "6f34c78b36b63a4e5469f29e71a8edd26dc10319",
+    "base_commit": "94dd4fff56e8fa59c193f71431cb9a40d5e0c7ed",
+    "spec_revision": "openspec/changes/infra-process-rules@6f34c78b36b63a4e5469f29e71a8edd26dc10319",
+    "tree": "adb9d6c71adf79358f877fe8f672ed3ae5bfa165",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "ci",
+    "ref": "https://github.com/Homasters-max/LATTICE/actions/runs/36992396342/attempts/1"
+  },
+  "context_hash": "sha256:f786a2b3eb5bcaa38d40cbf33a1705ba3cbea1dbc1c87a99659814479451b184",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:54:21.066Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-process-rules/raw/tests-passed/junit.xml",
+      "sha256": "sha256:8b3e1be909cf546ebcc87326597685dd5168dadb2c02f6db5df7b64aba308067"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 1,
+    "tests": 723
+  }
+}
