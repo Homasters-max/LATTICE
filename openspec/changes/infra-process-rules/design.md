@@ -174,7 +174,33 @@ check).
 
 ## Implementation Notes
 
-None yet: rows `I-N` come from the spec review and the implementation.
+From review 2 (`EVID-01M3XXNY3DRN79NGQMM81ZM9T1`, `PROVEN`: MAJOR F-1…F-3, MINOR F-4…F-13, INFO F-14, F-15), the
+maintainer's items 4–7 of #97 ([decision](https://github.com/Homasters-max/LATTICE/issues/97#issuecomment-5948394808),
+08:42, before `SPECIFIED` but not read by this session until after it) and the implementation. The rows were proposed in
+the body of spec-PR [#103](https://github.com/Homasters-max/LATTICE/pull/103); its merge by the maintainer is the
+decision on them. D-1…D-8 hold the approved text; these rows amend it.
+
+| # | Decision |
+|---|---|
+| I-1 | F-1: `status.mjs <change>` prints an `AREA:` line under its `startable` / `not startable` line — `none`, `exempt (fix-main)`, `wait <A> (<holder>)`, `<A…> — held by this Change, no collision`, `<A…> — free`, or `collision <A> with <first> — stop and ask on the umbrella (no umbrella: in the issue)`. Only a later holder stops; the first holder sees no collision |
+| I-2 | F-2: fact — every merge of this project is by `Homasters-max` (`roles.maintainer`), e.g. #103 (`f915a55`); `warrant ci` checks it at `APPROVED` (`human-approval` `PASS` on this Change) |
+| I-3 | F-3: while `main` is red, maintainer-queue rows that merge a PR other than a `fix-main-*` one end in `— held: main is red` (rule `tracking`: only the fix is merged) |
+| I-4 | F-4: the text of `3c51478` is kept — the maintainer merged #103 without a new wording ("the maintainer's account" is `homasters`, Context) |
+| I-5 | F-5, F-6: `warrant --version` is compared with `kernel` of `.warrant/warrant.json` of the checked ref (`0.10` — any `0.10.x`), not with the lock's exact version; another version is unknown, not red |
+| I-6 | F-7: a `fix-main-*` Change that ran `init` first holds its AREA against later Changes as usual; only as a later holder is it exempt |
+| I-7 | F-8: `SKILL.md` — a Change without an umbrella asks in its own issue; the rule text stays the maintainer's |
+| I-8 | F-9: patch 3 reads "checks the health of `main` before dispatching (the last `test` run of `main` and `warrant validate` on `origin/main`, skill `slice`), and never writes a Change's code" |
+| I-9 | F-10: an issue without a milestone prints `## #N — no milestone`, the `main` check, WIP and held AREAs as usual |
+| I-10 | F-11: task 2.2 shows the live run as found; the fixtures of task 2.1 are the proof of D-3 and D-4 |
+| I-11 | F-12: fact — `homasters` has `push` and `triage` on `Homasters-max/SRA` (`gh api repos/Homasters-max/SRA`); labels are kept |
+| I-12 | F-13: `proposal.md` (outside the agent's write scope) keeps its wording; the rows here are the record |
+| I-13 | F-14: WARRANT's docs (INV-01) ask for an approving review while the CLI checks only the merge; an issue in `Homasters-max/SRA` (rule `tracking`, as patched here), named in the impl-PR body |
+| I-14 | F-15: turning another owner's PR to draft on a slice decision is the one exception to PR ownership; the maintainer's text, kept |
+| I-15 | #97 items 4–6: patch 3 (`3-rules.patch`) carries, besides I-8 and the red `main` of D-2, (5) `tracking`: "Work without a Change is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change."; (4, 6) `process`, after "A draft PR is never merged.": "Before a push that opens or updates a PR, the owner runs the CI judge locally on the merge with fresh `origin/main` — `git fetch origin`, then in a scratch worktree `git checkout --detach origin/main`, `git merge --no-ff <head>`, `warrant ci` — and pushes only on exit 0. A PR behind `main` is updated by its owner (`gh pr update-branch <N>`, a merge commit, after the local judge) and waits for green checks before the merge is asked." Branch protection of `main` is the maintainer's act, done on 2026-10-02 |
+| I-16 | #97 item 7: `Depends on:` is read up to the end of its first sentence (`rules.mjs` `dependsOn`); "Depends on: none. Closes #94." has no dependency |
+| I-17 | Implementation: several issues may name one Change in `Where:` — #100 (a bug, "Change `infra-process-rules` (#97)") and #97. The Change's issue is the one whose title names it, else the oldest; the others refer to it, hold no AREA and are read by their labels (`bug: fixed by Change <c>`) — `rules.mjs` `claimChanges` |
+| I-18 | Implementation: a run takes about a minute, not ~20 s (D-5): the old script already took ~37 s (a `warrant status` per Change worktree), the `warrant validate` adds ~10 s. The header prints the checks in the order `test … · warrant validate …` |
+| I-19 | Implementation: the patch files are `1-tracking.patch`, `2-merge-only.patch`, `3-rules.patch` (`tracking.json`, `process.json`: D-2, I-8, I-15) and `4-slice.patch` (`.claude/skills/slice/{status.mjs,rules.mjs,rules.test.mjs,SKILL.md}`); the commit still names the seven paths of task 1.2 |
 
 ## Appendix — the changed rule sentences
 
