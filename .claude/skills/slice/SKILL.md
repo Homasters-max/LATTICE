@@ -15,7 +15,9 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 - **One worktree per Change**: the one the app makes for its session (`.claude/worktrees/<random>`, branch `claude/<random>`); the session makes the three branches there in turn: `spec/<change>`, `impl/<change>`, `archive/<change>`, each from fresh `origin/main`. `status.mjs` finds the worktree by those branches, not by its path.
 - **State is computed, never stored**: Change state from warrant records (refs and worktrees), PRs and checks from GitHub, worktrees from `git worktree list`, health of `main` from its last completed `test.yml` run and from `warrant validate` on a temporary detached checkout of `origin/main` (removed after the run). `status.mjs` computes all of it; its rules are pure functions in `rules.mjs`, checked by `node --test .claude/skills/slice/rules.test.mjs`.
 - **Rules**, enforced by `next`:
-  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED; holders come from every issue of the repository, ordered by the time of their `init`: the first keeps the AREA, a later one is an **AREA collision — needs a decision** (👤 maintainer; equal or missing times: all collide); a Change dependency is done only then, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
+  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED;
+  - a Change dependency is done only when that archive-PR is merged, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
+  - holders come from every issue of the repository, ordered by the time of their `init`: the first keeps the AREA, a later one is an **AREA collision — needs a decision** (👤 maintainer; equal or missing times: all collide);
   - at most 3 Changes **in implementation**: from the first commit of the impl-PR until it merges (impl-PR open, or record APPROVED…VERIFYING without a merged impl-PR); a Change waiting only for its archive-PR is out;
   - a **red** `main` (last `test` run on main failed, or `warrant validate` fails on `origin/main`) blocks dispatch and marks merge rows `held: main is red`; no `test.yml` yet, or a `warrant` on `PATH` outside the `kernel` range of `main`'s `warrant.json` = unknown, a warning only;
   - a `fix-main-<issue>` Change (rule `tracking`) is not blocked by a red `main`, not counted in WIP, never waits for or collides on an AREA;
@@ -27,7 +29,7 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 
 ### status `<slice>`
 
-Run `status.mjs <slice>`. Header: `main` health (both checks), WIP of 3, held AREAs (a collision marked ⚠), `Open P1 without a Change` (bug / question issues of the slice and of no milestone), 👤 maintainer queue (one row per AREA collision) (with the PR URL where a PR is open; a decision on a dependency has none). Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
+Run `status.mjs <slice>`. Header: `main` health (both checks), WIP of 3, held AREAs (a collision marked ⚠), `Open P1 without a Change` (bug / question issues of the slice and of no milestone), 👤 maintainer queue (one row per AREA collision; the PR URL where a PR is open; none for a decision on a dependency). Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
 
 ### next `<slice>`
 
@@ -58,11 +60,15 @@ Branches, made here in turn, each from fresh origin/main: spec/<change>, then im
 Process: AGENTS.md of the working directory — the <phase>-PR of the Change, from its first step to the PR. implement Runs: --scope <source and test paths named by your design>,openspec/changes/<change>/** (the scope intersects write_scope); shared files belong to the skeleton Change.
 Read: this issue, the design-next IDs it names, merged specs of its dependencies (openspec/specs/**).
 Steps: skill progress, 🛠 development — the list at start and after every step.
-A decision that touches the slice (another Change, an AREA, a shared file, the order): a comment on umbrella #<U> linking the I-N row or PR.
+A decision that touches the slice (another Change, an AREA, a shared file, the order): a comment on umbrella #<U> linking the I-N row or PR (a Change outside a slice: in its own issue).
 Acts of the maintainer (merge — the merge is the approval —, UNKNOWN decision): ask as AGENTS.md says and wait.
 ```
 
 docs phase: replace the Process line with "a docs PR closing #<N>, no Change".
+
+### The coordinator's own PRs
+
+Work without a Change (docs, process) is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change (rule `tracking`). Before a push that opens or updates a PR, run `warrant ci` on the merge with fresh `origin/main` in a scratch worktree and push only on exit 0; a PR behind `main` is updated with `gh pr update-branch <N>` and waits for green checks before the merge is asked (rule `process`).
 
 ### wait `<N>`
 
