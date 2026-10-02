@@ -1,0 +1,14 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-01M3Z4304P6S9SEV9HR54CKMCZ",
+  "change": "pin-v0-10-1",
+  "gate": "spec-approved",
+  "reason": "I-15: proposal.md brought in line with I-12 and I-13 after APPROVED by the maintainer's patch 2-review.patch (c7f2ddb); no requirement changed",
+  "risk": "LOW",
+  "compensating_controls": [
+    "the maintainer applied the patch (act.mjs) and reviews the impl-PR; design I-12, I-13, I-15 carry the decisions"
+  ],
+  "owner": "human:Homasters-max",
+  "expires_at": "2026-10-16",
+  "waiver_state": "PROPOSED"
+}
