@@ -18,7 +18,8 @@
   ],
   "branch": "impl/s0-kernel",
   "started_at": "2026-10-02T08:36:39.280Z",
-  "run_state": "RUNNING",
+  "finished_at": "2026-10-02T09:01:57.260Z",
+  "run_state": "SUCCEEDED",
   "context_hash": "sha256:8af23c1b183daa647a448f16b1e4bea20db4168fe54c234c4e43ecc59154b946",
   "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
   "guard_events": []
