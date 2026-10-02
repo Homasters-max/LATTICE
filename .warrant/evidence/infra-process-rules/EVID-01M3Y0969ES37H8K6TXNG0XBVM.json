@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3Y0969ES37H8K6TXNG0XBVM",
+  "claim": {
+    "text": "tests-passed passed for infra-process-rules",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "3a11e1d0d61f4ebfdeb46fb708bc34878ee0beba",
+    "base_commit": "6e262604db6ee762bd6e870abc48b7174ee56ace",
+    "spec_revision": "openspec/changes/infra-process-rules@3a11e1d0d61f4ebfdeb46fb708bc34878ee0beba",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:128a57922e97f28d40ac81b41d17139aacdd10f6ffafe2debec70a12e2ef466c",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:49:14.927Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-process-rules/raw/tests-passed/junit.xml",
+      "sha256": "sha256:c88b144af733e583a7ac5247454ac183265591e2a18d177278fa01a12ba4f7ec"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 505
+  }
+}
