@@ -399,6 +399,8 @@ describe('review of a PR: scope (infra-coordinator D-5)', () => {
   it('what warrant sync writes after a pin — the lock, AGENTS.md, .warrant/schemas — is the Change\'s own (pin-v0-10-1, I-2)', () => {
     assert.deepEqual(review('impl/c', [f('.warrant/warrant.lock.json'), f('.warrant/schemas/waiver.1.schema.json'), f('AGENTS.md')]), []);
     assert.deepEqual(review('impl/c', [f('.warrant/schemas/waiver.1.schema.json')]), [".warrant/schemas/waiver.1.schema.json: outside the Runs' scope"]);
+    // A pin of a new CLI changes the lock alone (no rule): still what sync writes (I-15).
+    assert.deepEqual(review('impl/c', [f('.warrant/warrant.lock.json')]), []);
   });
   it('a spec-PR writes only its own folder; an archive-PR moves it and writes the specs of its delta', () => {
     assert.deepEqual(review('spec/c', [f('openspec/changes/c/proposal.md', 'A'), f('src/x.ts')]), ['src/x.ts: outside the spec of the Change']);
@@ -436,5 +438,11 @@ describe('the local judge: no informational exception (#128 ended by pin-v0-10-1
     const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: waits });
     assert.equal(v.ok, true);
     assert.deepEqual(v.waits, ['factory-golden-passed', 'human-approval', 'tests-passed']);
+  });
+  it('warrant ci failed with no gate and no finding is a violation, not a pass (pin-v0-10-1, I-15)', () => {
+    const bare = { ok: false, data: { kind: 'impl', gates: {}, findings: [] }, errors: [{ code: 'USAGE', message: 'HEAD has 1 parent' }] };
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: bare });
+    assert.equal(v.ok, false);
+    assert.match(v.lines.join(), /USAGE/);
   });
 });

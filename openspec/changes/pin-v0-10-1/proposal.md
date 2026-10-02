@@ -27,7 +27,10 @@ reported; `kernel` 0.10 and the pack ranges stay. What it changes for LATTICE (S
   `.warrant/schemas/waiver.1.schema.json`; `.warrant/warrant.json` unchanged (`kernel: "0.10"`).
 - `.claude/skills/slice/act-rules.mjs` — one exported pattern of a waiver id, both forms; `act.mjs` checks its argument
   with it; `act-rules.test.mjs` covers both forms and a ULID waiver in `waiverRefusals`.
-- `.claude/skills/slice/judge.mjs` — `warrant ci --no-record` in its scratch worktree; `SKILL.md` says so.
+- `.claude/skills/slice/judge.mjs` — `warrant ci --no-record` in its scratch worktree; `SKILL.md` says so. The local
+  judge treats `FRONTEND_HOOKS_INACTIVE` as a violation again (design I-12, the maintainer's retro decision on #93).
+- `.claude/skills/slice/act-rules.mjs` `scopeFindings` — what `warrant sync` writes (`AGENTS.md`, the lock,
+  `.warrant/schemas/**`) is the Change's own when a rule or the lock changes (design I-2).
 - `.claude/skills/slice/change.md` and rule `process` (`.warrant/local/rules/process.json`, then `AGENTS.md` by
   `warrant sync`) — the spec rework before `APPROVED` by `warrant transition <change> PROPOSED`.
 - A guarded worktree session shown: the guard denies a write outside the active Run's `write_scope` in this worktree
@@ -50,7 +53,7 @@ None: the LATTICE product does not change; the CI judge, the toolchain and the p
 - Written by `warrant sync`: `.warrant/warrant.lock.json`, `.warrant/schemas/waiver.1.schema.json`, `AGENTS.md`.
 - `test/process/pin.test.ts` unchanged: its invariant (tag of the call and input `warrant` equal `v` + lock kernel)
   holds with both moved to `0.10.1`. No `src/`.
-- The maintainer's machine: CLI `0.10.1` and a restart of this session (acts of the maintainer).
+- The maintainer's machine: CLI `0.10.1` (an act of the maintainer); no restart was needed (design I-3, I-13).
 - Closes #140 and #93 (by the archive-PR).
 
 ## Non-goals
@@ -58,5 +61,4 @@ None: the LATTICE product does not change; the CI judge, the toolchain and the p
 - The other S0 sessions' worktrees and their CLI: one machine, one global CLI — every session restarts on its own
   schedule (coordinator).
 - Rewriting old waivers `WAV-YYYY-NNN`: they stay valid.
-- Dropping `FRONTEND_HOOKS_INACTIVE` from the judge's informational set (#128): harmless if WARRANT no longer emits it.
 - WARRANT `0.11` (`judge-law`, `code-floor`) — its own pin-Change.
