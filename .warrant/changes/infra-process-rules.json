@@ -11,11 +11,11 @@
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "SYSTEM",
@@ -23,11 +23,11 @@
       },
       "security_impact": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
