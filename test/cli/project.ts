@@ -44,9 +44,13 @@ export function project(ports: Ports = {}): Project {
   };
 }
 
-/** A project after `init`, with the fixture copied in as `fixture.md`. */
-export function initialised(ports: Ports = {}): Project {
+/**
+ * A project after `init` — the four commits of store init (REQ-CL-002) —, with the fixture copied in as `fixture.md`;
+ * `before` runs on the folder first, so an injected store can be bound to it before `init` writes through it.
+ */
+export function initialised(ports: Ports = {}, before: (dir: string) => void = () => {}): Project {
   const p = project(ports);
+  before(p.dir);
   copyFileSync(FIXTURE, join(p.dir, "fixture.md"));
   const r = p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max");
   if (r.code !== 0) throw new Error(`init: ${r.err.join("; ")}`);

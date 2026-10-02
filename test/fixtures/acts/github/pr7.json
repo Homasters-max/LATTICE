@@ -1,0 +1,48 @@
+{
+  "comments": [
+    {
+      "user": { "login": "Homasters-max" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/7",
+      "html_url": "c1",
+      "body": "act <H>"
+    },
+    {
+      "user": { "login": "homasters" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/7",
+      "html_url": "c2",
+      "body": "act <H>"
+    },
+    {
+      "user": { "login": "Homasters-max" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/8",
+      "html_url": "c3",
+      "body": "act <H>"
+    },
+    {
+      "user": { "login": "Homasters-max" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/7",
+      "html_url": "c4",
+      "body": "ok lattice/fx-a01."
+    },
+    {
+      "user": { "login": "Homasters-max" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/7",
+      "html_url": "c5",
+      "body": "x<H>"
+    },
+    {
+      "user": { "login": "Homasters-max" },
+      "issue_url": "https://api.github.com/repos/Homasters-max/LATTICE/issues/7",
+      "html_url": "c6",
+      "body": "see (lattice/fx-a03@2) in store/lattice.json"
+    }
+  ],
+  "reviews": [
+    {
+      "user": { "login": "Homasters-max" },
+      "pull_request_url": "https://api.github.com/repos/Homasters-max/LATTICE/pulls/7",
+      "html_url": "r1",
+      "body": "<H>, lattice/fx-a02"
+    }
+  ]
+}

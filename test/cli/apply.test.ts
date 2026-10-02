@@ -1,4 +1,4 @@
-// apply (REQ-CL-004).
+// apply (REQ-CL-004) on a store that holds the four commits of store init (REQ-CL-002, s0-bootstrap).
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -11,13 +11,17 @@ import { counterIds } from "../../src/adapters/ids-counter/index.ts";
 import { newId } from "../../src/kernel/index.ts";
 import type { Store } from "../../src/ledger/ports/store.ts";
 import { initialised, onlyProposal } from "./project.ts";
-import { committed, fixtureIntents, ledgerOf, revisedIntents, textOf } from "../ledger/cases.ts";
+import { committed, fixtureIntents, IMPORT_SESSION, initTexts, ledgerOf, revisedIntents, session, textOf } from "../ledger/cases.ts";
 import type { Project } from "./project.ts";
 
 type Json = Record<string, unknown>;
 
-const commitsOf = (p: Project): Json[] =>
-  p.file("store/knowledge.jsonl").split("\n").filter((l) => l !== "").map((l) => JSON.parse(l) as Json);
+const INIT = initTexts();
+const INIT_LEDGER = INIT.map((t) => t + "\n").join("");
+const INIT_TAIL = ledgerOf(INIT).tail;
+const SESSION = session(IMPORT_SESSION);
+
+const linesOf = (p: Project): string[] => p.file("store/knowledge.jsonl").split("\n").filter((l) => l !== "");
 
 function imported(p: Project): string {
   const r = p.lattice("import-md", "fixture.md");
@@ -26,31 +30,34 @@ function imported(p: Project): string {
 }
 
 describe("SCN-CL-005 the fixture proposal becomes the first commit", () => {
-  it("SCN-CL-005 one canonical commit line with the header and the records in canonical order", () => {
+  it("SCN-CL-005 one canonical commit line after the init commits, with the header and the records in canonical order", () => {
     const p = initialised();
     try {
+      assert.equal(p.file("store/knowledge.jsonl"), INIT_LEDGER);
       const proposal = imported(p);
       const intents = (JSON.parse(p.file(proposal)) as { intents: Json[] }).intents;
       const r = p.lattice("apply", proposal);
       assert.equal(r.code, 0, r.err.join("\n"));
-      assert.deepEqual(r.out, ['{"outcome":"commit","seq":1}']);
+      assert.deepEqual(r.out, ['{"outcome":"commit","seq":5}']);
       assert.equal(p.exists(proposal), false);
       const text = p.file("store/knowledge.jsonl");
-      assert.ok(text.endsWith("\n") && text.split("\n").length === 2);
-      const commit = JSON.parse(text) as Json;
+      assert.ok(text.startsWith(INIT_LEDGER) && text.endsWith("\n"));
+      const line = text.slice(INIT_LEDGER.length, -1);
+      assert.ok(!line.includes("\n"), "one line after the init commits");
+      const commit = JSON.parse(line) as Json;
       const c = canonical(commit);
-      assert.ok(c.ok && c.value + "\n" === text, "the line is the canonical JSON of the commit");
+      assert.ok(c.ok && c.value === line, "the line is the canonical JSON of the commit");
       const h = hash("core/proposal", intents);
       assert.ok(h.ok);
-      const session = "lattice/00000000000000000000000001";
       assert.deepEqual(
         { ...commit, records: undefined },
-        { seq: 1, prev: null, kernel: "0", base: 0, proposal: h.value, by: session, at: "1970-01-01T00:00:00.000Z", records: undefined },
+        { seq: 5, prev: INIT_TAIL?.hash, kernel: "0", base: 4, proposal: h.value, by: SESSION, at: "1970-01-01T00:00:00.000Z", records: undefined },
       );
+      assert.equal(Object.hasOwn(commit, "acts"), false, "apply passes no acts (REQ-CL-004)");
       const records = commit.records as Json[];
       assert.deepEqual(
         records.map((x) => [x.id, x.rev]),
-        [["lattice/fixture", 1], ["lattice/fx-a01", 1], ["lattice/fx-a02", 1], ["lattice/fx-a03", 1], [session, undefined]],
+        [["lattice/fixture", 1], ["lattice/fx-a01", 1], ["lattice/fx-a02", 1], ["lattice/fx-a03", 1], [SESSION, undefined]],
       );
       const row = records[1] as Json;
       const rowHash = hash("lattice/table.rule", row.body);
@@ -65,12 +72,12 @@ describe("SCN-CL-005 the fixture proposal becomes the first commit", () => {
   it("SCN-CL-005 the JSONL store appends after the expected seq and answers moved otherwise", () => {
     const p = initialised();
     try {
-      const store = jsonlStore(join(p.dir, "store", "knowledge.jsonl"));
+      const store = jsonlStore(join(p.dir, "other.jsonl"));
       assert.deepEqual(store.read(), { commits: [], torn: null });
       assert.deepEqual(store.append({ seq: 1, text: '{"seq":1}' }, 1), { ok: false, reason: "moved" });
       assert.deepEqual(store.append({ seq: 1, text: '{"seq":1}' }, 0), { ok: true });
       assert.deepEqual(store.read(), { commits: [{ seq: 1, text: '{"seq":1}' }], torn: null });
-      p.write("store/knowledge.jsonl", '{"seq":1}\n{"seq":2}');
+      p.write("other.jsonl", '{"seq":1}\n{"seq":2}');
       assert.deepEqual(store.read().torn, '{"seq":2}');
       assert.deepEqual(store.append({ seq: 2, text: "{}" }, 1), { ok: false, reason: "moved" });
     } finally {
@@ -138,7 +145,7 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
         intent: "lattice/fx-a01",
         rule: "LG-P01",
         path: "/intents/1/by",
-        expected: "lattice/00000000000000000000000001",
+        expected: SESSION,
         got: "lattice/00000000000000000000000009",
       },
     },
@@ -172,7 +179,7 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
         const { message, ...rest } = rejections[0] as Json;
         assert.ok(typeof message === "string" && message !== "");
         assert.deepEqual(rest, v.expect);
-        assert.equal(p.file("store/knowledge.jsonl"), "");
+        assert.equal(p.file("store/knowledge.jsonl"), INIT_LEDGER);
       } finally {
         p.dispose();
       }
@@ -233,25 +240,35 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
   });
 });
 
-/** A store whose other writer acts between opening and appending: `before` runs, then the store answers `moved`. */
-function racing(before: (real: Store, text: string) => void): { store: Store; bind(dir: string): void } {
+/**
+ * A store whose other writer acts between opening and appending, once armed: `before` runs, then the store answers
+ * `moved`. Unarmed — during `init` — it appends through the JSONL store of the project.
+ */
+function racing(before: (real: Store, text: string) => void): { store: Store; bind(dir: string): void; arm(): void } {
   let real: Store | null = null;
+  let armed = false;
   const store: Store = {
     read: () => (real as Store).read(),
-    append: (commit) => {
+    append: (commit, after) => {
+      if (!armed) return (real as Store).append(commit, after);
       before(real as Store, commit.text);
       return { ok: false, reason: "moved" };
     },
   };
-  return { store, bind: (dir) => void (real = jsonlStore(join(dir, "store", "knowledge.jsonl"))) };
+  return { store, bind: (dir) => void (real = jsonlStore(join(dir, "store", "knowledge.jsonl"))), arm: () => void (armed = true) };
+}
+
+function raced(race: ReturnType<typeof racing>): Project {
+  const p = initialised({ store: race.store }, race.bind);
+  race.arm();
+  return p;
 }
 
 describe("SCN-CL-011 a tail that moved during apply is refused", () => {
   it("SCN-CL-011 another writer's commit lands first: one LG-C03 rejection, code 1, nothing appended", () => {
-    const other = committed([], fixtureIntents(9))[0] as string;
-    const race = racing((real) => assert.deepEqual(real.append({ seq: 1, text: other }, 0), { ok: true }));
-    const p = initialised({ store: race.store });
-    race.bind(p.dir);
+    const other = committed(INIT, fixtureIntents(9)).at(-1) as string;
+    const race = racing((real) => assert.deepEqual(real.append({ seq: 5, text: other }, 4), { ok: true }));
+    const p = raced(race);
     try {
       const proposal = imported(p);
       const r = p.lattice("apply", proposal);
@@ -261,9 +278,15 @@ describe("SCN-CL-011 a tail that moved during apply is refused", () => {
         return rest;
       });
       assert.deepEqual(rejections, [
-        { intent: null, rule: "LG-C03", path: "", expected: { seq: 0, hash: null }, got: { seq: 1, hash: ledgerOf([other]).tail?.hash } },
+        {
+          intent: null,
+          rule: "LG-C03",
+          path: "",
+          expected: { seq: 4, hash: INIT_TAIL?.hash },
+          got: { seq: 5, hash: ledgerOf([...INIT, other]).tail?.hash },
+        },
       ]);
-      assert.equal(p.file("store/knowledge.jsonl"), other + "\n");
+      assert.equal(p.file("store/knowledge.jsonl"), INIT_LEDGER + other + "\n");
       assert.ok(p.exists(proposal));
     } finally {
       p.dispose();
@@ -272,14 +295,13 @@ describe("SCN-CL-011 a tail that moved during apply is refused", () => {
 
   it("SCN-CL-011 a store answering moved on an unmoved tail is a store fault, code 2", () => {
     const race = racing(() => {});
-    const p = initialised({ store: race.store });
-    race.bind(p.dir);
+    const p = raced(race);
     try {
       const proposal = imported(p);
       const r = p.lattice("apply", proposal);
       assert.equal(r.code, 2);
       assert.match(r.err.join("\n"), /store answered that the tail moved/);
-      assert.equal(p.file("store/knowledge.jsonl"), "");
+      assert.equal(p.file("store/knowledge.jsonl"), INIT_LEDGER);
       assert.ok(p.exists(proposal));
     } finally {
       p.dispose();
@@ -293,7 +315,7 @@ describe("SCN-CL-012 an unchanged proposal is a no-op", () => {
     try {
       assert.equal(p.lattice("apply", imported(p)).code, 0);
       const ledger = p.file("store/knowledge.jsonl");
-      p.write("store/proposals/again.json", textOf(revisedIntents(2)));
+      p.write("store/proposals/again.json", textOf(revisedIntents(6)));
       const r = p.lattice("apply", "store/proposals/again.json");
       assert.equal(r.code, 0, r.err.join("\n"));
       assert.deepEqual(r.out, ['{"outcome":"no-op"}']);
@@ -306,7 +328,7 @@ describe("SCN-CL-012 an unchanged proposal is a no-op", () => {
 });
 
 describe("SCN-CL-013 a proposal applied again answers its commit", () => {
-  it("SCN-CL-013 the same proposal file written back: commit seq 1, ledger unchanged, proposal removed", () => {
+  it("SCN-CL-013 the same proposal file written back: commit seq 5, ledger unchanged, proposal removed", () => {
     const p = initialised();
     try {
       const proposal = imported(p);
@@ -316,7 +338,7 @@ describe("SCN-CL-013 a proposal applied again answers its commit", () => {
       p.write(proposal, bytes);
       const r = p.lattice("apply", proposal);
       assert.equal(r.code, 0, r.err.join("\n"));
-      assert.deepEqual(r.out, ['{"outcome":"commit","seq":1}']);
+      assert.deepEqual(r.out, ['{"outcome":"commit","seq":5}']);
       assert.equal(p.file("store/knowledge.jsonl"), ledger);
       assert.ok(!p.exists(proposal));
     } finally {
@@ -326,22 +348,21 @@ describe("SCN-CL-013 a proposal applied again answers its commit", () => {
 });
 
 describe("SCN-CL-014 two writers of one proposal both answer its commit", () => {
-  it("SCN-CL-014 the other writer appends the same commit and removes the file: code 0, commit seq 1", () => {
+  it("SCN-CL-014 the other writer appends the same commit and removes the file: code 0, commit seq 5", () => {
     let proposal = "";
     let dir = "";
     const race = racing((real, text) => {
-      assert.deepEqual(real.append({ seq: 1, text }, 0), { ok: true });
+      assert.deepEqual(real.append({ seq: 5, text }, 4), { ok: true });
       rmSync(join(dir, proposal));
     });
-    const p = initialised({ store: race.store });
-    race.bind(p.dir);
+    const p = raced(race);
     dir = p.dir;
     try {
       proposal = imported(p);
       const r = p.lattice("apply", proposal);
       assert.equal(r.code, 0, r.err.join("\n"));
-      assert.deepEqual(r.out, ['{"outcome":"commit","seq":1}']);
-      assert.equal(p.file("store/knowledge.jsonl").split("\n").length, 2);
+      assert.deepEqual(r.out, ['{"outcome":"commit","seq":5}']);
+      assert.equal(linesOf(p).length, 5);
       assert.ok(!p.exists(proposal));
     } finally {
       p.dispose();
@@ -350,12 +371,12 @@ describe("SCN-CL-014 two writers of one proposal both answer its commit", () => 
 });
 
 describe("SCN-CL-008 a broken hash chain is refused", () => {
-  it("SCN-CL-008 a changed letter in commit 1 is found at seq 2; ledger and proposal unchanged", () => {
+  it("SCN-CL-008 a changed letter in commit 5 is found at seq 6; ledger and proposal unchanged", () => {
     const p = initialised();
     try {
       assert.equal(p.lattice("apply", imported(p)).code, 0);
-      const ledger = p.file("store/knowledge.jsonl").replace("synthetic rule of the walking", "synthetic rule of the walkinG");
-      // a second commit on top: the second fixture row at expected revision 1, changed (unchanged would be a no-op)
+      const five = linesOf(p)[4] as string;
+      // a sixth commit on top: the second fixture row at expected revision 1, changed (unchanged would be a no-op)
       const second = imported(p);
       const value = JSON.parse(p.file(second)) as { intents: Json[] };
       value.intents = value.intents.filter((x) => x.id === "lattice/fx-a02" || x.kind === "event");
@@ -363,14 +384,16 @@ describe("SCN-CL-008 a broken hash chain is refused", () => {
       (value.intents[0] as Json).body = { Rule: "The second synthetic rule, changed." };
       p.write(second, JSON.stringify(value));
       assert.equal(p.lattice("apply", second).code, 0);
-      const two = p.file("store/knowledge.jsonl").split("\n");
-      const tampered = [ledger.split("\n")[0], two[1], ""].join("\n");
+      const six = linesOf(p)[5] as string;
+      const changed = five.replace("synthetic rule of the walking", "synthetic rule of the walkinG");
+      assert.notEqual(changed, five);
+      const tampered = INIT_LEDGER + changed + "\n" + six + "\n";
       p.write("store/knowledge.jsonl", tampered);
       const third = imported(p);
       const r = p.lattice("apply", third);
       assert.equal(r.code, 2);
       assert.match(r.err.join("\n"), /LG-C04/);
-      assert.match(r.err.join("\n"), /seq 2/);
+      assert.match(r.err.join("\n"), /seq 6/);
       assert.equal(p.file("store/knowledge.jsonl"), tampered);
       assert.ok(p.exists(third));
     } finally {
@@ -382,10 +405,11 @@ describe("SCN-CL-008 a broken hash chain is refused", () => {
     const p = initialised();
     try {
       assert.equal(p.lattice("apply", imported(p)).code, 0);
-      const line = p.file("store/knowledge.jsonl");
+      const ledger = p.file("store/knowledge.jsonl");
+      const five = linesOf(p)[4] as string;
       const proposal = imported(p);
-      p.write("store/knowledge.jsonl", line + line.slice(0, -1).replace('"seq":1', '"seq":2'));
-      assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: seq 2: a tail without a commit end marker/);
+      p.write("store/knowledge.jsonl", ledger + five.replace('"seq":5', '"seq":6'));
+      assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: seq 6: a tail without a commit end marker/);
     } finally {
       p.dispose();
     }
@@ -411,12 +435,35 @@ describe("SCN-CL-008 a broken hash chain is refused", () => {
     const p = initialised();
     try {
       assert.equal(p.lattice("apply", imported(p)).code, 0);
-      const line = p.file("store/knowledge.jsonl");
+      const ledger = p.file("store/knowledge.jsonl");
       const proposal = imported(p);
-      p.write("store/knowledge.jsonl", line + '{"seq":2');
-      assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: line 2/);
-      p.write("store/knowledge.jsonl", " " + line);
+      p.write("store/knowledge.jsonl", ledger + '{"seq":6');
+      assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: line 6/);
+      p.write("store/knowledge.jsonl", " " + ledger);
       assert.match(p.lattice("apply", proposal).err.join("\n"), /LG-C04: seq 1/);
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-016 a store outside the genesis chain is refused", () => {
+  it("SCN-CL-016 L1 in place of the ledger: apply and export exit 2 naming LG-G01 and seq 1; an empty ledger LG-G04", () => {
+    const p = initialised();
+    try {
+      const proposal = imported(p);
+      const l1 = committed([], fixtureIntents(1));
+      for (const [ledger, rule] of [[l1.map((t) => t + "\n").join(""), /LG-G01: seq 1/], ["", /LG-G04: seq 1/]] as const) {
+        p.write("store/knowledge.jsonl", ledger);
+        for (const argv of [["apply", proposal], ["export", "--out", "out"]]) {
+          const r = p.lattice(...argv);
+          assert.equal(r.code, 2, argv.join(" "));
+          assert.match(r.err.join("\n"), rule);
+        }
+        assert.equal(p.file("store/knowledge.jsonl"), ledger);
+        assert.ok(p.exists(proposal));
+        assert.equal(p.exists("out"), false);
+      }
     } finally {
       p.dispose();
     }
