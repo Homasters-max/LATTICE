@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "infra-merge-flow",
-  "change_state": "VERIFYING",
+  "change_state": "IMPLEMENTING",
   "classification": {
     "profiles": [
       "chore",
@@ -88,6 +88,11 @@
       "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
       "gates": {},
       "evidence": []
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-10-02T13:33:12.142Z",
+      "by": "cli:local"
     }
   ]
 }
