@@ -9,6 +9,7 @@
     "the maintainer applied the patch (act.mjs) and reviews the impl-PR; design I-12, I-13, I-15 carry the decisions"
   ],
   "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
   "expires_at": "2026-10-16",
-  "waiver_state": "PROPOSED"
+  "waiver_state": "ACTIVE"
 }
