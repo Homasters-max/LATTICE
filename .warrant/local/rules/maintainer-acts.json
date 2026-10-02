@@ -4,5 +4,5 @@
   "paths": [
     "**"
   ],
-  "text": "The maintainer's acts — resolving an UNKNOWN by a comment, approving and merging a PR, activating a waiver, editing policy paths (`.github/workflows/**`, `.warrant/local/**`), pushing a freeze tag of `design-next`, restarting the Claude Code session — are never performed by the agent: it sends in the chat «❗ Выполнить — <what>:» and one command in a bash block, without `&&` (where the rule `process` says to ask in the PR — in the PR too); it checks the result itself (`gh pr view`, `git diff`)."
+  "text": "The maintainer's acts — resolving an UNKNOWN by a comment, merging a PR (`gh pr merge <N> --merge`: the merge is the approval; GitHub's approve is not asked — PRs are opened under the maintainer's account, which cannot approve its own), activating a waiver, editing policy paths (`.github/workflows/**`, `.warrant/local/**`), pushing a freeze tag of `design-next`, restarting the Claude Code session — are never performed by the agent: it sends in the chat «❗ Выполнить — <what>:» and one command in a bash block, without `&&` (where the rule `process` says to ask in the PR — in the PR too); it checks the result itself (`gh pr view`, `git diff`)."
 }
