@@ -2,6 +2,33 @@
   "$schema": "warrant://change-record/1",
   "change": "s0-bootstrap",
   "change_state": "PROPOSED",
+  "classification": {
+    "profiles": [
+      "feature"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "SYSTEM",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "LOW",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "BREAKING",
+        "from": "proposer"
+      }
+    }
+  },
   "transitions": [
     {
       "to": "PROPOSED",
