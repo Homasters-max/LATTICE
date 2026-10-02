@@ -1,0 +1,81 @@
+{
+  "intents": [
+    {
+      "base": 0,
+      "body": {
+        "columns": [
+          "Rule"
+        ],
+        "file": "fixture.md",
+        "rows": [
+          {
+            "$ref": "lattice/fx-a01"
+          },
+          {
+            "$ref": "lattice/fx-a02"
+          },
+          {
+            "$ref": "lattice/fx-a03"
+          }
+        ]
+      },
+      "by": "lattice/00000000000000000000000002",
+      "id": "lattice/fixture",
+      "kind": "entity",
+      "type": "lattice/document@1"
+    },
+    {
+      "base": 0,
+      "body": {
+        "Rule": "The first synthetic rule of the walking skeleton."
+      },
+      "by": "lattice/00000000000000000000000002",
+      "id": "lattice/fx-a01",
+      "kind": "entity",
+      "type": "lattice/table.rule@1"
+    },
+    {
+      "base": 0,
+      "body": {
+        "Rule": "The second synthetic rule names FX-A01 in its text."
+      },
+      "by": "lattice/00000000000000000000000002",
+      "id": "lattice/fx-a02",
+      "kind": "entity",
+      "type": "lattice/table.rule@1"
+    },
+    {
+      "base": 0,
+      "body": {
+        "Rule": "The third synthetic rule."
+      },
+      "by": "lattice/00000000000000000000000002",
+      "id": "lattice/fx-a03",
+      "kind": "entity",
+      "type": "lattice/table.rule@1"
+    },
+    {
+      "at": "1970-01-01T00:00:00.000Z",
+      "body": {
+        "kind": "machine",
+        "of": {},
+        "participant": "lattice",
+        "purpose": "import"
+      },
+      "by": "lattice/00000000000000000000000002",
+      "id": "lattice/00000000000000000000000002",
+      "kind": "event",
+      "type": "core/session@1"
+    },
+    {
+      "kind": "entity",
+      "id": "std/x",
+      "type": "lattice/table.rule@1",
+      "base": 0,
+      "by": "lattice/00000000000000000000000002",
+      "body": {
+        "Rule": "A row written into the reserved namespace std."
+      }
+    }
+  ]
+}

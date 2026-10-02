@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FIXTURE, initialised, onlyProposal, project } from "./project.ts";
+import { IMPORT_SESSION, initTexts, session as sessionId } from "../ledger/cases.ts";
 
 const fixture = readFileSync(FIXTURE, "utf8");
 const BOM = String.fromCharCode(0xfeff);
@@ -13,18 +14,18 @@ const ACUTE = String.fromCharCode(0x301); // a combining mark: "i" + ACUTE is no
 type Intent = { kind: string; id: string; type: string; base?: number; by: string; at?: string; body: unknown };
 
 describe("SCN-CL-003 the fixture table becomes a proposal", () => {
-  it("SCN-CL-003 one proposal of five intents in canonical order, the ledger stays empty", () => {
+  it("SCN-CL-003 one proposal of five intents in canonical order, the ledger stays as init wrote it", () => {
     const p = initialised();
     try {
       const r = p.lattice("import-md", "fixture.md");
       assert.equal(r.code, 0, r.err.join("\n"));
       const path = onlyProposal(p);
       assert.deepEqual(r.out, [path]);
-      assert.equal(p.file("store/knowledge.jsonl"), "");
+      assert.equal(p.file("store/knowledge.jsonl"), initTexts().map((t) => t + "\n").join(""));
       const text = p.file(path);
       assert.ok(text.endsWith("}\n") && !text.slice(0, -1).includes("\n"), "canonical JSON and one line feed");
       const { intents } = JSON.parse(text) as { intents: Intent[] };
-      const session = "lattice/00000000000000000000000001";
+      const session = sessionId(IMPORT_SESSION);
       assert.deepEqual(
         intents.map((x) => [x.kind, x.id, x.type]),
         [
@@ -51,7 +52,9 @@ describe("SCN-CL-003 the fixture table becomes a proposal", () => {
   });
 
   it("SCN-CL-003 an existing proposal file of the same name is refused with code 2", () => {
-    const p = initialised({ ids: { ulid: () => "00000000000000000000000001" } });
+    // store init takes the first four ULIDs; every import after it gets the same one
+    let n = 0;
+    const p = initialised({ ids: { ulid: () => String(Math.min(++n, 5)).padStart(26, "0") } });
     try {
       assert.equal(p.lattice("import-md", "fixture.md").code, 0);
       const before = p.file(onlyProposal(p));
@@ -81,6 +84,8 @@ describe("SCN-CL-004 input outside the skeleton form is refused", () => {
     { name: "nfd.md", text: fixture.replace("first", "fi" + ACUTE + "rst"), line: 3 },
     { name: "bom.md", text: BOM + fixture, line: 0 },
     { name: "Bad_Name.md", text: fixture, line: 0 },
+    { name: "Setup.md", text: fixture, line: 0 },
+    { name: "namespace.md", text: fixture, line: 0 },
   ];
 
   for (const c of cases) {

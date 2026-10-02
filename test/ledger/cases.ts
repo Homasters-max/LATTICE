@@ -7,9 +7,12 @@ import { fileURLToPath } from "node:url";
 import type { Id } from "../../src/kernel/index.ts";
 import { newId } from "../../src/kernel/index.ts";
 import { importMd } from "../../src/codec/index.ts";
-import { apply, openLedger, parseProposal, proposalText } from "../../src/ledger/index.ts";
-import type { Applied, Ledger, Rejection } from "../../src/ledger/index.ts";
+import { apply, initProposals, openLedger, parseProposal, proposalHash, proposalText, readStd } from "../../src/ledger/index.ts";
+import type { Applied, Ledger, Proposal, Rejection } from "../../src/ledger/index.ts";
+import type { Act } from "../../src/ledger/ports/acts.ts";
 import { jsonlStore } from "../../src/adapters/store-jsonl/index.ts";
+import { counterIds } from "../../src/adapters/ids-counter/index.ts";
+import { initActs } from "../../src/adapters/acts-init/index.ts";
 import { FIXTURE } from "../cli/project.ts";
 
 export type Json = Record<string, unknown>;
@@ -87,10 +90,10 @@ export function ledgerOf(texts: readonly string[]): Ledger {
 }
 
 /** Reads a proposal text and applies it: its LG-P01 rejections, or the answer of apply. */
-export function applyText(ledger: Ledger, text: string): Applied {
+export function applyText(ledger: Ledger, text: string, acts: readonly Act[] = []): Applied {
   const parsed = parseProposal(text);
   if (!parsed.ok) return { outcome: "rejected", rejections: parsed.rejections };
-  return apply(ledger, parsed.proposal);
+  return apply(ledger, parsed.proposal, acts);
 }
 
 /** The commit texts after applying `intents` on the ledger of `texts`; the answer must be a commit. */
@@ -99,6 +102,36 @@ export function committed(texts: readonly string[], intents: readonly unknown[])
   if (answer.outcome !== "commit") throw new Error(`expected a commit, got ${answer.outcome}`);
   return [...texts, answer.text];
 }
+
+/** The `std` package of the repository (REQ-LG-007). */
+export const STD_FILE = fileURLToPath(new URL("../../std/std.json", import.meta.url));
+
+export const stdText = (): string => readFileSync(STD_FILE, "utf8");
+
+/** The four proposals of store init for `lattice` / `Homasters-max`, `at` 0 and the first four counter ULIDs. */
+export function initCase(namespace = "lattice", owner = "Homasters-max"): readonly Proposal[] {
+  const std = readStd(stdText());
+  if (!std.ok) throw new Error(std.message);
+  const ids = counterIds();
+  const built = initProposals({ namespace, owner, at: AT, ulids: [ids.ulid(), ids.ulid(), ids.ulid(), ids.ulid()], std: std.entities });
+  if (!built.ok) throw new Error(built.message);
+  return built.proposals;
+}
+
+/** The commit texts of store init (SCN-LG-011): each proposal applied in order, the last three with the owner's act. */
+export function initTexts(namespace = "lattice", owner = "Homasters-max"): string[] {
+  const texts: string[] = [];
+  for (const [i, proposal] of initCase(namespace, owner).entries()) {
+    const acts = i === 0 ? [] : initActs(owner).actsOn(proposalHash(proposal));
+    const answer = apply(ledgerOf(texts), proposal, acts);
+    if (answer.outcome !== "commit") throw new Error(`init commit ${i + 1}: ${answer.outcome}`);
+    texts.push(answer.text);
+  }
+  return texts;
+}
+
+/** The session number of the first `import-md` after `lattice init`, which takes the counter ULIDs 1–4 (REQ-CL-002). */
+export const IMPORT_SESSION = 5;
 
 /** A rejection without its message, as fixtures compare it. */
 export const bare = ({ message: _, ...rest }: Rejection): Json => rest;

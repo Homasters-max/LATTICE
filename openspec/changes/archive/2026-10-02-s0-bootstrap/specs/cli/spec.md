@@ -26,9 +26,10 @@ existing store, an invalid init configuration, a refused `std` package (REQ-CL-0
 **Opening**) or a store outside the genesis chain (REQ-CL-004, **Opening a store**), a store that answers that the tail
 moved while it has not (REQ-CL-004), a refused export (REQ-CL-005), an unreadable or unwritable file. A refusal with
 code 2 is decided before anything is written, except a failure of the file system during a write, or a store that
-answers `moved` to an append of `init` (another writer in the new store, REQ-CL-002): the skeleton has no lock,
-`fsync` or recovery (LG-C06 comes with the store adapters of S0), so after such a failure the store may hold a partial
-write, and the message names the file or the store. Messages
+answers `moved` to an append of `init` (another writer in the new store, REQ-CL-002): the JSONL store locks, `fsync`s
+and recovers each append (REQ-SR-001…003), but a write of the command's own files and the four appends of `init` are
+not one transaction, so after such a failure the store may hold a partial write, and the message names the file or
+the store. Messages
 of codes 1 and 2 go to standard error, except the rejections of `apply` (REQ-CL-004). A path a command prints is
 relative to the project root when it lies under it, otherwise absolute; its separator is `/`.
 
@@ -56,15 +57,16 @@ of REQ-LG-008 come from the `ids` port in that order.
 before it make, opened as REQ-CL-004 **Opening** opens a ledger —, and only then create `store/` — a creation that
 fails when `store/` exists by then, so a second `init` running at the same time is refused with code 2 and never
 writes into the first one's store —, write the configuration, create `store/proposals/` and an empty ledger, and
-append the four commit texts in order through the `store` port, each after the `seq` of the one before. It SHALL print one line `{"outcome":"commit","seq":<seq>}` per commit, in order, and exit
-with code 0. `init` writes no proposal file.
+append the four commit texts in order through the `store` port, each after the `seq` of the one before. Only after all four appends succeeded SHALL it print one line
+`{"outcome":"commit","seq":<seq>}` per commit, in order, and exit with code 0. `init` writes no proposal file.
 
 It SHALL refuse with code 2, writing nothing, when `store/` already exists; when an option is missing; when the
 namespace does not match `[a-z][a-z0-9-]*` (OM-I05), is longer than 64 characters, or is `core` or `std` (reserved,
 CT-N02); when the login does not match `[A-Za-z0-9-]+`; when the `std` package cannot be read or is refused, the
 message naming `LG-G02`; or when apply answers a proposal of store init with anything but `commit` — a defect of
 LATTICE —, the message naming the commit. A store that answers `moved` to one of the appends — another writer in the
-new store — is refused with code 2 naming the store; the store may then hold a partial write (REQ-CL-001).
+new store — is refused with code 2 naming the store; the store may then hold a partial write (REQ-CL-001), which every
+later command refuses naming `LG-G04` (REQ-CL-004): the way out is to remove `store/` and run `lattice init` again.
 
 Every other command reads `store/lattice.json` first; a missing `store/` or a configuration that is not exactly the
 form above is refused with code 2.
@@ -92,8 +94,8 @@ Implements: CT-N05, LG-S05, LG-G04, LG-A04
 - **WHEN** `lattice init --namespace lattice --owner Homasters-max` runs in an empty folder against a store that
   answers `moved` to the third append
 - **THEN** it exits with code 2, its standard error names the store, it prints no commit line, and the store's ledger
-  holds the first two commits and nothing of its own after them; `lattice apply` on that store then exits with code 2
-  naming `LG-G04` and `seq` 3
+  holds the first two commits and nothing of its own after them; `lattice apply` on that store, run on the proposal
+  file a fresh `lattice import-md` of the fixture wrote, then exits with code 2 naming `LG-G04` and `seq` 3
 
 ### Requirement: import-md writes a proposal from a table with IDs
 <!-- id: REQ-CL-003 -->

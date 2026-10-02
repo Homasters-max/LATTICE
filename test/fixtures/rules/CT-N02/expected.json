@@ -1,0 +1,9 @@
+[
+  {
+    "intent": "std/x",
+    "rule": "CT-N02",
+    "path": "/intents/5/id",
+    "expected": null,
+    "got": null
+  }
+]

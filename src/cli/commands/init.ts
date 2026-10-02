@@ -1,4 +1,5 @@
-// `lattice init --namespace <namespace> --owner <login>` (REQ-CL-002): an empty project store.
+// `lattice init --namespace <namespace> --owner <login>` (REQ-CL-002): a project store with its first four commits —
+// genesis, std, the project namespace and setup@1 with its live fact — written through apply.
 
 import { parseArgs } from "node:util";
 import { lattice } from "../../assembly/index.ts";

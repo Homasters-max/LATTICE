@@ -1,0 +1,16 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-007",
+  "change": "s0-bootstrap",
+  "gate": "spec-approved",
+  "reason": "I-6…I-13: edits of the delta specs ledger (REQ-LG-010) and cli (REQ-CL-001, REQ-CL-002, SCN-CL-017) after approval — spec review 3 of spec-PR #120 (EVID-01M3YC7FK7A7RTJZB4NH4N6WHC), planned there as I-6…I-13; the merge of #120 is the maintainer's decision on them",
+  "risk": "LOW",
+  "compensating_controls": [
+    "each edit is an I-N row of design.md naming its review finding",
+    "every changed requirement keeps its scenarios, bound to passing SCN tests in CI"
+  ],
+  "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
+  "expires_at": "2026-10-16",
+  "waiver_state": "ACTIVE"
+}

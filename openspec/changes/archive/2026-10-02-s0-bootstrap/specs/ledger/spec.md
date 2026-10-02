@@ -324,8 +324,10 @@ Implements: TR-B02, LG-A05, LG-A03
 
 `openStore(stored, namespace)` SHALL open the ledger as `openLedger` does — the checks of LG-C04 only, REQ-CL-004
 **Opening** — and then refuse a store whose history does not start with the four commits of store init (LG-G04) for
-`namespace` — the namespace of the init configuration — on the chain kernel `0` knows (LG-G01): checking the commits
-in ledger order, the first of these refuses, naming its rule and the `seq` of the commit:
+`namespace` — the namespace of the init configuration — on the chain kernel `0` knows (LG-G01). It checks every commit
+in ledger order — `LG-G03` on each of them, the others on the commit at their position (the first, second, third and
+fourth commit, whatever their `seq`) —, and the first commit that fails a check is refused, naming the first rule it
+fails in the order of this list and the `seq` of that commit:
 - `LG-G03` — the commit's `kernel` is not `"0"` (no transition commit is known, LT-01);
 - `LG-G01` — the first commit's commit hash is not the genesis hash;
 - `LG-G02` — the second commit is not a load of the `std` package by the conditions of its exemption (REQ-LG-002): it
@@ -336,14 +338,17 @@ in ledger order, the first of these refuses, naming its rule and the `seq` of th
   `rev` 1 of type `std/namespace@1` (CT-N05); or the fourth commit does not hold, beside its session event, exactly
   the entity `<namespace>/setup` at `rev` 1 of type `std/setup@1` and one event of type `std/live@1` (PL-A01, TR-F05);
 - `LG-G04` — the ledger holds fewer than four commits, after the commits it holds passed: the `seq` named is one more
-  than the number of its commits (`1` for an empty ledger).
+  than the `seq` of its last commit (`1` for an empty ledger), and the message says how to recover: remove `store/`
+  and run `lattice init` again.
 
 So a store opens only when store init finished: an empty ledger (written by `init` before this Change), a ledger cut
 short by a failed `init` (REQ-CL-002) and a store whose namespace commit does not match its init configuration are
 refused, and `apply` never writes a commit in the place of an init commit. `openLedger` itself is unchanged: it opens
 ledgers that are not stores, such as the ledgers of rule fixtures (REQ-AR-011), L1 (REQ-LG-003) and the ledgers store
-init builds in memory (REQ-CL-002). Every command that reads a project store runs both (REQ-CL-004, **Opening a
-store**). `openStore` reads no acts.
+init builds in memory (REQ-CL-002). `apply` and `export`, the commands that read the ledger of a project store, run
+both (REQ-CL-004, **Opening a store**); `import-md` reads no ledger. `openStore` reads no acts, and it checks commits
+3 and 4 by `id`, `rev` and `type` only — not their bodies, sessions or acts, nor the `owner` of `store/lattice.json`,
+which is the owner of the namespace at init only (the owner changes later by an owner act, CT-A02).
 
 Implements: LG-G01, LG-G02, LG-G03, LG-G04, CT-N05
 

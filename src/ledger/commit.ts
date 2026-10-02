@@ -1,13 +1,16 @@
 // Commits (LG-C01, LG-C02, LG-C04, REQ-CL-004, design D-5): the commit hash, and opening a ledger — every stored text
 // admitted, canonical, of the commit form, `seq` growing and `prev` chained; the commits are frozen as they are read.
+// Opening a store (REQ-LG-010, s0-bootstrap design D-8) adds the genesis chain and the four commits of store init.
 
 import type { Hash } from "../kernel/index.ts";
 import { canonical, checkInput, hash } from "../kernel/index.ts";
+import { GENESIS_HASH } from "./genesis.ts";
+import { INIT_COMMITS, initCommitRefusal } from "./init.ts";
 import type { StoredLedger } from "./ports/store.ts";
 import type { ReadView } from "./projections/latest.ts";
 import { latest } from "./projections/latest.ts";
 import type { Commit } from "./records.ts";
-import { frozen } from "./records.ts";
+import { frozen, isAct } from "./records.ts";
 
 /** The kernel version of the store before the switch (LG-G05, LG-G06). */
 export const KERNEL_VERSION = "0";
@@ -38,7 +41,10 @@ function exactly(value: unknown, keys: readonly string[]): value is Readonly<Rec
 }
 
 function isCommitForm(value: unknown): value is Commit {
-  if (!exactly(value, COMMIT_KEYS)) return false;
+  const withActs = exactly(value, [...COMMIT_KEYS, "acts"].sort());
+  if (!withActs && !exactly(value, COMMIT_KEYS)) return false;
+  // the act record (REQ-LG-003): a non-empty list of acts
+  if (withActs && !(Array.isArray(value.acts) && value.acts.length > 0 && value.acts.every(isAct))) return false;
   return (
     typeof value.seq === "number" &&
     Number.isSafeInteger(value.seq) &&
@@ -66,8 +72,39 @@ export type Ledger = {
   readonly proposals: ReadonlyMap<Hash, number>;
 };
 
+export type Opened = { readonly ok: true; readonly ledger: Ledger } | { readonly ok: false; readonly message: string };
+
 /** Opens a stored ledger and verifies its hash chain (LG-C04); a refusal names the first broken commit. */
-export function openLedger(stored: StoredLedger): { readonly ok: true; readonly ledger: Ledger } | { readonly ok: false; readonly message: string } {
+export function openLedger(stored: StoredLedger): Opened {
+  const read = readLedger(stored);
+  return read.ok ? { ok: true, ledger: read.ledger } : read;
+}
+
+const refusal = (rule: string, seq: number, why: string) => ({ ok: false, message: `${rule}: seq ${seq}: ${why}` }) as const;
+
+/**
+ * Opens a project store (REQ-LG-010): `openLedger`, then its history must start with the four commits of store init for
+ * `namespace` on the genesis chain of kernel `0`. A refusal names the rule (`LG-G01`…`LG-G04`) and the `seq`; the shape
+ * of each init commit is `init.ts`'s, which builds them.
+ */
+export function openStore(stored: StoredLedger, namespace: string): Opened {
+  const read = readLedger(stored);
+  if (!read.ok) return read;
+  const commits = read.commits;
+  for (const [i, c] of commits.entries()) {
+    if (c.kernel !== KERNEL_VERSION) return refusal("LG-G03", c.seq, `kernel ${c.kernel} is not ${KERNEL_VERSION}; no transition commit is known`);
+    if (i === 0 && commitHash(c) !== GENESIS_HASH) return refusal("LG-G01", c.seq, "the first commit is not the genesis of kernel 0");
+    const wrong = i > 0 ? initCommitRefusal(c, i, namespace) : null;
+    if (wrong !== null) return refusal(wrong.rule, c.seq, wrong.why);
+  }
+  if (commits.length < INIT_COMMITS) {
+    const seq = (commits.at(-1)?.seq ?? 0) + 1;
+    return refusal("LG-G04", seq, `the store holds ${commits.length} of the four commits of store init; remove store/ and run lattice init again`);
+  }
+  return { ok: true, ledger: read.ledger };
+}
+
+function readLedger(stored: StoredLedger): { readonly ok: true; readonly ledger: Ledger; readonly commits: readonly Commit[] } | { readonly ok: false; readonly message: string } {
   const broken = (seq: number | null, line: number, why: string) =>
     ({ ok: false, message: `LG-C04: ${seq === null ? `line ${line}` : `seq ${seq}`}: ${why}` }) as const;
   const commits: Commit[] = [];
@@ -92,5 +129,5 @@ export function openLedger(stored: StoredLedger): { readonly ok: true; readonly 
   if (stored.torn !== null) {
     return broken(readableSeq(stored.torn), stored.commits.length + 1, "a tail without a commit end marker");
   }
-  return { ok: true, ledger: { tail, view: latest(commits), proposals } };
+  return { ok: true, ledger: { tail, view: latest(commits), proposals }, commits };
 }
