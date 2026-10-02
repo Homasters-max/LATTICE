@@ -8,5 +8,14 @@
       "at": "2026-10-02T07:25:34.500Z",
       "by": "cli:local"
     }
+  ],
+  "unknowns": [
+    {
+      "id": "UNK-KR-009",
+      "text": "OM-E04 says every event body has of: {role: ref@n}. A session event (CT-P01) records a participant and is about nothing. May of be an empty object, so that the session event is an event like any other? The alternative is a named exemption of the session type in the kernel.",
+      "blocking": false,
+      "resolution": "of may be an empty object: the kernel requires the member of on every event body (an object whose values are references) and no role in it; the session event of CT-P01 has of = {}. No type is exempted by the kernel. The maintainer's answer in the spec-PR replaces this assumption.",
+      "resolved_as": "assumption"
+    }
   ]
 }

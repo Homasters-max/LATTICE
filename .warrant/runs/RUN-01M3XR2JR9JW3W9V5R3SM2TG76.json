@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XR2JR9JW3W9V5R3SM2TG76",
+  "change": "s0-kernel",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-kernel/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-kernel",
+  "started_at": "2026-10-02T07:25:49.749Z",
+  "finished_at": "2026-10-02T07:40:42.826Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:3ecf65eeb397b875470925b7c9a80e02a9686f2176eb0246d27bba080f1b0a3e",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": [
+    {
+      "at": "2026-10-02T07:27:30.124Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "design-next/reviews/2026-09-30-kernel-architecture.md"
+      ],
+      "decision": "deny",
+      "reason": "design-next/reviews/2026-09-30-kernel-architecture.md outside the Run RUN-01M3XR2JR9JW3W9V5R3SM2TG76 of s0-kernel: write_scope: openspec/changes/s0-kernel/**",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T07:27:31.333Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
