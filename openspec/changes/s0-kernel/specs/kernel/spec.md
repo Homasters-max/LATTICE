@@ -21,7 +21,8 @@ change is free (LG-G05, LG-G06); from now on only the vector file of REQ-KR-011 
 `bad-ref` are not taken: `design-next` has no `$enc` key (NX-20) and no `$ref` marker (NX-15).
 
 **Migration**: A `$enc` or `$ref` member is an ordinary member, so `lattice apply` no longer rejects a proposal by
-`LG-P01` for a `$enc` key or a `$ref` object with other keys (the spec `cli`, REQ-CL-004). Every other refusal, its
+`LG-P01` for any `$enc` or `$ref` member — a `$ref` object with other keys, `{"$ref": 5}`, `{"$ref": "#g1:ab"}` alike
+(the spec `cli`, REQ-CL-004). Every other refusal, its
 place and its order are unchanged; the tests carry the tokens SCN-KR-028…SCN-KR-036. The references of the spec `cli`
 to REQ-KR-002 and REQ-KR-005 resolve to REQ-KR-009 and REQ-KR-012; #83 re-points them.
 
@@ -497,13 +498,19 @@ that status fact types cannot be extended is a rule of `std` types (#59).
   `{"title":"abcdefghijk","rule":"must"}`, `{"title":"abc","rule":"should"}` and `{"title":"abc","rule":"mayyyy"}`;
   then `typeOf` gets the one record `{id: "test/nfd", rev: 1, type: "core/type@1", body: {"schema": {"type":
   "object", "properties": {K: {"type": "integer"}}}}}` built in code, where the key `K` is `e` followed by U+0301, and
-  `admit` gets under it the text `{"é":1}` with the key the one code point U+00E9
+  `admit` gets under it the text `{"é":1}` with the key the one code point U+00E9; then `admit` gets, under the chain
+  of `test/mc@1`, whose schema declares `m` as `{"type":"object","properties":{"a":{"type":"string","maxLength":2}}}`,
+  extending `test/mp@1`, whose schema declares `m` as
+  `{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"string"}}}`, the texts `{"m":{"a":"xyz"}}`,
+  `{"m":{"b":"x"}}` and `{"m":{"a":"xy"}}`
 - **THEN** `typeOf` succeeds with `ref` `lattice/rule@1`; the first text is admitted with `type` `lattice/rule@1`; the
   second gives in order `unknown-field` `/text/extra`, `not-in-enum` `/text/rule`, `too-long` `/text/title`; the third
   `missing` `/text/title`; the fourth `missing` `/text/rule`; the fifth only `too-long` `/text/title` (the child
   refuses first; the parent's refusal at the same place is not reported); the sixth `too-long` `/text/rule` (from the
   parent); the seventh only `not-in-enum` `/text/rule`; the second `typeOf` succeeds, its `body` holds the key U+00E9,
-  the record built in code is unchanged and not frozen, and the text is admitted
+  the record built in code is unchanged and not frozen, and the text is admitted; the last three texts give `too-long`
+  `/text/m/a`, `unknown-field` `/text/m/b` (below the top level the child node is closed by its own `properties`) and
+  success
 
 #### Scenario: Malformed chains
 <!-- id: SCN-KR-050 -->
@@ -539,8 +546,8 @@ type `schema` is what lets the meta-type (REQ-KR-016) declare the `schema` of a 
 typed by itself. The subset grows only with a kernel version.
 
 A schema is checked when a value of a `schema` node is validated — the `schema` of every type admitted under the
-meta-type —, walking depth first with the keywords of each node in UTF-16 code unit order, at most one refusal per
-keyword:
+meta-type —, walking depth first with the keywords of each node, and the members of a `properties` value, in UTF-16
+code unit order of their names, at most one refusal per keyword:
 - a node that is not an object (an array included) gets only `bad-keyword` at the node;
 - a node whose `type` is absent or not one of the eight values gets only `bad-keyword` at its `type`; its other
   keywords are not checked;
@@ -564,20 +571,22 @@ REQ-KR-014):
 - `bad-ref` at a string of a `ref` node that is not a reference (REQ-KR-012), or that has no version when `pinned` is
   `true`, or has one when `pinned` is `false`; without `pinned` both are allowed.
 
-`refs` of an admitted body (REQ-KR-013) SHALL list, in walk order, every string of a `ref` node that is a valid
-reference, as `{ path, ref, target }`: `path` the JSON Pointer of the string in the body, `ref` its parse
-(REQ-KR-012), `target` the `ref` keyword of the node — one entry per path, from the first schema of the chain that
-declares a `ref` node there. Whether a pinned target exists and has that type is decided by apply (OM-R03). `refs`
-holds only the values of a body: the type ids a schema names in its `ref` keywords are not references of the type body
-that holds the schema; a parent's `ref` target at a path the child also declares is not listed; that the names in
-`unique` and `card` are fields of the type is not checked here.
+`refs` of an admitted body (REQ-KR-013) SHALL list, in walk order — object members in UTF-16 code unit order of their
+names, array elements by index —, every string of a `ref` node that is a valid reference, as `{ path, ref, target }`:
+`path` the JSON Pointer of the string in the body, `ref` its parse (REQ-KR-012), `target` the `ref` keyword of the
+node — one entry per path, from the first schema of the chain that declares a `ref` node there, so a path the child
+declares as a plain string and the parent as a `ref` node is listed with the parent's target. Whether a pinned target
+exists and has that type is decided by apply (OM-R03). `refs` holds only the values of a body: the type ids a schema
+names in its `ref` keywords are not references of the type body that holds the schema; a parent's `ref` target at a
+path the child also declares as a `ref` node is not listed; that the names in `unique` and `card` are fields of the
+type is not checked here.
 
 Implements: OM-T06, OM-R02
 
 #### Scenario: A schema outside the subset is refused
 <!-- id: SCN-KR-051 -->
 - **WHEN** `admit` gets under `metaType` the text
-  `{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date","maxLength":3},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string","j":{"properties":{}},"k":[]}}}`
+  `{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"k":[],"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date","maxLength":3},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string","j":{"properties":{}}}}}`
 - **THEN** the refusals in order are: `unknown-keyword` `/text/schema/additionalProperties`; `unknown-keyword`
   `/text/schema/properties/a/pattern`; `bad-keyword` `/text/schema/properties/b/properties`; `bad-keyword`
   `/text/schema/properties/c/items`; `bad-keyword` `/text/schema/properties/d/maxLength`; `bad-keyword`
@@ -603,12 +612,18 @@ Implements: OM-T06, OM-R02
 - **WHEN** `admit` gets, under the type `test/refs@1` whose schema is
   `{"type":"object","properties":{"any":{"type":"string","ref":"std/need"},"fl":{"type":"string","ref":"std/need","pinned":false},"list":{"type":"array","items":{"type":"string","ref":"std/term","pinned":true}},"pin":{"type":"string","ref":"std/need","pinned":true}}}`,
   the texts `{"pin":"lattice/n1@2","fl":"lattice/n1","any":"lattice/n2@1","list":["lattice/t@1","lattice/t@1"]}` and
-  `{"pin":"lattice/n1","fl":"lattice/n1@1","any":"not a ref","list":["#x"]}`
+  `{"pin":"lattice/n1","fl":"lattice/n1@1","any":"not a ref","list":["#x"]}`; then, under the chain of
+  `test/rc@1` with schema `{"type":"object","properties":{"x":{"type":"string"},"y":{"type":"string","ref":"std/a"}}}`
+  extending `test/rp@1` with schema
+  `{"type":"object","properties":{"x":{"type":"string","ref":"std/need","pinned":true},"y":{"type":"string","ref":"std/b"}}}`,
+  the text `{"y":"lattice/y","x":"lattice/n1@2"}`
 - **THEN** the first succeeds with `refs` in order `{path: "/any", ref: {id: "lattice/n2", version: 1}, target:
   "std/need"}`, `{path: "/fl", ref: {id: "lattice/n1"}, target: "std/need"}`, `{path: "/list/0", ref: {id:
   "lattice/t", version: 1}, target: "std/term"}`, `{path: "/list/1", ref: {id: "lattice/t", version: 1}, target:
   "std/term"}`, `{path: "/pin", ref: {id: "lattice/n1", version: 2}, target: "std/need"}`; the second gives in order
-  `bad-ref` `/text/any`, `bad-ref` `/text/fl`, `bad-ref` `/text/list/0`, `bad-ref` `/text/pin`
+  `bad-ref` `/text/any`, `bad-ref` `/text/fl`, `bad-ref` `/text/list/0`, `bad-ref` `/text/pin`; the third succeeds
+  with `refs` in order `{path: "/x", ref: {id: "lattice/n1", version: 2}, target: "std/need"}` (the parent declares the
+  `ref` node) and `{path: "/y", ref: {id: "lattice/y"}, target: "std/a"}` (the child declares it first)
 
 ### Requirement: The meta-type
 <!-- id: REQ-KR-016 -->
@@ -665,7 +680,9 @@ of record, each with one fixed header:
   reference without a version an event; whether a target exists is decided by apply (OM-R03). So the `ref@n` of
   OM-E04 is read as pinned for an entity target and as the bare id for an event target, which has no revisions (as the
   example of OM-Z02 writes it). Until #83 brings the event id of OM-I02, the `id` and `by` of a header and the event
-  targets in `of` follow the identifier grammar of REQ-KR-012.
+  targets in `of` follow the identifier grammar of REQ-KR-012. Apply checks the targets in `of` (OM-R03) from
+  `body.of` of the event record: they are in `refs` of the admission only where the event type declares them as `ref`
+  nodes.
 
 The refusals, collected in this order: `bad-header` `/header` when the header is not an object whose prototype is
 `Object.prototype` or `null` (then no other refusal of the header); `bad-header` `/header/<key>` for every other own
