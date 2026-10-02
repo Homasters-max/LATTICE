@@ -1,0 +1,255 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XREWCNHBRA25MSQMKBFWRB",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-SR-002 justifies the undetected check-to-write gap with 'a takeover needs a writer that stalled for longer than the TTL right there'. That holds only if a takeover replaces the expired lock it read and nothing newer. The requirement says only 'takes it over when the existing lock has expired', and design D-3 implements this as read, then renameSync(tmp, lock) (an unconditional replace), then read back. Two writers that both read the same stale lock (left by a crashed CLI) can interleave like this: B renames, reads back, checks the tail and passes fencing; A renames over B's fresh lock, reads back its own and checks the tail before B writes; then both write. The result is two commits with the same seq and prev, a ledger that LG-C04 refuses from then on, and no writer stalled. The memory adapter is synchronous and single-threaded, so the contract suite cannot show this.",
+      "targets": [
+        "REQ-SR-002",
+        "SCN-SR-003",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "State the takeover as a compare-and-swap in REQ-SR-002: a takeover replaces only the expired or unreadable lock it read; if the lock changed since it was read, the append answers `moved`. Add a scenario: two stores both see an expired lock, one takes it over between the other's lock read and its takeover, and the second answers `moved`. One way to do it: rename the expired lock aside, which only one taker can do, check that the moved-aside content is the one it read, then take the lock with linkSync (EEXIST-safe). Otherwise, narrow the risk sentence so it no longer claims that only a stall longer than the TTL opens the gap."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-SR-004 says that when `read` finds a torn tail and no other owner holds an unexpired lock, it takes the lock and moves 'the torn tail'. It does not say the tail is determined again under the lock. Here is the boundary: a reader sees a partial line while writer W is appending, W completes, fsyncs and releases, and the reader then takes the lock. A reading that moves the bytes found before taking the lock and cuts the ledger at the earlier offset destroys W's commit, which was already answered `ok`. That contradicts REQ-SR-001 ('After ok, every store made on the ledger reads the commit'). Design D-4 re-reads, but the contract states nothing and no scenario covers it.",
+      "targets": [
+        "REQ-SR-004",
+        "SCN-SR-006",
+        "SCN-SR-007"
+      ],
+      "recommendation": "Add to REQ-SR-004: after taking the lock, `read` (and an append) reads the ledger again and recovers only what then follows the last line feed; when nothing does, it moves nothing. Add a scenario in which the tail completes between the read and the lock taking (the memory adapter can model this with a seam), and in which `recovered/` stays empty and the commit is read."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "The spec covers a failure that cuts the line (REQ-SR-003, REQ-CL-001: 'a ledger line cut by it is recovered when the ledger next opens'). It does not cover a failure after the whole line and its line feed were written: `fsync` or close fails, or removing the lock fails in the `finally`. Because of 'A failure of the file system is thrown and never answered ok' (REQ-SR-001), the append throws, and `apply` refuses with code 2 'cannot write store/knowledge.jsonl' and keeps the proposal file, yet the commit stays in the ledger and every later read returns it. Re-running `apply` on the kept proposal then gives LG-P02 rejections for entity intents, and a second commit for a proposal that has only events (LG-C08 is not in S0). A failing release in the `finally` also masks the original error.",
+      "targets": [
+        "REQ-SR-003",
+        "REQ-SR-002",
+        "REQ-CL-001",
+        "REQ-CL-004"
+      ],
+      "recommendation": "Decide (see D-2) and state it in REQ-SR-002/003 and REQ-CL-001. Option (a): once the line is durable, a failure to remove the lock is not thrown; the append answers `ok` and the lock expires by TTL. Option (b): it is thrown, and REQ-CL-001/REQ-CL-004 say that after a write failure the commit may be in the ledger and the message says so. Also state what is thrown when both the write and the release fail. Add a JSONL scenario for each case: fsync fails after a complete line, and the lock removal fails."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-SR-004 describes recovery only on its success path: take the lock, write the file in recovered/, cut the ledger, flush both files, remove the lock. It does not describe a failure at any step: mkdir of recovered/, writing the recovered file, the truncate, or fsync. It leaves open whether `read` throws, whether it removes its lock (REQ-SR-002's 'whatever the answer ... remove the lock' is stated for append only), and what state stays. Design D-4 implies the tail can stay in both places and become a duplicate in recovered/ at the next opening. REQ-CL-001 says opening is not a write of the command, but not how a failed recovery is reported. With assembly unchanged, it becomes code 2 'cannot read store/knowledge.jsonl: <node message>', even when the failing file is the recovered file or the lock.",
+      "targets": [
+        "REQ-SR-004",
+        "REQ-CL-001",
+        "REQ-CL-004"
+      ],
+      "recommendation": "In REQ-SR-004, state that a failure during recovery is thrown, that the lock is removed if it is still the reader's own, and that a failure after the recovered file was written and before the cut leaves the tail in the ledger, so the next opening recovers it again and recovered/ may hold a duplicate, never a loss. In REQ-CL-001, state that such a failure is a refusal with code 2 naming the file, and that `store/recovered/` may hold a file even then. Add a JSONL scenario in which a failing truncate leads to a throw, no lock is left, and the next read recovers it."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The spec never defines the content of a lock or what 'cannot be read as a lock' means, yet behaviour depends on both. SCN-CL-011 places 'a lock of another owner that expires long after now' in store/knowledge.jsonl.lock as an on-disk input, and SCN-SR-003 needs 'a lock that cannot be read as a lock'. An unreadable lock is taken over, so the definition decides mutual exclusion. Two LATTICE versions that use different lock formats would each read the other's lock as unreadable and take it over. It is also unstated whether an I/O failure while reading the lock file counts as unreadable (and so taken over) or is thrown. Design D-3 itself notes EPERM on Windows while another process renames the lock. Only design D-3 gives the format `{\"expires\":<ms>,\"owner\":\"<owner>\"}` and a line feed.",
+      "targets": [
+        "REQ-SR-002",
+        "SCN-SR-003",
+        "SCN-CL-011"
+      ],
+      "recommendation": "Move the JSONL lock format into REQ-SR-002: canonical JSON with exactly a string `owner` and a safe-integer `expires`, followed by a line feed. Define 'cannot be read as a lock' as content that is not exactly that form. State that a failure to read the lock file is thrown and is never treated as an expired lock."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The TTL is 'the TTL of the store', 'far above the time of one append'. Neither the spec of `store` nor REQ-CL-001 says what TTL the CLI uses. Design D-2 sets 10 s. That is observable: after a crashed command, every `apply` refuses with code 2 naming LG-C03 until the lock expires. No CLI scenario shows an expired lock being taken over.",
+      "targets": [
+        "REQ-SR-002",
+        "REQ-CL-001",
+        "SCN-CL-011"
+      ],
+      "recommendation": "State in REQ-CL-001 (or REQ-SR-002) the TTL of the CLI's store, 10 000 ms, and that a lock left by a stopped command is taken over once it expires. Optionally extend SCN-CL-011 with a lock that expired in the past, where `apply` then exits 0."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-SR-002 covers three cases for taking a lock: no lock, an expired or unreadable lock, and another owner's unexpired lock. It does not cover an unexpired lock of the same owner, for example one left because an earlier append of the same store could not remove it. Whether the append reuses it, answers `moved` or takes it over is unspecified. The CLI uses a new owner per command, but the contract suite reuses stores.",
+      "targets": [
+        "REQ-SR-002"
+      ],
+      "recommendation": "Add one sentence: an unexpired lock of its own is treated like ... (for example, taken over with a new expiry, or answered `moved`). Cover it in SCN-SR-003."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-SR-001 says the JSONL adapter reads a missing file as an empty ledger. It does not say what `append(c, 0)` does on a missing file (create it, or throw), or what happens when the folder of the ledger is missing and the lock cannot be created. The CLI guards this case, but the port contract leaves it open.",
+      "targets": [
+        "REQ-SR-001",
+        "REQ-SR-002"
+      ],
+      "recommendation": "State that `append` on a missing ledger file creates it, or that it throws, and that a missing folder is a thrown failure of the file system."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The Opening paragraph of REQ-CL-004 says the store 'first moves a torn tail ... to a new file in store/recovered/' without a condition. REQ-SR-004 leaves a torn tail alone under another writer's unexpired lock and returns only the commits before it. REQ-CL-004 also does not say what `apply` and `export` do in that case: the checks run on the commits before the tail, and `apply` then gets `moved` and code 2 LG-C03.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-SR-004"
+      ],
+      "recommendation": "Write 'moves a torn tail ... unless another writer's live lock holds it, in which case the commits before it are opened (REQ-SR-004)', and say that `apply` then refuses with code 2 naming LG-C03."
+    },
+    {
+      "id": "F-10",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-CL-001 keeps the definition '`1` — ... and nothing was written', and REQ-CL-004 says of a broken ledger '... and nothing is written'. The same delta adds that a recovery at opening 'holds whatever the outcome, codes 1 and 2 included', and that recovery truncates store/knowledge.jsonl. The exception 'Opening the ledger is not a write of the command' reconciles them, but the code table and REQ-CL-004 read literally false when a torn tail was present.",
+      "targets": [
+        "REQ-CL-001",
+        "REQ-CL-004"
+      ],
+      "recommendation": "Qualify the code-1 definition and the LG-C04 refusal as 'nothing was written by the command (a recovery at opening aside, REQ-SR-004)'."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The port interface `src/ledger/ports/store.ts` documents that 'a tail without a commit end marker is handed over as `torn`', and its `StoredLedger` keeps `torn: string | null`. REQ-SR-001 says a torn tail 'is never handed over', and design D-1 says `read` always returns `torn: null`. The delta does not say what the `torn` field means now. Because the Change leaves the shared file unchanged, the port's documented contract and the new spec disagree.",
+      "targets": [
+        "REQ-SR-001",
+        "src/ledger/ports/store.ts"
+      ],
+      "recommendation": "State in REQ-SR-001 that `read` returns `torn: null` from both adapters, and open an issue (a small Change by SL-T08) to update the comment in the port interface, or to drop `torn` from it."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-SR-004 keeps the recovered tails of the memory adapter 'in order', while for JSONL it says only 'a new file'. SCN-SR-006, run by the same contract code on both adapters, checks a first and a second tail. The JSONL naming of design D-4 (`<name>.<now()>.torn`, `<name>.<now()>-<k>.torn`) has no order by name: '-' sorts before '.', and timestamps of different lengths, such as the small fake clocks the tests use, sort wrongly as text.",
+      "targets": [
+        "REQ-SR-004",
+        "SCN-SR-006"
+      ],
+      "recommendation": "Either state that the order of recovered tails is not observable (the contract compares them as a set), or define a JSONL name that sorts in recovery order (for example a zero-padded counter)."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CL-001 says a failure of the file system during a write is refused with a message that 'names the file'. In this Change the failing file can be the lock (`store/knowledge.jsonl.lock` or its temporary file; design Risks: EPERM on Windows) or a file in store/recovered/. assembly is unchanged and always names store/knowledge.jsonl ('cannot write' for append, 'cannot read' for opening), followed by Node's message with an absolute, backslash-separated path. That conflicts with the rule that printed paths are relative with '/'.",
+      "targets": [
+        "REQ-CL-001"
+      ],
+      "recommendation": "Write 'names the ledger file' if that is intended, and state that the underlying system message may follow. Alternatively, keep 'the file' and record that assembly changes in a later Change."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "The lock assumes two things it does not state. First, a wall clock that never jumps: expiry is written by one process's Date.now and compared against another's, so a forward jump expires a live lock early. Second, a file system with hard links: design D-3 takes the lock with linkSync, which fails on FAT or exFAT local disks, and then every append would throw. LG-C06 says only 'local disk'.",
+      "targets": [
+        "REQ-SR-002"
+      ],
+      "recommendation": "Name both in the risk sentence of REQ-SR-002 or in design Risks."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-actor",
+      "statement": "The maintainer is the intended reader of store/recovered/ ('shows in git status'), but no requirement says what the maintainer does with a recovered file, or whether store/recovered/ and a leftover store/knowledge.jsonl.lock are meant to be committed or git-ignored. `git add store/` would commit both.",
+      "targets": [
+        "REQ-SR-004",
+        "openspec/changes/s0-store/proposal.md"
+      ],
+      "recommendation": "State the intent: for example, recovered/ is committed or deleted by the maintainer, and the lock file is git-ignored. Or open an issue."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "ambiguity",
+      "statement": "A held lock and a lost lock both reach the user as the unchanged assembly message 'LG-C03: the tail of the ledger moved'. After a crashed command the user cannot tell that waiting for the TTL helps. The proposal accepts this as a non-goal; this is noted for the follow-up that adds a reason to the port.",
+      "targets": [
+        "REQ-CL-004"
+      ],
+      "recommendation": "None now; mention it in the issue of a later port Change."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-store/specs/store/spec.md",
+      "change": "REQ-SR-002: define the JSONL lock content and 'cannot be read as a lock' (F-5), a takeover as compare-and-swap over the lock that was read (F-1), the case of an own unexpired lock (F-7), and the CLI TTL (F-6). Add a scenario for two takers of one expired lock."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-store/specs/store/spec.md",
+      "change": "REQ-SR-004: say that the tail is determined again under the lock (F-2), and describe failure during recovery: thrown, own lock removed, possible duplicate in recovered/ (F-4). Add scenarios for a tail that completes before the lock is taken and for a failing truncate."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-store/specs/cli/spec.md",
+      "change": "REQ-CL-001/REQ-CL-004: say what the command reports when the append throws after a complete line (F-3), how a failed recovery at opening is reported (F-4), the conditional move under a live lock (F-9), and qualify 'nothing was written' (F-10)."
+    }
+  ],
+  "unknowns": [],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Issue #57 was not read: the review guard allows no shell command other than `warrant run submit`, so `gh issue view 57` was not run. Its scope was taken from proposal.md ('done when the same contract test suite is green on the JSONL and the memory adapter in CI')."
+    },
+    {
+      "id": "A-2",
+      "statement": "Node on Windows opens files with FILE_SHARE_DELETE, so unlinking a lock that another process is reading succeeds. A failing lock removal (F-3) is therefore rare, but it remains possible: EPERM, EBUSY, antivirus."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Should the takeover race of two writers on one expired lock (F-1) be closed in this Change, or accepted as a stated risk?",
+      "options": [
+        "Close it: a takeover is a compare-and-swap over the lock it read (rename the old lock aside, then take with link), with a scenario",
+        "Accept it: rewrite the risk sentence of REQ-SR-002 to name the race of two takers, and record the residual risk in design"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "When the line of a commit is complete but fsync, close or the lock removal fails, what does `append` answer and what does `apply` report (F-3)?",
+      "options": [
+        "fsync or close failure is thrown; a lock-removal failure after a durable write is not thrown (the answer is `ok`, and the lock expires by TTL)",
+        "Every failure is thrown, and REQ-CL-001 says that the commit may stay in the ledger and the message tells the user to check before re-applying"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:1f59c3983bf340e707e281576c069686a27f72b462f129a2f2566516c81697fa",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:40:00Z"
+  }
+}

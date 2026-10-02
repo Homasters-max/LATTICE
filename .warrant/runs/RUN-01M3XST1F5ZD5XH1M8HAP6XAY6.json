@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XST1F5ZD5XH1M8HAP6XAY6",
+  "change": "s0-store",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-store/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-store",
+  "started_at": "2026-10-02T07:56:07.066Z",
+  "finished_at": "2026-10-02T07:59:43.205Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:1ac3ebe58a9b425791b065f33a5edd26a46607dd10b6cd0bfb5e63ccdded223c",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}

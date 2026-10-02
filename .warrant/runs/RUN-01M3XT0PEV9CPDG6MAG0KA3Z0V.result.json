@@ -1,0 +1,134 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XT0PEV9CPDG6MAG0KA3Z0V",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-SR-002 Limits says a takeover between the fencing check and the write (or the cut) 'needs a writer stalled right there for longer than the TTL'. That precondition is wrong. Fencing passes while now() < expires, with no margin, so what a takeover needs is for the time from the take to the write to exceed the TTL. A writer whose operation is slow but not stalled (fsync of the lock temporary file, the copy and folder flush of a recovery, a Windows scanner on the new file in recovered/) can pass its fencing check 1 ms before expiry and then pause for a few ms (GC, scheduler). Interleaving for the cut (REQ-SR-004, D-4): R takes lock.1 at t=0 with expiry 10000 and copies a torn tail; its flushes are slow, so R fences at t=9999 and passes, then pauses for 30 ms. At t=10000 W looks at lock.1, finds it expired, takes lock.2 and verifies. W recovers the same tail (a second copy), fences, cuts at offset O, appends its commit seq 2 at O, fsyncs and answers `ok`. R then truncates at O, which erases W's acknowledged commit, and that commit is in no file of recovered/. In the append variant, both commits seq 2 land, or A's multi-call writeSync loop finishes its line after W's commit, and every later opening refuses the ledger with LG-C04. The CAS of D-3 itself holds: I found no interleaving with millisecond delays and an operation shorter than the TTL in which two writers both pass verify and fencing. The remaining window is this missing margin, which the Limits sentence and the Risks bullet ('the compare-and-swap of D-3 leaves no other window') understate.",
+      "targets": [
+        "REQ-SR-002",
+        "REQ-SR-004",
+        "SCN-SR-004",
+        "SCN-SR-012",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "Either give fencing a margin (it passes only when expires - now() is at least a stated fraction of the TTL, e.g. half), which makes the precondition 'a stall right there longer than the margin', or restate the Limits precisely: a takeover is undetected when the time from taking the lock to the end of the write or cut exceeds the TTL, and the consequence is a duplicate seq, a broken line, or a cut acknowledged commit. If you choose the margin, extend SCN-SR-004 with a fencing check inside the margin."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-SR-002 gives a take that does not hold two removal rules. The specific rule: 'the take holds only when ... otherwise it removes its own file'. The general rules: 'Whatever the answer, and when a failure is thrown, the append SHALL remove the lock if it is still its own' and 'Removing a lock removes the store's own lock file and every lock file with a smaller <n>'. When verify fails because the greatest other file is a live lock that replaced the looked-at one (SCN-SR-011: c at lock.1, A's file at lock.2), A's file IS the current lock, so 'still its own' holds. The general rule then deletes c's live lock.1, while SCN-SR-011 demands it 'unchanged'. The same conflict covers a failure thrown inside the take after the link (EPERM listing the folder or reading the other lock during verify, a failed removal of the temporary file). The spec says remove the lock, while design D-5 and D-4 place the release `finally` over steps 3 to 7 (3 to 6 in D-4), so the take step 2 is outside it and the freshly linked own file stays and blocks every writer for a TTL. Under the general-rule reading, deleting a live holder's lock lets a third writer take lock.1 while that holder is between its fencing check and its write.",
+      "targets": [
+        "REQ-SR-002",
+        "SCN-SR-011",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "In REQ-SR-002, scope 'Removing a lock removes ... every lock file with a smaller <n>' to a lock whose take held (passed verify). State that a take that does not hold, or that throws after creating its file, removes only its own file (never a smaller one) and leaves no lock of its own. In D-4 and D-5, put the removal of the own file after a failure in step 2 into the take itself, or widen the `finally` to cover it with the own-file-only rule."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The take of D-3 writes `<ledger file>.lock.<owner>.tmp`, links it, and removes it. The spec and proposal.md Impact ('Files on disk') say nothing about this file. A crash between writing it and removing it leaves `store/knowledge.jsonl.lock.<uuid>.tmp` behind for good: the owner is a fresh randomUUID per command, no store ever removes it, it does not match the lock-file pattern, and it shows in `git status`. A failure to remove it is neither thrown nor swallowed by any rule. On Windows, where a scanner can hold the file open, the same store's next take can reopen a temporary file that is still hard-linked to a live lock file, and truncating it rewrites that lock's content.",
+      "targets": [
+        "REQ-SR-002",
+        "openspec/changes/s0-store/proposal.md",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "Name the temporary file in proposal.md Impact and in REQ-SR-002 or D-3. Say that a failure to remove it is swallowed, and that a leftover one is harmless and never read. Create it with exclusive creation (or a fresh name per take), never by truncating an existing file. Optionally, let a release remove leftover `*.lock.*.tmp` files older than the TTL."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "proposal.md, What Changes, says the JSONL adapter 'takes over an expired one as a compare-and-swap (of two takers only one wins)'. Design D-3 says 'Two verifies can both fail (each sees the other's file); both answer moved'. A stale taker's transient file can also make a live holder fail fencing. So of two takers at most one wins, and possibly none does.",
+      "targets": [
+        "openspec/changes/s0-store/proposal.md",
+        "REQ-SR-002"
+      ],
+      "recommendation": "Write 'of two takers at most one wins; both may answer moved and retry'."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Review 2 F-6 is only partly closed by I-19. REQ-SR-004 still ends 'recovered/ may hold the same tail twice and never loses one', while design Risks concedes that 'a power loss right after a recovery on Windows may lose the new entry of recovered/', because the folder is not flushed there and the ledger is cut afterwards. The first append that creates a missing ledger file (REQ-SR-001, REQ-SR-003) also flushes only the file and not its folder before answering `ok`. The spec does not state either limit.",
+      "targets": [
+        "REQ-SR-004",
+        "REQ-SR-003",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "Scope 'never loses one' to failures of the file system and failed checks. Add one Limits sentence: on Windows, and for a ledger file created by the append, a power loss can lose a newly created directory entry."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Design D-3 'Why it is safe' has two gaps, though neither breaks safety. (1) It covers a stale writer whose looked-at <k> is below the live holder's <n>, but not one whose <k> is at or above <n>: a writer that looked, long ago, at an earlier occupant of a name now reused. Its link of <k+1> succeeds above the holder's file, and its verify then fails. Meanwhile the live holder's fencing, or its fenced cut, fails and answers `moved`: a liveness cost, not a safety one. (2) 'a reused name never carries the same content' is false for one store that takes twice within one millisecond (a read that recovers, then an append), and always false under the fixed clocks of the contract tests. It is harmless only because such a lock is unexpired, so nobody else has looked at it as takeable.",
+      "targets": [
+        "openspec/changes/s0-store/design.md",
+        "REQ-SR-002"
+      ],
+      "recommendation": "Complete the argument in D-3 with the case k >= n and its liveness cost. Reword the uniqueness claim: content repeats only for an unexpired lock of one store, which no other writer takes over."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-store/specs/store/spec.md",
+      "change": "REQ-SR-002: add a fencing margin, or state the exact precondition of an undetected takeover and its consequences (F-1). Scope 'remove every lock file with a smaller <n>' to a take that held, and say a take that fails or throws removes only its own file (F-2). REQ-SR-004: scope 'never loses one' and name the power-loss limits (F-5)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-store/design.md",
+      "change": "D-3/D-5: name the lifecycle and failure handling of the `.tmp` file (F-3), cover a failure in the take step by own-file removal (F-2), and complete 'Why it is safe' (F-6). Risks: drop 'leaves no other window' or qualify it by the margin (F-1)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-store/proposal.md",
+      "change": "What Changes: 'of two takers at most one wins' (F-4); Impact: name the temporary lock file (F-3)."
+    }
+  ],
+  "unknowns": [],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Review 2 closures checked. F-1 (BLOCKER) is closed by I-14: with linkSync of a written temporary file plus a verify that the greatest other file is the looked-at {n, content}, I tried reused names after a release (SCN-SR-011), a lock visible half-written, stale looks below and above a live holder, a crashed taker's transient file, and three writers. None lets two writers both pass verify and fencing with millisecond delays and an operation shorter than the TTL. The memory adapter's identity compare is equivalent. F-2 is closed by I-15 and SCN-SR-012, except for the margin of F-1. F-3, F-4, F-5 and F-7 are closed by I-16, I-17, I-18 and I-20. F-6 is partly closed by I-19 (see F-5). The review 1 closures I-2 to I-13 still hold; I-1 is replaced by I-14."
+    },
+    {
+      "id": "A-2",
+      "statement": "Writers are separate processes on one machine, so they share one wall clock. Owners are unique per store, as REQ-SR-002 requires; the `owner` option of D-2 lets a test break this, and the safety argument then does not hold."
+    },
+    {
+      "id": "A-3",
+      "statement": "Issue #57 and follow-ups #84 to #86 were not opened: the review guard allows no shell command except `warrant run submit`. Scope is taken from the caller's message and proposal.md."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "How should the gap between a fencing check passed just before expiry and the write or cut be handled (F-1)?",
+      "options": [
+        "Fencing margin: fencing passes only while at least half the TTL (5 s in the CLI) remains, so an undetected takeover needs a stall longer than that margin right after the check.",
+        "Keep the check without a margin and restate the Limits: the precondition is that the time from taking the lock to the write or the cut exceeds the TTL, with the consequences named (duplicate seq, broken line, a cut acknowledged commit)."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:ace18d33d9c9172f67fa3653c36e939aa2a05ed1cd81633916f257d22248e6ed",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T12:30:00Z",
+    "finished_at": "2026-10-02T13:25:00Z"
+  }
+}

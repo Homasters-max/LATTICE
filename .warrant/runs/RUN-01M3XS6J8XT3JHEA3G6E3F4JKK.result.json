@@ -1,0 +1,146 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XS6J8XT3JHEA3G6E3F4JKK",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "REQ-SR-002 states taking as a compare-and-swap that 'succeeds only while the current lock is still the one the store looked at'. Its JSONL paragraph implements something weaker: 'creates the file with <n> one more than the greatest <n> the store looked at and fails when that file already exists'. That checks only that name k+1 is free, not that the lock looked at is unchanged. Two other statements of the same requirement let the lock change while k+1 stays free. First, 'Removing a lock removes the store's own lock file and every lock file with a smaller <n>': a release deletes every generation, so numbers are reused and the greatest <n> goes down, which makes design D-3's 'a generation can be created once' false. Second, 'a partly written file included, cannot be read as a lock and counts as expired': a live writer's lock counts as expired between its exclusive create and its content write. Interleaving 1 (three writers and one lock left by a crashed command): the ledger holds commit 1 and an expired lock.1 of X. A, appending after 1, looks at lock.1 (k=1) and is delayed. D, appending with a stale `after`, takes lock.2, answers `moved` and releases, which deletes lock.2 and lock.1. C, appending after 1, sees no lock, creates lock.1, checks the tail (1) and passes fencing. A then creates lock.2, which succeeds because the name is free, although the current lock is now C's live lock and not X's. A checks the tail (1, since C has not written yet) and passes fencing, because lock.2 is its own. C and A each write a commit seq 2 after 1 and both answer `ok`. Interleaving 2 (two writers, no stale lock): A creates lock.1, and before A writes its content B reads lock.1 empty and so counts it as expired. A writes its content, checks the tail and passes fencing. B creates lock.2, checks the tail before A's line lands and passes fencing. Both write seq 2. In both runs the delays are milliseconds (an fsync of a lock file, a slow open on Windows), far below the 10 s TTL. So the Limits sentence 'a takeover between them ... needs a writer stalled right there for longer than the TTL' is false. The result is two commits with the same seq, which LG-C04 refuses on every later opening ('seq does not grow'), and two answers `ok`, against REQ-SR-001 ('only when ... the writer holds the lock until the write is done'). In a variant of interleaving 2 where the ledger has a torn tail, B's recovery (REQ-SR-004) can truncate a commit that A already answered `ok`. The memory adapter (D-6) compares reused generation numbers too (`lock?.gen === looked?.gen` after a release to `null`), but it is synchronous, so the contract suite cannot show the race. The seams 'take' and 'write' cannot place a writer between fencing and write either.",
+      "targets": [
+        "REQ-SR-002",
+        "REQ-SR-001",
+        "SCN-SR-008",
+        "SCN-SR-003",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "Make the JSONL take the compare-and-swap REQ-SR-002 states, and say so in the spec. Option (a), verify after create: after creating lock.<k+1>, the taker looks again. It keeps the lock only when the lock it looked at is still there with the same content and no lock file it did not look at exists below its own. Otherwise it removes only its own file (never the smaller ones, which may belong to a live holder) and answers `moved`. Option (b), monotonic generations: a release never lowers the greatest <n>, for example by creating the next generation as a released or expired lock and pruning only the smaller ones. This changes the 'no lock is left' outcomes of SCN-SR-003/004/005, SCN-CL-011, SCN-CL-012 and tasks 4.1. For a partly written lock, either rely on (a), or count an unreadable lock file as held until its modification time plus the TTL. Then rewrite the Limits sentence and D-3 'Why it is safe' so they match. Add a contract scenario for both adapters: A looks at an expired lock; before A takes, that lock is released and another writer takes a new lock and holds it; A answers `moved` and the other writer's lock is unchanged. Today the memory adapter fails this scenario too."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-SR-004 cuts the ledger during recovery with no fencing. Fencing in REQ-SR-002 is stated only for an append, 'right before it writes', and the Limits sentence covers only the gap between the append's check and its write. Recovery takes the lock, reads again, writes and fsyncs a file in recovered/, then cuts and flushes the ledger, and it never checks that the lock is still its own. Here is the run. A recovering store (a `read`, or an `append` in its step 3) stalls after its re-read for longer than the TTL. Another writer takes over, recovers the same tail, appends a commit answered `ok` and releases. The stalled store then cuts the ledger at the offset it computed earlier, which is where that acknowledged commit starts, so the commit is destroyed and is also absent from recovered/. With the takeover windows of F-1, no stall longer than the TTL is needed. An append in the same position at worst duplicates a seq. A recovery deletes an acknowledged commit, against REQ-SR-001 ('After `ok`, every store made on the ledger reads the commit') and REQ-SR-004's 'never loses one'. 'cut the ledger right after its last line feed' also has two readings with different results: the offset found under the lock (design D-4: ftruncate to the byte after the last line feed of the bytes read in step 3), or the last line feed at the moment of the cut.",
+      "targets": [
+        "REQ-SR-004",
+        "REQ-SR-002",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "In REQ-SR-004, require a fencing check (the lock is still its own and unexpired) right before the cut. When it fails, the store does not cut and returns as when it cannot take the lock; the file already written to recovered/ stays as a harmless duplicate. Say that the cut is at the offset found under the lock, and only while the ledger's length is still the one read under the lock. Extend the Limits sentence of REQ-SR-002 to the gap between recovery's check and its cut. Add a scenario (memory with a seam, or JSONL): the lock of a recovering store is taken over between its write to recovered/ and its cut, the new holder appends a commit, and that commit stays."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-SR-002 says 'A failure of the file system while looking at the lock is thrown, never taken for an expired lock.' Design D-3 makes an exception: an `ENOENT` while reading the greatest lock file means it was removed between the listing and the read, 'so the store looks again'. A lock file that disappears because another writer released it is a normal concurrent event. Read literally, the spec throws there, and the CLI then refuses with code 2 'cannot write store/knowledge.jsonl: ENOENT ...'. The design retries and answers `ok` or `moved`. The two readings lead to different observable outcomes under concurrency.",
+      "targets": [
+        "REQ-SR-002",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "State in REQ-SR-002 that a lock file that disappears between the listing and the read is not a failure: the store looks again. Every other failure is thrown."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-SR-001 says absolutely that `append` 'SHALL write ... only when ... the writer holds the lock until the write is done'. REQ-SR-002 Limits concedes that 'a takeover between them is not detected'. A store cannot guarantee the SHALL, and no test can check it, so the guarantee and the limit disagree.",
+      "targets": [
+        "REQ-SR-001",
+        "REQ-SR-002"
+      ],
+      "recommendation": "Make the SHALL observable: 'only when the `seq` of the last commit is `after` and its fencing check (REQ-SR-002) passed', with a reference to the Limits of REQ-SR-002."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "proposal.md, Impact says a lock file 'exists while an append runs (and after a crash, until its TTL)', and design D-4 says it 'outlives its command only after a crash and expires by its TTL'. Both are inaccurate. A lock file also exists while a `read` recovers a torn tail (REQ-SR-004). It also stays after a failed removal, as SCN-SR-005 shows ('its lock file stays'). Expiry deletes no file: a stale lock file stays on disk, and in `git status` and `git add store/`, until a later append or recovery takes over and releases it.",
+      "targets": [
+        "openspec/changes/s0-store/proposal.md",
+        "SCN-SR-005",
+        "openspec/changes/s0-store/design.md"
+      ],
+      "recommendation": "Rephrase: a lock file exists while an append or a recovery runs. After a crash or a failed removal it stays until a later append or recovery takes it over and removes it. Its TTL only lets that happen."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-SR-004 promises that a failed recovery leaves a duplicate in recovered/ and 'never loses one', and REQ-SR-003 makes a first append create the ledger file and fsync it. Both assume that fsync of a new file also makes its name durable. On Linux file systems, a new directory entry (a file in recovered/, a ledger created by `append`, a lock file) needs an fsync of the folder, and Node cannot fsync a folder on Windows. After a power loss, the truncate of the ledger can survive while the new recovered file does not, so the tail is lost.",
+      "targets": [
+        "REQ-SR-004",
+        "REQ-SR-003"
+      ],
+      "recommendation": "Either fsync the folder after creating a file where the platform allows it, or state that durability is that of the file's contents and that a recovered tail can be lost if power fails during recovery. Weaken 'never loses one' to failures that are not a power loss."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "REQ-SR-003: when fsync or close fails after the whole line is written, 'the commit stays in the ledger and every later read returns it'. That holds only until the machine restarts. After a failed fsync, Linux may keep the page in its cache as clean while the data never reached the disk, so a read before a restart returns the commit and one after may not. The CLI then refuses with code 2 and the proposal file stays, which REQ-CL-001 already treats as an uncertain outcome.",
+      "targets": [
+        "REQ-SR-003",
+        "REQ-CL-001"
+      ],
+      "recommendation": "Write 'every later read returns it while the system runs', or 'the commit may be in the ledger', as REQ-CL-001 already does."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-store/specs/store/spec.md",
+      "change": "REQ-SR-002: make the JSONL take a real compare-and-swap of the lock it looked at, by checking after create or by generations that never decrease. Settle what a partly written lock is (F-1). State that a lock file vanishing between listing and read means look again (F-3). Rewrite the Limits sentence. Add a scenario: the lock looked at is released and another lock is taken before the take, and the append answers `moved`."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-store/specs/store/spec.md",
+      "change": "REQ-SR-004: add a fencing check before the cut, and state the cut offset (F-2). Weaken 'never loses one' to failures that are not a power loss (F-6). REQ-SR-001: make the SHALL about holding the lock observable (F-4)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-store/design.md",
+      "change": "D-3 'Why it is safe': drop 'a generation can be created once' and the claim that a half-written owner 'fails fencing', or rewrite both for the chosen fix. D-4: describe the lifetime of a lock file and the fencing check before the cut (F-2, F-5)."
+    }
+  ],
+  "unknowns": [],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The interleavings of F-1 and F-2 assume writers in separate processes (separate `lattice` commands, for example parallel agent sessions on one project store) on a local disk. The memory adapter is synchronous and test-only, so it cannot interleave in production."
+    },
+    {
+      "id": "A-2",
+      "statement": "Issue #57 and the follow-up issues #84, #85 and #86 were not opened: the review guard allows no shell command except `warrant run submit`. The scope of #57 was taken from the caller's message and proposal.md."
+    },
+    {
+      "id": "A-3",
+      "statement": "Review 1 findings F-2 to F-16 are closed by I-2 to I-13 as stated, checked against the delta specs. F-1 (two takers of one expired lock) is closed for the case SCN-SR-008 tests (a collision on the same generation), but the new generation mechanism has the open compare-and-swap gap of this review's F-1."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "How should the JSONL lock become a real compare-and-swap (F-1)?",
+      "options": [
+        "Verify after create: after creating lock.<k+1>, look again; keep the lock only if the lock looked at is unchanged and no unknown smaller lock exists; otherwise remove only its own file and answer `moved`. The release and the 'no lock is left' scenarios stay as they are.",
+        "Generations that never decrease: a release leaves a released or expired marker at the next generation and prunes only the smaller ones. A lock file always remains, and the scenarios that expect no lock file change.",
+        "Accept the risk: rewrite the Limits of REQ-SR-002 to name both interleavings (a reused generation, a partly written lock) and record the residual risk of two commits with one seq."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:87a4f0b0c25c11d3f4df4706a8847ea60e5edb04696cb3e931055d588defd966",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T11:00:00Z",
+    "finished_at": "2026-10-02T11:50:00Z"
+  }
+}
