@@ -1,10 +1,10 @@
-// Input check of a body (REQ-KR-002, design D-1): an own recursive descent over RFC 8259 instead of JSON.parse —
-// duplicate keys, number records, lone surrogates and places (JSON Pointer) are visible, depth stops at level 65.
+// Parsing a JSON text (REQ-KR-009, OM-H02): an own recursive descent over RFC 8259 instead of JSON.parse — duplicate
+// keys, number records, lone surrogates and places (JSON Pointer) are visible, depth stops at level 65. A key starting
+// with `$` is an ordinary key (NX-15, NX-20).
 
-import type { Refusal, Result } from "./types.ts";
+import type { InputCode, Refusal, Result } from "./types.ts";
 import { fail, ok, refusal, segment } from "./types.ts";
-import { refObject } from "./ref.ts";
-import { admit } from "./admit.ts";
+import { admitString } from "./strings.ts";
 
 const MAX_DEPTH = 64;
 const HEX4 = /^[0-9a-fA-F]{4}$/;
@@ -19,34 +19,33 @@ const ESCAPES: Readonly<Record<string, string>> = {
   t: String.fromCharCode(9),
 };
 
-type Found = { readonly code: string; readonly path: string; readonly pos: number };
+type Found = { readonly code: InputCode; readonly path: string; readonly pos: number };
 
 function isDigit(c: number): boolean {
   return c >= 0x30 && c <= 0x39;
 }
 
-export function checkInput(text: unknown): Result<unknown> {
-  if (typeof text !== "string") return fail([refusal("syntax", "")]);
+export function checkInput(text: unknown): Result<unknown, InputCode> {
+  if (typeof text !== "string") return fail([refusal<InputCode>("syntax", "")]);
   const len = text.length;
   const found: Found[] = [];
   const segs: string[] = [];
   let pos = 0;
-  let stop: Refusal | null = null;
+  let stop: Refusal<InputCode> | null = null;
   // Inside the value of a member whose key was refused: only syntax and too-deep, at the path of that object.
   let quiet = 0;
   let quietPath = "";
-  let lastStringRejected = false;
 
   const path = (): string => segs.join("");
-  const report = (code: string, p: string, at: number): void => {
+  const report = (code: InputCode, p: string, at: number): void => {
     if (quiet === 0) found.push({ code, path: p, pos: at });
   };
   const syntax = (): undefined => {
-    if (stop === null) stop = refusal("syntax", "");
+    if (stop === null) stop = refusal<InputCode>("syntax", "");
     return undefined;
   };
   const tooDeep = (): undefined => {
-    if (stop === null) stop = refusal("too-deep", quiet > 0 ? quietPath : path());
+    if (stop === null) stop = refusal<InputCode>("too-deep", quiet > 0 ? quietPath : path());
     return undefined;
   };
   const skipWs = (): void => {
@@ -57,7 +56,7 @@ export function checkInput(text: unknown): Result<unknown> {
     }
   };
 
-  /** The decoded string, not yet admitted (REQ-KR-002: `admit` decides for a key and a value alike). */
+  /** The decoded string, not yet admitted (`admitString` decides for a key and a value alike). */
   const readString = (): string | undefined => {
     pos++; // opening quote
     const parts: string[] = [];
@@ -97,13 +96,11 @@ export function checkInput(text: unknown): Result<unknown> {
     const at = pos;
     const s = readString();
     if (s === undefined) return undefined;
-    const a = admit(s);
+    const a = admitString(s);
     if (!a.ok) {
       report(a.code, path(), at);
-      lastStringRejected = true;
       return s;
     }
-    lastStringRejected = false;
     return a.nfc;
   };
 
@@ -177,11 +174,6 @@ export function checkInput(text: unknown): Result<unknown> {
     const obj: Record<string, unknown> = {};
     const objPath = path();
     const seen = new Set<string>();
-    let encSeen = false;
-    let refPos = -1;
-    let refValue: unknown;
-    let refRejected = false;
-    let otherKeys = 0;
     skipWs();
     if (pos < len && text.charCodeAt(pos) === 0x7d) {
       pos++;
@@ -196,10 +188,9 @@ export function checkInput(text: unknown): Result<unknown> {
       skipWs();
       if (!(pos < len && text.charCodeAt(pos) === 0x3a)) return syntax();
       pos++;
-      const a = admit(key);
+      const a = admitString(key);
       if (!a.ok) {
         report(a.code, objPath, keyPos);
-        otherKeys++;
         if (quiet === 0) quietPath = objPath;
         quiet++;
         parseValue(level + 1);
@@ -211,21 +202,10 @@ export function checkInput(text: unknown): Result<unknown> {
         const duplicate = seen.has(k);
         if (duplicate) report("duplicate-key", objPath + seg, keyPos);
         else seen.add(k);
-        if (k === "$enc" && !encSeen) {
-          encSeen = true;
-          report("reserved-enc", objPath, keyPos);
-        }
-        const firstRef = k === "$ref" && refPos < 0;
-        if (firstRef) refPos = keyPos;
-        else if (k !== "$ref") otherKeys++;
         segs.push(seg);
         const v = parseValue(level + 1);
         segs.pop();
         if (stop !== null) return undefined;
-        if (firstRef) {
-          refValue = v;
-          refRejected = typeof v === "string" && lastStringRejected;
-        }
         if (!duplicate) {
           Object.defineProperty(obj, k, { value: v, enumerable: true, writable: true, configurable: true });
         }
@@ -241,10 +221,6 @@ export function checkInput(text: unknown): Result<unknown> {
         break;
       }
       return syntax();
-    }
-    // By text: refused keys are other keys, a duplicate `$ref` is not; the value is the first `$ref`, after NFC.
-    if (refPos >= 0 && refObject(refValue, { others: otherKeys > 0, rejected: refRejected }) === null) {
-      report("bad-ref", objPath, refPos);
     }
     return obj;
   };
