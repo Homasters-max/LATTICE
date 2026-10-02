@@ -1,0 +1,21 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y3D1BTZWS06FKRAKZGDVW0",
+  "change": "infra-merge-flow",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-merge-flow",
+  "started_at": "2026-10-02T10:43:46.725Z",
+  "finished_at": "2026-10-02T10:48:36.098Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:cf83cf53ca20c9e3d296b2b9f7d90785f8d4e1cc76a639b574d28dffdd5041ee",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "spec_tree": "sha256:db920dbcac5f3ee21e3e8d349b29fc546f47b22fcaa4118cf2fddc03d8a82b55",
+  "evidence": [
+    "EVID-01M3Y3NVZYQKM515MK2AJ4GWY1"
+  ],
+  "guard_events": []
+}
