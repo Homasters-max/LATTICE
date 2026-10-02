@@ -2,7 +2,7 @@
 
 ## 1. Patches and sync
 
-- [ ] 1.1 `1-merge-flow-scripts.patch` in `D:/tmp/infra-merge-flow/` (design D-1…D-8, D-9 delivery):
+- [x] 1.1 `1-merge-flow-scripts.patch` in `D:/tmp/infra-merge-flow/` (design D-1…D-8, D-9 delivery):
   `.claude/skills/slice/{act.mjs,act-rules.mjs,act-rules.test.mjs,wait-pr.mjs,SKILL.md}`, drafted outside the
   repository; verified by `git apply --check` on `impl/infra-merge-flow` and `node --test` of `act-rules.test.mjs` on a
   scratch checkout with the patch applied

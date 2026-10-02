@@ -267,6 +267,34 @@ fast-forward as the first write); F-11 → D-2; F-12 → proposal; F-13 → D-2 
 (a resumed session reads `autoMergeRequest`); F-15 → D-3; F-16 → task 2.2; F-17 → the Appendix (running checks).
 U-1 (the run button's environment) is checked by `whoami` (task 1.3).
 
+## Implementation Notes
+
+From review 2 (`EVID-01M3Y47NT0H2WT98D2QZEBA9RD`, `PROVEN`: MAJOR F-1…F-6, MINOR F-7…F-15, INFO F-16) and the
+implementation. The rows I-1…I-16 were proposed in the body of spec-PR
+[#115](https://github.com/Homasters-max/LATTICE/pull/115); its merge by the maintainer is the decision on them. D-1…D-10
+and the Appendix hold the approved text; these rows amend it.
+
+| # | Decision |
+|---|---|
+| I-1 | F-1: `main` is red for `act.mjs merge` and the watcher also while an issue titled `infra: main red — …` is open (rule `tracking`: how a red `warrant validate` is announced) — `mainHealth` |
+| I-2 | F-2: in `patchPathWriter` the refused list wins over the profile: `AGENTS.md`, the lock and `.warrant/waivers/**` are refused though the profile names them |
+| I-3 | F-3: the last push is the newest commit of the PR that is not a merge and was committed by an agent (`lastPush`): a maintainer's `act.mjs` commit and a merge of `main` move nothing; with none, every touching entry is pending (a refusal in doubt). D-4's "never a missed entry" reads "a refusal in doubt" |
+| I-4 | F-4: PRs open when the impl-PR merges keep the old `wait-pr.mjs` of their branch; after the merge this session posts a `[broadcast]` on #44 — owners of open PRs update their branch, pull, and restart their watchers |
+| I-5 | F-5: a copy of `act.mjs`, `act-rules.mjs` or `rules.mjs` that differs from `origin/main` is not refused: `act.mjs` writes the three blobs of `origin/main` to a temporary directory and runs that copy (`LATTICE_ACT_REPO`, `LATTICE_ACT_REEXEC`), then removes it — `copyPlan` mode `reexec` |
+| I-6 | F-6: the rule `process` says only that the owner acknowledges an entry with a comment in the PR that links it and that `act.mjs merge` refuses an unacknowledged entry touching the PR (skill `slice`); the tags and the matching live in `SKILL.md` and `act-rules.mjs`, which #101 extends |
+| I-7 | F-7: the agent asks for an act with no Run active and a clean, pushed worktree (`SKILL.md`); `worktreeRefusals` names an untracked Run file like any change |
+| I-8 | F-8: `#<N>` matches when not preceded by `[\w/-]`: `SRA#139` is not `#139` |
+| I-9 | F-9: `git fetch --prune origin` before every check |
+| I-10 | F-10: `waiver` refuses a `warrant` outside `kernel` of `warrant.json` (`versionMatches`) |
+| I-11 | F-11: the passing `merge --dry-run` of task 2.2 runs on any open PR in its end state (a docs PR included); when none is open, the task says so |
+| I-12 | F-12: the Appendix sentence of `process` reads "an entry that touches it, is newer than its last push and is not acknowledged" |
+| I-13 | F-13: a comment starting with `⛔` never acknowledges an entry |
+| I-14 | F-14: a Change PR whose issue is not found is refused ("no issue names Change `<c>`"); issues are read with `--limit 1000`, as `status.mjs` |
+| I-15 | F-15: an entry posted after auto-merge is on reaches the PR through its author — draft and `--disable-auto` (rule `process`); `SKILL.md` says so |
+| I-16 | F-16: if `mergedBy` of a PR merged by auto-merge is not the maintainer, `act.mjs merge` changes to merging only a `CLEAN` PR without `--auto`; the archive-PR checks `mergedBy` (D-9) |
+| I-17 | Implementation: `act.mjs` without `--dry-run` refuses before its actor checks when bootstrap forbids the act (`merge`, `waiver`), so the agent's live run of task 2.2 shows the bootstrap refusal for `merge`; the actor refusals show on `whoami`. The `reexec` path of I-5 runs only once `origin/main` has `act.mjs`: it is checked by `act-rules.test.mjs` (`copyPlan`) and live on the first `act.mjs merge` from a copy that differs |
+| I-18 | Implementation: `wait-pr.mjs` reads the health of `main` (one `gh run list`, one `gh issue list`) only while auto-merge is on; a failed `update-branch` that is not a conflict leaves the memo as it was, so the next check tries again |
+
 ## Appendix — the changed rule texts
 
 ### `maintainer-acts`
