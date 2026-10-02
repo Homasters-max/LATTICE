@@ -1,15 +1,17 @@
 // The rules of act.mjs and wait-pr.mjs (Change infra-merge-flow), as pure functions over plain data: no gh, git or
 // warrant here. The scripts gather the facts and act; act-rules.test.mjs checks the rules (node --test).
-import { isFixMain, testResult, versionMatches } from './rules.mjs';
+import { escapeRegExp as escape, isFixMain, testResult, versionMatches } from './rules.mjs';
 
 export const END_STATE = { spec: 'SPECIFIED', impl: 'VERIFYING', archive: 'ARCHIVED' };
 export const ENTRY_TAGS = ['[decision]', '[scope]', '[broadcast]'];
+// Every tag of the decision log (Change infra-coordinator, D-3): `[incident]` binds no one, but a tagged comment is an
+// entry, never an acknowledgement (I-4).
+export const LOG_TAGS = [...ENTRY_TAGS, '[incident]'];
 export const COPY_FILES = ['act.mjs', 'act-rules.mjs', 'rules.mjs'];
 const BOOTSTRAP_ACTS = new Set(['patch', 'whoami']);
 
 const refusal = (reason, fix) => ({ reason, fix });
 const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
-const escape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // `impl/s0-store-2` → { kind: 'impl', change: 's0-store-2' }; any other branch → null.
 export const CHANGE_NAME = /^[\w.-]+$/;
@@ -124,6 +126,10 @@ export function lastPush(commits, agentLogins) {
   const own = commits.filter((c) => isAgentIdent(c.committer, agentLogins)).map((c) => Date.parse(c.date));
   return own.length ? new Date(Math.max(...own)).toISOString() : null;
 }
+// The last push of a Change (infra-coordinator D-3): `lastPush` over the commits of all its branches on origin
+// (spec/, impl/, archive/), merged or not, whose subject starts with `<change>: ` — so a merged PR still counts.
+// commits: [{ date, committer, subject }].
+export const changeLastPush = (commits, change, agentLogins) => lastPush(commits.filter((c) => (c.subject ?? '').startsWith(`${change}: `)), agentLogins);
 // Times compare as instants: GitHub writes `…:00Z`, `toISOString` `…:00.000Z`.
 const after = (a, b) => Date.parse(a) > Date.parse(b);
 
@@ -134,7 +140,8 @@ export function pendingEntries({ comments, change, issue, pr, areas = [], since,
   const touches = (text) => text.trimStart().startsWith('[broadcast]') || namesChange(text, change)
     || namesNumber(text, issue, repo) || namesNumber(text, pr, repo) || areas.some((a) => namesArea(text, a));
   const isEntry = (c) => c.where !== 'pr' && ENTRY_TAGS.some((t) => c.body.trimStart().startsWith(t));
-  const acknowledges = (c, entry) => after(c.createdAt, entry.createdAt) && !c.body.trimStart().startsWith('⛔')
+  const tagged = (c) => LOG_TAGS.some((t) => c.body.trimStart().startsWith(t));
+  const acknowledges = (c, entry) => after(c.createdAt, entry.createdAt) && !c.body.trimStart().startsWith('⛔') && !tagged(c)
     && new RegExp(`issuecomment-${commentId(entry.url)}(?!\\d)`).test(c.body)
     && (c.where === 'pr' || namesChange(c.body, change) || namesNumber(c.body, pr, repo));
   return comments
@@ -245,6 +252,56 @@ export function patchRefusals({ change, file, paths, allowGlobs, applies, applyE
   return out;
 }
 
+// ---------- review of a PR (Change infra-coordinator, D-5) ----------
+
+const POLICY_PATHS = ['.warrant/local/**', '.warrant/warrant.lock.json', '.github/workflows/**'];
+const CHANGE_FILES = ['.warrant/changes/**', '.warrant/evidence/**', '.warrant/runs/**', 'openspec/changes/**'];
+const matchesAny = (globs, p) => globs.some((g) => globToRegExp(g).test(p));
+
+// The paths of a PR (`git diff --name-status origin/main...<head>`: [{ path, status }]) against what its Change may
+// write. runs: the Run files of the diff [{ id, change, operation, write_scope, scope }]; authorsOf(path): the authors
+// of the PR's commits that touch it; waivers: { path: change } of the waiver files of the diff; humanGlobs: the profile
+// `human-acceptance` of origin/main. → [{ path, why }]; empty when every path is the Change's own.
+export function scopeFindings({ branch, files, runs = [], authorsOf = () => [], agentLogins = [], humanGlobs = [], waivers = {} }) {
+  const b = changeOfBranch(branch);
+  if (!b) {
+    return files.flatMap((f) => (matchesAny(CHANGE_FILES, f.path) ? [{ path: f.path, why: "a Change's files on a branch outside <kind>/<change>" }]
+      : matchesAny(POLICY_PATHS, f.path) ? [{ path: f.path, why: 'a policy path in a PR without a Change (rule tracking)' }] : []));
+  }
+  const { kind, change } = b;
+  const own = `openspec/changes/${change}/`;
+  const mine = runs.filter((r) => r.change === change);
+  const runIds = new Set(mine.map((r) => r.id));
+  const byRun = (p) => mine.filter((r) => r.operation === 'implement').some((r) => matchesAny(r.write_scope ?? [], p)
+    && (!(r.scope ?? []).length || matchesAny(r.scope, p)));
+  const byMaintainer = (p) => { const a = authorsOf(p); return a.length > 0 && a.every((x) => !isAgentIdent(x, agentLogins)); };
+  const ruleChanged = files.some((f) => f.path.startsWith('.warrant/local/rules/'));
+  const archived = new RegExp(`^openspec/changes/archive/[\\w.-]+-${escape(change)}/`);
+  const caps = new Set(files.map((f) => (archived.test(f.path) ? /\/specs\/([\w.-]+)\//.exec(f.path.replace(archived, '/'))?.[1] : null)).filter(Boolean));
+  const why = (f) => {
+    const p = f.path;
+    if (p === `.warrant/changes/${change}.json` || p.startsWith(`.warrant/evidence/${change}/`)) return null;
+    const run = /^\.warrant\/runs\/(RUN-[A-Z0-9]+)(?:\.result)?\.json$/.exec(p);
+    if (run) return runIds.has(run[1]) ? null : "another Change's Run";
+    if (p.startsWith('.warrant/changes/')) return "another Change's record";
+    if (p.startsWith('.warrant/evidence/')) return 'evidence of another Change';
+    if (kind === 'spec') return p.startsWith(own) ? null : 'outside the spec of the Change';
+    if (kind === 'archive') {
+      if (p.startsWith(own) && f.status === 'D') return null;
+      if (archived.test(p)) return null;
+      const cap = /^openspec\/specs\/([\w.-]+)\//.exec(p)?.[1];
+      return cap && caps.has(cap) ? null : 'outside the archive of the Change';
+    }
+    if ([`${own}tasks.md`, `${own}design.md`].includes(p) || p.startsWith(`${own}specs/`)) return null;
+    if (p.startsWith('.warrant/waivers/')) return waivers[p] === change ? null : "another Change's waiver";
+    if (p === `${own}proposal.md`) return byMaintainer(p) ? null : 'the proposal, not by the maintainer';
+    if ((p === 'AGENTS.md' || p === '.warrant/warrant.lock.json') && ruleChanged) return null;
+    if (matchesAny(humanGlobs, p)) return byMaintainer(p) ? null : 'a policy path not by the maintainer';
+    return byRun(p) ? null : "outside the Runs' scope";
+  };
+  return files.map((f) => ({ path: f.path, why: why(f) })).filter((x) => x.why);
+}
+
 // ---------- the local judge (#124, I-22) ----------
 
 // The gates an impl-PR waits on from CI and the merge (rule process): a test-report attested by CI, the evidence that
@@ -254,8 +311,11 @@ const waitsOnCi = (f) => (f.code === 'ATTESTATION_REQUIRED' && f.kind === 'test-
   || (f.code === 'EVIDENCE_MISSING' && (f.items ?? []).every((i) => i === 'test-report'))
   || f.kind === 'human-approval';
 const codes = (env) => (env?.errors ?? []).map((e) => e.code).join(', ') || 'failed';
+// Findings WARRANT adds after the verdict: they change no verdict and no exit code (REQ-VER-009 of WARRANT for
+// FRONTEND_HOOKS_INACTIVE, the guard blind in a worktree session — #93, SRA#138). A note, never a violation (#128).
+export const INFORMATIONAL = new Set(['FRONTEND_HOOKS_INACTIVE']);
 
-// The envelopes of the three steps of the job `warrant / warrant`, in its order. → { ok, lines, waits }: ok when
+// The envelopes of the three steps of the job `warrant / warrant`, in its order. → { ok, lines, waits, notes }: ok when
 // validate and sync --check pass and `warrant ci` reports no violation of the PR (an impl-PR may wait on CI and the
 // merge only).
 export function judgeVerdict({ validate, syncCheck, ci }) {
@@ -266,21 +326,24 @@ export function judgeVerdict({ validate, syncCheck, ci }) {
     else { ok = false; lines.push(`${name}: ${env ? codes(env) : 'no JSON envelope'}`); }
   }
   const kind = ci?.data?.kind ?? '?';
-  if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [] }; }
-  if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [] }; }
+  if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [], notes: [] }; }
+  const info = (x) => INFORMATIONAL.has(x.code);
+  const notes = [...(ci.errors ?? []), ...(ci.data?.findings ?? [])].filter(info)
+    .map((x) => `${x.code}${x.message ? `: ${x.message}` : ''}`);
+  if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [], notes }; }
   const gates = Object.entries(ci.data?.gates ?? {}).filter(([, v]) => v !== 'PASS').map(([g]) => g);
-  const findings = ci.data?.findings ?? [];
+  const findings = (ci.data?.findings ?? []).filter((x) => !info(x));
   const violations = [
-    ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED').map((e) => e.code),
+    ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED' && !info(e)).map((e) => e.code),
     ...(kind === 'impl' ? gates.filter((g) => !WAITS_ON_CI.has(g)) : gates).map((g) => `gate ${g}`),
     ...(kind === 'impl' ? findings.filter((f) => !waitsOnCi(f)) : findings).map((f) => `${f.code}${f.gate ? ` (${f.gate})` : ''}`),
   ];
   if (violations.length) {
     lines.push(`warrant ci (${kind}): ${[...new Set(violations)].join(', ')}`);
-    return { ok: false, lines, waits: [] };
+    return { ok: false, lines, waits: [], notes };
   }
-  lines.push(`warrant ci (${kind}): waits on CI and the merge only — ${gates.join(', ')}`);
-  return { ok, lines, waits: gates };
+  lines.push(gates.length ? `warrant ci (${kind}): waits on CI and the merge only — ${gates.join(', ')}` : `warrant ci (${kind}): only notes`);
+  return { ok, lines, waits: gates, notes };
 }
 
 // ---------- the watcher (D-7) ----------

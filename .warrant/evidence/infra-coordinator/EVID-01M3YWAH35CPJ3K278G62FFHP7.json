@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YWAH35CPJ3K278G62FFHP7",
+  "claim": {
+    "text": "tests-passed passed for infra-coordinator",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "acf19c8265e6dfd27b49cecce01874a3e8f6b8fb",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/infra-coordinator@acf19c8265e6dfd27b49cecce01874a3e8f6b8fb",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:b364f9f264f6a55a2193d387edae1457bd6be1f381a7107983de5ecc0c546ab1",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T17:59:18.886Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-coordinator/raw/tests-passed/junit.xml",
+      "sha256": "sha256:5ca26e871513b9dd4434ee8b53dd300a6df0e1425f151dcb3eb95c0cc03aa5e1"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 849
+  }
+}
