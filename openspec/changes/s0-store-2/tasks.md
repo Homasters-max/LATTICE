@@ -30,8 +30,9 @@
 - [ ] 3.1 Every test outside `test/store/**` passes unchanged (design D-7, I-27); verified by `npm test` passing and
   `git diff main -- test/cli test/e2e test/architecture src/cli src/assembly src/ledger package.json` being empty
 - [ ] 3.2 Manual acceptance in an empty temporary folder through `node --experimental-strip-types
-  <repo>/src/cli/main.ts`: `init`, `import-md` of the fixture, `apply`, `export` (SL-T06), then the same `apply` run
-  while a lock file `store/knowledge.jsonl.lock.1` of another owner expiring far ahead is in place; verified by the exit
-  codes 0 for the first four and 2 naming `LG-C03` for the last, and no lock file of the CLI left, recorded in the
+  <repo>/src/cli/main.ts` (SL-T06, I-40): `init`, `import-md` of the fixture; `apply` while a lock file
+  `store/knowledge.jsonl.lock.1` of another owner expiring far ahead is in place; then, that file removed, `apply` and
+  `export`; verified by the exit codes 0, 0, 2 (the store answered `moved` on an unmoved tail, REQ-LG-004), 0, 0, and by
+  one released lock file `store/knowledge.jsonl.lock.2` holding `{"expires":0,…}` left at rest, recorded in the
   impl-PR body
 - [ ] 3.3 `npm run typecheck`, `npm test` and `warrant verify s0-store-2`; verified by all three succeeding
