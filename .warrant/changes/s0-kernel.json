@@ -5,28 +5,30 @@
   "classification": {
     "profiles": [
       "chore",
-      "feature"
+      "factory-change",
+      "feature",
+      "human-acceptance"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
-        "value": "COMPONENT",
-        "from": "proposer"
+        "value": "SYSTEM",
+        "from": "floor:core-sdd:2"
       },
       "security_impact": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
