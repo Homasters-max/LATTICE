@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3XYF2PSG2FGAPT7RNAA0AMD",
+  "claim": {
+    "text": "openspec-validate passed for infra-process-rules",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "f915a552622196212058ef6ed4a1fead61d2a53f",
+    "base_commit": "6e262604db6ee762bd6e870abc48b7174ee56ace",
+    "spec_revision": "openspec/changes/infra-process-rules@f915a552622196212058ef6ed4a1fead61d2a53f",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:42bb100860f8cfaa4179e1dda8acdde5a27c0407c2c44e258df1100dec0d9264",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:17:30.715Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-process-rules/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:cc374fe3650872659cdd9e5edd305b2912fde806d94a07d3fca515da68b54af3"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}

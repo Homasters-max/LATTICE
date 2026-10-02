@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3XYE1GEKN6KYJ28TZNR3ZHE",
+  "claim": {
+    "text": "Homasters-max approved infra-process-rules for SPECIFIED->APPROVED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "f915a552622196212058ef6ed4a1fead61d2a53f",
+    "base_commit": "6e262604db6ee762bd6e870abc48b7174ee56ace",
+    "spec_revision": "openspec/changes/infra-process-rules@f915a552622196212058ef6ed4a1fead61d2a53f",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/103"
+  },
+  "context_hash": "sha256:e2123af9e43163df8d88275934574c8d49890a02c02bb48bdc15f3d0ed768505",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:16:56.718Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}
