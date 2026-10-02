@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "s0-codec-forms",
-  "commit": "51665c2990e671a4395e4c571ec1347fecbf9683",
+  "commit": "6de5a7381904aa19b078f3d2e0aa963cbd131589",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -18,7 +18,8 @@
     "EVID-01M3YBZ6M2NEZHHKW2MTC6M6N3",
     "EVID-01M3YCEYT61V48NGB4B1TB8PBR",
     "EVID-01M3YCY3GDRQ9372NFQ9SWBAX9",
-    "EVID-01M3YD1MJ9Y0CPKWHACFWA4CHQ"
+    "EVID-01M3YD1MJ9Y0CPKWHACFWA4CHQ",
+    "EVID-01M3YD94DVSXSXB52Q3M8J7A42"
   ],
   "gates": {
     "adversarial-review": "PASS",
