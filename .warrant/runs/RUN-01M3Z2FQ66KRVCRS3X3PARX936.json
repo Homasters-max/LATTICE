@@ -1,0 +1,60 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Z2FQ66KRVCRS3X3PARX936",
+  "change": "pin-v0-10-1",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/pin-v0-10-1/tasks.md",
+    "openspec/changes/pin-v0-10-1/design.md",
+    "openspec/changes/pin-v0-10-1/specs/**"
+  ],
+  "scope": [
+    "openspec/changes/pin-v0-10-1/**"
+  ],
+  "branch": "impl/pin-v0-10-1",
+  "started_at": "2026-10-02T19:47:00.484Z",
+  "finished_at": "2026-10-02T19:47:18.816Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:1da52b64c8a703247725f204b5e6aab42ef2eb5e259b5328dd9bdd77d4fe6965",
+  "effective_policy_hash": "sha256:3bc2c88b5de4545a6392983339502a4e6d8e3d6265c69337c7c0549bff6143f3",
+  "guard_events": [
+    {
+      "at": "2026-10-02T19:47:08.214Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T19:47:09.976Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-10-02T19:47:16.767Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}
