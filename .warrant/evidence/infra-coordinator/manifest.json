@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-coordinator",
-  "commit": "4d37963a26f1d43f822c2bfff8576ea871241ab1",
+  "commit": "f540cd1186e9cee5d025a05d6eecc2553038060a",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -10,6 +10,7 @@
   },
   "evidence": [
     "EVID-01M3YFK7FHR50AYH4DWCTQV4DC",
-    "EVID-01M3YGH40GTXHVJTVP2Y65XTT2"
+    "EVID-01M3YGH40GTXHVJTVP2Y65XTT2",
+    "EVID-01M3YH6FHBDC0DJMMXNJSGQ3VW"
   ]
 }
