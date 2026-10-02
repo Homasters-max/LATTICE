@@ -37,7 +37,7 @@
   new texts); `npm run typecheck` green
 - [x] 2.5 Implementation review (rule `process`, skill `code-review`), result in the impl-PR body; a patch it needs
   applied with `act.mjs patch`; `warrant verify infra-merge-flow`
-- [ ] 2.6 `4-judge.patch` (I-22, #124): `.claude/skills/slice/judge.mjs`, `judgeVerdict` and its tests, `SKILL.md`
+- [x] 2.6 `4-judge.patch` (I-22, #124): `.claude/skills/slice/judge.mjs`, `judgeVerdict` and its tests, `SKILL.md`
   "judge", the rule `process` naming it; applied by the maintainer with `act.mjs patch`, then `warrant sync`; verified
   by `node judge.mjs` on this branch printing the three steps and `no violation of the PR`, `act-rules.test.mjs` green
   and `tests-passed` `PROVEN` again
