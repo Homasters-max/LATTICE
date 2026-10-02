@@ -28,13 +28,18 @@ so its state is read from the furthest branch — archive, impl, spec, then `mai
 6. `warrant verify <change>`, then `warrant transition <change> SPECIFIED` as the last commit; the local judge
    (`node .claude/skills/slice/judge.mjs`: push only on no violation of the PR — a spec-PR and an archive-PR pass
    `warrant ci` outright; an impl-PR may wait only on CI and the merge: `tests-passed`, `factory-golden-passed`,
-   `evidence-complete` of a `test-report`, `human-approval`; a `note:` is no violation); push; only then the PR — a
+   `evidence-complete` of a `test-report`, `human-approval`); push; only then the PR — a
    spec-PR is never offered for review without `SPECIFIED`.
 7. Request the merge (Requests). The merge is the maintainer's approval; changes the review still asks for become `I-N`
    rows of the impl-PR, proposed in the spec-PR body, and the merge is the decision on them.
 
 A spec-PR merged without `SPECIFIED` is followed by a second spec-PR on the same branch name carrying only
 `warrant transition <change> SPECIFIED`; the impl-PR refs that PR.
+
+A rework of the spec before `APPROVED` (WARRANT 0.10.1), when the maintainer asks for it instead of `I-N` rows — in the
+spec-PR, or on the Change's issue once the spec-PR is merged: `warrant transition <change> PROPOSED`, then steps 2–7
+again. An open spec-PR takes the new commits; a merged one is followed by a new spec-PR on the same branch name, and the
+impl-PR does not start until it is merged. `APPROVED --ref` names the spec-PR of the last `SPECIFIED`.
 
 ### UNKNOWN
 

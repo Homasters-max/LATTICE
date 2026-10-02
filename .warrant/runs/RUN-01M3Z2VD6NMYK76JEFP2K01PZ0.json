@@ -1,0 +1,91 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Z2VD6NMYK76JEFP2K01PZ0",
+  "change": "pin-v0-10-1",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/pin-v0-10-1/tasks.md",
+    "openspec/changes/pin-v0-10-1/design.md",
+    "openspec/changes/pin-v0-10-1/specs/**"
+  ],
+  "scope": [
+    "openspec/changes/pin-v0-10-1/**"
+  ],
+  "branch": "impl/pin-v0-10-1",
+  "started_at": "2026-10-02T19:53:23.481Z",
+  "finished_at": "2026-10-02T19:53:49.280Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:356f9427ffbd0ff3d0522b852d4e3e921b958a521d45c2a3766f0f7dd51b9825",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": [
+    {
+      "at": "2026-10-02T19:53:31.237Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T19:53:33.469Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": [
+        "env",
+        "maintainer-acts",
+        "process",
+        "tracking"
+      ]
+    },
+    {
+      "at": "2026-10-02T19:53:34.863Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T19:53:43.882Z",
+      "phase": "pre",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T19:53:45.764Z",
+      "phase": "post",
+      "action": "edit",
+      "paths": [
+        "openspec/changes/pin-v0-10-1/tasks.md"
+      ],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    },
+    {
+      "at": "2026-10-02T19:53:47.174Z",
+      "phase": "pre",
+      "action": "shell",
+      "paths": [],
+      "decision": "allow",
+      "findings": [],
+      "rules_shown": []
+    }
+  ]
+}

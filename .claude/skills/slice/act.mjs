@@ -12,7 +12,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url';
 import {
   CHANGE_NAME, COPY_FILES, actorRefusals, changeOfBranch, copyPlan, lastPush, mainHealth, mergeRefusals,
-  parsePatchPaths, parseWorktrees, patchRefusals, patchSubject, pendingEntries, waiverRefusals, worktreeRefusals,
+  parsePatchPaths, parseWorktrees, patchRefusals, patchSubject, pendingEntries, WAIVER_ID, waiverRefusals, worktreeRefusals,
 } from './act-rules.mjs';
 import { claimChanges, parseIssue } from './rules.mjs';
 
@@ -28,7 +28,7 @@ const args = argv.filter((a) => a !== '--dry-run');
 const [act, ...rest] = args;
 const ARITY = { merge: 1, waiver: 2, patch: 2, whoami: 0 };
 if (!(act in ARITY) || rest.length !== ARITY[act] || args.some((a) => a.startsWith('--'))
-  || (act === 'merge' && !/^\d+$/.test(rest[0])) || (act === 'waiver' && !/^WAV-[\w-]+$/.test(rest[1]))
+  || (act === 'merge' && !/^\d+$/.test(rest[0])) || (act === 'waiver' && !WAIVER_ID.test(rest[1]))
   || ((act === 'waiver' || act === 'patch') && !CHANGE_NAME.test(rest[0]))) {
   console.error(USAGE);
   process.exit(64);

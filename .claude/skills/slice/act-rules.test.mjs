@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   actorRefusals, changeLastPush, changeOfBranch, copyPlan, globToRegExp, isAgentIdent, lastPush, mainHealth, mergeRefusals,
   judgeVerdict, parsePatchPaths, parseWorktrees, patchSubject,
-  patchPathWriter, patchRefusals, pendingEntries, scopeFindings, waiverRefusals, watchStep, worktreeRefusals,
+  patchPathWriter, patchRefusals, pendingEntries, scopeFindings, WAIVER_ID, waiverRefusals, watchStep, worktreeRefusals,
 } from './act-rules.mjs';
 
 const reasons = (refusals) => refusals.map((r) => r.reason).join(' | ');
@@ -222,6 +222,16 @@ describe('worktree, waiver, patch (D-5, D-6)', () => {
     assert.match(reasons(waiverRefusals({ ...w, waiver: { change: 'x', waiver_state: 'PROPOSED' }, others: [{ ref: 'origin/impl/y', change: 'y' }] })), /also a waiver of y on origin\/impl\/y/);
     assert.match(reasons(waiverRefusals({ ...w, cli: '0.11.0', waiver: { change: 'x', waiver_state: 'PROPOSED' }, others: [] })), /pins 0.10/);
   });
+  const ULID = 'WAV-01M3Z17ZJ9MJ7SKCMT1WTNDMZ5';
+  it('a waiver id is WAV-<ULID> or the former WAV-<year>-NNN, as the waiver/1 schema of WARRANT 0.10.1 (pin-v0-10-1, I-6)', () => {
+    for (const id of ['WAV-2026-007', ULID]) assert.ok(WAIVER_ID.test(id), id);
+    for (const id of ['WAV-x', 'wav-2026-007', 'WAV-2026-07', 'WAV-01M3Z17ZJ9MJ7SKCMT1WTNDMZ', 'WAV-01M3Z17ZJ9MJ7SKCMT1WTNDMZI',
+      'WAV-01M3Z17ZJ9MJ7SKCMT1WTNDMZ5;rm', 'WAV-2026-007 ']) assert.ok(!WAIVER_ID.test(id), id);
+  });
+  it('a WAV-<ULID> waiver is judged as a former one', () => {
+    assert.deepEqual(waiverRefusals({ ...w, wav: ULID, cli: '0.10.1', waiver: { change: 'x', waiver_state: 'PROPOSED' }, others: [] }), []);
+    assert.match(reasons(waiverRefusals({ ...w, wav: ULID, cli: '0.10.1', waiver: null, others: [] })), new RegExp(`no ${ULID}`));
+  });
   const allow = ['.warrant/warrant.json', '.warrant/warrant.lock.json', '.warrant/local/**', '.warrant/waivers/**', '.claude/**',
     '**/AGENTS.md', '.github/workflows/**', 'package.json', 'package-lock.json', '**/tsconfig*.json'];
   it('globs', () => {
@@ -386,6 +396,12 @@ describe('review of a PR: scope (infra-coordinator D-5)', () => {
     const byMaintainer = { authorsOf: () => [MAINTAINER] };
     assert.deepEqual(review('impl/c', [f('.warrant/local/rules/process.json'), f('AGENTS.md'), f('.warrant/warrant.lock.json')], byMaintainer), []);
   });
+  it('what warrant sync writes after a pin — the lock, AGENTS.md, .warrant/schemas — is the Change\'s own (pin-v0-10-1, I-2)', () => {
+    assert.deepEqual(review('impl/c', [f('.warrant/warrant.lock.json'), f('.warrant/schemas/waiver.1.schema.json'), f('AGENTS.md')]), []);
+    assert.deepEqual(review('impl/c', [f('.warrant/schemas/waiver.1.schema.json')]), [".warrant/schemas/waiver.1.schema.json: outside the Runs' scope"]);
+    // A pin of a new CLI changes the lock alone (no rule): still what sync writes (I-15).
+    assert.deepEqual(review('impl/c', [f('.warrant/warrant.lock.json')]), []);
+  });
   it('a spec-PR writes only its own folder; an archive-PR moves it and writes the specs of its delta', () => {
     assert.deepEqual(review('spec/c', [f('openspec/changes/c/proposal.md', 'A'), f('src/x.ts')]), ['src/x.ts: outside the spec of the Change']);
     assert.deepEqual(review('archive/c', [f('openspec/changes/c/proposal.md', 'D'), f('openspec/changes/archive/2026-10-02-c/specs/projections/spec.md', 'A'),
@@ -399,7 +415,7 @@ describe('review of a PR: scope (infra-coordinator D-5)', () => {
   });
 });
 
-describe('the local judge: informational findings (#128)', () => {
+describe('the local judge: no informational exception (#128 ended by pin-v0-10-1, I-12)', () => {
   const ok = { ok: true, errors: [] };
   // The shape of `warrant ci` of #123 at ba1b278: only gates waiting on CI and the merge, and FRONTEND_HOOKS_INACTIVE.
   const at123 = { ok: false, data: { kind: 'impl',
@@ -411,17 +427,33 @@ describe('the local judge: informational findings (#128)', () => {
       { code: 'FRONTEND_HOOKS_INACTIVE', paths: ['src/ledger/projections/index.ts'], more: 0, message: 'changed without a post event of warrant guard in the Runs of the Change: src/ledger/projections/index.ts' },
     ] },
     errors: ['factory-golden-passed', 'tests-passed'].map((g) => ({ code: 'GATE_NOT_PASSED', message: `gate ${g}` })) };
-  it('FRONTEND_HOOKS_INACTIVE alone beyond the gates waiting on CI is a note, not a violation', () => {
+  it('FRONTEND_HOOKS_INACTIVE beyond the gates waiting on CI is a violation', () => {
     const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: at123 });
-    assert.equal(v.ok, true);
-    assert.equal(v.notes.length, 1);
-    assert.match(v.notes[0], /^FRONTEND_HOOKS_INACTIVE: changed without a post event/);
-  });
-  it('with another finding it is still a violation', () => {
-    const scope = structuredClone(at123);
-    scope.data.findings.push({ code: 'SCOPE_VIOLATION', gate: 'scope-valid' });
-    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: scope });
     assert.equal(v.ok, false);
-    assert.doesNotMatch(v.lines.join(), /FRONTEND_HOOKS_INACTIVE/);
+    assert.match(v.lines.join(), /FRONTEND_HOOKS_INACTIVE/);
+  });
+  it('without it the impl-PR waits on CI and the merge only', () => {
+    const waits = structuredClone(at123);
+    waits.data.findings = waits.data.findings.filter((f) => f.code !== 'FRONTEND_HOOKS_INACTIVE');
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: waits });
+    assert.equal(v.ok, true);
+    assert.deepEqual(v.waits, ['factory-golden-passed', 'human-approval', 'tests-passed']);
+  });
+  it('a gate WAIVED by an ACTIVE waiver and its findings are no violation (pin-v0-10-1, I-16)', () => {
+    const waived = structuredClone(at123);
+    waived.data.findings = waived.data.findings.filter((f) => f.code !== 'FRONTEND_HOOKS_INACTIVE');
+    waived.data.gates['spec-approved'] = 'WAIVED';
+    waived.data.findings.push({ code: 'SPEC_CHANGED_AFTER_APPROVAL', gate: 'spec-approved' }, { code: 'WAIVED_BY', gate: 'spec-approved' });
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: waived });
+    assert.equal(v.ok, true);
+    assert.deepEqual(v.waits, ['factory-golden-passed', 'human-approval', 'tests-passed']);
+    waived.data.gates['spec-approved'] = 'FAIL';
+    assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: waived }).ok, false);
+  });
+  it('warrant ci failed with no gate and no finding is a violation, not a pass (pin-v0-10-1, I-15)', () => {
+    const bare = { ok: false, data: { kind: 'impl', gates: {}, findings: [] }, errors: [{ code: 'USAGE', message: 'HEAD has 1 parent' }] };
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: bare });
+    assert.equal(v.ok, false);
+    assert.match(v.lines.join(), /USAGE/);
   });
 });

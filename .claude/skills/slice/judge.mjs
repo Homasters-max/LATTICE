@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // The local CI judge (#124; Change infra-merge-flow, I-22): the three steps of the job `warrant / warrant` —
-// `warrant validate`, `warrant sync --check`, `warrant ci` — on the merge of HEAD with fresh origin/main, in a scratch
-// worktree outside the repository, removed afterwards, so no evidence of the judge lands in a Change's folder.
+// `warrant validate`, `warrant sync --check`, `warrant ci --no-record` — on the merge of HEAD with fresh origin/main,
+// in a scratch worktree outside the repository, removed afterwards. The worktree builds the merge the job judges;
+// `--no-record` (WARRANT 0.10.1) gives the same verdict and writes nothing (Change pin-v0-10-1).
 // Run it from the worktree of the branch before a push that opens or updates a PR (rule process). The verdict is
 // `judgeVerdict` of act-rules.mjs.
 // Usage: node judge.mjs [<ref>]   (default HEAD; review.mjs passes origin/<head> of another PR)
@@ -51,9 +52,8 @@ try {
     throw null;
   }
   const run = (args) => envelope(sh('warrant', args, { cwd: dir, ok: true, shell: WIN }));
-  const verdict = judgeVerdict({ validate: run(['validate']), syncCheck: run(['sync', '--check']), ci: run(['ci']) });
+  const verdict = judgeVerdict({ validate: run(['validate']), syncCheck: run(['sync', '--check']), ci: run(['ci', '--no-record']) });
   for (const l of verdict.lines) console.log(`  ${l}`);
-  for (const n of verdict.notes) console.log(`  note: ${n}`);
   console.log(verdict.ok ? 'judge: no violation of the PR — push' : 'judge: violation — fix it before the push');
   code = verdict.ok ? 0 : 1;
 } catch (e) {

@@ -202,8 +202,13 @@ export function worktreeRefusals({ branch, matches, dirty, relation }) {
   return out;
 }
 
+// The id of a waiver: `WAV-<ULID>` (WARRANT 0.10.1, SRA#139) or the former `WAV-<year>-NNN` — the pattern of
+// `.warrant/schemas/waiver.1.schema.json` (Change pin-v0-10-1, I-6).
+export const WAIVER_ID = /^WAV-([0-9]{4}-[0-9]{3}|[0-9A-HJKMNP-TV-Z]{26})$/;
+
 // waiver: the file on origin/impl/<change> (or null); others: [{ ref, change }] — the same id on origin/main and the
-// other origin/impl/* branches (SRA#139); cli: `warrant --version`; kernel of warrant.json.
+// other origin/impl/* branches (a collision of the former `WAV-<year>-NNN`, SRA#139); cli: `warrant --version`;
+// kernel of warrant.json.
 export function waiverRefusals({ change, wav, waiver, others, cli, kernel }) {
   const out = [];
   if (!waiver) out.push(refusal(`no ${wav} on origin/impl/${change}`, `the owner proposes it (warrant waive ${change} …) and pushes`));
@@ -275,7 +280,9 @@ export function scopeFindings({ branch, files, runs = [], authorsOf = () => [], 
   const byRun = (p) => mine.filter((r) => r.operation === 'implement').some((r) => matchesAny(r.write_scope ?? [], p)
     && (!(r.scope ?? []).length || matchesAny(r.scope, p)));
   const byMaintainer = (p) => { const a = authorsOf(p); return a.length > 0 && a.every((x) => !isAgentIdent(x, agentLogins)); };
-  const ruleChanged = files.some((f) => f.path.startsWith('.warrant/local/rules/'));
+  // What `warrant sync` writes after a rule or a pin changes; the job's `validate` and `sync --check` prove it is
+  // exactly that (Change pin-v0-10-1, I-2).
+  const synced = files.some((f) => f.path.startsWith('.warrant/local/rules/') || f.path === '.warrant/warrant.lock.json');
   const archived = new RegExp(`^openspec/changes/archive/[\\w.-]+-${escape(change)}/`);
   const caps = new Set(files.map((f) => (archived.test(f.path) ? /\/specs\/([\w.-]+)\//.exec(f.path.replace(archived, '/'))?.[1] : null)).filter(Boolean));
   const why = (f) => {
@@ -295,7 +302,7 @@ export function scopeFindings({ branch, files, runs = [], authorsOf = () => [], 
     if ([`${own}tasks.md`, `${own}design.md`].includes(p) || p.startsWith(`${own}specs/`)) return null;
     if (p.startsWith('.warrant/waivers/')) return waivers[p] === change ? null : "another Change's waiver";
     if (p === `${own}proposal.md`) return byMaintainer(p) ? null : 'the proposal, not by the maintainer';
-    if ((p === 'AGENTS.md' || p === '.warrant/warrant.lock.json') && ruleChanged) return null;
+    if ((p === 'AGENTS.md' || p === '.warrant/warrant.lock.json' || p.startsWith('.warrant/schemas/')) && synced) return null;
     if (matchesAny(humanGlobs, p)) return byMaintainer(p) ? null : 'a policy path not by the maintainer';
     return byRun(p) ? null : "outside the Runs' scope";
   };
@@ -311,13 +318,10 @@ const waitsOnCi = (f) => (f.code === 'ATTESTATION_REQUIRED' && f.kind === 'test-
   || (f.code === 'EVIDENCE_MISSING' && (f.items ?? []).every((i) => i === 'test-report'))
   || f.kind === 'human-approval';
 const codes = (env) => (env?.errors ?? []).map((e) => e.code).join(', ') || 'failed';
-// Findings WARRANT adds after the verdict: they change no verdict and no exit code (REQ-VER-009 of WARRANT for
-// FRONTEND_HOOKS_INACTIVE, the guard blind in a worktree session — #93, SRA#138). A note, never a violation (#128).
-export const INFORMATIONAL = new Set(['FRONTEND_HOOKS_INACTIVE']);
-
-// The envelopes of the three steps of the job `warrant / warrant`, in its order. → { ok, lines, waits, notes }: ok when
+// The envelopes of the three steps of the job `warrant / warrant`, in its order. → { ok, lines, waits }: ok when
 // validate and sync --check pass and `warrant ci` reports no violation of the PR (an impl-PR may wait on CI and the
-// merge only).
+// merge only). Every other finding is a violation — FRONTEND_HOOKS_INACTIVE too: the guard of WARRANT 0.10.1 sees a
+// worktree session (#93; Change pin-v0-10-1, I-12, ending the exception of #128).
 export function judgeVerdict({ validate, syncCheck, ci }) {
   const lines = [];
   let ok = true;
@@ -326,24 +330,26 @@ export function judgeVerdict({ validate, syncCheck, ci }) {
     else { ok = false; lines.push(`${name}: ${env ? codes(env) : 'no JSON envelope'}`); }
   }
   const kind = ci?.data?.kind ?? '?';
-  if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [], notes: [] }; }
-  const info = (x) => INFORMATIONAL.has(x.code);
-  const notes = [...(ci.errors ?? []), ...(ci.data?.findings ?? [])].filter(info)
-    .map((x) => `${x.code}${x.message ? `: ${x.message}` : ''}`);
-  if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [], notes }; }
-  const gates = Object.entries(ci.data?.gates ?? {}).filter(([, v]) => v !== 'PASS').map(([g]) => g);
-  const findings = (ci.data?.findings ?? []).filter((x) => !info(x));
+  if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [] }; }
+  if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [] }; }
+  // A gate WAIVED by an ACTIVE waiver passes, as in the job; its findings (the change it waives, WAIVED_BY) are no
+  // violation (Change pin-v0-10-1, I-16).
+  const states = Object.entries(ci.data?.gates ?? {});
+  const waived = new Set(states.filter(([, v]) => v === 'WAIVED').map(([g]) => g));
+  const gates = states.filter(([, v]) => v !== 'PASS' && v !== 'WAIVED').map(([g]) => g);
+  const findings = (ci.data?.findings ?? []).filter((f) => !waived.has(f.gate));
   const violations = [
-    ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED' && !info(e)).map((e) => e.code),
+    ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED').map((e) => e.code),
     ...(kind === 'impl' ? gates.filter((g) => !WAITS_ON_CI.has(g)) : gates).map((g) => `gate ${g}`),
     ...(kind === 'impl' ? findings.filter((f) => !waitsOnCi(f)) : findings).map((f) => `${f.code}${f.gate ? ` (${f.gate})` : ''}`),
   ];
   if (violations.length) {
     lines.push(`warrant ci (${kind}): ${[...new Set(violations)].join(', ')}`);
-    return { ok: false, lines, waits: [], notes };
+    return { ok: false, lines, waits: [] };
   }
-  lines.push(gates.length ? `warrant ci (${kind}): waits on CI and the merge only — ${gates.join(', ')}` : `warrant ci (${kind}): only notes`);
-  return { ok, lines, waits: gates, notes };
+  if (!gates.length) { lines.push(`warrant ci (${kind}): ${codes(ci)}`); return { ok: false, lines, waits: [] }; }
+  lines.push(`warrant ci (${kind}): waits on CI and the merge only — ${gates.join(', ')}`);
+  return { ok, lines, waits: gates };
 }
 
 // ---------- the watcher (D-7) ----------
