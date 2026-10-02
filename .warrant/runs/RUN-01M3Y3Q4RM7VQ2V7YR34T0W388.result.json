@@ -1,0 +1,213 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y3Q4RM7VQ2V7YR34T0W388",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "ambiguity",
+      "statement": "The case of <stem> in a section id is undefined. REQ-CD-001 takes `<stem>` from step 1 of REQ-CL-003, where `<stem>` keeps its case and the spec says `<stem> in lower case` when it means the lowered form. REQ-CD-007 gives the document `id` `<namespace>/<stem in lower case>` but the section `id` `<namespace>/<stem>.<slug>`, and its length limit is on `<stem>.<slug>`. Read literally, `README.md` gives the document `lattice/readme` and the sections `lattice/README.<slug>`. Read the way the design means it (D-3, D-6, and `stemOf`, which returns the lowered stem), the sections are `lattice/readme.<slug>`. The two readings give different entity ids, so they are observably different. The literal reading also breaks OM-I05, which REQ-CD-001 implements: a slug is `[a-z0-9][a-z0-9.-]*`. SCN-CD-007 uses only the lower-case `sections.md`, so no test tells the two readings apart. The corpus has `README.md` with sections.",
+      "targets": [
+        "REQ-CD-007",
+        "REQ-CD-001",
+        "SCN-CD-007"
+      ],
+      "recommendation": "Write the section id as `<namespace>/<stem in lower case>.<slug>` and the limit as `<stem in lower case>.<slug>`. Add a case to SCN-CD-007, or a separate one, that imports the fixture under an upper-case file name (for example `Sections.md`) and asserts `lattice/sections.purpose`."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The document form reuses the type ids of the skeleton form with other bodies. In the main spec, REQ-CL-003 and REQ-CL-005 define `<namespace>/document@1` as exactly `{file, columns, rows:[{$ref}]}`, and REQ-CL-005 refuses any other body. REQ-CD-007 defines `<namespace>/document@1` as `{file, title, items}`. REQ-CD-003 gives the rows of `<namespace>/table.<slugs>@1` an extra field `refs`. One pinned type revision now has two incompatible body shapes, which goes against OM-T05 and OM-H01 (a block is validated against the type revision it names). In practice: a proposal from `importDocument`, applied with `lattice apply`, makes `lattice export` (REQ-CL-005) exit with code 2, and a skeleton document makes `exportDocuments` refuse. The rule that keeps these apart, \"no store holds both\", appears only in design D-3 and the Risks section. The spec neither states nor enforces it.",
+      "targets": [
+        "REQ-CD-007",
+        "REQ-CD-003",
+        "REQ-CD-008",
+        "REQ-CL-003",
+        "REQ-CL-005"
+      ],
+      "recommendation": "Either give the document form its own type revisions (`document@2`, and `table.<slugs>@2` for rows that carry `refs`; OM-T05 says moving to a new revision is explicit), or state in REQ-CD-007 and REQ-CD-008 that the document form and the skeleton form share these ids and never share a store. In the second case, also state what each export does with a document of the other form."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "A range has no size limit. REQ-CD-006 says a valid range `mentions every ID from the start to the end`, and the only cap on the digit run is the 128-character limit of an ID. So `XX-A0…A99999999999999999999` must expand to about 10^20 references, and with more than 15 digits the comparison `the start's number is less than the end's` goes beyond safe integers. The import cannot finish, and the spec does not say whether such a range is refused or at which line.",
+      "targets": [
+        "REQ-CD-006",
+        "SCN-CD-006"
+      ],
+      "recommendation": "Bound a range: at most N digits (for example 6) and at most M IDs per range (for example 1000). Refuse a range over the bound at its line, as for an invalid range, and add the case to SCN-CD-006."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "Several refusal rules have no scenario, so tests named by an `SCN-CD-…` token need not cover them and the gate passes without them: a duplicate ID in a file (REQ-CD-001); an ID whose lower case equals the stem; a table line that does not render back (`|FX-A01|text|`); a `|` in a cell that is not `\\|`; the skeleton separator `| --- |`, which is the main difference between this form and the skeleton form; a row with a different number of cells from the header; a column named `refs`, `table` or `list`, or one that breaks step 5 of REQ-CL-003 (REQ-CD-003); an empty list item (REQ-CD-004); a code point the kernel refuses (step 3). SCN-CD-001 covers only the layout, lines, NFC and the file name.",
+      "targets": [
+        "SCN-CD-001",
+        "SCN-CD-003",
+        "SCN-CD-004",
+        "REQ-CD-001",
+        "REQ-CD-003",
+        "REQ-CD-004"
+      ],
+      "recommendation": "Extend SCN-CD-001 (or add a refusal scenario under REQ-CD-003) with copies of `tables.md` and `sections.md`, each changed one way: a repeated ID, an ID equal to the stem, `| --- |` as the separator, `|FX-A01|text|`, a bare `|` in a cell, a short row, a column `refs`. Give the expected line of each."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "When the deviation is something missing, the spec does not give the refusal line. An empty file has no first element, so it could be refused at line 0 or line 1. The spec also does not say whether a file holding only a title is accepted, as a document with no items. A table with a header and a separator but no row is refused (REQ-CD-003), but at the header, the separator, or the line after it? REQ-CL-003 fixes the analogous case (`a file of two lines is refused at line 3`), and REQ-CD-005 fixes it for a fence without a closing line. For tables and the empty file it is open.",
+      "targets": [
+        "REQ-CD-001",
+        "REQ-CD-003"
+      ],
+      "recommendation": "State that an empty file is refused at line 1, that a title alone is a valid document with `items: []`, and that a table without a row is refused at the line after its separator, as in REQ-CL-003."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CD-008 lists `a reference naming no entity or an entity of another type` among the reasons a document cannot be rendered, without limiting it to the references export follows (document and section items, table `rows`). Read broadly, it also covers the `refs` of a block. REQ-CD-006 allows those to name no entity (`A mentioned ID need not name a block`), so the broad reading would refuse the round trip of `references.md`.",
+      "targets": [
+        "REQ-CD-008",
+        "REQ-CD-006"
+      ],
+      "recommendation": "Write `an item or a row reference that names no entity or an entity of another type`, and state that `refs` are compared by the re-import check only, never resolved."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Export returns `the first refusal`, but the spec does not say in which order documents are checked. With two broken documents, the document the refusal names depends on the implementation's iteration order (today the order of `view.entities()`), so the refusal is not reproducible from the spec.",
+      "targets": [
+        "REQ-CD-008"
+      ],
+      "recommendation": "Fix the order: documents checked in the order of their `file` names (UTF-16 code units), or of their `id`s, and the first refused one is reported."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-CD-003 promises `one type per distinct header (LG-B06)`, but derives the type from slugs only. So distinct headers such as `| ID | Rule |` and `| ID | rule |`, or `| ID | A B |` and `| ID | A-B |`, get the same type `table.<slug>@1` with different field names. The promise and the formula disagree.",
+      "targets": [
+        "REQ-CD-003"
+      ],
+      "recommendation": "Either say `one type per distinct list of column slugs` and refuse, within a file, two tables whose headers differ but give the same slugs, or derive the type so that it is injective on headers."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CD-006 defines the text of a row as `its cells after the ID, in column order` and then its field. It bounds code spans to one cell or list item, but does not say whether mentions are found per cell and per item or in a concatenation. Concatenated with no separator, cells `see FX` and `-A01` would produce a mention that is in neither cell.",
+      "targets": [
+        "REQ-CD-006"
+      ],
+      "recommendation": "State that mentions, ranges and code spans are found in each paragraph text, cell and list item separately, and that `refs` follows them in that order."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "A paragraph continues over any non-empty line without a marker (REQ-CD-002), including a line that starts with `<ID>. `. So `FX-R01. a` directly followed by `FX-R02. b` imports as one block FX-R01 that mentions FX-R02. The rule FX-R02 silently disappears as a block. The behaviour is unambiguous, but it is a silent repair of a missing empty line, which the strict-refusal principle of REQ-CD-001 (`never repairing one`) is meant to prevent.",
+      "targets": [
+        "REQ-CD-002",
+        "SCN-CD-002"
+      ],
+      "recommendation": "Refuse a continuation line that starts with an ID followed by `. `, at that line, and add the case to SCN-CD-002. Or state explicitly that such a line is paragraph text."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "ambiguity",
+      "statement": "The rule refusing `two documents naming the same file compared in lower case` cannot be reached. The re-import check already requires a document's `id` to be `<namespace>/<stem in lower case>` of its `file`, so two distinct documents whose `file` is equal in lower case always fail re-import. The last case of SCN-CD-009 accepts a refusal naming either document, so it does not show that the file-name rule exists.",
+      "targets": [
+        "REQ-CD-008",
+        "SCN-CD-009"
+      ],
+      "recommendation": "Either drop the rule as implied by the re-import check, or keep it and make SCN-CD-009 assert the reason (same file) and which document is named."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-boundary",
+      "statement": "The spec covers one file at a time, while the corpus round trip (#61) needs several documents in one store. Several cases are left open. Ids can collide across files: the section `<ns>/a.b-c` of `a.md` (heading `B C`) has the same id as the document of `a.b-c.md`, and one ID can be defined in two files. A block that no document references is never exported, and nothing reports it. A block referenced by two documents is written into both files.",
+      "targets": [
+        "REQ-CD-007",
+        "REQ-CD-008"
+      ],
+      "recommendation": "Name these cases as out of scope and leave them to #61 (a note in REQ-CD-008 or in the follow-up issue), so the corpus Change defines the collision and orphan behaviour."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "ambiguity",
+      "statement": "Some `Implements:` lines claim design IDs that the requirement does not realize. REQ-CD-006 claims OM-R05 (the referrers projection), but it only stores `refs`. REQ-CD-007 claims OM-C02 (hierarchies as navigation projections), but it defines no projection.",
+      "targets": [
+        "REQ-CD-006",
+        "REQ-CD-007"
+      ],
+      "recommendation": "Drop OM-R05 and OM-C02 from `Implements:`, or name them as `enables` in the text."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-codec-forms/specs/codec/spec.md",
+      "change": "REQ-CD-007: replace `id` `<namespace>/<stem>.<slug>` with `id` `<namespace>/<stem in lower case>.<slug>`, and `<stem>.<slug>` has at most 128 characters with `<stem in lower case>.<slug>` has at most 128 characters. SCN-CD-007: add an import of the fixture named `Sections.md` that gives the section `lattice/sections.purpose` (F-1)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-codec-forms/specs/codec/spec.md",
+      "change": "REQ-CD-006: add `a range has at most <N> digits in its number and mentions at most <M> IDs; a range over these bounds is refused at its line`, and add such a range to the refused copies of SCN-CD-006 (F-3)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-codec-forms/specs/codec/spec.md",
+      "change": "Add a refusal scenario under REQ-CD-003 (or extend SCN-CD-001) with copies of `tables.md` and `sections.md`: a repeated ID, an ID equal to the stem, the separator `| --- |`, the line `|FX-A01|text|`, a bare `|` in a cell, a short row, a column `refs`. Give the line of each refusal (F-4)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The corpus facts in design.md were not re-checked file by file: 13 files, `I-JSON` as the only undefined ID-like token, fourteen ranges, no repeated heading, and the prototype round trip. A grep of design-next/*.md found no `UTF-8`, `SHA-256` or similar token that the ID grammar would take as a mention."
+    },
+    {
+      "id": "A-2",
+      "statement": "The fixtures of REQ-CD-008 do not exist yet. Scenario line numbers were checked against the layout the scenarios describe (sections.md: title on line 1, paragraph on line 3, `## Purpose` on line 5; fields.md: FX-Z01 on line 3, its table on line 5) and are consistent with it."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Should the document form reuse the skeleton's type ids `<ns>/document@1` and `<ns>/table.<slugs>@1` with other bodies (F-2)?",
+      "options": [
+        "Keep `@1`, and state in REQ-CD-007 and REQ-CD-008 that the two forms never share a store and what each export does with the other form's documents",
+        "Use new revisions `document@2` and `table.<slugs>@2` for the document form (OM-T05)",
+        "Use distinct names until #61 removes the skeleton form"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:5166eb28efcd8ea515ed91155d8e4279a7d697531237794f7e5d70fd0b48ed8f",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:45:00Z"
+  }
+}
