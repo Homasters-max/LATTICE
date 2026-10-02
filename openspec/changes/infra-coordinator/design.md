@@ -398,6 +398,29 @@ commit, the waiver, the merge), tasks 1.2, 2.2; F-5 → tasks 1.2, 2.2 (verified
 `process` ("a second waits"), Appendix B, task 3.2; F-13 → Goals; F-14 → D-4 (60 s; a `[decision]` before or after the
 edit); F-15 → D-10; F-16 → D-7.
 
+## Implementation Notes
+
+From review 4 (`EVID-01M3YHVX5ME8QWSXHY1A2F8TPW`, `PROVEN`: MAJOR F-1, MINOR F-2…F-10, INFO F-11, F-12) and the
+implementation. The rows I-1…I-10 were proposed in the body of spec-PR
+[#135](https://github.com/Homasters-max/LATTICE/pull/135); its merge by the maintainer (no other choice commented) is the
+decision on them. D-1…D-12 and the Appendices hold the approved text; these rows amend it.
+
+| # | Decision |
+|---|---|
+| I-1 | F-1: an AREA added after `init` by a `[decision]` is held from that decision's time (`holdersOf` orders by `areaAt[AREA] ?? initAt`); `AR` of a `skip_specs` Change from its `initAt`; adding an AREA another Change holds is a collision the same `[decision]` resolves |
+| I-2 | F-2: a decision the maintainer gives in a Change session's chat is posted by that session as a `[decision]` quoting the answer, and the coordinator confirms it by message; a `[decision]` the maintainer posts himself is an entry too; the retro's `[decision]` is the coordinator's. The rule `process` says "posted by the coordinator or, quoting the answer, by the session the maintainer answered" |
+| I-3 | F-3: a slice decision on an open PR — "the coordinator turns the PR to draft", not "the author of the decision" |
+| I-4 | F-4: a comment whose first line starts with any of the four tags (`LOG_TAGS` of `act-rules.mjs`) is never an acknowledgement; `ENTRY_TAGS` (the three binding ones) is unchanged |
+| I-5 | F-5: the proposal's "entries newer than the last push" reads as D-3 (`pending` without a time cut); `proposal.md` is the maintainer's to edit, so `change.md` and `SKILL.md` carry the exact wording |
+| I-6 | F-6: the rule `process` says "what `warrant` and a git merge write are not its edits"; a merge conflict in a path outside the Run's `write_scope` takes `origin/main`'s side or is asked on the umbrella (`change.md`) |
+| I-7 | F-7: only a `[decision]` with a line `Adds: AREA <X> to <change>` clears the flag of an AREA added after `init` |
+| I-8 | F-8: "a commit by the maintainer" (D-5, `scopeFindings`) is one whose author is not an agent's by `isAgentIdent` of `act-rules.mjs` (`identities.agents` of `warrant.json`) |
+| I-9 | F-9: a slice decision is requested as `<!-- act: decision slice <umbrella comment id> -->` (group 2, `change.md`); the header of `status.mjs` "👤 Maintainer queue" is "👤 Waiting for the maintainer", apart from the act queue |
+| I-10 | F-10: `change.md` "Waiting" keeps "unless one for the same PR still runs" |
+| I-11 | Implementation: `closable` reads "Prevention" with `section` (a heading, a bold label or `Prevention:` up to the next heading, bold label or `Where:` / `Depends on:` / `Why:` / `Done when` line) and `references` (`#N` and URLs of this repository local; `owner/repo#N`, `SRA#N` and other repositories foreign) |
+| I-12 | Implementation: `status.mjs` reads the log (umbrella, issue and PR comments, `gh api --paginate`) only for the rows of Changes that hold (record active, or ARCHIVED with the archive-PR not merged) and the focused one; the GraphQL history only for the holders' issues; `review.mjs` runs `status.mjs <change> --json` and `judge.mjs origin/<head>` as child processes |
+| I-13 | Implementation: the new `unnamed` kind flags #121 (its `Where:` says "a Change of AREA `CL`" in prose) — the coordinator fixes its `Where:` or names the Change (`SKILL.md` "Coordinator" item 2) |
+
 ## Appendix A — the rule texts
 
 ### `process`

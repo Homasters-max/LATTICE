@@ -2,7 +2,7 @@
 
 ## 1. Skill patch
 
-- [ ] 1.1 `1-skill.patch` in `D:/tmp/infra-coordinator/` (design D-1…D-8, D-12): `.claude/skills/slice/{SKILL.md,
+- [x] 1.1 `1-skill.patch` in `D:/tmp/infra-coordinator/` (design D-1…D-8, D-12): `.claude/skills/slice/{SKILL.md,
   change.md,status.mjs,rules.mjs,rules.test.mjs,act-rules.mjs,act-rules.test.mjs,judge.mjs,review.mjs,retro.mjs,
   temp.mjs}`, drafted outside the repository; verified by `act.mjs patch infra-coordinator <file> --dry-run` printing
   `would patch` with exactly these paths, and `node --test` of both test files on a scratch checkout with the patch
