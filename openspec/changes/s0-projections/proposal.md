@@ -24,15 +24,17 @@ no list of projections to permute, and CI runs on one operating system.
 - **Referrers (OM-R05)**: the references of a record are its `type` (OM-E02), the roles of `of` of an event (OM-E04)
   and the references its type declares (OM-R02) — read by admitting the body under its type, resolved from the view
   (REQ-KR-013, REQ-KR-014). The sources are the latest revision of every entity and every event; a new revision
-  replaces the edges of the one before. An edge is `{from, path, ref}`.
+  replaces the edges of the one before. An edge is `{from, path, ref}`, one per path of a record; the index is a set
+  of edges. Revisions are read in ledger order, so a ledger that opening lets through with gaps in `rev` (#114) still
+  has one answer.
 - **Projections as a list**: `latest` and `referrers` are projections over one fold of the revisions; `rebuild(commits,
   list)` gives the same view for every order of the list.
 - **Incremental extension (LG-J03)**: `extend(view, commit)` gives a new view, or refuses a commit whose `base` is not
   the `seq` of the view.
 - **Serialized form**: `serialize(view)` is the canonical JSON text of the `seq` and of every projection.
 - **Reference ledgers (LG-J02)**: `test/fixtures/projections/<case>/ledger.jsonl` with its verified `index.json`; the
-  ledger opens and its serialized view equals the index byte for byte — on Linux (job `test`) and on Windows (a new job
-  `projections-windows`).
+  ledger opens, its serialized view equals the index byte for byte, and the parsed index holds what the view answers
+  — on Linux (job `test`) and on Windows (a new job `projections-windows`, checked in the workflow by a test).
 - **`openLedger`** keeps building its view with `latest(commits)` of `projections/latest.ts`, which now gives the full
   view (`rebuild`, LG-J04); `src/ledger/commit.ts` and `src/ledger/index.ts` are not edited.
 

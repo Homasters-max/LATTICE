@@ -85,6 +85,7 @@ export type ReadView = {
   referrers(id: string): readonly Edge[];
 };
 export const PROJECTIONS: readonly Projection<unknown>[];       // [latest, referrers]
+/** `list` defaults to PROJECTIONS; any list that is not a permutation of it throws (REQ-PJ-004). */
 export function rebuild(commits: readonly Commit[], list?: readonly Projection<unknown>[]): ReadView;
 export type Extended =
   | { readonly ok: true; readonly view: ReadView }
@@ -102,31 +103,42 @@ view.seq` (REQ-PJ-003), then runs the step on copies.
 ### D-4. The fold step and type resolution
 
 One step for one commit:
-1. `revisions'` = `revisions` plus every entity record of the commit (a `Map<id, EntityRecord[]>`, index `rev − 1`;
-   `rev` is `base + 1` by apply, so the array grows by one). Copy on write: `extend` copies the outer map and every
-   array it appends to; `rebuild` may reuse its own map because no earlier view escapes.
-2. For each projection of the list, in list order: `state' = fold(state, commit, revisions')`.
+1. `revisions'` = `revisions` plus every entity record of the commit, in commit order (a `Map<id, EntityRecord[]>` in
+   ledger order; `revision(id, rev)` is the last element with that `rev`, `latest(id)` the last element — REQ-PJ-001
+   defines both by ledger order, so a ledger with gaps or repeats of `rev` (#114) still has one answer). Copy on write:
+   `extend` copies the outer map and every array it appends to; `rebuild` may reuse its own map because no earlier
+   view escapes.
+2. For each projection of the list, in list order: `state' = fold(state, commit, revisions')`. A projection reads only
+   the commit, `revisions'` and its own state — never another projection —, which is what makes the order of the list
+   irrelevant (REQ-PJ-004).
 3. `seq' = commit.seq`.
 
-`referrers.fold` reads the references of every record of the commit (REQ-PJ-002):
-- `/type` — `parseRef(record.type)`; on success an edge with `ref = record.type`;
-- for an event (a record without `rev`, `isEntityRecord` of `records.ts`) whose `body` is an object with an object
-  `of`: every role in code-unit order whose value parses as a reference;
+`referrers.fold` reads the references of every record of the commit (REQ-PJ-002), into a `Map<path, ref>` per record
+— so a path that steps 2 and 3 both give (an event type that declares a role of `of` as a `ref` node, REQ-KR-017) is one
+edge:
+- `/type` — `parseRef(record.type)`; on success the edge with `ref = record.type`;
+- for an event (a record without `rev`, `isEntityRecord` of `records.ts`) whose `body` is an object whose `of` is a
+  non-array object: every role, in code-unit order, whose value is a string that parses as a reference; the role is
+  escaped as a JSON Pointer token (`~` → `~0`, `/` → `~1`);
 - schema references: resolve the type (below); on success `admit(canonical(body), type)`; on success each
   `{path, ref}` of `refs` → `{path: "/body" + path, ref: formatRef(ref.id, ref.version)}`.
 
-Resolution of `T@n`: `core/type@1` → `metaType`. Otherwise walk: `r = revisions'.revision(T, n)`; push it; while
-`r.body.extends` is a string that parses as a pinned reference and the chain has fewer than 5 records,
-`r = revisions'.revision(...)`; an absent record ends the walk unresolved; then `typeOf(chain)`. A successful `Type`
-is cached in the projection state by `T@n` (revisions never change, so the cache never goes stale); a failure is not
-cached, so a type written later resolves for the records folded after it. The cache is part of the state but not of
-its serialization.
+Resolution of `T@n`: `core/type@1` → `metaType`. Otherwise `T@n` must parse as a pinned reference; the walk starts
+with `revisions'.revision(T, n)` and, while the last record's `body.extends` is a string that parses as a pinned
+reference and the chain has fewer than six records, appends `revisions'.revision(P, m)`; an absent record ends the walk
+unresolved; then `typeOf(chain)`, which refuses a cycle (`bad-extends`: a type never extends a revision of itself) and
+six records (`chain-too-long`). The bound of six makes a cycle written in one commit end the walk instead of hanging
+the opening. A successful `Type` is cached in the projection state by `T@n` (revisions never change, so the cache
+never goes stale); a failure is not cached, so a type written later resolves for the records folded after it. The
+cache is part of the state but not of its serialization.
 
-The index state: `bySource: Map<from, Edge[]>` and `byTarget: Map<targetId, Set<from>>`. A new entity revision
-`id@rev` removes the source `id@(rev−1)` — its edges leave `byTarget` — and adds `id@rev`. `referrers(id)` collects the
-edges of each source in `byTarget.get(id)` whose target is `id`, sorted by `from`, then `path`, in UTF-16 code units
-(`byCodeUnits` of `records.ts`). Serialization walks targets in sorted order — no map is ever iterated in insertion
-order into the output (REQ-PJ-004).
+The index state: `bySource: Map<from, Map<path + "\u0000" + ref, Edge>>` and `byTarget: Map<targetId, Set<from>>`.
+Folding an entity record removes the source `id@rev` of the revision before it (the last element of its array before
+step 1 appended this one) — its edges leave `byTarget` — and adds its own edges; folding an event adds its edges to the
+source of its `id`, so two events with one `id` give the union (REQ-PJ-002). `referrers(id)` collects the edges of each
+source in `byTarget.get(id)` whose target is `id`, sorted by `from`, then `path`, then `ref`, in UTF-16 code units
+(`byCodeUnits` of `records.ts`). Serialization walks targets in sorted order: no map is ever iterated in insertion
+order into the output, and no `Promise`, timer or worker is used (REQ-PJ-004).
 
 ### D-5. Why the latest revision and every event are the sources
 
@@ -138,6 +150,10 @@ reader needs one.
 
 Rejected: every revision as a source — the edges of `X@1` stay after `X@2` drops the reference, so expansion would
 follow references the block no longer makes.
+
+This reads "all references" of OM-R05 as the references of the records in use; spec review 1 (F-18) asks the
+maintainer to confirm it. The merge of the spec-PR is that confirmation; a reader that needs history gets its own
+projection.
 
 ### D-6. The `/type` edge
 
@@ -157,20 +173,26 @@ floating point: only integers and strings). `latest` serializes `{<id>: {hash, r
 `test/projections/reference.ts` builds the two cases in process and, run by hand (`node --experimental-strip-types
 test/projections/reference.ts --write`), writes `test/fixtures/projections/<case>/ledger.jsonl` and `index.json`:
 - `skeleton` — `importMd` of `test/fixtures/md/fixture.md` (REQ-CL-003), `apply` on an empty ledger, then the
-  revision of `lattice/fx-a02` of SCN-CL-009, through the ledger's `apply`;
-- `typed` — proposals through `apply`: commit 1 the types `test/node@1`, `test/note@1`, `test/marker@1` (with a
-  `supersedes` list of pinned references, OM-I07) and blocks `test/n1`, `test/n2`; commit 2 the type `test/leaf@1`
-  (`extends: test/node@1`) and the block `test/n3` of it; commit 3 `test/n1@2` and the event `test/e0`; commit 4 `test/n1@3`,
-  the event `test/e1`, `test/n4` with `supersedes: ["test/n1@3"]`, `test/n5` of the unwritten `test/ghost@1`, `test/n6`
-  with a member its type does not declare.
+  revision of `lattice/fx-a02` of SCN-CL-009, through the ledger's `apply` — the ledger the commands write;
+- `typed` — commits built directly, not through `apply`: each commit object is assembled in canonical record order
+  (LG-C07) with `recordHash` and `commitHash` of `src/ledger/commit.ts` (imported, not edited) and its canonical text
+  written. Apply today does not admit bodies against their types; once it does (#83), it would reject `test/n5`,
+  `test/n6` and the loop types, which REQ-PJ-002 still has to define (spec review 1, F-17). Commits: 1 — the types
+  `test/node@1` (`uses`, `pins`, and `supersedes` as a list of pinned references, OM-I07), `test/note@1` (`of` with the
+  role `subject` as a pinned `ref` node) and blocks `test/n1`, `test/n2`; 2 — the type `test/leaf@1` (`extends:
+  test/node@1`) and the block `test/n3` of it; 3 — `test/n1@2` and the event `test/e0`; 4 — `test/n1@3`, the event
+  `test/e1`, `test/n4` with `supersedes: ["test/n1@3"]`, `test/n5` of the unwritten `test/ghost@1`, `test/n6` with a
+  member its type does not declare, the types `test/loop-a@1` / `test/loop-b@1` extending each other and `test/n7` of
+  `test/loop-a@1`. Every commit holds its session event (`core/session@1`, `of: {}`), as apply would write it.
 
-Commit numbers are a sketch; the scenarios name ids, not commits, except SCN-PJ-005, which needs at least four.
-
-A test never runs the generator: the files are frozen and compared byte for byte (SCN-PJ-008). The generator exists so
-that a Change that changes the commit form or the opening checks (#59, #83, #85) regenerates the files and shows the
-diff of `index.json` in its PR (LG-G05: every store before the switch is disposable). The test reads `ledger.jsonl`
-with `readFileSync`, splits it at line feeds into `StoredLedger.commits` (`torn: null`) and calls `openLedger` — no
-store adapter, so a later change of the `store` port (#86) touches one helper.
+A test never runs the generator: the files are frozen and compared byte for byte (SCN-PJ-008), and SCN-PJ-009 checks the
+parsed `index.json` against the facts of SCN-PJ-001…004, so what `serialize` writes is checked by meaning, not only by
+its own output. The files are regenerated, with the diff of `index.json` shown in the PR, when the kernel, the commit
+or record form, the opening checks (LG-C04; #83, #85, #114) or the meaning of a projection change — LG-G05: every store
+before the switch is disposable. `s0-bootstrap` (#59) adds the commit field `acts` only to commits that have acts, so
+these ledgers stay of the commit form whichever lands first. The test reads `ledger.jsonl` with `readFileSync`, splits
+it at line feeds into `StoredLedger.commits` (`torn: null`) and calls `openLedger` — no store adapter, so a later change
+of the `store` port (#86) touches one helper.
 
 ### D-9. CI on two operating systems
 
@@ -202,9 +224,16 @@ Windows: other tests (CLI child processes, paths) were never written for it, and
 | `test/projections/view.test.ts` | SCN-PJ-001 |
 | `test/projections/referrers.test.ts` | SCN-PJ-002, SCN-PJ-003, SCN-PJ-004 |
 | `test/projections/rebuild.test.ts` | SCN-PJ-005, SCN-PJ-006, SCN-PJ-007 |
-| `test/projections/reference.test.ts` | SCN-PJ-008 |
+| `test/projections/reference.test.ts` | SCN-PJ-008, SCN-PJ-009 |
+| `test/projections/ci.test.ts` | SCN-PJ-010 — reads `.github/workflows/test.yml` as text (no YAML parser: the job name, `runs-on: windows-latest` and the test command are matched line by line) |
 
-Helpers: `test/projections/reference.ts` (D-8) and `test/projections/ledgers.ts` (reading a fixture folder).
+Helpers: `test/projections/reference.ts` (D-8) and `test/projections/ledgers.ts` (reading a fixture folder). The facts
+of SCN-PJ-002…004 live once in `ledgers.ts` as expected edges, asserted against `view.referrers` (SCN-PJ-002…004) and
+against the parsed `index.json` (SCN-PJ-009).
+
+SCN-PJ-010 checks the workflow statically; that the job really passes on Windows is shown by the green
+`projections-windows` check of the impl-PR, whose log names SCN-PJ-008 (task 4.2). The job is not a required check of
+`main` unless the maintainer makes it one.
 
 `warrant run start s0-projections --operation implement --scope
 "src/ledger/projections/**,test/projections/**,test/fixtures/projections/**,openspec/changes/s0-projections/**"`.
@@ -214,6 +243,7 @@ Helpers: `test/projections/reference.ts` (D-8) and `test/projections/ledgers.ts`
 | ID | Decision | Why | By |
 |---|---|---|---|
 | I-1 | Only `src/ledger/projections/**` and its tests; `latest(commits)` returns the full view (D-1). | #59 changes `src/ledger/commit.ts` and `src/ledger/index.ts` in parallel (SL-T08). | agreed with the session of #59; umbrella #44 comments 5950536272, 5950598775 |
+| I-2 | The references of a record are one edge per path, the index a set of `{from, path, ref}`; revisions and `get` by ledger order; the `extends` walk bounded at six records; equality of views defined (with `revision`); `extend` returns `{ok: false, seq, base}`; `rebuild` takes only permutations of `PROJECTIONS`; SCN-PJ-009 checks the parsed index, SCN-PJ-010 the Windows job; `typed` built without apply (D-4, D-8, D-10). Opening checks of `rev`, `base` and event ids → #114. | Spec review 1 (`EVID-01M3Y3RN0TBXHKARD397QDD1MP`, NOT_PROVEN): F-1 (BLOCKER), F-2…F-7 (MAJOR), F-8…F-16, F-17. | approval of the spec-PR |
 
 ## Risks / Trade-offs
 
