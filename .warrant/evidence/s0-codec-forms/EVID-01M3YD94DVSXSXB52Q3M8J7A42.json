@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YD94DVSXSXB52Q3M8J7A42",
+  "claim": {
+    "text": "openspec-validate passed for s0-codec-forms",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "6de5a7381904aa19b078f3d2e0aa963cbd131589",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/s0-codec-forms@6de5a7381904aa19b078f3d2e0aa963cbd131589",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:74def2337daf1c0e24afb6eb0f93779524739202e0a36ceb5bd5758f0cd7760c",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-10-02T13:36:24.509Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-codec-forms/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:548b9a2ca32f63b25392c23f7a4ef3746e620f2ac0484c274edcf386be66cbda"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 0
+  }
+}

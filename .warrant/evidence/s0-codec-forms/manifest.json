@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "s0-codec-forms",
-  "commit": "0635eb11a95a123921444dc5d565bf059c3f686d",
+  "commit": "6de5a7381904aa19b078f3d2e0aa963cbd131589",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -11,11 +11,28 @@
   "evidence": [
     "EVID-01M3Y450KAP0BYAGCY7T8S2C9Q",
     "EVID-01M3YB2J8M5387N6WGB8PRK5XP",
-    "EVID-01M3YB408KXTTVG14GV41K70C9"
+    "EVID-01M3YB408KXTTVG14GV41K70C9",
+    "EVID-01M3YBDGM47NFKXN2Z7SX85ANG",
+    "EVID-01M3YBDZB8FKP1N2V87JJC2WFB",
+    "EVID-01M3YBV7KBXHGQ4X1D3P9CM7RH",
+    "EVID-01M3YBZ6M2NEZHHKW2MTC6M6N3",
+    "EVID-01M3YCEYT61V48NGB4B1TB8PBR",
+    "EVID-01M3YCY3GDRQ9372NFQ9SWBAX9",
+    "EVID-01M3YD1MJ9Y0CPKWHACFWA4CHQ",
+    "EVID-01M3YD94DVSXSXB52Q3M8J7A42"
   ],
   "gates": {
+    "adversarial-review": "PASS",
+    "analyze-clean": "PASS",
+    "blocking-unknowns-resolved": "PASS",
+    "branch-isolated": "PASS",
+    "evidence-complete": "PASS",
+    "human-approval": "PASS",
     "ids-valid": "PASS",
     "required-artifacts-present": "PASS",
-    "spec-valid": "PASS"
+    "scope-valid": "PASS",
+    "spec-approved": "PASS",
+    "spec-valid": "PASS",
+    "tests-passed": "PASS"
   }
 }

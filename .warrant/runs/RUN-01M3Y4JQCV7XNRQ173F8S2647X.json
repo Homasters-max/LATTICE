@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y4JQCV7XNRQ173F8S2647X",
+  "change": "s0-bootstrap",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-bootstrap/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-bootstrap",
+  "started_at": "2026-10-02T11:04:21.727Z",
+  "finished_at": "2026-10-02T13:00:45.312Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:813c1af2196312c37711f62684b981ef03fdc05235f86ec6c04001ba93af5bb0",
+  "effective_policy_hash": "sha256:ab00f02ce88318bb2498f30a161fea025f3ca03d0ca09e5f5f0936007d57b964",
+  "guard_events": []
+}

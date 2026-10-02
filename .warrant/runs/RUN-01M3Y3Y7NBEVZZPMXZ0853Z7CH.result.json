@@ -1,0 +1,285 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y3Y7NBEVZZPMXZ0853Z7CH",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "The delta REQ-CL-004 makes the genesis-chain check part of **Opening**: the paragraph \"Opening (LG-C04, LG-G01)\" says \"A ledger that passes is then checked against the genesis chain (REQ-LG-010): a store outside it SHALL be refused ... Every command that opens the ledger opens it this way.\" Elsewhere, \"opening\" still means the LG-C04 checks only. REQ-LG-010 says openStore \"SHALL open the ledger as opening does (LG-C04, REQ-CL-004) and then refuse\". REQ-LG-003 applies on \"the opened ledger\", and its scenarios run on L1, which SCN-LG-014 says openStore refuses with LG-G01. The main REQ-AR-011 is unchanged and requires every rule fixture's `ledger.jsonl`, and `ledger.jsonl` followed by `moved.jsonl`, to \"open as a ledger (REQ-CL-004, **Opening**)\"; a fixture that does not open fails SCN-AR-017. Two existing fixtures are not on the genesis chain: `test/fixtures/rules/LG-P02/ledger.jsonl` (a `lattice/...` commit at seq 1, i.e. L1) and `test/fixtures/rules/LG-C03/moved.jsonl` (a non-genesis seq 1). Under the new REQ-CL-004 they do not open, so SCN-AR-017 fails. Under the LG-C04-only reading they open. Design D-12 keeps those fixtures and `test/architecture/**` out of scope, and `rules.test.ts` uses `openLedger` (LG-C04 only). The spec therefore allows two readings with different observable results.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-LG-010",
+        "REQ-LG-003",
+        "SCN-CL-016",
+        "SCN-LG-014",
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "Use one term for each check. Keep REQ-CL-004 **Opening** as the LG-C04 checks that REQ-AR-011, REQ-LG-003 and the rule fixtures rely on. Add a separate paragraph, \"Opening a store (REQ-LG-010)\", that every command runs after Opening, and make REQ-CL-005 and the code-2 list refer to it. The alternative is to rebuild the LG-P02 and LG-C03 fixtures on the genesis chain and add them to the implement scope; that touches files other Changes rely on."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-LG-006 says the `core/session` body holds \"the members of a session of CT-P01\". CT-P01 (design-next/04-catalog.md) lists \"participant, participant kind, software and version, purpose ..., and how the kind was established (CT-P03)\", plus `pipeline@n` for a run. The genesis schema has only `kind`, `of`, `participant`, `pipeline`, `purpose`, and it is closed. It has no software, no version and no member for how the kind was established, so a session that records them would be refused once admission is checked (#82). The genesis hash is a constant of kernel version 0. LG-G05 lets kernel 0 change freely, but each change means editing GENESIS_HASH and its test literal.",
+      "targets": [
+        "REQ-LG-006",
+        "SCN-LG-009"
+      ],
+      "recommendation": "Either add the missing CT-P01 members to the session type now (optional members: software, version, kind-established), or state which CT-P01 members are deferred and why, and drop the claim that the type holds \"the members of a session of CT-P01\"."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-TR-001 says the table is the only source (\"by this table only ... the first matching row\"), and row 3 matches on `kind` `human` or `agent` with `acted` true, whatever the purpose. The prose then says: \"When no row matches — the session body is not an object, or its kind or purpose is outside the lists of the session type — the basis is `inferred`\". For `{\"kind\":\"human\",\"purpose\":\"play\"}` with acted true, the table gives `asserted`. The prose says a purpose outside the list means no row matches, which gives `inferred`. SCN-TR-001 tests `robot`/`work` and `machine`/`play` but not a human or agent with an unlisted purpose, so the test does not decide between the readings. S0 does not check admission (#82), so such a session body can reach the ledger.",
+      "targets": [
+        "REQ-TR-001",
+        "SCN-TR-001"
+      ],
+      "recommendation": "Make the prose match the table: \"no row matches when the body is not an object, its kind is outside the list, or a machine session's purpose is outside the list\". Alternatively, add an explicit purpose-validity condition to rows 3–5. Add `{kind: human, purpose: play}` with acted true to SCN-TR-001."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-TR-002 defines a fact as `{of, key, value}` or `{of, key, revoked: true}`, and skips \"a body that is not an object with an object key and either a value or revoked true\". A body with both `value` and `revoked: true` could be read as a value, as a cancellation, or as skipped. The `std/live` schema (REQ-LG-007) allows both members, and S0 does not check admission. `liveRevision` returns \"the current value\" whatever its JSON type, although the value is meant to be a revision (an integer ≥ 1). The return shape of `currentFacts` (a map? keyed by canonical key text?) is not stated, so `currentFacts` cannot be tested on its own; SCN-TR-002 covers only `liveRevision`.",
+      "targets": [
+        "REQ-TR-002",
+        "SCN-TR-002"
+      ],
+      "recommendation": "State the precedence for a body that has both `value` and `revoked: true` (TR-F02, \"instead of a value\", suggests it is skipped or is a cancellation; pick one). State what `liveRevision` answers for a non-integer value. Specify the return form of `currentFacts`. Add each case to SCN-TR-002."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-AC-005 names every identifier the body holds \"as a whole token, without a trailing `.`\", but never defines a token. It could mean split on whitespace, or a regex with punctuation boundaries. Under whitespace splitting, `(lattice/fx-a01)` or `lattice/fx-a01,` is not an identifier. Under a punctuation-boundary reading, it is. It is also not said whether a pinned reference `lattice/fx-a01@1` names `lattice/fx-a01`. Ordinary prose matches the grammar too: `store/lattice.json` and `github.com/Homasters-max` are valid identifiers, so they become names. The SCN-AC-005 cases pass under both readings, so the scenario does not pin the rule.",
+      "targets": [
+        "REQ-AC-005",
+        "SCN-AC-005"
+      ],
+      "recommendation": "Define a token exactly, for example a maximal run of characters outside Unicode whitespace with trailing `.`, `,`, `;`, `:`, `)` stripped and leading `(` stripped. Say whether `id@n` names `id`. Add a scenario case with punctuation around an identifier and one with a pinned reference."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-AC-005 says: \"In CI and in tests the transport answers recorded JSON; the network is never called there (LG-R03)\". LG-P05 (1) and CT-A03 (design-next) require CI to admit the acts of the PR under check through the `github` adapter, and those comments cannot be in recorded JSON in advance. This Change's design D-9 also says SW wires the adapter into CI \"with a `gh api` transport\". LG-R03 is about live judges, not acts. As written, the requirement forbids what slice SW must do.",
+      "targets": [
+        "REQ-AC-005"
+      ],
+      "recommendation": "Restrict the statement to tests (\"in tests the transport answers recorded JSON\"), or say that S0 ships no transport and that wiring it into CI is slice SW (LG-P05). Drop the LG-R03 citation for acts."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "Store init now writes `<namespace>/namespace` and `<namespace>/setup` (REQ-LG-008, REQ-CT-002). import-md (REQ-CL-003) builds the document id `<namespace>/<stem in lower case>` and reserves neither name. A table file `setup.md` or `namespace.md` therefore imports with code 0, and its apply is then always rejected with `LG-P02` (base 0 against rev 1). The user cannot import that file and gets no message saying why. Separately, a hand-written proposal with `base` 1 can replace `lattice/setup` or `lattice/namespace` with an entity of any type, because S0 checks no writers or owner acts. That second risk is accepted in Non-goals, but the collision with import-md is not.",
+      "targets": [
+        "REQ-CL-003",
+        "REQ-LG-008",
+        "REQ-CT-002",
+        "SCN-CL-004"
+      ],
+      "recommendation": "Either refuse with code 1 at line 0 a stem whose lower case is `namespace` or `setup`, as step 1 of the skeleton form, and add the case to SCN-CL-004. Or state the collision and its LG-P02 outcome as a known limit with an issue."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-CL-002 lets init stop after it has written something (\"the command refuses with code 2 naming the commit, and the store may hold the commits before it\"). REQ-CL-001 still says a code-2 refusal \"is decided before anything is written, except a failure of the file system during a write\". REQ-CL-002 does not say what init does when the `store` port answers `moved` on one of its four appends (two concurrent `lattice init` runs). It also does not say what a user can do with a half-initialised store: `init` refuses because `store/` exists, and a ledger holding only genesis opens as a valid prefix. Apply is pure, so all four commits could be built in memory before anything is written, which would remove the partial state.",
+      "targets": [
+        "REQ-CL-002",
+        "REQ-CL-001"
+      ],
+      "recommendation": "Require init to build the four commits in memory (apply on the in-memory ledger) before it creates `store/`, so every code-2 refusal of init happens before anything is written, and drop \"the store may hold the commits before it\". State that a `moved` answer from the store during init is a code-2 refusal naming the store. Otherwise, add the init exception to the REQ-CL-001 list and say how to recover."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The commit form (REQ-LG-003) accepts an `acts` value whose `login` and `ref` are any string and whose `names` is \"a non-empty list of strings\", so empty strings are allowed. REQ-AC-001 requires every adapter, including `recorded`, to answer acts with non-empty `login`, `ref` and names. A ledger that opens can therefore make `recordedActs` break its contract. REQ-AC-004 also does not say what `recordedActs` does with a JSON object whose `acts` is not of the form; it covers only \"not a JSON object\" and \"without `acts`\".",
+      "targets": [
+        "REQ-LG-003",
+        "REQ-AC-001",
+        "REQ-AC-004"
+      ],
+      "recommendation": "Make the commit form require non-empty strings for `login`, `ref` and each name, matching REQ-AC-001. Say what `recordedActs` does with a commit text whose `acts` is malformed: it contributes nothing, or the adapter refuses when it is built."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-AC-005 says a failing transport throws from `actsOn`, but not whether a later `actsOn` call retries the read or rethrows. It also does not say what happens when the transport answers a page that is not a JSON array (for example a GitHub error object), or stops pages from the comments endpoint and the reviews endpoint independently. The contract requires the same answer on every call with the same hash, which retrying after a failure could break.",
+      "targets": [
+        "REQ-AC-005",
+        "REQ-AC-001"
+      ],
+      "recommendation": "State that a page that is not an array is a failure like a throwing transport. State whether a failed first read is retried on the next call or is kept, so that every later call throws. Say that each endpoint is paged independently."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-LG-002 defines CT-N02 as \"its part before `/` is `core` or `std`\". The identifier grammar (REQ-KR-012) allows dotted namespaces, so `std.x/foo` and `core.y/bar` are not rejected. CT-N02 reserves the `id` prefixes `core` and `std`, and the spec does not say whether their dotted sub-namespaces are reserved.",
+      "targets": [
+        "REQ-LG-002",
+        "SCN-LG-008"
+      ],
+      "recommendation": "State whether `core.*` and `std.*` are reserved. If they are, compare on the first dot-separated part and add a case to SCN-LG-008."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The two checks of a `std` commit differ. The apply exemption by LG-G02 (REQ-LG-002) requires the session to be `machine` / `init`. The opening check by LG-G02 (REQ-LG-010) checks only the entity records' package hash and that there are no other events. A store whose commit 2 has the right package under a `work` or `agent` session, rebuilt by hand with its hash chain kept, would open even though apply never produces such a commit.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-LG-002",
+        "SCN-LG-014"
+      ],
+      "recommendation": "Make REQ-LG-010 check the same conditions as the exemption (session `kind` `machine`, `purpose` `init`), or state why opening is weaker."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-AC-004 says \"re-applying a commit (LG-P05 (2)), opening a store and rebuilding projections read acts through it [recorded]\". REQ-LG-010 (openStore) reads no acts. REQ-LG-009 computes the basis from the commit's own act record, not through the `acts` port. REQ-AC-001 says acts reach apply \"only through the `acts` port\". It is unclear whether opening or `bases` must go through `recordedActs`.",
+      "targets": [
+        "REQ-AC-004",
+        "REQ-LG-009",
+        "REQ-LG-010"
+      ],
+      "recommendation": "Limit REQ-AC-004 to re-applying a commit, or name exactly which operations call `recordedActs`. Say that `bases` reads the act record of the commit directly."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CT-001 `policyOf` refuses at \"the JSON pointer of the first deviation, in the order of the keys above\". It does not say where an extra key or a missing key falls in that order (for example `{\"owner\":\"x y\",\"extra\":1}`: is it `/owner` or `/extra`?), or which pointer a body that is not an object gets (`\"\"`?).",
+      "targets": [
+        "REQ-CT-001",
+        "SCN-CT-001"
+      ],
+      "recommendation": "Give the full order: not an object at `\"\"`, then `owner`, `writers`, `owner_acts` (missing or invalid), then extra keys in UTF-16 order. Add one combined case to SCN-CT-001."
+    },
+    {
+      "id": "F-15",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-CL-016 runs `lattice apply` without naming the proposal file it is given, yet its THEN says \"the ledger and the proposal are unchanged\".",
+      "targets": [
+        "SCN-CL-016"
+      ],
+      "recommendation": "Name the input, for example \"`lattice apply` on the proposal of SCN-CL-003 in `store/proposals/`\"."
+    },
+    {
+      "id": "F-16",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CL-002 says \"the sessions take one `at` from the clock ... and their ULIDs from the `ids` port\". Store init draws four ULIDs: `u4` is the id of the `live` fact, not a session, and genesis takes neither the clock nor a ULID. Separately, proposal.md Capabilities lists the modified ledger requirements as REQ-LG-002 and REQ-LG-003 but not REQ-LG-005, which the delta modifies. Impact also omits `src/ledger/proposal.ts`, which design D-12 includes.",
+      "targets": [
+        "REQ-CL-002",
+        "REQ-LG-005",
+        "openspec/changes/s0-bootstrap/proposal.md"
+      ],
+      "recommendation": "Write \"sessions 2–4 take one `at` from the clock, and the four ULIDs u1…u4 of REQ-LG-008 come from the `ids` port in order\". Add REQ-LG-005 to Capabilities and `proposal.ts` to Impact."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "The `std` types are looser than the rules around them. `std/setup` allows `memo` on `clock`, `ids` and `source`, which PL-K03 says are never memoized. `std/namespace` allows a writer with both `login` and `kind`, and an `owner` of up to 128 characters, while `policyOf` and the CLI login check are stricter. The session type pins `std/pipeline`, which `std` S0 does not hold. Admission is #82, so none of this shows in S0, but once #82 lands the type will admit bodies that `policyOf` refuses.",
+      "targets": [
+        "REQ-LG-007",
+        "REQ-LG-006",
+        "REQ-CT-001"
+      ],
+      "recommendation": "Record these in design as known gaps for #82, or tighten the schemas within the kernel subset where it can express the rule."
+    },
+    {
+      "id": "F-18",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "REQ-AC-005 compares logins by code units. GitHub logins are case-insensitive, so an owner written as `homasters-max` in `store/lattice.json` never matches `Homasters-max` from the API. The `acts` port is synchronous (`actsOn(proposal): readonly Act[]`), so the SW transport must block (for example `gh api` through a synchronous child process).",
+      "targets": [
+        "REQ-AC-005",
+        "REQ-AC-001"
+      ],
+      "recommendation": "State the case rule as a deliberate choice, or compare logins case-insensitively. Note the synchronous transport constraint for SW."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-bootstrap/specs/cli/spec.md",
+      "change": "In REQ-CL-004 keep **Opening (LG-C04)** as the LG-C04 checks only. Add **Opening a store (LG-G01, LG-G02, LG-G03)**: after Opening, the store is checked against the genesis chain (REQ-LG-010) and refused with code 2 naming the rule and the seq; every command that opens the ledger runs both. This keeps REQ-AR-011's reference valid (F-1)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-bootstrap/specs/trust/spec.md",
+      "change": "REQ-TR-001: replace the parenthetical about no row matching with \"no row matches when the body is not an object, its `kind` is outside the session type's list, or a `machine` session's `purpose` is outside it\". Add the case `{kind: human, purpose: play}` with acted true giving `asserted` to SCN-TR-001 (F-3)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-bootstrap/specs/cli/spec.md",
+      "change": "REQ-CL-002: init builds the four commits in memory (apply on the in-memory ledger from empty) before it creates `store/`; every code-2 refusal of init happens before anything is written; a `moved` answer of the store is a code-2 refusal naming the store (F-8)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The CT-N02 rule fixture planned in design D-12 uses an empty `ledger.jsonl`, so it is not affected by F-1. Only the existing fixtures LG-P02 (ledger.jsonl) and LG-C03 (moved.jsonl) were checked against the genesis chain."
+    },
+    {
+      "id": "A-2",
+      "statement": "The CT-P01, TR-B02, TR-F02, PL-K03, LG-P05 and LG-R03 texts were read from design-next on branch spec/s0-bootstrap and are taken as authoritative for the contradictions in F-2, F-3, F-4, F-6 and F-17."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "F-1: is \"opening\" the LG-C04 checks only, with the genesis-chain check as a separate store step, or do rule fixtures and L1-based scenarios have to sit on the genesis chain?",
+      "options": [
+        "Split the terms: REQ-CL-004 Opening stays LG-C04; a separate 'Opening a store' step (REQ-LG-010) runs in every command; fixtures and L1 unchanged",
+        "Rebuild the LG-P02 and LG-C03 fixtures (and L1) on the genesis chain and widen the implement scope to them"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "F-7: should import-md refuse table files whose stem collides with the init entities (`namespace`, `setup`), or is the LG-P02 rejection at apply an accepted limit of S0?",
+      "options": [
+        "Refuse the stems `namespace` and `setup` in import-md step 1 (code 1, line 0)",
+        "Accept the limit and record it as an issue"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:24d426bd7414779f40ce0720fa070f1dfa8b752942cf7680f07ff55c45bb3a8d",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:40:00Z"
+  }
+}
