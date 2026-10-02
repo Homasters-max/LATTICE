@@ -47,8 +47,10 @@ describe("baseline: the job test", () => {
     assert.ok(/^node-version: "?22"?$/.test(step.find((line) => line.startsWith("node-version:")) ?? ""), "not Node 22");
   });
 
+  // Only the steps of the job `test`: other jobs of the workflow (projections-windows, s0-projections design D-9)
+  // have their own commands.
   it("runs npm ci, the type check and the tests, in this order, and nothing else", () => {
-    const runs = workflow
+    const runs = block("  test:")
       .map((line) => /^\s*(?:- )?run:\s*(.*)$/.exec(line)?.[1])
       .filter((command) => command !== undefined);
     assert.deepEqual(runs, ["npm ci", "npm run typecheck", "npm test"]);

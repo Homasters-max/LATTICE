@@ -27,12 +27,12 @@
   built directly); the files `test/fixtures/projections/{skeleton,typed}/{ledger.jsonl,index.json}` written by it;
   `test/projections/ledgers.ts` with the expected edges (`REQ-PJ-005`, design D-8, D-10); verified by tests with the
   tokens `SCN-PJ-008` and `SCN-PJ-009` passing
-- [ ] 4.2 The maintainer's patch of `.github/workflows/test.yml` — the job `projections-windows` of design D-9, asked in
-  the impl-PR before its last commit; `test/projections/ci.test.ts` (`REQ-PJ-005`, design D-9, D-10); verified by tests
+- [x] 4.2 The maintainer's patch of `.github/workflows/test.yml` — the job `projections-windows` of design D-9, asked in
+  the impl-PR before its last commit; `test/projections/ci.test.ts` (`REQ-PJ-005`, design D-9, D-10); `test/process/baseline.test.ts` reads the job `test` only (design I-6); verified by tests
   with the token `SCN-PJ-010` passing, and by the check `projections-windows` passing on the impl-PR with `SCN-PJ-008`
   in its log before the merge is asked (design D-9)
 
 ## 5. Close
 
-- [ ] 5.1 `npm run typecheck` and `npm test` green, the structure test (`SCN-AR-008`) included; implementation review
+- [x] 5.1 `npm run typecheck` and `npm test` green, the structure test (`SCN-AR-008`) included; implementation review
   (skill `code-review`) with its findings in the impl-PR body
