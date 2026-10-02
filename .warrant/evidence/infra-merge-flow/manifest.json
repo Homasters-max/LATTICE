@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-merge-flow",
-  "commit": "7e46f00ed7109c10adf2ddd5ab81c69b1e46568f",
+  "commit": "9745714f2defe5731074b9470e0b3580c3551f9b",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -15,15 +15,24 @@
     "EVID-01M3Y4KE5DMTB2VBA0ANGC4BHZ",
     "EVID-01M3Y4KHTF5MNC8551Q55BQCKS",
     "EVID-01M3YCPRRAD8RCXV0BSS6D225T",
-    "EVID-01M3YDAWG5WWX2MKCJBH25NN01"
+    "EVID-01M3YDAWG5WWX2MKCJBH25NN01",
+    "EVID-01M3YDNNYQEHVDDW6BSGAE0HEY",
+    "EVID-01M3YDSYKWZ7WGZ08KBY673NME",
+    "EVID-01M3YDT9Z50WZT9YPVNTWEQCP7"
   ],
   "gates": {
     "adversarial-review": "PASS",
+    "analyze-clean": "PASS",
     "blocking-unknowns-resolved": "PASS",
     "branch-isolated": "PASS",
+    "evidence-complete": "PASS",
+    "factory-golden-passed": "PASS",
     "human-approval": "PASS",
     "ids-valid": "PASS",
     "required-artifacts-present": "PASS",
-    "spec-valid": "PASS"
+    "scope-valid": "PASS",
+    "spec-approved": "PASS",
+    "spec-valid": "PASS",
+    "tests-passed": "PASS"
   }
 }
