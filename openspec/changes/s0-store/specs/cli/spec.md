@@ -15,15 +15,25 @@ every command of the table with a one-line summary, write no file and exit with 
 option value or a wrong number of arguments of a command is a usage error with code 2.
 
 Every command SHALL exit with one of these codes: `0` — done; `1` — the input was rejected by a rule (`apply`) or
-refused by the codec (`import-md`), and nothing was written; `2` — a usage error or a refusal of the environment: a
-missing or an existing store, an invalid init configuration, a broken ledger (REQ-CL-004), a ledger whose tail moved
-during the command or whose lock another writer holds (LG-C03, REQ-SR-002), a refused export (REQ-CL-005), an
-unreadable or unwritable file. A refusal with code 2 is decided before anything is written, except a failure of the
-file system during a write, whose message names the file: a ledger line cut by it is recovered when the ledger next
-opens (REQ-SR-004), and a proposal or an exported file may stay partly written. Opening the ledger is not a write of the
-command: when it recovers a torn tail into `store/recovered/` (REQ-SR-004), that holds whatever the outcome, codes 1
-and 2 included. Messages of codes 1 and 2 go to standard error, except the rejections of `apply` (REQ-CL-004). A path a
-command prints is relative to the project root when it lies under it, otherwise absolute; its separator is `/`.
+refused by the codec (`import-md`), and nothing was written by the command; `2` — a usage error or a refusal of the
+environment: a missing or an existing store, an invalid init configuration, a broken ledger (REQ-CL-004), a ledger
+whose tail moved during the command or whose lock another writer holds (LG-C03, REQ-SR-002), a refused export
+(REQ-CL-005), an unreadable or unwritable file. A refusal with code 2 is decided before anything is written, except a
+failure of the file system while the command writes or while the ledger opens: its message names the file the command
+was writing — the ledger file `store/knowledge.jsonl` for anything the store does — followed by the message of the
+operating system. After such a failure while appending a commit, the commit may be in the ledger (REQ-SR-003) or a line
+cut by it is left, which the next opening recovers (REQ-SR-004); the proposal file stays, and re-applying it is not
+idempotent until LG-C08 is checked by apply — its entity intents are then rejected by `LG-P02`. A proposal or an exported file may stay partly written.
+
+Opening the ledger is not a write of the command: when it recovers a torn tail into `store/recovered/` (REQ-SR-004),
+that holds whatever the outcome, codes 1 and 2 included, and a recovery that fails may leave a file in
+`store/recovered/`. The store of every command is the JSONL adapter on `store/knowledge.jsonl` with a TTL of 10 000 ms:
+a lock left by a stopped command makes the next commands that append refuse with code 2 naming `LG-C03` until it
+expires, after which it is taken over (REQ-SR-002).
+
+Messages of codes 1 and 2 go to standard error, except the rejections of `apply` (REQ-CL-004). A path a command prints
+is relative to the project root when it lies under it, otherwise absolute; its separator is `/`; the message of the
+operating system is printed as it is.
 
 Implements: PL-E02, LG-S05, LG-C06
 
@@ -47,13 +57,14 @@ its type without the `@n` suffix and its body (OM-H01 over `type@n` comes with t
 proposal — `core/proposal` and the list of its intents in canonical order.
 
 **Opening (LG-C04).** The ledger is read through the `store` port (REQ-SR-001), which first moves a torn tail — what
-follows the last line feed of `store/knowledge.jsonl` — to a new file in `store/recovered/` (REQ-SR-004); the checks
-below run on what remains. Every line of `store/knowledge.jsonl` is the canonical JSON (RFC 8785) of one commit object
+follows the last line feed of `store/knowledge.jsonl` — to a new file in `store/recovered/`, unless another writer
+holds an unexpired lock, in which case it opens the commits before the tail and an append answers `moved`
+(REQ-SR-004); the checks below run on the commits the store returns. Every line of `store/knowledge.jsonl` is the canonical JSON (RFC 8785) of one commit object
 followed by a line feed; a commit has exactly the keys of the commit form below, and its `records` is a list of
 objects, each with exactly the keys of the entity record or of the event record form below; the `seq` of the first commit is at least 1 and every next `seq` is greater than the one before
 it; `prev` of the first commit is `null` and `prev` of every other commit is the hash of the commit before it. A ledger
 that breaks any of this SHALL be refused with code 2, the message naming `LG-C04` and the `seq` of the first broken
-commit (or its line, when it has no readable `seq`), and nothing is written.
+commit (or its line, when it has no readable `seq`), and nothing is written by the command (REQ-CL-001).
 
 **Proposal (LG-P01).** A proposal file holds text the kernel admits as I-JSON (REQ-KR-002) whose value is an object
 with exactly one key `intents`, a list. Each intent is an object with exactly the keys of its kind:
@@ -92,8 +103,8 @@ order — entity records by `id`, then event records by `id`, by UTF-16 code uni
 `{"id", "rev", "type", "hash", "by", "at", "body"}` with `rev` = `base` + 1 and `at` = the `at` of the commit; an event
 record is `{"id", "type", "by", "at", "body"}` (OM-E01). If the store answers `moved` — the tail moved between opening
 and appending, or another writer holds the lock of the ledger or took it over before the write (LG-C03, REQ-SR-002) —,
-the command refuses with code 2, its message naming `LG-C03`, and writes nothing. After the append it SHALL remove the proposal file, print
-`{"outcome":"commit","seq":<seq>}` and exit with code 0; if the removal fails, the commit stays, and the command exits
+the command refuses with code 2, its message naming `LG-C03`, and writes nothing. After the append it SHALL remove the
+proposal file, print `{"outcome":"commit","seq":<seq>}` and exit with code 0; if the removal fails, the commit stays, and the command exits
 with code 2 naming the proposal file left behind.
 
 Implements: LG-A01, LG-A02, LG-C01, LG-C02, LG-C03, LG-C04, LG-C06, LG-C07, LG-P01, LG-P02, LG-P04, LG-J03
@@ -126,10 +137,12 @@ Implements: LG-A01, LG-A02, LG-C01, LG-C02, LG-C03, LG-C04, LG-C06, LG-C07, LG-P
 #### Scenario: A tail that moved during apply is refused
 <!-- id: SCN-CL-011 -->
 - **WHEN** `apply` runs on the fixture proposal against a store whose ledger gains a commit between opening and
-  appending, so the store answers that the tail moved; then, in an initialised store, while `store/knowledge.jsonl.lock`
-  holds a lock of another owner that expires long after now
-- **THEN** each run exits with code 2, its message names `LG-C03`, it appends nothing and the proposal file stays; the
-  lock of the other owner is unchanged
+  appending, so the store answers that the tail moved; then, in an initialised store, while the lock file
+  `store/knowledge.jsonl.lock.1` holds a lock of another owner that expires long after now; then while it holds a lock
+  of another owner that expired at 0
+- **THEN** the first two runs exit with code 2, their message names `LG-C03`, they append nothing and the proposal file
+  stays, and the unexpired lock of the other owner is unchanged; the third run exits with code 0, appends the commit
+  `seq` 1, removes the proposal file and leaves no lock file
 
 #### Scenario: A torn tail is recovered before apply
 <!-- id: SCN-CL-012 -->

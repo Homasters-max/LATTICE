@@ -22,7 +22,7 @@ the JSONL and the memory adapter in CI.
 ## What Changes
 
 - **JSONL adapter hardened**: every append takes a lock with an owner and an expiry, answers `moved` while another
-  writer holds an unexpired lock, takes over an expired one, checks the lock again right before writing (fencing),
+  writer holds an unexpired lock, takes over an expired one as a compare-and-swap (of two takers only one wins), checks the lock again right before writing (fencing),
   flushes the file to the disk before it answers, and releases only its own lock.
 - **Recovery**: opening a ledger moves a tail without a commit end marker to a new file in `recovered/` next to the
   ledger file and never reads it again; a tail under an unexpired lock of another writer is an append in progress and
@@ -56,8 +56,10 @@ the JSONL and the memory adapter in CI.
   SCN-CL-012).
 - Unchanged shared files (SL-T08): the `store` port interface `src/ledger/ports/store.ts`, the module matrix, the CLI
   entry and command table, `src/assembly/index.ts`, `package.json`. No new dependency.
-- Files on disk: a lock file `store/knowledge.jsonl.lock` exists while an append runs; `store/recovered/` appears only
-  after a torn tail was recovered, and shows in `git status` so the maintainer sees that a write was cut.
+- Files on disk: a lock file `store/knowledge.jsonl.lock.<n>` exists while an append runs (and after a crash, until
+  its TTL); `store/recovered/` appears only after a torn tail was recovered, and shows in `git status` so the
+  maintainer sees that a write was cut.
+- Follow-ups opened from the spec review: issue #86 (the port comment on `torn`, a `locked` reason for `append`).
 - AREAs: `SR` (new spec `store`) and `CL` (decision on umbrella #44,
   https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5947346075).
 
