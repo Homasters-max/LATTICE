@@ -1,0 +1,332 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YF47CZYYXC0S7HEABH252K",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "The proof of areasAddedAfterInit is wrong on the data it names. Design Context 'Issue history' says #57 shows 'SR + CL from 2026-10-02T07:25, after s0-store was initialised', and task 3.1 expects a flag for 'CL added after the init of s0-store'. Live data disagrees. GraphQL userContentEdits of #57 has the revision with 'AREA `SR` + `CL`' at editedAt 2026-10-02T07:25:34Z. The s0-store record on origin/main has transitions[0] (PROPOSED) at 2026-10-02T07:25:45.020Z, which is 11 s later. Under the D-4 algorithm ('the revision in effect at initAt is the newest one edited at or before it'), the revision in effect at init already has CL, so no flag is raised. A second problem: today's Where: of #57 names s0-store-2, not s0-store, and D-4 compares only revisions naming the same Change as today's Where:, so the live data cannot raise this case at all. The rules.test.mjs fixture gives s0-store initAt 07:41:02 (invented). A fixture replay built on it would pass and prove nothing about the real incident. As written, either test 3.1 fails or it passes only on fabricated timestamps.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#Context",
+        "openspec/changes/infra-coordinator/design.md#D-10",
+        "openspec/changes/infra-coordinator/tasks.md#3.1"
+      ],
+      "recommendation": "Correct the Context fact from the real timestamps: the CL edit came 11 s before init. Then pick one of two paths. (a) Keep the algorithm and change task 3.1 to a fixture built from the real #57 history and the real initAt, expecting no flag for s0-store and none for s0-store-2, plus a synthetic case where an edit after init is flagged. (b) Change the rule or algorithm, for example a grace window or comparing against the revision before the session started, and say which incident it catches. Do not replay with invented times."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "Today's process says 'a `skip_specs` Change declares none, and if it needs an UNKNOWN it declares and holds AR'. The need for an UNKNOWN appears only after init: UNKNOWNs exist only in PROPOSED/SPECIFIED, and AREAs are declared in Where:. The Appendix drops the AR clause and adds 'declared in `Where:` of its issue before `warrant init change` and never edited after it; a `skip_specs` Change declares none'. D-1 says every sentence of today's text survives in the rule or in change.md. If the AR sentence survives, it orders a Where: edit after init that the rule forbids and that D-4 flags. If it does not survive, a skip_specs Change raising an UNKNOWN holds no AREA, which breaks `warrant unknown add --area`. The two readings lead to different observable behaviour.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-1",
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        ".warrant/local/rules/process.json"
+      ],
+      "recommendation": "State the AR case explicitly in the Appendix. Either 'a skip_specs Change declares none; one that needs an UNKNOWN adds AREA AR, the only AREA that may be added after init' (and exempt AR in areasAddedAfterInit), or AR is declared by a [scope] entry instead of an edit of Where:. Also say how status.mjs counts that hold."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The Appendix narrows `implement` 'with `--scope` to the source and test paths its design names'. Today's text adds 'plus `openspec/changes/<change>/**`', and so does the launch template in SKILL.md. The Appendix also requires writes into that folder during the implement Run: I-N rows in design.md ('Questions'), `[x]` in tasks.md ('tracking'), the delta spec edit. D-10 itself sets this Change's --scope to `openspec/changes/infra-coordinator/**` alone, which the Appendix wording does not allow. A session that follows AGENTS.md literally gets a guard deny on its own design.md and tasks.md.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-10",
+        ".claude/skills/slice/SKILL.md"
+      ],
+      "recommendation": "Restore '… plus `openspec/changes/<change>/**`' in the Appendix sentence on write_scope."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The Appendix process says 'Files are written only inside the `write_scope` of the active Run'. Without qualification this covers every session and every file. The Appendix tracking (and SKILL.md 'The coordinator's own PRs') allows 'Work without a Change is a commit and a PR that touches no policy path'. Such work has no Run and so no write_scope. The coordinator's architecture audit into design-next/reviews/, docs PRs and patches drafted in D:/tmp/<change>/ (D-10) are all forbidden by the literal rule.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking"
+      ],
+      "recommendation": "Bound the sentence: 'In a Change, project files are written only inside the write_scope of the active Run (…); work without a Change follows rule tracking.' State that files outside the repository (patches, PR bodies, envelopes) are not project files."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "missing-actor",
+      "statement": "The Appendix says 'A slice decision that changes an open PR stops its merge: its author turns the PR to draft, turns its auto-merge off and comments …'. 'Its author' can mean the decision's author (today's text: 'the author of the decision') or the PR's author/owner. The two readings name different sessions: the coordinator or maintainer versus the Change session. Under the second reading nobody acts while the owner is not live. The sentence also drops what counts as 'a slice decision' (today: '(an AREA, an id, the order of Changes — a comment on the umbrella)') and how it relates to the new tags [decision]/[scope].",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process"
+      ],
+      "recommendation": "Write 'the author of the decision turns the PR to draft …; the owner brings it in line and marks it ready'. Say that a slice decision is a [decision] or [scope] entry."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The Appendix tracking says 'while it is open no Change is dispatched and only its fix, a Change `fix-main-<issue>`, is merged'. Read literally, this forbids dispatching the fix Change itself. Today's text has 'exempt from that freeze' and 'the coordinator opens its issue and launches its session, and writes none of its code', and both are gone, so the actor who opens the fix issue and launches it is lost. The Appendix process says 'A fix of a red `main` is exempt from both', meaning all AREA holds. Today's rule says only 'the AREA hold of the Change that broke it'. The code (rules.mjs holdersOf/heldFor) does exempt fix-main from every hold, so the new text follows the code but changes the meaning of the rule without an I-N row.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        ".claude/skills/slice/rules.mjs"
+      ],
+      "recommendation": "Write 'while it is open no other Change is dispatched and only its fix … is merged; the coordinator opens the fix issue and launches its session'. Record the widened AREA exemption (all holds, as the code does) as an explicit decision row in the design."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-1 says every sentence of today's process and tracking lands in the Appendix, change.md or SKILL.md. The check comes only in task 3.2, in the impl-PR, after the merge of this spec-PR has approved the Appendix ('the merge of this spec-PR is the decision on them'). Comparing the texts shows obligations absent from the Appendix and not named in D-1's list of change.md contents: (1) 'a later change of [a shared file] is a separate small Change' and the list of shared files; (2) 'a Change outside a slice (infra, process) in the milestone of the slice it unblocks, otherwise in none'; (3) the fallback 'or tells the maintainer that CI of that PR is not watched'; (4) 'changes the review asks for become I-N rows of the impl-PR, and the merge of the spec-PR is the decision on them'; (5) 'only the owner watches it … (the coordinator owns only the PRs it opens)'; (6) 'one session per Change, restarted when the process requires it'; (7) 'Queue — gh issue list --label P1'; (8) 'if another Change holds one of its AREAs, it stops and asks on the umbrella' (now 'stops on a collision', with no channel named). The maintainer approves rule texts without seeing where these went.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-1",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking",
+        "openspec/changes/infra-coordinator/tasks.md#3.2"
+      ],
+      "recommendation": "Move the 'old sentence → new place' table into design.md of the spec-PR, or at least list items (1)–(8) with their destination, so the approval covers it. Keep in the Appendix (1) and (2), which bind every session, and (5)."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The Appendix says 'A review subagent runs only what the review guard allows: reading, and `warrant run submit`'. The review guard (.claude/agents/warrant-reviewer.md, hook `warrant guard --frontend claude` on Bash|Write) forbids every shell command except `warrant run submit`. Reading is allowed only through the Read/Grep/Glob tools. 'Reading' can also be read as read-only shell commands (cat, git show, gh issue view), which the guard does not allow and which were the crossing named in the incident. The two readings give different observable behaviour of review subagents. This very review was told to run read-only shell commands.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-9",
+        ".claude/agents/warrant-reviewer.md"
+      ],
+      "recommendation": "Write 'A review subagent reads with the file tools (Read, Grep, Glob) and runs no shell command but `warrant run submit` (the review guard; enforced by this rule until SRA#138)'. Or, if read-only shell commands are intended, name them and say the rule is wider than the guard."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-3 defines the last push of a Change as lastPush over 'the commits of its furthest pushed branch (origin/{archive,impl,spec}/<change>) not on origin/main; with none pushed, every touching unacknowledged entry and every comment of the issue is listed'. Two boundaries are open. (a) Once a PR of the Change merges (for example spec merged and impl not yet pushed, or impl merged and archive not yet pushed), the furthest branch has no commit outside origin/main. lastPush is then null, and the session gets every comment of its issue since creation plus every old touching entry it never had to acknowledge, at the start of each new PR. (b) Before SPECIFIED the spec branch is normally unpushed, because SPECIFIED is the last commit before the PR, so 'since' is always null at the first checkpoint the rule names. Neither case says whether a merged branch counts or what 'newer than the last push' means when nothing is pushed.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process"
+      ],
+      "recommendation": "Define last push as the newest agent-committed non-merge commit over all branches of the Change, merged or not (git log origin/main + origin/<kind>/<change>, committer filter). Define the no-push fallback for the first checkpoint, for example the init time of the record, and test both cases."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The contents of the `log` used by review.mjs check 4 conflict with act.mjs merge. D-3 puts into 'Read first' and the `log` array both pendingEntries and 'every comment of the Change's own issue, tagged or not, newer than the last push'. D-5 check 4 fails on 'the `log` of the same status.mjs output'. An untagged issue comment cannot be acknowledged, and the session's own acknowledgement posted on its issue is itself such a comment. So review.mjs fails until the next push, while `act.mjs merge`, which refuses only pending tagged entries, passes. D-3 also reads only umbrella and issue comments. An acknowledgement in the PR, which today's rule and pendingEntries accept ('a comment in the PR linking it'), is not seen by status.mjs. The entry stays pending in review.mjs and Read first while act.mjs considers it acknowledged.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/design.md#D-5",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "Separate the two lists: `log.pending` (pendingEntries over umbrella, issue and the comments of the Change's PRs, the same input as act.mjs) and `log.unread` (untagged issue comments, informational, excluding the session's own comments). Check 4 fails only on `pending`. Add the PR comments to the input of status.mjs."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "There is no rule for what happens when an AREA is added after init. The Appendix says AREAs are 'never edited after' init. D-4 flags an added AREA with '— needs a decision' and adds a maintainer-queue row. Nothing says what the decision permits or how it is recorded. The flag is computed from the immutable edit history, so it cannot clear after a decision and stays in the queue until archive, or for ever if 'each Change issue with a record' includes ARCHIVED and ABANDONED Changes. 'Never edited' also forbids a removal of an AREA and the coordinator's own rename edits under a maintainer decision (#57: s0-store → s0-store-2). Today's text still contemplates a slice decision that changes an AREA of an open PR.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process"
+      ],
+      "recommendation": "Say: an AREA is added to Where: after init only by a maintainer's [decision] or [scope] entry that names it. areasAddedAfterInit suppresses the flag when such an entry, older than the edit, names the Change and the AREA. Only Changes not ARCHIVED on origin/main and not ABANDONED are checked. Removals and Change renames are not flagged."
+    },
+    {
+      "id": "F-12",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The closing criteria in the Appendix tracking overlap and do not cover all issues. Real issues carry two types: #112 is bug+process, #101 and #119 are Change or Change-closed issues labelled process. 'A `bug` by its fix' and 'a `process` issue only when its prevention is a rule, a test or a setting, not when the failure is fixed' then disagree, and so do 'A Change issue … by its archive-PR' and the process criterion. No precedence is given. An `enhancement` issue that is not a Change issue (#126, closed by this Change) has no criterion. D-4 `closable` for process issues ('Prevention references only done things — a PR MERGED, a Change ARCHIVED, another issue CLOSED') is a different test from the rule's ('prevention is a rule, a test or a setting'). 'A `bug` by its fix' leaves open whether the fix is the impl-PR merge or the archive-PR.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking",
+        "openspec/changes/infra-coordinator/design.md#D-4"
+      ],
+      "recommendation": "Give an order, for example: Change issue → archive-PR; otherwise process → prevention in place; otherwise bug or enhancement → the PR or archive-PR that fixes it (Closes #N there); question → answer. Name `closable`'s process test as a hint only, the coordinator judging rule, test or setting."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The proposal's Impact lists `.warrant/local/rules/{process,tracking}.json`, but D-9, D-10 and task 2.1 also patch `maintainer-acts.json`.",
+      "targets": [
+        "openspec/changes/infra-coordinator/proposal.md",
+        "openspec/changes/infra-coordinator/design.md#D-10",
+        "openspec/changes/infra-coordinator/tasks.md#2.1"
+      ],
+      "recommendation": "Add maintainer-acts.json to the proposal's path list (a human edit of proposal.md)."
+    },
+    {
+      "id": "F-14",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-3 says each entry 'names what it touches in a `Touches:` line', yet uses pendingEntries 'unchanged'. pendingEntries matches the Change, issue, PR or AREA anywhere in the body (act-rules.mjs `touches`), so an entry that mentions a Change in prose binds it whatever its Touches: line says. The Appendix does not mention Touches: at all.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "Either say 'touches = names anywhere in the entry; a Touches: line is the convention for naming them', or restrict matching to the Touches: line (a change of pendingEntries)."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "'A session runs `warrant` commands only on its own Change' does not say how Change-less commands (`warrant status`, `validate`, `sync`, `ci`) are treated, nor the coordinator session. The coordinator has no Change but its status.mjs runs `warrant status` in other Changes' worktrees, and judge runs `warrant ci` over all records.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process"
+      ],
+      "recommendation": "Write 'a `warrant` command that names a Change names only the session's own; the coordinator names none'."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-6 finds live sessions as status rows 'with a worktree', and status.mjs finds a worktree only by a `<kind>/<change>` branch. It misses a just-launched session still on claude/* (the #74 case), docs sessions (issue-N) and the coordinator itself. A [broadcast] therefore misses sessions that most need it.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-6"
+      ],
+      "recommendation": "Match list_sessions of the project to worktrees by cwd regardless of branch, and report sessions that match no row."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-5 check 1 passes a PR without a Change with 'no Change — scope not checked'. Rule tracking still gives that PR a checkable boundary: it touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`).",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "For a PR without a Change, flag any policy path and any path written only by warrant."
+    },
+    {
+      "id": "F-18",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-4 (#112) makes an issue with declared AREAs and no Change kind `unnamed`. issueKind today returns bug or question before docs, and the precedence of `unnamed` over the labels bug and question is not stated. Separately, a 'Prevention' given as a bold line extends 'to the next heading', which can take in the rest of the body (Where:, Depends on:) and its references.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        ".claude/skills/slice/rules.mjs"
+      ],
+      "recommendation": "State the order (for example bug and question before unnamed, or unnamed first) with a test. End a bold-line Prevention at the next bold line, heading or blank-line-separated 'Where:'/'Depends on:' line."
+    },
+    {
+      "id": "F-19",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "#101's Done when requires the skill to have 'the section Coordinator … and the commands review, broadcast, retro'. Tasks 3.3 and 3.4 exercise status.mjs, review.mjs, judge.mjs and retro.mjs. No task exercises `broadcast` (D-6) or checks the Coordinator section.",
+      "targets": [
+        "openspec/changes/infra-coordinator/tasks.md",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#D-6"
+      ],
+      "recommendation": "Add a check: one [broadcast] posted by the procedure, with its delivery report in the impl-PR body (for example the broadcast that the rules moved to change.md), and the Coordinator section named in task 1.1's verification."
+    },
+    {
+      "id": "F-20",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "The maintainer's decision (#44 comment 5953927808) says 'procedure details move into the skills (`slice`, `pr`)'. D-1 rejects moving anything into `pr` and leaves it to the merge of the spec-PR. The deviation is stated openly. It is listed here so the merge decides it knowingly.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-1"
+      ],
+      "recommendation": "Ask it explicitly in the spec-PR body, citing the decision."
+    },
+    {
+      "id": "F-21",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "act.mjs re-executes the origin/main copy of COPY_FILES (act.mjs, act-rules.mjs, rules.mjs). If scopeFindings or other new act-rules.mjs code imports the new temp.mjs or another new module, the re-executed copy cannot resolve it.",
+      "targets": [
+        ".claude/skills/slice/act-rules.mjs",
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "Keep act-rules.mjs importing only rules.mjs, or extend COPY_FILES in the same patch."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/infra-coordinator/design.md",
+      "change": "Appendix process: '… `implement` narrowed with `--scope` to the source and test paths its design names plus `openspec/changes/<change>/**`'; 'In a Change, project files are written only inside …'; 'the author of the decision turns the PR to draft …'; 'A review subagent reads with the file tools and runs no shell command but `warrant run submit`'; add the AR exception for skip_specs Changes and the decision path for an AREA added after init."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/infra-coordinator/design.md",
+      "change": "Context 'Issue history' and D-4: correct the #57 timeline (CL edit 2026-10-02T07:25:34Z, s0-store init 07:25:45.020Z) and redefine the expected results of task 3.1 on the real history."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/infra-coordinator/design.md",
+      "change": "D-3/D-5: last push over all branches of the Change, merged ones included; the `log` split into `pending` (input as act.mjs, PR comments included) and `unread`; review check 4 on `pending` only."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/infra-coordinator/tasks.md",
+      "change": "Add a broadcast check (F-19). Move the sentence table of 3.2 into the spec-PR (design), or keep 3.2 as a re-check only."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "GraphQL `userContentEdits.diff` holds the whole body of each revision. Checked on #57, where every revision contains its full Where: line. Not checked on an issue edited only once or never edited, where the list may be empty."
+    },
+    {
+      "id": "A-2",
+      "statement": "The init time of a Change is `transitions[0].at` of its record, as status.mjs changeInfo reads it. The s0-store and s0-store-2 times were taken from origin/main."
+    },
+    {
+      "id": "A-3",
+      "statement": "FRONTEND_HOOKS_INACTIVE appears in `data.findings` of the `warrant ci` envelope, not in `errors`. judgeVerdict counts both, and D-8 names only findings."
+    },
+    {
+      "id": "A-4",
+      "statement": "The Appendix byte count was re-measured: process 4 180 + tracking 2 989 + env 1 825 + maintainer-acts about 1 041 + frame 54 ≈ 10 089. This matches D-1's figure, which is therefore the whole AGENTS.md."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "May an AREA be added to Where: after init, and by whom (F-2, F-11)?",
+      "options": [
+        "never; a new Change instead",
+        "only AR for a skip_specs Change needing an UNKNOWN",
+        "any AREA by a maintainer's [decision]/[scope] entry naming it, which clears the status.mjs flag"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "The maintainer's decision named the skill `pr` as a destination of procedure; D-1 proposes to leave `pr` untouched (F-20). Accept the deviation?",
+      "options": [
+        "accept: everything into the skill slice",
+        "move PR-body norms into `pr` as decided"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:2636360ed6534ce0f32ea1b4fa36dea53868b29f622e52eb5f8a60abe328de6f",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T11:00:00Z",
+    "finished_at": "2026-10-02T11:45:00Z"
+  }
+}

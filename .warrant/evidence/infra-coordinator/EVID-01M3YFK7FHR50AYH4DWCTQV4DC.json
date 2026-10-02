@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YFK7FHR50AYH4DWCTQV4DC",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of infra-coordinator: 2 BLOCKER, 10 MAJOR, 7 MINOR, 2 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "NOT_PROVEN",
+  "subject": {
+    "commit": "8c9441b2eccb88aac94e21538e0feac431a9583d",
+    "spec_revision": "openspec/changes/infra-coordinator@8c9441b2eccb88aac94e21538e0feac431a9583d",
+    "spec_tree": "sha256:1db642f150240e74c237b3a6d5f0fc07e12306454a387476da44579fdf595053",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3YF47CZYYXC0S7HEABH252K"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:2636360ed6534ce0f32ea1b4fa36dea53868b29f622e52eb5f8a60abe328de6f",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T14:16:52.466Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3YF47CZYYXC0S7HEABH252K.result.json",
+      "sha256": "sha256:c9cac89670c202bfea56ec18a6a27ce15c7abbbed509e3ad8003fa509d6d1225"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 2,
+    "INFO": 2,
+    "MAJOR": 10,
+    "MINOR": 7
+  }
+}
