@@ -1,0 +1,21 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XWPJDCST3JDTP60A4FQDPK",
+  "change": "infra-process-rules",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-process-rules",
+  "started_at": "2026-10-02T08:46:39.126Z",
+  "finished_at": "2026-10-02T08:52:52.991Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:613e0782905ce66d6f68bc61b27de42a311e543d0ab04279043d0862b1ad11fb",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "spec_tree": "sha256:6897aa6f37bf2ada5d3d3496b6e7cb4d2a6dcccb6671b9f3ab5f6f9895eb818d",
+  "evidence": [
+    "EVID-01M3XX1ZKSWPMXX73JW6CSDDH7"
+  ],
+  "guard_events": []
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XX5TBRFQVQRHFVYE3MMQTV",
+  "change": "infra-process-rules",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/infra-process-rules/**"
+  ],
+  "scope": [],
+  "branch": "spec/infra-process-rules",
+  "started_at": "2026-10-02T08:54:58.745Z",
+  "finished_at": "2026-10-02T08:56:53.555Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:fa78bc2c6733ded66c8dcd5155124a8d1e78ed70aaebcb81f676a796e64f348a",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": []
+}

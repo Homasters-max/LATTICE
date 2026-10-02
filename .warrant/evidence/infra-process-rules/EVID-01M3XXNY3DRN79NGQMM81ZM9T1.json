@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3XXNY3DRN79NGQMM81ZM9T1",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of infra-process-rules: 0 BLOCKER, 3 MAJOR, 10 MINOR, 2 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "8841173a8dd61694a2ffec0df6cb4bd7ca2b1475",
+    "spec_revision": "openspec/changes/infra-process-rules@8841173a8dd61694a2ffec0df6cb4bd7ca2b1475",
+    "spec_tree": "sha256:2e322eec59b9f962f27decd6111beb6abfc4dedab66597433a46c8ea46f73a98",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3XX9PN711KD2NBXDVB3N564"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:cd08091b1f385446c7f8b979e997c5d518ccf7b6a025560f4b3d37583710f630",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:03:46.798Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3XX9PN711KD2NBXDVB3N564.result.json",
+      "sha256": "sha256:279a27df3776d7f705cd84a8c43e252bbcef2d68523d20cc520040e9ec261088"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 2,
+    "MAJOR": 3,
+    "MINOR": 10
+  }
+}
