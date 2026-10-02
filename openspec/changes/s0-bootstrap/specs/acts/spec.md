@@ -10,9 +10,11 @@ knows of for the proposal of that hash. An act is `{login, names, ref}`: `login`
 it names — the hash of a proposal, or `id`s of intents (CT-A05) —, `ref` where it was read (the URL of a comment or a
 review, LG-A05). A name holding `/` is an intent `id`; any other name is a proposal hash.
 
-Every adapter of the port SHALL answer, for every hash: a list of acts, each with a non-empty string `login`, a non-empty
-list `names` of non-empty strings and a non-empty string `ref`; the list and its acts deeply frozen; the same list,
-by content, on every call with the same hash; and never an act whose names are all hashes other than the asked one.
+Every adapter of the port SHALL, for every hash, either answer or throw. An answer is a list of acts, each with a
+non-empty string `login`, a non-empty list `names` of non-empty strings and a non-empty string `ref`; the list and its
+acts deeply frozen; the same list, by content, on every call with the same hash that answers; and never an act whose
+names are all hashes other than the asked one. An adapter throws only when it cannot read its source — of the four,
+only `github` reads one that can fail (REQ-AC-005); the caller then refuses its command.
 Whether an act confirms an intent of the proposal is decided by apply (REQ-LG-003), which knows the intents.
 
 The adapters are `init`, `fixture`, `recorded` and `github` (LG-A04), each in its own folder
@@ -63,9 +65,10 @@ Implements: LG-A04
 <!-- id: REQ-AC-004 -->
 
 `recordedActs(commits)` SHALL be built from the texts of stored commits (REQ-LG-003) and answer, for a hash `h`, the
-acts of the act record (`acts`) of every commit whose `proposal` is `h`, in ledger order; a commit without `acts`, or a
-text that is not a JSON object whose `acts`, when present, has the form of the commit form (REQ-LG-003), contributes
-nothing. It never calls GitHub or any other service. In S0 re-applying a commit (LG-P05 (2)) reads acts through it
+acts of the act record (`acts`) of every commit whose `proposal` is `h` whose `names` include `h` or an intent `id`,
+in ledger order; a commit without `acts`, or a text that is not a JSON object whose `acts`, when present, has the form
+of the commit form (REQ-LG-003), contributes nothing. Apply writes act records only of that kind (REQ-LG-003), so the
+filter drops only acts of a ledger edited by hand, and the adapter keeps the contract of REQ-AC-001 on any input. It never calls GitHub or any other service. In S0 re-applying a commit (LG-P05 (2)) reads acts through it
 (LG-A05); opening a store reads no acts (REQ-LG-010), and the basis of a record reads the act record of its commit
 directly (REQ-LG-009), so neither ever calls GitHub either.
 
@@ -81,7 +84,8 @@ Implements: LG-A05, LG-A04
   `base` `rev` − 1 per entity record, an event intent per event record — are applied to the ledger of the commits
   before it with the acts `recordedActs` answers for its `proposal`
 - **THEN** the first answer is the act record of commit 3, `[{"login":"Homasters-max","names":[<its proposal>],"ref":"store/lattice.json"}]`;
-  the second is empty; each re-apply gives the commit text it started from
+  the second is empty; each re-apply gives the commit text it started from; and an adapter built from a commit text
+  whose `proposal` is `H` and whose `acts` holds one act naming only `K` answers `[]` for `H`
 
 ### Requirement: The github adapter reads acts from a pull request
 <!-- id: REQ-AC-005 -->

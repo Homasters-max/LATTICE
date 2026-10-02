@@ -53,9 +53,10 @@ sessions of commits 2–4 take one `at` from the clock (formatted by the kernel,
 of REQ-LG-008 come from the `ids` port in that order.
 
 `init` SHALL first build the four commits in memory — each proposal applied through apply on the ledger the commits
-before it make, opened as REQ-CL-004 opens a store —, and only then create `store/`, write the configuration, create
-`store/proposals/` and an empty ledger, and append the four commit texts in order through the `store` port, each after
-the `seq` of the one before. It SHALL print one line `{"outcome":"commit","seq":<seq>}` per commit, in order, and exit
+before it make, opened as REQ-CL-004 **Opening** opens a ledger —, and only then create `store/` — a creation that
+fails when `store/` exists by then, so a second `init` running at the same time is refused with code 2 and never
+writes into the first one's store —, write the configuration, create `store/proposals/` and an empty ledger, and
+append the four commit texts in order through the `store` port, each after the `seq` of the one before. It SHALL print one line `{"outcome":"commit","seq":<seq>}` per commit, in order, and exit
 with code 0. `init` writes no proposal file.
 
 It SHALL refuse with code 2, writing nothing, when `store/` already exists; when an option is missing; when the
@@ -91,7 +92,8 @@ Implements: CT-N05, LG-S05, LG-G04, LG-A04
 - **WHEN** `lattice init --namespace lattice --owner Homasters-max` runs in an empty folder against a store that
   answers `moved` to the third append
 - **THEN** it exits with code 2, its standard error names the store, it prints no commit line, and the store's ledger
-  holds the first two commits and nothing of its own after them
+  holds the first two commits and nothing of its own after them; `lattice apply` on that store then exits with code 2
+  naming `LG-G04` and `seq` 3
 
 ### Requirement: import-md writes a proposal from a table with IDs
 <!-- id: REQ-CL-003 -->
@@ -175,11 +177,12 @@ commit is the commit hash (REQ-LG-003) of the commit before it. A ledger that br
 code 2, the message naming `LG-C04` and the `seq` of the first broken commit (or its line, when it has no readable
 `seq`), and nothing is written.
 
-**Opening a store (LG-G01, REQ-LG-010).** After Opening, the ledger SHALL be checked against the genesis chain
-(REQ-LG-010): a store outside it is refused with code 2, the message naming the rule (`LG-G01`, `LG-G02` or `LG-G03`)
-and the `seq`, and nothing is written. Every command that reads the ledger of a project store — `apply`, `export`
-(REQ-CL-005, which opens it as `apply` does) and the steps of `init` (REQ-CL-002) — runs Opening and then Opening a
-store. Opening alone, without this step, is what a rule fixture's ledger must pass (REQ-AR-011).
+**Opening a store (LG-G01, LG-G04, REQ-LG-010).** After Opening, the ledger SHALL be checked against the genesis chain
+and the four commits of store init for the namespace of `store/lattice.json` (REQ-LG-010): a store that fails is
+refused with code 2, the message naming the rule (`LG-G01`, `LG-G02`, `LG-G03` or `LG-G04`) and the `seq`, and nothing
+is written. Every command that reads the ledger of a project store — `apply` and `export` (REQ-CL-005, which opens it
+as `apply` does) — runs Opening and then Opening a store. Opening alone, without this step, is what a rule fixture's
+ledger must pass (REQ-AR-011) and what `init` uses on the commits it builds in memory (REQ-CL-002).
 
 **Proposal.** A proposal file holds a proposal of the form of REQ-LG-001; the rejections of reading it are those of
 REQ-LG-001.
@@ -205,7 +208,7 @@ A proposal file that is already gone when the command removes it counts as remov
 proposal removed it. Any other failed removal after `existing` or `no-op` is refused with code 2 naming the proposal
 file.
 
-Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03, LG-G01
+Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03, LG-G01, LG-G04
 
 #### Scenario: The fixture proposal becomes the first commit
 <!-- id: SCN-CL-005 -->
@@ -251,9 +254,9 @@ Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03, LG-G
 <!-- id: SCN-CL-016 -->
 - **WHEN** after SCN-CL-003 the ledger of the store is replaced by L1 (REQ-LG-003) — the commit of the fixture proposal
   on an empty ledger — and `lattice apply` runs on the proposal file of SCN-CL-003 in `store/proposals/`, then
-  `lattice export --out out` runs
-- **THEN** each exits with code 2, its message naming `LG-G01` and `seq` 1; the ledger and the proposal are unchanged
-  and no `out/` is created
+  `lattice export --out out` runs; then the same with the ledger emptied, as `init` left it before this Change
+- **THEN** each of the first two exits with code 2, its message naming `LG-G01` and `seq` 1; each of the last two with
+  code 2 naming `LG-G04` and `seq` 1; the ledger and the proposal are unchanged and no `out/` is created
 
 #### Scenario: An unchanged proposal is a no-op
 <!-- id: SCN-CL-012 -->

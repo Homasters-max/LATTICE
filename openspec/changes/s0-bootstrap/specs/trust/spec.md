@@ -76,6 +76,6 @@ Implements: TR-F05, TR-F02, TR-F01
   `{"of":{"subject":"lattice/setup@3"},"key":{"id":"lattice/setup"},"value":3,"revoked":true}`,
   `{"of":{"subject":"lattice/setup@3"},"key":{"id":"lattice/setup"},"revoked":false}` and
   `{"of":{"subject":"lattice/setup@3"},"key":{"id":"lattice/setup"},"value":"3"}`, asked for `lattice/setup`; and
-  `currentFacts` gets the bodies of the first list
+  `currentFacts` gets the bodies of the three `std/live@1` events of the first list
 - **THEN** the answers are `2`, `3` and none; then none; then `2`, `2` (both bodies are not fact bodies) and none;
   `currentFacts` gives a frozen map of two entries, `{"id":"lattice/setup"}` → `2` and `{"id":"lattice/solve"}` → `3`

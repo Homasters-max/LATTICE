@@ -37,8 +37,9 @@ act and the switch (SL-T07 (4)) needs for CI.
   `fixture` (acts written in tests), `recorded` (the act records of stored commits) and `github` (issue comments and
   reviews of a pull request, checked for author, text and PR number, read through an injected transport), with one
   contract test run against all four.
-- **Opening a store (LG-G01, LG-G02, LG-G03)**: a store whose commit 1 is not the genesis of kernel `0`, whose commit 2
-  is not the `std` package, or that holds a commit of another kernel version is refused.
+- **Opening a store (LG-G01…G04)**: a store whose commit 1 is not the genesis of kernel `0`, whose commit 2 is not the
+  `std` package, whose commits 3 and 4 are not the namespace of its init configuration and its `setup`, that holds
+  fewer than these four commits, or that holds a commit of another kernel version is refused.
 
 ## Capabilities
 
@@ -65,8 +66,9 @@ act and the switch (SL-T07 (4)) needs for CI.
   `src/ledger/{genesis,std,init,basis}.ts`;
   new adapters `src/adapters/acts-{init,fixture,recorded,github}/`; the `init`, `apply` and opening paths of
   `src/assembly/index.ts`; `src/cli/commands/init.ts`; the package `std/std.json`.
-- Tests: new `test/trust/**`, `test/acts/**`, `test/ledger/{genesis,init,basis}.test.ts`, a rule fixture
-  `test/fixtures/rules/CT-N02/`; changed `test/ledger/apply.test.ts`, `test/cli/**`, `test/e2e/roundtrip.test.ts`.
+- Tests: new `test/trust/**`, `test/acts/**`, `test/ledger/{genesis,init}.test.ts`, a rule fixture
+  `test/fixtures/rules/CT-N02/`, recorded GitHub answers `test/fixtures/acts/**`; changed
+  `test/ledger/{apply,permutation}.test.ts`, `test/ledger/cases.ts`, `test/cli/**`, `test/e2e/roundtrip.test.ts`.
 - No shared file of the skeleton changes (module matrix, CLI entry and command table, `package.json`, port interfaces):
   the `acts` port keeps its interface.
 - Held AREAs: `TR`, `AC`, `CT`, `LG`, `CL` — `LG` and `CL` by the maintainer's decision of 2026-10-02 (umbrella #44).

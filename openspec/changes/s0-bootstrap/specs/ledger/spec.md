@@ -322,28 +322,40 @@ Implements: TR-B02, LG-A05, LG-A03
 ### Requirement: Opening a store checks its genesis chain
 <!-- id: REQ-LG-010 -->
 
-`openStore(stored)` SHALL open the ledger as `openLedger` does — the checks of LG-C04 only, REQ-CL-004 **Opening** —
-and then refuse a store whose history is not a prefix of the chain kernel `0` knows (LG-G01): checking the commits in
-ledger order, the first of these refuses, naming its rule and the `seq` of the commit:
+`openStore(stored, namespace)` SHALL open the ledger as `openLedger` does — the checks of LG-C04 only, REQ-CL-004
+**Opening** — and then refuse a store whose history does not start with the four commits of store init (LG-G04) for
+`namespace` — the namespace of the init configuration — on the chain kernel `0` knows (LG-G01): checking the commits
+in ledger order, the first of these refuses, naming its rule and the `seq` of the commit:
 - `LG-G03` — the commit's `kernel` is not `"0"` (no transition commit is known, LT-01);
 - `LG-G01` — the first commit's commit hash is not the genesis hash;
 - `LG-G02` — the second commit is not a load of the `std` package by the conditions of its exemption (REQ-LG-002): it
   holds records other than its entity records and its session event (the record whose `id` is the commit's `by`);
   the session body does not have `kind` `machine` and `purpose` `init`; or its entity records, as `{"id", "type",
-  "body"}` in record order, do not have the package hash of the `std` package (REQ-LG-007).
+  "body"}` in record order, do not have the package hash of the `std` package (REQ-LG-007);
+- `LG-G04` — the third commit does not hold, beside its session event, exactly the entity `<namespace>/namespace` at
+  `rev` 1 of type `std/namespace@1` (CT-N05); or the fourth commit does not hold, beside its session event, exactly
+  the entity `<namespace>/setup` at `rev` 1 of type `std/setup@1` and one event of type `std/live@1` (PL-A01, TR-F05);
+- `LG-G04` — the ledger holds fewer than four commits, after the commits it holds passed: the `seq` named is one more
+  than the number of its commits (`1` for an empty ledger).
 
-An empty ledger is a prefix and opens. `openLedger` itself is unchanged: it opens ledgers that are not stores, such as
-the ledgers of rule fixtures (REQ-AR-011) and L1 (REQ-LG-003). Every command that reads a project store runs both
-(REQ-CL-004, **Opening a store**). `openStore` reads no acts.
+So a store opens only when store init finished: an empty ledger (written by `init` before this Change), a ledger cut
+short by a failed `init` (REQ-CL-002) and a store whose namespace commit does not match its init configuration are
+refused, and `apply` never writes a commit in the place of an init commit. `openLedger` itself is unchanged: it opens
+ledgers that are not stores, such as the ledgers of rule fixtures (REQ-AR-011), L1 (REQ-LG-003) and the ledgers store
+init builds in memory (REQ-CL-002). Every command that reads a project store runs both (REQ-CL-004, **Opening a
+store**). `openStore` reads no acts.
 
-Implements: LG-G01, LG-G02, LG-G03
+Implements: LG-G01, LG-G02, LG-G03, LG-G04, CT-N05
 
 #### Scenario: A store outside the genesis chain is refused
 <!-- id: SCN-LG-014 -->
-- **WHEN** `openStore` gets an empty ledger; the ledger of store init (SCN-LG-011); that ledger followed by the commit
-  of the fixture proposal of SCN-CL-003; L1 (REQ-LG-003); the genesis commit followed by the commit of the fixture
-  proposal applied on it; the genesis commit followed by a commit of the `std` package whose session body has
-  `purpose` `work`, its hash chain kept; and the ledger of store init with commit 4 rebuilt with `kernel` `"1"` and its
-  hash chain kept
-- **THEN** the first three open; the fourth is refused naming `LG-G01` and `seq` 1; the fifth and the sixth `LG-G02`
-  and `seq` 2; the last `LG-G03` and `seq` 4; `openLedger` opens every one of them
+- **WHEN** `openStore` with the namespace `lattice` gets the ledger of store init (SCN-LG-011); that ledger followed by
+  the commit of the fixture proposal of SCN-CL-003; an empty ledger; L1 (REQ-LG-003); the genesis commit followed by
+  the commit of the fixture proposal applied on it; the genesis commit followed by a commit of the `std` package whose
+  session body has `purpose` `work`, its hash chain kept; the ledger of store init with commit 4 rebuilt with `kernel`
+  `"1"` and its hash chain kept; the first two commits of store init; the first three; and, with the namespace
+  `other`, the ledger of store init
+- **THEN** the first two open; the empty ledger is refused naming `LG-G04` and `seq` 1; L1 `LG-G01` and `seq` 1; the
+  next two `LG-G02` and `seq` 2; the `kernel` `"1"` ledger `LG-G03` and `seq` 4; the first two commits `LG-G04` and
+  `seq` 3; the first three `LG-G04` and `seq` 4; the namespace `other` `LG-G04` and `seq` 3; `openLedger` opens every
+  one of them

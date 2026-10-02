@@ -126,8 +126,10 @@ proposals of REQ-LG-008 in order; ids through the transitional `newId` (`std` fo
 
 ### D-8. Opening a store (`commit.ts`)
 
-`openStore(stored)` = `openLedger` (unchanged, still used by the tests of every module) followed by the checks of
-REQ-LG-010 over the commits it read. Two words, two checks (review 1, F-1): REQ-CL-004 **Opening** stays LG-C04 —
+`openStore(stored, namespace)` = `openLedger` (unchanged, still used by the tests of every module) followed by the
+checks of REQ-LG-010 over the commits it read: the genesis chain and the four init commits for the namespace of the
+init configuration (`LG-G04`, row `I-4`). So a store opens only once store init finished, and `apply` never writes in
+the place of an init commit; the namespace commit is checked against `store/lattice.json` (review 2, F-2, F-7). Two words, two checks (review 1, F-1): REQ-CL-004 **Opening** stays LG-C04 —
 what the rule fixtures (REQ-AR-011, `test/architecture/rules.test.ts` with `openLedger`), L1 and the reference ledgers
 of #60 pass —, and **Opening a store** is the genesis chain, run only on a project store. So no fixture outside this
 Change's paths has to move onto the genesis chain. The `LG-G02` check of opening repeats the conditions of the
@@ -151,9 +153,10 @@ Each imports only `src/ledger/ports/acts.ts` (REQ-AR-009) and freezes what it an
 
 `lattice(root, ports).init(namespace, owner)`: check the options; read and check the package (`readStd`); take one
 `at` = `formatAt(clock.now())` and four ULIDs in order; build `initProposals`; then, **in memory** (review 1, F-8), for
-each proposal open the texts built so far (`openStore` over a `StoredLedger` of them), `apply` it with `[]` (genesis)
-or `initActs(owner).actsOn(proposalHash(p))`, and keep the commit text — any other outcome refuses with code 2 naming
-the commit. Every refusal so far writes nothing. Only then create `store/`, `store/lattice.json`, `store/proposals/`,
+each proposal open the texts built so far (`openLedger` over a `StoredLedger` of them — `openStore` would refuse a
+partial init), `apply` it with `[]` (genesis) or `initActs(owner).actsOn(proposalHash(p))`, and keep the commit text —
+any other outcome refuses with code 2 naming the commit. Every refusal so far writes nothing. Only then create `store/`
+with `mkdirSync` without `recursive` (it fails when `store/` appeared since the check, review 2 F-5), `store/lattice.json`, `store/proposals/`,
 an empty `store/knowledge.jsonl`, and append the four texts through the `store` port, each after the `seq` before it;
 a `moved` answer refuses with code 2 naming the store (SCN-CL-017). Print the four lines `{"outcome":"commit","seq":n}`.
 `commands/init.ts` keeps its options and prints the lines. The `apply` command passes no acts (REQ-CL-004).
@@ -204,7 +207,7 @@ The pure functions of `trust` are the check in S0; admitting bodies under their 
 | LG-G01 | SCN-LG-009, SCN-LG-014, SCN-CL-016 | — |
 | LG-G02 | SCN-LG-010, SCN-LG-008, SCN-LG-014, SCN-CL-015 | `upgrade` and `std@1 → @2`: slice SW (SL-T07 (3)) |
 | LG-G03 | SCN-LG-014 (no kernel but `0`) | the transition commit: LT-01 |
-| LG-G04 | SCN-LG-011, SCN-CL-002 | — |
+| LG-G04 | SCN-LG-011, SCN-LG-014, SCN-CL-002, SCN-CL-016, SCN-CL-017 | — |
 | LG-A07 | SCN-LG-008, SCN-LG-007, SCN-LG-011 | the type exemptions with OM-R03 (#82); the namespace exemption with CT-N03 |
 | CT-N01 | SCN-CT-001, SCN-CT-002 | — |
 | CT-N02 | SCN-LG-008, SCN-CL-002 | namespace existence with CT-N03 (later slice) |
@@ -224,6 +227,8 @@ The pure functions of `trust` are the check in S0; admitting bodies under their 
 | I-1 | #59 holds `TR` + `AC` + `CT` + `LG` + `CL` (D-1). | "Done when" needs the commit form, apply and opening (`LG`) and `init` (`CL`, REQ-CL-002). | the maintainer, 2026-10-02 (session of #59, before `init`; issue #59 edited; umbrella #44 comment 5950552798) |
 | I-2 | `src/ledger/commit.ts` and `src/ledger/index.ts` belong to #59 alone; #60 keeps `src/ledger/projections/**`, `test/projections/**`, `test/fixtures/projections/**`; #59's impl does not wait for #60's; whichever impl-PR merges last regenerates the reference ledgers of #60 (D-12). | The two sessions settled the overlap (umbrella #44 comment 5950598775); #59 keeps `view: latest(commits)` in `openLedger`. | the maintainer, 2026-10-02 (umbrella #44 comment 5950938286, superseding items 1–3 of 5950571583) |
 | I-3 | Spec review 1 (`EVID-01M3Y4GWN1C7DRB0V0DN1M6WAF`, NOT_PROVEN): F-1 Opening split from Opening a store (D-8); F-2 every CT-P01 member in the session type (D-2); F-3 the table is read only for a valid session; F-4 the fact body and the revision value; F-5 tokens; F-6 no transport in S0; F-7 stems `namespace` and `setup` refused; F-8 init builds in memory first (D-10), `moved` during init; F-9 non-empty act strings; F-10 failed reads and paging; F-11 dotted reserved namespaces; F-12 opening repeats the exemption; F-13 who reads `recordedActs`; F-14 the order of `policyOf`; F-15, F-16 wording; F-17 D-13; F-18 exact logins and the synchronous transport stated in REQ-AC-005. | The findings of review 1, all taken. | this spec-PR |
+| I-4 | A project store opens only when it holds the four init commits for the namespace of its init configuration; otherwise it is refused with code 2 naming `LG-G04` and the `seq` (REQ-LG-010, REQ-CL-004, D-8). An empty ledger of an older `init` is refused too. | Spec review 2 (`EVID-01M3YBKXXTSPV90T9HFE0Z8GGW`), F-2 (MAJOR): a prefix of the chain opened, and `apply` wrote a user commit in the place of an init commit, breaking the store for good; option 1 of its decision D-1. Closes F-7 too. | the maintainer, 2026-10-02 (session of #59) |
+| I-5 | Review 2: F-1 `currentFacts` in SCN-TR-002 gets only the `std/live@1` bodies; F-3 an adapter answers or throws (REQ-AC-001); F-4 `recordedActs` filters as `fixtureActs` does; F-5 `init` creates `store/` exclusively; F-6 the test list of `proposal.md`; `init` builds in memory with `openLedger` (D-10). | The findings of review 2, all taken. | this spec-PR |
 
 ## Risks / Trade-offs
 
@@ -239,6 +244,6 @@ The pure functions of `trust` are the check in S0; admitting bodies under their 
 
 ## Migration Plan
 
-None: stores are disposable before the switch (LG-G05). A store made by an older `lattice init` (an empty ledger) still
-opens — an empty ledger is a prefix of the genesis chain (REQ-LG-010); one with commits from before this Change is
-refused naming `LG-G01` and is rebuilt with `lattice init`.
+None: stores are disposable before the switch (LG-G05). A store made by an older `lattice init` (an empty ledger) is
+refused naming `LG-G04`, and one with commits from before this Change naming `LG-G01` (REQ-LG-010); either is rebuilt
+with `lattice init` in a new folder and its `md` imported again (LG-B01).
