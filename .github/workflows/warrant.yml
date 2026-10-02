@@ -32,8 +32,8 @@ jobs:
       actions: read
       pull-requests: read
       issues: read
-    uses: Homasters-max/SRA/.github/workflows/warrant.yml@v0.10.0
+    uses: Homasters-max/SRA/.github/workflows/warrant.yml@v0.10.1
     with:
-      warrant: v0.10.0
+      warrant: v0.10.1
       setup: npm ci
       merge_commit: ${{ inputs.merge_commit || '' }}
