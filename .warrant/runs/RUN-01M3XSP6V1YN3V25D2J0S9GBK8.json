@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XSP6V1YN3V25D2J0S9GBK8",
+  "change": "s0-kernel",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-kernel/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-kernel",
+  "started_at": "2026-10-02T07:54:01.493Z",
+  "finished_at": "2026-10-02T07:58:26.872Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:9a3b037f4f75ff25677ec7d2854123d193cd320f60922e4c6b9209005eb05d5c",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}

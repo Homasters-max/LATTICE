@@ -58,6 +58,12 @@ schema subset, meta-type, envelope, hash, the old modules re-bound or removed, t
 - Callers (`src/ledger/**`, `src/codec/**`, `src/assembly/**`, `test/cli/**`) are not edited: every name they import
   stays with its behaviour, except that `checkInput` no longer refuses `$ref` and `$enc` objects and `parseRef` refuses
   the `#…` forms as `bad-ref`; no caller relies on either (design D-1).
+- Behaviour seen through `lattice apply`: a proposal with a `$enc` key or a `$ref` object with other keys is no
+  longer rejected by `LG-P01` (the spec `cli`, REQ-CL-004, through REQ-KR-002).
+- Stale references after archive: the spec `cli` cites REQ-KR-002 (REQ-CL-003 step 7, REQ-CL-004) and REQ-KR-005
+  (REQ-CL-004), which resolve to REQ-KR-009 and REQ-KR-012; the Purpose of the spec `kernel` stays the Russian text of
+  design v0.6, which a delta cannot replace. This Change holds neither AREA CL nor a way to write a Purpose; #83
+  re-points the `cli` references and rewrites the Purpose.
 - The structure test (`test/architecture/**`, owned by the skeleton) is not edited: the new files use only the
   allowed globals of REQ-AR-005.
 - No new dependency; `package.json` unchanged.

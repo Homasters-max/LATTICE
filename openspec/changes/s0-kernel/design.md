@@ -147,8 +147,16 @@ version.
 it fits every schema of the chain, with the closedness of the root computed over the union of the root properties of
 the chain (OM-T07). So a child adds fields and tightens constraints by declaring a property again; nothing is merged.
 That every child narrows its parent (OM-T03) is not checked here: no S0 type needs it yet (proposal, Non-goals).
+A type never extends a revision of its own `id`, so a chain is a list of distinct ids. The schemas used are the
+admitted copies (NFC, frozen), never the caller's records.
 
-Rejected: merging the chain into one schema — it needs the narrowing rules of OM-T03 to be well defined.
+One refusal per place: a member is checked against the nodes that declare it, child first, and only the first node
+that refuses it reports; within a node the first check in the order `wrong-type`, `too-long`, `not-in-enum`, `bad-ref`
+reports. So `errors` is one list for every implementation (spec review 1, F-1), and a child's tighter rule shadows the
+parent's at the same place, which is what a narrowing child means.
+
+Rejected: merging the chain into one schema — it needs the narrowing rules of OM-T03 to be well defined. Rejected:
+reporting every distinct code at a place — more refusals for one cause, and an order across the chain to define.
 
 ### D-7. The envelope
 
@@ -189,6 +197,30 @@ Recorded on umbrella #44: the callers stay on the transitional interface until #
 input of OM-R03 for #56; `metaType` and `typeOf` are what #59 loads `std` with; record hashes carry `sha256:`. An
 empty `of` on an event (the session event of CT-P01 is about nothing) is the non-blocking UNKNOWN `UNK-KR-009`,
 closed as an assumption; the maintainer's answer in the spec-PR replaces it.
+
+### D-12. Spec review 1
+
+Review `EVID-01M3XSKM4BZXCMETZT50PH8E0K` (`NOT_PROVEN`, 18 findings) and how each is closed in the spec of this Change:
+
+| Finding | Closed by |
+|---|---|
+| F-1 (BLOCKER) several refusals at one place | one refusal per place: first node of the chain, first check of the node (REQ-KR-014, REQ-KR-015, D-6); SCN-KR-049, SCN-KR-052 extended |
+| F-2 JSON type of a `schema` node | object; anything else `wrong-type` (REQ-KR-015); SCN-KR-055 extended |
+| F-3 node without a valid `type` | only `bad-keyword` at `type` (REQ-KR-015); SCN-KR-051 extended |
+| F-4 `metaType` mutable | deeply frozen (REQ-KR-008, REQ-KR-016); SCN-KR-054 |
+| F-5 `Type.body` | the admitted copy, never the argument; schemas are the admitted copies (REQ-KR-014); SCN-KR-049 |
+| F-6 identity of kernel-made values | defined, copies refused (REQ-KR-008, REQ-KR-013, REQ-KR-017); SCN-KR-048, SCN-KR-058 |
+| F-7 `cli` cites removed requirements | REQ-KR-002 Migration, proposal Impact; #83 re-points them |
+| F-8, F-9 order and shape in `typeOf` | record by record, links only between type records; array and record shapes (REQ-KR-014); SCN-KR-050 |
+| F-10 what is frozen | the `value`, not the `Result` (REQ-KR-008) |
+| F-11 SCN-KR-058 admissions | named |
+| F-12 format v1 vector clause | dropped explicitly in the REMOVED REQ-KR-001 |
+| F-13 Purpose of the spec `kernel` | proposal Impact; #83 |
+| F-14 partial `Implements:` | a sentence under the line says the part covered (REQ-KR-013, REQ-KR-014, REQ-KR-016) |
+| F-15 a type extending itself | `bad-extends` (REQ-KR-014); SCN-KR-050 |
+| F-16 exported types, two `Hash` forms | shapes named, both forms stated until #83 (REQ-KR-008) |
+| F-17 `of` values and OM-E04 | how `ref@n` is read, grammar until #83 (REQ-KR-017) |
+| F-18 limits of `refs` | stated (REQ-KR-015) |
 
 ## Risks / Trade-offs
 

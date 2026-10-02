@@ -1,0 +1,283 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XRZ4V1RSN8MV1FQHBCJEXJ",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "BLOCKER",
+      "category": "ambiguity",
+      "statement": "The spec does not say which refusals one place gets, or in which order, when more than one check fails there. REQ-KR-015 says 'at most one refusal per place' but does not say which check wins. Inside one string node, both `maxLength` and `enum` are allowed: \"abcde\" under {maxLength: 3, enum: [\"x\"]} could give `too-long` or `not-in-enum`. Unlike REQ-KR-009, the list is not called 'the first that applies in this order'. REQ-KR-014 validates a member against the node of every schema in the chain and reports 'refusals equal by code and path ... once', so refusals with different codes at the same path are allowed. Example: a child with title {enum:[\"a\"]} and a parent with title {maxLength:10}, given \"abcdefghijk\". REQ-KR-015 orders refusals only by member name, so two refusals for the same member have no defined order. Implementations could return [not-in-enum, too-long], [too-long, not-in-enum] or a single refusal. A deepEqual test on `errors` passes for exactly one of these, and no scenario fixes which.",
+      "targets": [
+        "REQ-KR-014",
+        "REQ-KR-015",
+        "SCN-KR-049",
+        "SCN-KR-052"
+      ],
+      "recommendation": "Define one rule and add a scenario for it. Example: per node, the first applicable check in the order wrong-type, too-long, not-in-enum, bad-ref. Across a chain, either (a) one refusal per place, taken from the first schema of the chain that refuses, or (b) every distinct code, ordered by chain index and then by the check order. Add a SCN with a child and a parent refusing the same member with different codes, and a node with both maxLength and enum failing."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-015 adds the field type `schema` but never says which JSON type a `schema` node accepts. Read literally, 'wrong-type at a value whose JSON type differs from the type of its node' refuses every value, because `schema` is not a JSON type. For a non-object value under the meta-type, e.g. {\"schema\": 5}, two rules apply: `wrong-type /text/schema` (body rule; 'not checked further') and `bad-keyword /text/schema` (schema rule: 'a node that is not an object'). An array value is undecided in the same way. SCN-KR-055 covers only an object whose root type is not `object`.",
+      "targets": [
+        "REQ-KR-015",
+        "REQ-KR-016",
+        "SCN-KR-055"
+      ],
+      "recommendation": "State that the JSON type of a `schema` node is object: a non-object or array value is `wrong-type`, and an object value then goes through the subset check. Alternatively, state that the subset check alone decides, with `bad-keyword` at the value. Add {\"schema\": 5} and {\"schema\": []} to SCN-KR-055."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The schema check does not say what happens to the other keywords of a node whose `type` is absent or invalid. The allowed keywords depend on `type` ('not allowed for the type of its node'). For {\"properties\": {}} without `type`, or {\"type\": \"date\", \"maxLength\": 3}, the other keywords could get `unknown-keyword`, `bad-keyword` or nothing. Keywords are walked in UTF-16 order, so `properties` and `maxLength` come before `type`, which affects the order as well. SCN-KR-051 has only a node with `type` alone (`e`).",
+      "targets": [
+        "REQ-KR-015",
+        "SCN-KR-051"
+      ],
+      "recommendation": "Say that a node with an absent or invalid `type` gets only the `bad-keyword` refusal at `type`, and that its other keywords are not checked (or the rule you choose). Add such a node with an extra keyword to SCN-KR-051."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-KR-008 requires deep freezing only for values returned by `admit`, `typeOf`, `entity` and `event`. The exported constant `metaType` is not covered. If `metaType.body` can be changed, any caller can make it differ from the canonical text of REQ-KR-016 or from the hidden schema chain used by `admit` (D-3). SCN-KR-054 then depends on caller discipline, and 'a record read through the kernel cannot change' (SL-T02) does not hold for the meta-type.",
+      "targets": [
+        "REQ-KR-008",
+        "REQ-KR-016",
+        "SCN-KR-054"
+      ],
+      "recommendation": "Require `metaType` to be deeply frozen and check `Object.isFrozen` on it and on everything reachable from it in SCN-KR-054 (or SCN-KR-026)."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "In REQ-KR-014, the `body` of the result of `typeOf` is 'its body', i.e. the first record's body. There are two readings. (a) It is the argument object itself. Then the deep-freeze rule of REQ-KR-008 forces the kernel to freeze the caller's object, which breaks 'SHALL NOT change its arguments'; the descriptor snapshot of SCN-KR-026 would catch it once taken below the top level. (b) It is the copy admitted under `metaType` from the canonical form. That copy is NFC-normalised and so can differ from the record's body. The same question decides which schemas validate later bodies: the record's own schemas, or their admitted (NFC) copies. A schema key written in decomposed form matches NFC body keys only under (b).",
+      "targets": [
+        "REQ-KR-014",
+        "REQ-KR-008",
+        "SCN-KR-026"
+      ],
+      "recommendation": "Say that `Type.body`, and every schema of the chain used by `admit`, is the body admitted under `metaType` (frozen, NFC), never the argument. Add a SCN with a code-built record whose schema key is not in NFC, and check that the argument is unchanged after `typeOf`."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-KR-008 says 'equal inputs give equal results on every machine and every call'. Under REQ-KR-013 stage 1 and REQ-KR-017 (`bad-admitted`), with the WeakMap registry of D-3, a value is recognised by its identity. A deep copy of a `Type` or `Admitted` that is equal by content gives `bad-type` or `bad-admitted`, while the original succeeds. The spec does not say that 'equal' means identical for kernel-made values. It also assumes, without saying so, that the kernel module is loaded once per process: a second instance of the module has its own registry and refuses the first one's values. The spec does not state that values that went through JSON or `structuredClone` (for example records read from the store) are never kernel-made and must be admitted again.",
+      "targets": [
+        "REQ-KR-008",
+        "REQ-KR-013",
+        "REQ-KR-017"
+      ],
+      "recommendation": "Define 'equal inputs' as equal JSON content plus the same kernel-made objects by identity. State that a value only counts as kernel-made if this kernel instance produced it, so a copy or a deserialised value is refused, and add a copy of an admission to SCN-KR-048 or SCN-KR-058 (expected `bad-type` / `bad-admitted`)."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The main spec `cli` cites requirements this delta removes. REQ-CL-003 step 7 says 'code points the kernel admits (REQ-KR-002 ...)'. REQ-CL-004 says 'text the kernel admits as I-JSON (REQ-KR-002)' and 'identifiers namespace/local of the kernel grammar (REQ-KR-005)'. After archive these point at REMOVED requirements. The cited behaviour also changes: under REQ-KR-002, `apply` gave LG-P01 for a proposal containing a `$enc` key or a `$ref` object with other keys; under REQ-KR-009 it admits such a proposal. The proposal and D-1 say no caller depends on this, but the `cli` contract depends on it through the reference.",
+      "targets": [
+        "REQ-KR-002",
+        "REQ-KR-005",
+        "openspec/specs/cli/spec.md",
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "recommendation": "Record the stale references in proposal.md Impact (`cli` REQ-CL-003 and REQ-CL-004 now resolve to REQ-KR-009 and REQ-KR-012), and open an issue or an I-N row so the Change that next holds AREA CL (or #83) re-points them. In the Migration of REQ-KR-002, say that `apply` now admits proposals with `$enc` or `$ref` members."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-KR-014 does not say whether `bad-extends /<i>/body/extends` is reported when the record at i+1 is refused `not-type` (for example it has no `id` or `rev`, so `formatRef(id, rev)` is undefined). It also does not say whether 'collected in this order' means all `not-type` refusals before all `bad-extends`, or record by record. Example: [child with a wrong extends, a non-record] could give [not-type /1], [bad-extends /0/body/extends, not-type /1] or [not-type /1, bad-extends /0/body/extends]. SCN-KR-050 never combines the two codes.",
+      "targets": [
+        "REQ-KR-014",
+        "SCN-KR-050"
+      ],
+      "recommendation": "Say that a link is checked only when both of its records are type records (or always), and say that refusals are ordered by record index, and within a record `not-type` before `bad-extends`. Add [child, \"x\"] and [a non-record, parent] to SCN-KR-050."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-KR-014 does not define the shape of the `chain` argument beyond 'an array': it is silent on holes, accessor indices, extra own properties, an array subclass or a Proxy-free array-like. It also does not give the prototype a type record must have. REQ-KR-008 forbids calling a getter of an argument, so reading `chain[i]` through an accessor is forbidden, but the spec does not give the refusal. REQ-KR-017 does define these cases for the header.",
+      "targets": [
+        "REQ-KR-014",
+        "REQ-KR-008"
+      ],
+      "recommendation": "Use the header wording of REQ-KR-017 for the chain: an array whose prototype is Array.prototype; a hole or an accessor at index i is `not-type /<i>` and the getter is never called; a record is an object whose prototype is Object.prototype or null. Add one case to SCN-KR-050."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "'Every value returned by admit, typeOf, entity and event SHALL be deeply frozen' and 'every successful result ... is deeply frozen' (SCN-KR-026) can mean the Result wrapper {ok, value} or only its `value`. The two readings give different results for Object.isFrozen(result).",
+      "targets": [
+        "REQ-KR-008",
+        "SCN-KR-026"
+      ],
+      "recommendation": "Say 'the `value` of every successful result' (or include the wrapper) explicitly."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-KR-058 does not name the `admitted` argument for the entity calls with `at` 253402300800000, `at` 1.5, without `by` and with an `id` getter, nor for the final `event` call. If the event call takes the admission of SCN-KR-044, it also gets `bad-of /admitted/body/of`, because that body has no `of`. The scenario expects only `bad-header /header/rev`.",
+      "targets": [
+        "SCN-KR-058"
+      ],
+      "recommendation": "Name the admission for each call: 'the admission of SCN-KR-044' for the entity calls and 'the first admission of SCN-KR-057' for the event call."
+    },
+    {
+      "id": "F-12",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The Migration of removed REQ-KR-001 says the guarantees are unchanged. It drops without comment the clause that the scenario inputs and expected results of the capability, and the RFC 8785 fixture, are format-v1 vectors that 'the next kernel version SHALL reproduce'. This Change changes such results (`reserved-enc`, `bad-ref` from checkInput, value ids in parseRef) without a new format version.",
+      "targets": [
+        "REQ-KR-001",
+        "REQ-KR-011"
+      ],
+      "recommendation": "In the Reason or Migration of REQ-KR-001, state that the format-v1 vector clause is dropped (kernel version 0, LG-G05/LG-G06), and that only the vector file of REQ-KR-011 is frozen from now on."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The delta replaces every requirement of `kernel`, but the Purpose of openspec/specs/kernel/spec.md stays as it is. It is in Russian and describes 'format v1 of the frozen kernel' with a value id, finding references in a body and the revision form, all of which this Change removes. It also conflicts with kernel version 0 (LG-G05) and with SL-T03 (English specs).",
+      "targets": [
+        "openspec/specs/kernel/spec.md",
+        "openspec/changes/s0-kernel/proposal.md"
+      ],
+      "recommendation": "If the archive can rewrite the Purpose, give its new English text; otherwise record it as a follow-up (issue) in proposal.md Impact."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Several `Implements:` lines name IDs the requirement covers only in part. REQ-KR-014 names OM-T07, but status fact types not being extendable and the absence of cycles inside one commit are not here. REQ-KR-016 names OM-L01, but the session event type goes to #59. REQ-KR-013 names OM-H03 and OM-T05, but the no-op and 'latest revision' are decided by apply. design-coverage (SL-T06) would count these IDs as bound.",
+      "targets": [
+        "REQ-KR-013",
+        "REQ-KR-014",
+        "REQ-KR-016"
+      ],
+      "recommendation": "Mark the part each requirement covers (for example 'Implements: OM-T07 (depth, pin, closedness)') or drop the IDs whose binding belongs to another Change."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "A chain in which a type extends an earlier revision of its own id, [X@2 extends X@1, X@1], passes every check of REQ-KR-014. OM-T07 ('without cycles') and OM-I04/OM-T03 suggest it should be refused, but the spec neither refuses it nor says it is allowed. The same holds for a chain that repeats an id.",
+      "targets": [
+        "REQ-KR-014"
+      ],
+      "recommendation": "Refuse a chain in which an id occurs twice (`bad-extends` at the later link), or state that it is allowed and why."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-KR-008 exports the types `Type`, `Admitted`, `BodyRef`, `EntityRecord` and `EventRecord`, but no requirement ties these names to the shapes it defines; `BodyRef` occurs nowhere else. The `Hash` brand now covers two forms: `sha256:` plus hex from `admit`, and bare hex from the transitional `hash`. Its only documented form, 64 lowercase hex digits, matches only the second.",
+      "targets": [
+        "REQ-KR-008",
+        "REQ-KR-013",
+        "REQ-KR-018"
+      ],
+      "recommendation": "Bind each exported type to its shape (`BodyRef` = {path, ref, target} of REQ-KR-015, and so on). State which form `Hash` names, or give the two forms distinct types until #83."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "OM-E04 and TR-F01 write `of: {role: ref@n}`, i.e. pinned. REQ-KR-017 also accepts a floating reference ('a reference without a version an event'). This matches the OM-Z02 example and the fact that events have no revisions, but the departure from the literal OM-E04 is not stated in the requirement. The event `id` in REQ-KR-017 follows the REQ-KR-012 grammar rather than the ULID of OM-I02; only design D-1/D-7 say this is temporary until #83, the requirement does not.",
+      "targets": [
+        "REQ-KR-017"
+      ],
+      "recommendation": "Add a sentence in REQ-KR-017 saying how OM-E04's `ref@n` is read for event targets, and that the id grammar of the header changes with #83."
+    },
+    {
+      "id": "F-18",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-boundary",
+      "statement": "`refs` (REQ-KR-015) has two limits. For a type body it lists only `extends`: the type ids named by `ref` keywords inside its `schema` are not references of the body, so referrers (OM-R05) of a type will not see the types that depend on it through fields. Under a chain, `target` comes only from the first schema that declares a `ref` node, so a parent's different `ref` target is never passed to apply (OM-R03) while OM-T03 is unchecked. `unique` and `card` names are not checked against the declared fields.",
+      "targets": [
+        "REQ-KR-015",
+        "REQ-KR-016"
+      ],
+      "recommendation": "Note these limits in the requirement or in design Non-goals, so that #56, #59 and #60 know about them."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-kernel/specs/kernel/spec.md",
+      "change": "REQ-KR-015, body validation: replace 'at most one refusal per place' with 'at most one refusal per place and node: the first that applies in the order wrong-type, too-long, not-in-enum, bad-ref'. In REQ-KR-014, after 'Refusals equal by code and path are reported once', add the chosen cross-chain rule (F-1)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-kernel/specs/kernel/spec.md",
+      "change": "REQ-KR-015: 'The JSON type of a `schema` node is object; a value of another JSON type is `wrong-type`.' REQ-KR-008: 'The constant `metaType` is deeply frozen.' REQ-KR-014: '`body` is the body admitted under `metaType`, never the argument' (F-2, F-4, F-5)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-kernel/proposal.md",
+      "change": "Impact: name the `cli` references to REQ-KR-002 and REQ-KR-005 that become stale, the follow-up issue that re-points them, and the `apply` behaviour that changes for `$enc` and `$ref` members (F-7)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The sha256 literals of SCN-KR-044, SCN-KR-045 and SCN-KR-046 were not recomputed, because the review Run forbids running code. Their canonical strings follow JCS (body before type). The transitional literal of SCN-KR-060 equals the one already tested in test/kernel/vectors.ts."
+    },
+    {
+      "id": "A-2",
+      "statement": "The NFC vectors of REQ-KR-011 were checked by hand against UAX #15: 1E9B 0323 stays, 0958 is a composition exclusion, 1100 1161 composes to AC00. The byte counts of SCN-KR-047 (1 048 576, 1 048 577, 1 048 574, 1 048 580) and the at literals of SCN-KR-056 and SCN-KR-059 were checked by arithmetic and against the existing test."
+    },
+    {
+      "id": "A-3",
+      "statement": "Issue #55 was not read (gh is outside the review guard). The scope comes from proposal.md, design.md and the design-next IDs it names. The callers checked are src/ledger, src/codec, src/assembly and test/cli. None of them imports valueId, refsOf, revision or Revision. None relies on a `$enc`/`$ref` refusal of checkInput or on a `#…` reference, so the transitional interface keeps them green."
+    },
+    {
+      "id": "A-4",
+      "statement": "Every old kernel module is re-bound or removed by D-2: admit.ts -> strings.ts, hash.ts and ids.ts -> transitional.ts, refs.ts removed, revision.ts -> envelope.ts; canonical.ts, input.ts, ref.ts, types.ts, unicode16.ts and index.ts are kept. All were checked against the current src/kernel listing."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "When several checks refuse the same member of a body (in one node, or across the schemas of an extends chain), what does `admit` report (F-1)?",
+      "options": [
+        "One refusal per place: the first schema of the chain that refuses, and within a node the first check in the order wrong-type, too-long, not-in-enum, bad-ref",
+        "Every distinct code at the place, ordered by chain index and then by the check order",
+        "Every distinct code at the place, ordered by the check order only, regardless of the schema that gave it"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:944df2f3ec268a92341c5958a7c29b4f1e34910c9783e430fb419a3896e48f73",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:45:00Z"
+  }
+}

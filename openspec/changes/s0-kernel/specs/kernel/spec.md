@@ -10,7 +10,9 @@
 
 **Migration**: The function list changes (`valueId`, `refsOf`, `revision` removed; `admit`, `typeOf`, `entity`,
 `event`, `formatAt`, `metaType` added); the guarantees (no exception, no mutation, determinism) are unchanged and their
-tests carry the tokens SCN-KR-026 and SCN-KR-027.
+tests carry the tokens SCN-KR-026 and SCN-KR-027. The clause that the inputs and results of the scenarios are format
+v1 vectors the next kernel version reproduces is dropped: the kernel version is `0` until the switch and a kernel
+change is free (LG-G05, LG-G06); from now on only the vector file of REQ-KR-011 is frozen.
 
 ### Requirement: Входная проверка тела
 <!-- id: REQ-KR-002 -->
@@ -18,8 +20,10 @@ tests carry the tokens SCN-KR-026 and SCN-KR-027.
 **Reason**: Replaced by REQ-KR-009 "Parsing a JSON text: I-JSON and NFC" (OM-H02). The refusals `reserved-enc` and
 `bad-ref` are not taken: `design-next` has no `$enc` key (NX-20) and no `$ref` marker (NX-15).
 
-**Migration**: A `$enc` or `$ref` member is an ordinary member. Every other refusal, its place and its order are
-unchanged; the tests carry the tokens SCN-KR-028…SCN-KR-036.
+**Migration**: A `$enc` or `$ref` member is an ordinary member, so `lattice apply` no longer rejects a proposal by
+`LG-P01` for a `$enc` key or a `$ref` object with other keys (the spec `cli`, REQ-CL-004). Every other refusal, its
+place and its order are unchanged; the tests carry the tokens SCN-KR-028…SCN-KR-036. The references of the spec `cli`
+to REQ-KR-002 and REQ-KR-005 resolve to REQ-KR-009 and REQ-KR-012; #83 re-points them.
 
 ### Requirement: Каноническая форма — JCS
 <!-- id: REQ-KR-003 -->
@@ -82,11 +86,24 @@ requirement of each function states. A function SHALL NOT throw on any argument;
 type (`null`, `undefined`, a number where a string is expected, …) gives the refusal its requirement names for an
 invalid value of that parameter, at the same path.
 
-Every function SHALL be deterministic — equal inputs give equal results on every machine and every call — and SHALL
-NOT change its arguments, call a getter or other code of an argument, perform I/O, or read the clock, the environment
-or random numbers; time and ULIDs arrive as arguments. These guarantees do not extend to `Proxy` arguments. Every value
-returned by `admit`, `typeOf`, `entity` and `event` SHALL be deeply frozen (`Object.isFrozen` holds for it and for
-every object and array reachable from it), so a record read through the kernel cannot change (SL-T02).
+A **kernel-made value** is a `Type` (returned by a successful `typeOf`, or `metaType`) or an `Admitted` (returned by a
+successful `admit`) of this loaded instance of the kernel module; the kernel recognises one by its identity, never by
+its shape. A copy of one — by spread, `structuredClone`, or JSON, as a record read back from a store is — is not
+kernel-made, and a body that went through a copy is admitted again.
+
+Every function SHALL be deterministic — inputs equal by JSON content, with the same kernel-made values by identity,
+give results equal by content on every machine and every call — and SHALL NOT change its arguments, call a getter or
+other code of an argument, perform I/O, or read the clock, the environment or random numbers; time and ULIDs arrive as
+arguments. These guarantees do not extend to `Proxy` arguments. The `value` of every successful result of `admit`,
+`typeOf`, `entity` and `event`, and the constant `metaType`, SHALL be deeply frozen (`Object.isFrozen` holds for it and
+for every object and array reachable from it), so a record read through the kernel cannot change (SL-T02); the `Result`
+wrapper itself is not frozen. No argument is frozen: what a frozen value holds is the kernel's own copy, except the
+`body` of an entity or event record, which is the frozen `body` of its `Admitted`.
+
+The exported types name these shapes: `Id` and `Ref` — REQ-KR-012; `Type` — `{ ref, body }` of REQ-KR-014; `Admitted`
+— `{ body, type, hash, refs }` of REQ-KR-013; `BodyRef` — an element `{ path, ref, target }` of `refs` (REQ-KR-015);
+`EntityRecord`, `EventRecord` — REQ-KR-017; `Hash` — a hash as text: `sha256:` and 64 lower-case hex digits from
+`admit`, or the 64 bare hex digits of the transitional `hash` (REQ-KR-018) until #83.
 
 Implements: OM-L04, ST-S03
 
@@ -96,8 +113,9 @@ Implements: OM-L04, ST-S03
   valid and invalid; before a call with an object argument a snapshot of it is taken by the descriptors of its own
   properties, without calling getters; every call is made twice
 - **THEN** no call throws; every invalid input gives `ok: false` with a non-empty `errors`; the two results of one
-  input are equal by content; object arguments equal their snapshots after the call; every successful result of
-  `admit`, `typeOf`, `entity` and `event` is deeply frozen
+  input are equal by content; object arguments equal their snapshots after the call, and no argument has become
+  frozen; the `value` of every successful result of `admit`, `typeOf`, `entity` and `event`, and `metaType`, is deeply
+  frozen
 
 #### Scenario: Arguments of a wrong type
 <!-- id: SCN-KR-027 -->
@@ -361,8 +379,8 @@ Implements: OM-R01
 
 `admit(text, type)` SHALL turn the JSON text of a body and its type into an admitted body, running these stages in
 order and returning the refusals of the first stage that has any:
-1. `type` is a value returned by a successful `typeOf` or the constant `metaType` (REQ-KR-016); otherwise the only
-   refusal `bad-type` `/type`;
+1. `type` is a kernel-made `Type` (REQ-KR-008): the `value` of a successful `typeOf` or the constant `metaType`
+   (REQ-KR-016), by identity; otherwise — a copy of one included — the only refusal `bad-type` `/type`;
 2. the text is parsed as `checkInput` does (REQ-KR-009), with its codes; each `path` is prefixed with `/text`;
 3. the UTF-8 encoding of the canonical form of the body (REQ-KR-010) is at most 1 048 576 bytes; otherwise the only
    refusal `too-large` `/text`;
@@ -379,6 +397,10 @@ body of the current revision a no-op (OM-H03; the no-op itself is decided by app
 revision of the type gives another hash.
 
 Implements: OM-H01, OM-H02, OM-H03, OM-H04, OM-T05
+
+Of OM-H03 this requirement gives the hash equality the no-op is decided by; the no-op on the commit is apply's
+(LG-C05, #56). Of OM-T05 it validates a body against the type revision it names; that new writes use the latest
+revision of their type is apply's.
 
 #### Scenario: The hash is sha256 of the canonical form over type@n
 <!-- id: SCN-KR-044 -->
@@ -418,58 +440,83 @@ Implements: OM-H01, OM-H02, OM-H03, OM-H04, OM-T05
 #### Scenario: Stages stop at the first refusal
 <!-- id: SCN-KR-048 -->
 - **WHEN** `admit` gets, under the type `std/domain@1` of SCN-KR-044, the texts `{"name":-0}`, `[` and
-  `{"name":5,"x":1}`; then the text `[` with the type `{ref: "std/domain@1"}` built in code
+  `{"name":5,"x":1}`; then the text `[` with the type `{ref: "std/domain@1"}` built in code; then the text
+  `{"name":"lifecycle","code":"LCY"}` with the copy `{...T}` of that type `T`, and with `structuredClone(metaType)`
 - **THEN** the first is the only refusal `negative-zero` `/text/name` (no refusal for the missing `code`); the second
   is the only refusal `syntax` `/text`; the third gives in order `missing` `/text/code`, `wrong-type` `/text/name`,
-  `unknown-field` `/text/x`; the last is the only refusal `bad-type` `/type`
+  `unknown-field` `/text/x`; the last three are the only refusal `bad-type` `/type`
 
 ### Requirement: The type of an admission
 <!-- id: REQ-KR-014 -->
 
-`typeOf(chain)` SHALL turn a type and its `extends` chain into the type `admit` takes. `chain` is a list of type
-records: the type first, then its parent, and so on to a type without `extends`. A type record is an object with own
-data properties `id`, `rev`, `type` and `body` (other properties are ignored, so an entity record of REQ-KR-017 is one):
-`id` an identifier (REQ-KR-012), `rev` an integer from 1 to 2^53−1, `type` exactly `core/type@1`, and `body` a value
-that `admit` admits under `metaType` when given the canonical form of it.
+`typeOf(chain)` SHALL turn a type and its `extends` chain into the type `admit` takes. `chain` is an array whose
+prototype is `Array.prototype`, holding type records: the type first, then its parent, and so on to a type without
+`extends`. A type record is an object whose prototype is `Object.prototype` or `null`, with own data properties `id`,
+`rev`, `type` and `body` (other properties are ignored, so an entity record of REQ-KR-017 is one): `id` an identifier
+(REQ-KR-012), `rev` an integer from 1 to 2^53−1, `type` exactly `core/type@1`, and `body` a value that `admit` admits
+under `metaType` when given the canonical form of it. A hole or an accessor at an index of `chain`, and an accessor for
+one of the four properties of a record, make that record not a type record; no getter is called.
 
-The refusals, collected in this order:
-- `not-type` `""` — `chain` is not an array or is empty; the only refusal;
-- `chain-too-long` `""` — `chain` holds more than five records (the depth of `extends` is at most 4); the only refusal;
-- `not-type` `/<i>` — the record at index `i` is not a type record; at most one refusal per record, and its `extends`
-  is not checked;
-- `bad-extends` `/<i>/body/extends` — the record at index `i` is not the last and its `extends` is not
-  `formatRef(id, rev)` of the record at `i + 1`, or it is the last and has `extends`.
+The refusals:
+- `not-type` `""` — `chain` is not such an array or is empty; the only refusal;
+- `chain-too-long` `""` — `chain` holds more than five elements (the depth of `extends` is at most 4); the only
+  refusal;
+- otherwise, record by record in index order, at most one refusal per record: `not-type` `/<i>` when the element at
+  index `i` is not a type record; else `bad-extends` `/<i>/body/extends` when the link from `i` is wrong — the record is
+  not the last and the record at `i + 1` is a type record whose `formatRef(id, rev)` is not the `extends` of record
+  `i`, or whose `id` is already the `id` of a record at an index up to `i` (a type never extends a revision of itself,
+  directly or through its ancestors); or the record is the last and has `extends`. A link to an element that is not a
+  type record is not checked: that element has its own `not-type`.
 
-On success the value is a type: `ref` — `formatRef(id, rev)` of the first record, `body` — its body; the schemas of
-every record of the chain go with it and are used by `admit`. Validation against a chain: the top-level object of a
-body may hold a member exactly when one schema of the chain declares it in its root `properties` — closedness over the
-union of the fields of the whole chain —; a member is validated against the node of every schema of the chain that
-declares it; a name required by any schema of the chain is required. Below the top level every node is closed by its
-own `properties`. Refusals equal by code and path are reported once.
+On success the value is a type: `ref` — `formatRef(id, rev)` of the first record; `body` — the body of the first record
+as `admit` admitted it under `metaType` (the kernel's frozen copy in NFC, never the argument). The schemas `admit`
+validates with are the admitted copies of the bodies of every record of the chain, so a schema key written in another
+normalization form matches the NFC keys of a body; the records themselves are neither changed nor frozen.
+
+Validation against a chain: the top-level object of a body may hold a member exactly when one schema of the chain
+declares it in its root `properties` — closedness over the union of the fields of the whole chain; a name required by
+any schema of the chain is required, with one `missing` refusal; a member is validated against the node of each schema
+of the chain that declares it, child first, and its refusals are those of the first of these nodes that refuses it —
+one refusal per place across the chain. Below the top level every node is closed by its own `properties`.
 
 Implements: OM-T05, OM-T07
+
+Of OM-T07 this requirement covers the pinned `extends`, the absence of cycles in a chain, the depth of at most 4 and
+the closedness over the union of the chain; a cycle inside one commit is found by apply when it resolves the chain, and
+that status fact types cannot be extended is a rule of `std` types (#59).
 
 #### Scenario: A chain admits the union of its fields and each schema's constraints
 <!-- id: SCN-KR-049 -->
 - **WHEN** `typeOf` gets the chain of the child `{id: "lattice/rule", rev: 1, type: "core/type@1", body: {"extends":
   "std/knowledge@2", "schema": {"type": "object", "properties": {"rule": {"type": "string", "enum": ["must",
   "should"]}, "title": {"type": "string", "maxLength": 5}}, "required": ["rule"]}}}` and the parent `{id:
-  "std/knowledge", rev: 2, type: "core/type@1", body: {"schema": {"type": "object", "properties": {"summary": {"type":
-  "string"}, "title": {"type": "string", "maxLength": 10}}, "required": ["title"]}}}`, and `admit` gets under it the
-  texts `{"title":"abc","rule":"must","summary":"x"}`, `{"title":"abcdefg","rule":"may","extra":1}`,
-  `{"rule":"must"}` and `{"title":"abc"}`
+  "std/knowledge", rev: 2, type: "core/type@1", body: {"schema": {"type": "object", "properties": {"rule": {"type":
+  "string", "maxLength": 5}, "summary": {"type": "string"}, "title": {"type": "string", "maxLength": 10}}, "required":
+  ["title"]}}}`, and `admit` gets under it the texts `{"title":"abc","rule":"must","summary":"x"}`,
+  `{"title":"abcdefg","rule":"may","extra":1}`, `{"rule":"must"}`, `{"title":"abc"}`,
+  `{"title":"abcdefghijk","rule":"must"}`, `{"title":"abc","rule":"should"}` and `{"title":"abc","rule":"mayyyy"}`;
+  then `typeOf` gets the one record `{id: "test/nfd", rev: 1, type: "core/type@1", body: {"schema": {"type":
+  "object", "properties": {K: {"type": "integer"}}}}}` built in code, where the key `K` is `e` followed by U+0301, and
+  `admit` gets under it the text `{"é":1}` with the key the one code point U+00E9
 - **THEN** `typeOf` succeeds with `ref` `lattice/rule@1`; the first text is admitted with `type` `lattice/rule@1`; the
   second gives in order `unknown-field` `/text/extra`, `not-in-enum` `/text/rule`, `too-long` `/text/title`; the third
-  `missing` `/text/title`; the fourth `missing` `/text/rule`
+  `missing` `/text/title`; the fourth `missing` `/text/rule`; the fifth only `too-long` `/text/title` (the child
+  refuses first; the parent's refusal at the same place is not reported); the sixth `too-long` `/text/rule` (from the
+  parent); the seventh only `not-in-enum` `/text/rule`; the second `typeOf` succeeds, its `body` holds the key U+00E9,
+  the record built in code is unchanged and not frozen, and the text is admitted
 
 #### Scenario: Malformed chains
 <!-- id: SCN-KR-050 -->
 - **WHEN** `typeOf` gets, with the child and the parent of SCN-KR-049: `[]`; `"x"`; `[parent, child]`; `[child]`;
   `[child, parent with rev 1]`; `[child with type "core/type@2"]`; `[a record whose body is {"schema": {"type":
-  "object", "properties": {}, "pattern": "x"}}]`; a chain of five records each extending the next; a chain of six
+  "object", "properties": {}, "pattern": "x"}}]`; `[child, "x"]`; `["x", parent]`; `[child, parent]` whose index 1 is
+  an accessor that sets a flag when called; `[child2, child1]`, where `child1` is the child with `rev` 1 and without
+  `extends`, and `child2` is the child with `rev` 2 and `extends` `lattice/rule@1`; a chain of five records each
+  extending the next; a chain of six
 - **THEN** the refusals are: `not-type` `""`; `not-type` `""`; in order `bad-extends` `/0/body/extends`, `bad-extends`
   `/1/body/extends`; `bad-extends` `/0/body/extends`; `bad-extends` `/0/body/extends`; `not-type` `/0`; `not-type`
-  `/0`; the chain of five succeeds; the chain of six is the only refusal `chain-too-long` `""`
+  `/0`; `not-type` `/1`; `not-type` `/0`; `not-type` `/1` with the flag not set; `bad-extends` `/0/body/extends`; the
+  chain of five succeeds; the chain of six is the only refusal `chain-too-long` `""`
 
 ### Requirement: The schema subset
 <!-- id: REQ-KR-015 -->
@@ -486,23 +533,28 @@ with the keyword `type`, whose value is one of `object`, `array`, `string`, `int
 - `integer`, `number`: `enum` — a non-empty list of distinct numbers of that type;
 - `boolean`, `null`, `schema`: none.
 
-A value of a `schema` node is itself a schema: a node of this subset whose `type` is `object`. The field type `schema`
-is what lets the meta-type (REQ-KR-016) declare the `schema` of a type body, so that the meta-type is typed by itself.
-The subset grows only with a kernel version.
+A value of a `schema` node is itself a schema: a node of this subset whose `type` is `object`. The JSON type a `schema`
+node accepts is object: any other value is `wrong-type`, and an object value is then checked as a schema. The field
+type `schema` is what lets the meta-type (REQ-KR-016) declare the `schema` of a type body, so that the meta-type is
+typed by itself. The subset grows only with a kernel version.
 
 A schema is checked when a value of a `schema` node is validated — the `schema` of every type admitted under the
 meta-type —, walking depth first with the keywords of each node in UTF-16 code unit order, at most one refusal per
 keyword:
-- `unknown-keyword` at a keyword that is not allowed for the type of its node (`pattern`, `additionalProperties`,
-  `$ref`, `description`, `minLength`, …);
-- `bad-keyword` at a keyword whose value is not of the form above, at a required keyword that is absent (`type` of
-  every node, `properties`, `items`) — in the place of its name in that order —, at `maxLength` or `enum` next to
-  `ref`, at `pinned` without `ref`, at the `type` of the root node of a `schema` value when it is not `object`, and
-  at a node that is not an object (then the only refusal of that node).
+- a node that is not an object (an array included) gets only `bad-keyword` at the node;
+- a node whose `type` is absent or not one of the eight values gets only `bad-keyword` at its `type`; its other
+  keywords are not checked;
+- otherwise `unknown-keyword` at a keyword that is not allowed for the type of its node (`pattern`,
+  `additionalProperties`, `$ref`, `description`, `minLength`, …), and `bad-keyword` at a keyword whose value is not
+  of the form above, at a required keyword that is absent (`properties`, `items`) — in the place of its name in that
+  order —, at `maxLength` or `enum` next to `ref`, at `pinned` without `ref`, and at the `type` of the root node of a
+  `schema` value when it is not `object`.
 
-A body is validated against a node, depth first, at most one refusal per place:
+A body is validated against a node, depth first, with at most one refusal per place — within one node, the first
+check that refuses in the order `wrong-type`, `too-long`, `not-in-enum`, `bad-ref` (across the schemas of a chain,
+REQ-KR-014):
 - `wrong-type` at a value whose JSON type differs from the `type` of its node (an `integer` is a number that is an
-  integer); the value is not checked further;
+  integer; a `schema` node accepts an object); the value is not checked further;
 - for an object: `unknown-field` at a member its node does not declare; `missing` at `<object>/<name>` for a required
   name that is absent; the refusals of an object are ordered by member name in UTF-16 code unit order, an absent
   required name taking the place of its name; each declared member is validated against its node;
@@ -515,31 +567,36 @@ A body is validated against a node, depth first, at most one refusal per place:
 `refs` of an admitted body (REQ-KR-013) SHALL list, in walk order, every string of a `ref` node that is a valid
 reference, as `{ path, ref, target }`: `path` the JSON Pointer of the string in the body, `ref` its parse
 (REQ-KR-012), `target` the `ref` keyword of the node — one entry per path, from the first schema of the chain that
-declares a `ref` node there. Whether a pinned target exists and has that type is decided by apply (OM-R03).
+declares a `ref` node there. Whether a pinned target exists and has that type is decided by apply (OM-R03). `refs`
+holds only the values of a body: the type ids a schema names in its `ref` keywords are not references of the type body
+that holds the schema; a parent's `ref` target at a path the child also declares is not listed; that the names in
+`unique` and `card` are fields of the type is not checked here.
 
 Implements: OM-T06, OM-R02
 
 #### Scenario: A schema outside the subset is refused
 <!-- id: SCN-KR-051 -->
 - **WHEN** `admit` gets under `metaType` the text
-  `{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date"},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string"}}}`
+  `{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date","maxLength":3},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string","j":{"properties":{}},"k":[]}}}`
 - **THEN** the refusals in order are: `unknown-keyword` `/text/schema/additionalProperties`; `unknown-keyword`
   `/text/schema/properties/a/pattern`; `bad-keyword` `/text/schema/properties/b/properties`; `bad-keyword`
   `/text/schema/properties/c/items`; `bad-keyword` `/text/schema/properties/d/maxLength`; `bad-keyword`
   `/text/schema/properties/e/type`; `bad-keyword` `/text/schema/properties/f/maxLength`; `bad-keyword`
   `/text/schema/properties/g/pinned`; `bad-keyword` `/text/schema/properties/h/enum`; `bad-keyword`
-  `/text/schema/properties/i`; `bad-keyword` `/text/schema/required`
+  `/text/schema/properties/i`; `bad-keyword` `/text/schema/properties/j/type`; `bad-keyword`
+  `/text/schema/properties/k`; `bad-keyword` `/text/schema/required` (the node `e` gets nothing at its `maxLength`)
 
 #### Scenario: A body against the field types
 <!-- id: SCN-KR-052 -->
 - **WHEN** `admit` gets, under the type `test/all@1` whose schema is
-  `{"type":"object","properties":{"b":{"type":"boolean"},"i":{"type":"integer","enum":[1,2]},"l":{"type":"array","items":{"type":"integer"}},"n":{"type":"null"},"num":{"type":"number"},"o":{"type":"object","properties":{"x":{"type":"string"}},"required":["x"]},"s":{"type":"string","maxLength":3}},"required":["b","s"]}`,
+  `{"type":"object","properties":{"b":{"type":"boolean"},"e":{"type":"string","maxLength":2,"enum":["ab"]},"i":{"type":"integer","enum":[1,2]},"l":{"type":"array","items":{"type":"integer"}},"n":{"type":"null"},"num":{"type":"number"},"o":{"type":"object","properties":{"x":{"type":"string"}},"required":["x"]},"s":{"type":"string","maxLength":3}},"required":["b","s"]}`,
   the texts `{"b":true,"i":2,"l":[1,2],"n":null,"num":1.5,"o":{"x":"y"},"s":"abc"}`; `{"b":false,"s":"😀😀😀"}`;
-  `{"b":1,"i":1.5,"l":[1,"2"],"n":0,"num":"1","o":{"y":1},"s":"abcd","t":1}`; `{"b":false,"i":3,"s":"a"}`; `[]`
+  `{"b":1,"i":1.5,"l":[1,"2"],"n":0,"num":"1","o":{"y":1},"s":"abcd","t":1}`; `{"b":false,"i":3,"s":"a"}`; `[]`; `{"b":false,"e":"abc","s":"a"}`
 - **THEN** the first two succeed (`maxLength` counts code points, not UTF-16 code units); the third gives in order
   `wrong-type` `/text/b`, `wrong-type` `/text/i`, `wrong-type` `/text/l/1`, `wrong-type` `/text/n`, `wrong-type`
   `/text/num`, `missing` `/text/o/x`, `unknown-field` `/text/o/y`, `too-long` `/text/s`, `unknown-field` `/text/t`;
-  the fourth `not-in-enum` `/text/i`; the fifth `wrong-type` `/text`
+  the fourth `not-in-enum` `/text/i`; the fifth `wrong-type` `/text`; the sixth only `too-long` `/text/e` (the first
+  check of the node that refuses; `not-in-enum` is not reported)
 
 #### Scenario: Reference fields
 <!-- id: SCN-KR-053 -->
@@ -562,9 +619,13 @@ The kernel SHALL hold the one meta-type as the constant `metaType`: a type (REQ-
 It is typed by itself — the only self-reference, built by kernel code; every other type is data admitted under it.
 A type body holds its `schema` (REQ-KR-015) and, optionally, `extends` — a pinned reference to its parent type —,
 `unique` — its uniqueness fields — and `card` — the fields of its card; the meaning of `unique` and `card` is applied
-outside the kernel. The write permissions of a type are not part of it (CT-N03).
+outside the kernel. The write permissions of a type are not part of it (CT-N03). `metaType` is deeply frozen
+(REQ-KR-008).
 
 Implements: OM-T01, OM-T02, OM-L01
+
+Of OM-L01 this requirement covers the meta-type; the session event type, the other half of `core`, and writing both at
+genesis are `s0-bootstrap` (#59).
 
 #### Scenario: The meta-type is typed by itself
 <!-- id: SCN-KR-054 -->
@@ -572,17 +633,19 @@ Implements: OM-T01, OM-T02, OM-L01
   `{id: "core/type", rev: 1, type: "core/type@1", body: metaType.body}`
 - **THEN** `metaType.ref` is `core/type@1`; the canonical form of `metaType.body` is the text above; the admission
   succeeds with `type` `core/type@1`, a `body` equal to `metaType.body` and the hash `sha256:` + `sha256` of the
-  canonical form of `{"type": "core/type@1", "body": metaType.body}`; `typeOf` succeeds with `ref` `core/type@1`
+  canonical form of `{"type": "core/type@1", "body": metaType.body}`; `typeOf` succeeds with `ref` `core/type@1`;
+  `metaType` and everything reachable from it are frozen
 
 #### Scenario: Type bodies under the meta-type
 <!-- id: SCN-KR-055 -->
 - **WHEN** `admit` gets under `metaType` the texts `{"schema":{"type":"object","properties":{}}}`;
   `{"extends":"std/knowledge@2","schema":{"type":"object","properties":{}},"unique":["code"],"card":["title"]}`;
   `{"extends":"std/knowledge","schema":{"type":"object","properties":{}}}`; `{"schema":{"type":"string"}}`; `{}`;
-  `{"schema":{"type":"object","properties":{}},"in_force":[]}`
+  `{"schema":{"type":"object","properties":{}},"in_force":[]}`; `{"schema":5}`; `{"schema":[]}`
 - **THEN** the first two succeed, the second with `refs` `{path: "/extends", ref: {id: "std/knowledge", version: 2},
   target: "core/type"}`; the third is refused `bad-ref` `/text/extends`; the fourth `bad-keyword` `/text/schema/type`;
-  the fifth `missing` `/text/schema`; the sixth `unknown-field` `/text/in_force`
+  the fifth `missing` `/text/schema`; the sixth `unknown-field` `/text/in_force`; the last two `wrong-type`
+  `/text/schema`
 
 ### Requirement: The envelope
 <!-- id: REQ-KR-017 -->
@@ -592,13 +655,17 @@ of record, each with one fixed header:
 - the header of `entity` is an object with exactly the own data properties `id`, `rev`, `by`, `at`; of `event`,
   exactly `id`, `by`, `at`. `id` and `by` are identifiers (REQ-KR-012), `rev` an integer from 1 to 2^53−1, `at` an
   integer number of UTC milliseconds since 1970-01-01T00:00:00.000Z from 0 to 253402300799999;
-- `admitted` is a value returned by a successful `admit` (REQ-KR-013);
+- `admitted` is a kernel-made `Admitted` (REQ-KR-008): the `value` of a successful `admit` (REQ-KR-013), by
+  identity, never a copy of one;
 - the entity record is `{id, rev, type, hash, by, at, body}` with the keys in this order, the event record
   `{id, type, by, at, body}`: `type`, `hash` and `body` come from `admitted` (`type` is always `type@n`), `at` is
   `formatAt(header.at)`; the record is deeply frozen and its `body` is `admitted.body` itself;
 - the body of an event SHALL have the member `of` — what the event is about —: an object, not an array, each of whose
   values is a reference (REQ-KR-012), possibly empty (UNK-KR-009); a pinned reference names an entity revision, a
-  reference without a version an event; whether a target exists is decided by apply (OM-R03).
+  reference without a version an event; whether a target exists is decided by apply (OM-R03). So the `ref@n` of
+  OM-E04 is read as pinned for an entity target and as the bare id for an event target, which has no revisions (as the
+  example of OM-Z02 writes it). Until #83 brings the event id of OM-I02, the `id` and `by` of a header and the event
+  targets in `of` follow the identifier grammar of REQ-KR-012.
 
 The refusals, collected in this order: `bad-header` `/header` when the header is not an object whose prototype is
 `Object.prototype` or `null` (then no other refusal of the header); `bad-header` `/header/<key>` for every other own
@@ -638,12 +705,13 @@ Implements: OM-E01, OM-E02, OM-E03, OM-E04, OM-K01
 <!-- id: SCN-KR-058 -->
 - **WHEN** `entity` gets the header `null` with the admission of SCN-KR-044; the header `{id: "Lattice/x", rev: 0,
   by: "lattice/s@1", at: -1, extra: 1}` with the admitted body `{}` built in code; the valid header of SCN-KR-056 with
-  `at` 253402300800000, then with `at` 1.5, then without `by`, then with `id` a getter that sets a flag when called;
-  and `event` gets the header of SCN-KR-057 with an extra key `rev`
+  `at` 253402300800000, then with `at` 1.5, then without `by`, then with `id` a getter that sets a flag when called,
+  each with the admission of SCN-KR-044, then with `JSON.parse(JSON.stringify(A))` of that admission `A`; and `event`
+  gets the header of SCN-KR-057 with an extra key `rev` and the first admission of SCN-KR-057
 - **THEN** the refusals are: `bad-header` `/header`; in order `bad-header` `/header/extra`, `bad-id` `/header/id`,
   `bad-rev` `/header/rev`, `bad-by` `/header/by`, `bad-at` `/header/at`, `bad-admitted` `/admitted`; `bad-at`
   `/header/at`; `bad-at` `/header/at`; `bad-by` `/header/by`; `bad-id` `/header/id` with the flag not set;
-  `bad-header` `/header/rev`
+  `bad-admitted` `/admitted`; `bad-header` `/header/rev`
 
 #### Scenario: Formatting at
 <!-- id: SCN-KR-059 -->
