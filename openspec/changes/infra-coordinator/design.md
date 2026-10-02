@@ -62,8 +62,8 @@
 
 ## Goals / Non-Goals
 
-**Goals:** the rules fit with 4 KiB free and keep every obligation; the coordinator's routine, the log, the act queue
-and the path from a failure to a rule survive a restart of the coordinator session because they are written in the
+**Goals:** the rules fit with 4 KiB free and keep every obligation; the coordinator's routine, the log, the request
+protocol for the maintainer's acts and the path from a failure to a rule survive a restart of the coordinator session because they are written in the
 skill and computed by its scripts; a session sees, before `SPECIFIED` and before a merge request, every entry it has not
 acknowledged and every comment of its issue it has not read; no maintainer act lives only in a chat; the boundaries
 crossed on 2026-10-02 are rules, and an AREA added after `init` is flagged by `status.mjs`.
@@ -93,11 +93,12 @@ crossed on 2026-10-02 are rules, and an AREA added after `init` is flagged by `s
   (the owner brings it in line, `gh pr ready` with a comment naming the commit); waiting (the maintainer never announces
   a merge, `wait-pr.mjs` outcomes and the next step after each — the impl-PR only when `status.mjs` prints
   `startable` —, `update-branch` before the request, `git pull --ff-only` after the watcher's update, a resumed session
-  reporting a lost auto-merge); where the record of an open Change is read (archive, impl, spec, then `main`). `SKILL.md`
+  reporting a lost auto-merge); where the record of an open Change is read (archive, impl, spec, then `main`); the request markers of the
+  maintainer's acts (D-12). `SKILL.md`
   keeps its model and commands and links `change.md`.
 - **Every sentence** of today's `process`, `tracking` and `maintainer-acts` is mapped in Appendix B to its new place;
   the merge of this spec-PR is the decision on that table, and an impl-time change of it is an `I-N` row.
-- **Budget.** `AGENTS.md` after this Change is at most 12 288 bytes (Appendix A measures 11 154), so more than 4 KiB
+- **Budget.** `AGENTS.md` after this Change is at most 12 288 bytes (Appendix A measures 11 344), so more than 4 KiB
   stay free. `status.mjs` prints the size of `AGENTS.md` on `origin/main` in its header and warns above 14 336 bytes
   (2 KiB before WARRANT refuses), naming the fix: move procedure into the skill.
 - The launch template (skill `slice`) says "Process: AGENTS.md and `.claude/skills/slice/change.md`".
@@ -127,9 +128,10 @@ practice):
 5. **A scope change of a launched Change** — a `[scope]` or `[decision]` entry on the umbrella **and** a message to its
    session with the URL; the coordinator waits for the session's acknowledgement before that session's `SPECIFIED`; a
    change after `SPECIFIED` is an `I-N` row of the impl-PR.
-6. **A request for a maintainer's act** — `review <PR> --mark` (D-5, D-12) before it is shown to the maintainer; a
-   patch or file is checked (`git apply --check`, size, hash, paths); the owner is told to `git pull --ff-only` after the
-   act lands. At the end of every coordinator message, the block "👤 queue (N)" from `act.mjs queue` (D-12).
+6. **A request for a maintainer's act** (D-12) — `review <PR>` (D-5) before it is shown to the maintainer; a patch or
+   file is checked (`git apply --check`, size, hash, paths); the owner is told to `git pull --ff-only` after the act
+   lands. At the end of every coordinator message, the block "👤 queue (N)" of the pending requests (until #133: the
+   interim `act-ui.mjs --list`).
 7. **A red check on a queued PR** — read the failing log, send the cause to the owner, keep the PR out of the queue; a
    process gap behind it is a `process` issue and a `[broadcast]` with the interim rule.
 8. **An impl-PR merges** — a Change waiting at the impl gate gets a message that a slot is free.
@@ -161,10 +163,12 @@ practice):
   (`spec/`, `impl/`, `archive/`), merged or not. Before the first push nothing is excluded by time.
 - **What `status.mjs <change>` lists** — a section "Read first", printed before the row, in two lists:
   - `pending` — `pendingEntries` over the umbrella, the Change's issue and the comments of its PRs (the input of
-    `act.mjs merge`), with `since` = the last push: entries it must act on and acknowledge;
+    `act.mjs merge`), with no time cut: every entry touching the Change, since its issue was created, that no comment
+    acknowledges — an entry posted before a later push stays until it is acknowledged (stricter than `act.mjs merge`,
+    which cuts at the last push);
   - `unread` — the comments of the Change's issue, tagged or not, newer than the last push: read, never acknowledged
-    (the #97 gap). Before the first push both lists hold everything since the issue was created — the first checkpoint
-    reads it all once.
+    (the #97 gap); before the first push, all of them — the first checkpoint reads them once.
+  Without an umbrella (a Change outside a slice) the entries and acknowledgements are read on the Change's issue.
   In slice mode the table gains a column "Log" (`pending` count, `+n` unread) and `--json` a `log: { pending, unread }`
   per row. A session runs `status.mjs <change>` before `SPECIFIED` and before asking for a merge (rule `process`).
 - No log file, no tag stored anywhere: the log is the comments, read each time with `gh api --paginate`.
@@ -175,10 +179,13 @@ practice):
   `ARCHIVED` on `origin/main`, not `ABANDONED`): one GraphQL query (aliases for those issues) reads `userContentEdits`;
   the revision in effect at `initAt` is the newest one edited at or before it (the oldest is the body as created; with
   no edits, today's body). When it names the same Change, an AREA in today's `Where:` and not in it is flagged —
-  unless it is `AR` on a `skip_specs` Change, or a `[decision]` or `[scope]` entry names the Change and the AREA
-  (`` `<AREA>` `` or `AREA <AREA>`). The row's AREA line says `AREA <X> added after init (<editedAt>) — needs a
-  decision`, and the maintainer queue gets a row; the entry clears it. A removed AREA and a revision naming another
-  Change (a rename) are not flagged. A failed query is a warning, not a flag.
+  unless it is `AR` on a `skip_specs` Change, or a `[decision]` entry names the Change and the AREA
+  (`` `<AREA>` `` or `AREA <AREA>`); a `[scope]` does not clear it (a session posts its own `[scope]`). The row's AREA
+  line says `AREA <X> added after init (<editedAt>) — needs a decision`, and the maintainer queue gets a row; the
+  `[decision]` clears it. A removed AREA and a revision naming another Change (a rename) are not flagged. A failed
+  query is a warning, not a flag. Trust: every agent, the coordinator included, posts as `homasters`, so the script
+  cannot tell the coordinator's `[decision]` from a session's; the rule (only the coordinator posts a `[decision]`, the
+  maintainer's) and the log being public are the control.
 - **Closable issues** (`closable` in `rules.mjs`), a header line `Closable: #N (<reason>), …` — a hint the coordinator
   judges (rule `tracking` decides), first that applies:
   - a Change issue whose record is `ARCHIVED` on `origin/main` — `archived`;
@@ -198,21 +205,23 @@ practice):
 
 ### D-5. `review <PR>`
 
-`node .claude/skills/slice/review.mjs <N> [--mark <request URL>]` — the check before a PR, or a request for an act on
-it, enters the maintainer's queue. The owner runs it before requesting a merge, the coordinator before showing it. It
-prints one line per check, `ok` or the finding, and exits 0 when all pass, 1 when one fails, 2 on an error, 64 on
-usage. Without `--mark` it posts nothing.
+`node .claude/skills/slice/review.mjs <N>` — the check before a PR enters the maintainer's queue. The owner runs it
+before requesting a merge, the coordinator before showing the request. It prints one line per check, `ok` or the
+finding, and exits 0 when all pass, 1 when one fails, 2 on an error, 64 on usage. It posts nothing (the review mark on a
+request is #133's).
 
 1. **Scope** (`scopeFindings` in `act-rules.mjs`, next to `patchPathWriter`): the paths of
    `git diff --name-only origin/main...origin/<head>` (the branch's own changes; merges of `main` add none). Allowed for
    the PR's Change:
-   - every kind: `openspec/changes/<change>/**`, `.warrant/changes/<change>.json`, `.warrant/evidence/<change>/**`,
-     `.warrant/runs/<RUN>.json` and `<RUN>.result.json` of Runs whose `change` is this one;
-   - impl: the `write_scope` of its `implement` Runs, narrowed to their `scope` when one is set; its own
-     `.warrant/waivers/<WAV>.json`; paths of the profile `human-acceptance` that only commits authored by a maintainer
-     changed (`act.mjs patch`); `AGENTS.md` and `.warrant/warrant.lock.json` when a rule file changed in the PR;
-   - archive: `openspec/changes/archive/<date>-<change>/**`, and `openspec/specs/<cap>/**` for the capabilities of its
-     delta specs.
+   - every kind: `.warrant/changes/<change>.json`, `.warrant/evidence/<change>/**`, `.warrant/runs/<RUN>.json` and
+     `<RUN>.result.json` of Runs whose `change` is this one;
+   - spec: `openspec/changes/<change>/**`;
+   - impl: `openspec/changes/<change>/{tasks.md,design.md,specs/**}`; the `write_scope` of its `implement` Runs,
+     narrowed to their `scope` when one is set; its own `.warrant/waivers/<WAV>.json`; `proposal.md` and paths of the
+     profile `human-acceptance` that only commits authored by a maintainer changed (`act.mjs patch`); `AGENTS.md` and
+     `.warrant/warrant.lock.json` when a rule file changed in the PR;
+   - archive: `openspec/changes/<change>/**` removed, `openspec/changes/archive/<date>-<change>/**`, and
+     `openspec/specs/<cap>/**` for the capabilities of its delta specs.
    A finding names the path and why: `evidence of another Change`, `another Change's record`, `outside the Runs'
    scope`, `a policy path not by the maintainer`. A PR without a Change: any policy path (`.warrant/local/**`,
    `.warrant/warrant.lock.json`, `.github/workflows/**`) is a finding (rule `tracking`); nothing else is checked.
@@ -220,9 +229,6 @@ usage. Without `--mark` it posts nothing.
 3. **No conflict with `main`** — `mergeStateStatus` is not `DIRTY`.
 4. **No pending log entry** — `log.pending` of the same output; `unread` is printed, never a failure.
 5. **Local judge** — `judge.mjs origin/<head>` (D-8); its exit code and lines.
-
-`--mark <request URL>`: when every check passes and the URL is a request (D-12) on this PR, it posts the review mark
-of D-12; otherwise it posts nothing and says why. For a request of groups 2–5 only the request's form is checked.
 
 ### D-6. `broadcast <text>`
 
@@ -268,110 +274,96 @@ procedure. A wave is a wave of the slice's plan `[decision]` (5950269274 for S0,
 
 The texts are in Appendix A; the merge of this spec-PR is the decision on them.
 - `process`: a session runs `warrant` commands that name a Change only on its own Change, and the coordinator only
-  those that write nothing; in a Change, files only inside the active Run's `write_scope`; a review subagent reads with
-  the file tools and runs no shell command but `warrant run submit` (until SRA#138 the guard does not stop it in a
-  worktree, so the rule does); an AREA added after `init` only by a `[decision]` / `[scope]` naming it, or `AR` by a
-  `skip_specs` Change; a fix of a red `main` exempt from every AREA hold (as `holdersOf` already does; today's text said
-  only the hold of the Change that broke it); the log (D-3); the steps in `change.md` (D-1); the merge requested in the
-  act queue (D-12).
+  those that write nothing; in a Change, files of the repository only inside the active Run's `write_scope` (patches,
+  PR bodies and envelopes outside the repository are not covered); a review subagent reads with the file tools and runs
+  no shell command but `warrant run submit` — what the review guard allows; until SRA#138 the guard does not stop it in
+  a worktree, so the rule does —, and the session puts into its prompt what it needs from GitHub (the issue, the
+  decisions it cites); an AREA added after `init` only by a `[decision]` naming it, or `AR` by a `skip_specs` Change; a
+  fix of a red `main` exempt from every AREA hold (as `holdersOf` already does; today's text said only the hold of the
+  Change that broke it); the log (D-3); the steps in `change.md` (D-1); the merge requested as an act (D-12).
 - `tracking`: closing criteria in order (a Change issue, a `process` issue, a `question`, any other issue); a process
   failure is an issue labelled `process` with "Root cause" and "Prevention", opened by the session that sees it; the
   retro at the end of every wave next to the architecture audit; while `main` is red no other Change is dispatched, and
-  the coordinator opens the fix's issue and launches its session.
-- `maintainer-acts`: every act of the maintainer is requested by a marked comment and run from the queue; the executor
-  never writes a command for the maintainer into its own chat (D-12).
+  the coordinator opens the fix's issue and offers its session.
+- `maintainer-acts`: the request protocol of D-12.
 - `env`: unchanged.
 
 ### D-10. Delivery and proof
 
 Every path is the maintainer's patch (profile `human-acceptance`; the `implement` Run writes only
 `openspec/changes/infra-coordinator/**`, so its `--scope` is that alone). Patches in `D:/tmp/infra-coordinator/`,
-drafted outside the repository, each checked with `act.mjs patch … --dry-run` before it is requested:
-1. `1-skill.patch` — `.claude/skills/slice/{SKILL.md,change.md,status.mjs,rules.mjs,rules.test.mjs,act.mjs,
-   act-rules.mjs,act-rules.test.mjs,judge.mjs,review.mjs,retro.mjs,temp.mjs}`; first, because the rules point to
-   `change.md`; requested by hand (D-12 is not on `main` yet).
-2. `2-rules.patch` — `.warrant/local/rules/{process,tracking,maintainer-acts}.json`; requested as a marked comment and
-   run by the maintainer with `act.mjs queue --run` from the impl branch's copy — the first live run of the queue; then
-   the agent runs `warrant sync` (`AGENTS.md`, lock) as its own commit.
-Proof before `VERIFYING`: `node --test` of both test files; live outputs of `status.mjs`, `review.mjs`, `judge.mjs`,
-`act.mjs queue`; the broadcast's session list; the coordinator's confirmation of the "Coordinator" section; the retro
-of S0 (tasks). Closing (rule `tracking`): the impl-PR carries `Closes #112, #126, #128` (the fixes; #112's prevention,
-the `unnamed` kind with its test, is in place when it merges); the archive-PR `Closes #101, #119` (#101 a Change issue;
-#119 by the maintainer's decision 5953927808).
+drafted outside the repository, each checked with `act.mjs patch … --dry-run` before it is requested as an act (D-12):
+1. `1-skill.patch` — `.claude/skills/slice/{SKILL.md,change.md,status.mjs,rules.mjs,rules.test.mjs,act-rules.mjs,
+   act-rules.test.mjs,judge.mjs,review.mjs,retro.mjs,temp.mjs}`; first, because the rules point to `change.md`.
+2. `2-rules.patch` — `.warrant/local/rules/{process,tracking,maintainer-acts}.json`; then the agent runs `warrant sync`
+   (`AGENTS.md`, lock) as its own commit.
+Proof before `VERIFYING`: `node --test` of both test files; live outputs of `status.mjs`, `review.mjs`, `judge.mjs`;
+the broadcast's session list; the coordinator's confirmation of the "Coordinator" section; the retro of S0 (tasks).
+Closing (rule `tracking`): the impl-PR carries `Closes #112, #126, #128` (the fixes; #112's prevention, the `unnamed`
+kind with its test, is in place when it merges); the archive-PR `Closes #101, #119` (#101 a Change issue; #119 by the
+maintainer's decision 5953927808).
 
 ### D-11. Classification
 
 `chore` + `factory-change` + `human-acceptance`; `blast_radius: SYSTEM` (floor for `.warrant/**`),
 `compatibility: COMPATIBLE`, `reversibility: EASY` (revert the patches and `warrant sync`), `data_loss: NONE` (the
 scripts read; the sweep removes only `lattice-*` temp worktrees older than an hour), `security_impact: LOW` — the rules
-that bound sessions change form, and `act.mjs queue --run` runs acts with the maintainer's credentials; Appendix B, the
-review and D-12's controls guard them.
+that bound sessions change form; Appendix B and the review guard the move.
 
-### D-12. The maintainer's act queue
+### D-12. Requests for the maintainer's acts
+
+The maintainer's decisions [5954365385](https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5954365385),
+[5954398284](https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5954398284) and
+[5954536510](https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5954536510) make the maintainer's acts a
+computed queue. By the maintainer's answer in this session of 2026-10-02
+([decision](https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5954594643)) this Change carries only the
+request protocol — the rule and the markers; the tools (`act.mjs queue`, `queue --run`, `ui`, the review mark,
+computing "done", the `act-done` mark from the maintainer's login) are Change `infra-act-queue` (#133), after this one.
+Until #133 lands, the coordinator's interim `act-ui.mjs` (outside the repository) and its "👤 queue" block read the
+requests.
 
 - **Request** — a comment on the PR or issue the act concerns (a WARRANT question: on the LATTICE issue that waits on
   it; a setting without a PR: on the Change's issue), posted by the executor, which then tells the coordinator by
   message. Its first line is the marker; then one line `**<what>** — <why>`; a line `Executor: <session title> —
-  <claude:// link>`; then the one command in a `bash` block where there is one (rule `env`).
-- **Markers** (`actRequest(firstLine)` in `act-rules.mjs`: strict patterns; a first line that does not match is no
-  request), in queue order:
-  1. act.mjs — `<!-- act: merge <N> -->` · `<!-- act: waiver <change> <WAV-YYYY-NNN> -->` ·
-     `<!-- act: patch <change> <absolute path outside the repository> -->`;
-  2. decisions — `<!-- act: decision unknown <change> <UNK-…> -->` · `<!-- act: decision question <N> -->` ·
+  <claude:// link>`; then the one command in a `bash` block where there is one (rule `env`), after its `--dry-run`
+  passed for an `act.mjs` act.
+- **Markers**, in queue order (`change.md` holds the grammar; #133 parses it):
+  1. act.mjs — `<!-- act: merge <N> -->` · `<!-- act: waiver <change> <WAV> -->` · `<!-- act: patch <change> <file> -->`;
+  2. decisions — `<!-- act: decision unknown <change> <UNK> -->` · `<!-- act: decision question <N> -->` ·
      `<!-- act: decision sra <N> -->`;
   3. repository settings — `<!-- act: setting <slug> -->`;
   4. files and git outside `act.mjs` — `<!-- act: file <branch> <path> -->` · `<!-- act: tag <name> -->`;
-  5. sessions — `<!-- act: session <slug> -->`.
-  `<change>` matches `CHANGE_NAME`; `<slug>`, `<branch>`, `<name>`, `<path>` match `[\w./@:-]+` (no spaces, no shell
-  characters).
-- **Review mark** — posted by `review.mjs <N> --mark <request URL>` (D-5) when its checks pass:
-  `<!-- act-reviewed: <request comment id> <head sha> [<sha256 of the patch file>] -->` and the verdict line. A mark
-  counts only while the PR's head and the patch file are what it names: a later push or an edited patch voids it.
-- **Done** (`actDone`, computed): `merge` — the PR `MERGED`; `waiver` — `.warrant/waivers/<WAV>.json` `ACTIVE` on
-  `origin/impl/<change>`; `patch` — a commit on `origin/<kind>/<change>` after the request whose subject is `act.mjs`'s
-  `<change>: maintainer's patch <basename>`; `decision unknown` — a comment by a `roles.maintainer` login in the spec-PR
-  of the Change, after the request, containing the UNK id; `decision question` / `decision sra` — a comment by such a
-  login on that issue (LATTICE or `Homasters-max/SRA`) after the request; `file` — a commit on `origin/<branch>`
-  touching `<path>` after the request; `tag` — the tag on `origin`; `setting`, `session` — a comment
-  `<!-- act-done: <request comment id> -->` the coordinator posts once it sees the result. A request is withdrawn by
-  `<!-- act-withdrawn: <request comment id> -->`, or by its PR being closed unmerged.
-- **`act.mjs queue`** — reads the comments of the repository with one paginated `gh api …/issues/comments?since=<30
-  days>` call (PRs included) and, only while a `decision sra` request is open, those of the named
-  `Homasters-max/SRA` issues; prints the pending requests by group: what/why, executor and link, the PR or issue URL,
-  reviewed or not, and the command on one paste-ready line — for group 1 built from the marker's typed fields with the
-  absolute path of this `act.mjs`, never copied from the comment; for groups 2–5 the comment's command shown as text,
-  if any. Read-only: anyone may run it, the agent included.
-- **`act.mjs queue --run`** — the maintainer's, from the Run button of a `bash` block in their terminal panel
-  (PowerShell or Git Bash), the absolute path not depending on the `cwd` (the repository is found from the script, as
-  today). The actor checks of `act.mjs` apply (an agent's shell, login or identity refuses). It walks the reviewed,
-  pending requests of group 1 in order: prints what/why, executor, PR and the command, asks `y/n/q` on stdin — a stdin
-  that is not a terminal refuses instead of assuming an answer —, on `y` runs `node <this act.mjs> <act> <typed args>`
-  through `execFileSync` without a shell, with every check of that act, then checks `actDone` and prints the result. An
-  unreviewed request is listed as skipped. Groups 2–5 are never run.
-- **The coordinator's block** — at the end of every coordinator message, "👤 queue (N)" from `act.mjs queue`: each item
-  with what/why, executor and PR links, and its command as its own `bash` block (rule `env`).
-- **Trust.** Executors and the coordinator post as one login (`homasters`), so the queue cannot tell who wrote a
-  request, a review mark or an `act-done` mark. The controls: `--run` runs only typed acts of group 1, and `act.mjs`
-  re-runs all its checks before each; the mark binds to the head and the patch hash; the maintainer answers `y/n` per
-  act with what/why and the PR before them; done for groups 1, 2 and 4 is computed from facts (group 2 from the
-  maintainer's own login, which no agent token posts as). Groups 3 and 5 rest on the coordinator's mark.
-- `act.mjs` imports only `act-rules.mjs` and `rules.mjs`, so `COPY_FILES` stays valid (the queue's code lives there).
-- Until it lands, the coordinator applies it by hand (the decision, item 4).
-
-Rejected: a queue file — the state stays computed; running groups 2–5 — they are not `act.mjs` acts, and a command
-pasted from a comment is an injection path.
+  5. sessions — none: the coordinator's chip (`spawn_task`) is the request to start a session, a message to the
+     maintainer the request to restart one.
+  Fields carry no spaces or shell characters.
+- **The executor reads the result itself** (decision 5954536510, item 3): the `act-done` mark, the waiver `ACTIVE` on
+  its branch, its PR merged or auto-merge on (`wait-pr.mjs`); it never asks the maintainer whether an act is done.
+- **Who shows the queue**: the coordinator, in its block at the end of its messages, one `bash` block per command
+  (rule `env`); it is the one session that writes the maintainer's commands into its chat, its own requests included.
+- Review 2's findings on the tools (F-1 the queue's bootstrap under `copyPlan`, F-6 "done" computed from facts an agent
+  can produce, F-7 a review mark not bound to the request's text, F-8 the Run button's stdin, F-12 an UNKNOWN decided
+  by a PR review, F-13 the queue's window and lifecycle) go to #133 as its input.
 
 ## Review history
 
 Review 1 (`EVID-01M3YFK7FHR50AYH4DWCTQV4DC`, `NOT_PROVEN`: BLOCKER F-1, F-2; MAJOR F-3…F-12; MINOR F-13…F-19; INFO
-F-20, F-21), taken into this text: F-1 → Context "Issue history", D-4, task 3.1 (the real #57 history raises no flag;
+F-20, F-21), taken into the text: F-1 → Context "Issue history", D-4, task 3.1 (the real #57 history raises no flag;
 a synthetic case does); F-2, F-11 → D-4, D-9, Appendix A `process` (an AREA after `init` only by an entry; `AR` by a
 `skip_specs` Change; held Changes only; the entry clears the flag); F-3, F-4, F-5, F-8, F-15 → Appendix A `process`;
 F-6 → D-9, Appendix A `tracking`; F-7 → Appendix B (the table now in the spec-PR) and Appendix A; F-9 → D-3 (last push
 over all branches, merged ones included); F-10 → D-3, D-5 (`pending` vs `unread`, PR comments read); F-12 → D-4, D-9,
-Appendix A `tracking` (an order); F-13 → proposal; F-14 → D-3; F-16 → D-6; F-17 → D-5; F-18 → D-4; F-19 → task 3.4; F-20 → D-1; F-21 → D-12. Decisions asked by the review: D-1 (an AREA after `init`) — the option "by a
-maintainer's entry", with `AR` as the review's second option; D-2 (`pr`) — D-1 of this design, decided by the merge.
-The act queue (D-12) entered by the maintainer's decisions 5954365385 and 5954398284 after review 1.
+Appendix A `tracking` (an order); F-13 → proposal; F-14 → D-3; F-16 → D-6; F-17 → D-5; F-18 → D-4; F-19 → task 3.4;
+F-20 → D-1; F-21 → #133. Decisions asked by review 1: D-1 (an AREA after `init`) — by a `[decision]`, with `AR` by the
+Change itself; D-2 (`pr`) — D-1 of this design, decided by the merge.
+
+Review 2 (`EVID-01M3YGH40GTXHVJTVP2Y65XTT2`, `NOT_PROVEN`: BLOCKER F-1; MAJOR F-2…F-9; MINOR F-10…F-15; INFO F-16),
+on the text with the act queue's tools, which the maintainer then split out to #133: F-1, F-6, F-7, F-8, F-12, F-13 →
+#133 (D-12); F-2 → D-3 (`pending` without a time cut); F-3 → D-9, Appendix A `process` ("files of the repository");
+F-4 → D-4 (only a `[decision]` clears the flag; the trust limit named); F-5 → D-12 and Appendix A `maintainer-acts`
+(a chip is the request to start a session); F-9 → D-9, Appendix A `process` (the session puts GitHub facts into the
+review prompt); F-10 → Appendix B (rows added); F-11 → D-12 (the coordinator shows the queue); F-14 → D-5 (`proposal.md`
+in an impl-PR only by the maintainer); F-15 → D-3 (no umbrella: the issue), the mark → #133. Decision D-2 of review 2
+(a launch needs a session request) — no: the chip is the request.
 
 ## Appendix A — the rule texts
 
@@ -384,10 +376,11 @@ and a session follows them as written. The state of a Change is `warrant status`
 name a Change only on its own Change; the coordinator runs only those that write nothing.
 
 Records (`.warrant/changes/**`), evidence, waivers, Runs and `openspec/specs/**` are written only by `warrant`; never
-edit them by hand, never call `openspec archive`. In a Change, files are written only inside the `write_scope` of the
-active Run: `specify` the artifacts; `implement` narrowed with `--scope` to the source and test paths its design names
+edit them by hand, never call `openspec archive`. In a Change, files of the repository are written only inside the
+`write_scope` of the active Run: `specify` the artifacts; `implement` narrowed with `--scope` to the source and test paths its design names
 plus `openspec/changes/<change>/**`. Never bypass a guard `deny` through the shell — narrow the work or ask the
-maintainer. A review subagent reads with the file tools and runs no shell command but `warrant run submit`.
+maintainer. A review subagent reads with the file tools and runs no shell command but `warrant run submit`; the session
+puts into its prompt what it needs from GitHub.
 
 Parallel work (`design-next` SL-T08). An AREA is one spec and the prefix of its REQ/SCN ids. The AREAs of a Change are
 declared in `Where:` of its issue before `warrant init change`; after it an AREA is added only by a maintainer's
@@ -459,11 +452,11 @@ named `Homasters-max/SRA#N` and linked from the LATTICE issue that waits on it.
 Slices. A slice is a GitHub milestone and its umbrella issue: plan, list of Changes, decision log. Each Change is one
 session in its own worktree, started from its issue; it reads its issue, the `design-next` IDs it implements and the
 merged specs it depends on, not the context of other Changes. The coordinator session holds the slice — dispatch,
-review, the act queue, decision log (skill `slice`, "Coordinator") — and never writes a Change's code. A red `main` (a
+review, the queue of the maintainer's acts, decision log (skill `slice`, "Coordinator") — and never writes a Change's code. A red `main` (a
 failed `test` run on `main`, or `warrant validate` failing on `origin/main`) is a `bug` `P1` issue
 `infra: main red — <failing test or error code>`, opened by the first session that sees it; while it is open no other
 Change is dispatched and only its fix is merged — a Change `fix-main-<issue>` whose issue the coordinator opens and
-whose session it launches. At the end of every wave, next to the architecture audit, the coordinator runs the retro: the
+whose session it offers. At the end of every wave, next to the architecture audit, the coordinator runs the retro: the
 `process` issues of the wave, summed up on the umbrella and grilled with the maintainer into a rule, a test or a
 setting.
 
@@ -472,15 +465,15 @@ setting.
 The maintainer's acts — merging a PR (the merge is the approval; GitHub's approve is not asked — PRs are opened under
 the maintainer's account, which cannot approve its own), activating a waiver, editing policy paths
 (`.github/workflows/**`, `.warrant/local/**`), deciding (an UNKNOWN, a `question`, a WARRANT question), repository
-settings and token scopes, files and tags outside `act.mjs` (a freeze tag of `design-next`), starting or restarting a
-session — are never performed by the agent. It requests one by a comment on the PR or issue the act concerns: first
-line the marker `<!-- act: <kind> … -->` (skill `slice`), then what and why, the executor (session title and
-`claude://` link) and the one command where there is one — a merge, a waiver activation and a policy-path edit are
-`node <own worktree>/.claude/skills/slice/act.mjs merge <N>` · `waiver <change> <WAV>` · `patch <change> <file>` (a
-patch outside the repository), after its `--dry-run` passes — and tells the coordinator. It never writes a command for
-the maintainer into its own chat: the coordinator shows the act queue, and the maintainer runs it
-(`act.mjs queue --run`). `act.mjs` acts and verifies, or refuses with the reason and changes nothing; the agent checks
-the result itself.
+settings and token scopes, files and tags outside `act.mjs` (a freeze tag of `design-next`), starting a session from
+a chip or restarting one — are never performed by the agent. It requests one by a comment on the PR or issue the act
+concerns: first line the marker `<!-- act: <kind> … -->` (skill `slice`), then what and why, the executor (session
+title and `claude://` link) and the one command where there is one — a merge, a waiver activation and a policy-path
+edit are `node <own worktree>/.claude/skills/slice/act.mjs merge <N>` · `waiver <change> <WAV>` ·
+`patch <change> <file>` (a patch outside the repository), after its `--dry-run` passes — and tells the coordinator;
+a session start is requested by the coordinator's chip. Only the coordinator writes the maintainer's commands into its
+chat, as its queue. `act.mjs` acts and verifies, or refuses with the reason and changes nothing; the agent reads the
+result itself (the done mark, the waiver, the merge) and never asks the maintainer whether an act is done.
 
 ## Appendix B — where each sentence goes
 
@@ -501,15 +494,15 @@ Sentences of today's rules, numbered in order (`p` `process`, `t` `tracking`, `m
 | p14 fix of a red `main` exempt from the cap and the hold of the Change that broke it | A ¶3 — widened to every hold (D-9) |
 | p15 one worktree, three branches, one session, restarted when the process requires | A ¶3; restart → C |
 | p16 `implement` narrowed with `--scope` plus `openspec/changes/<change>/**` | A ¶2 |
-| p17 shared files belong to the skeleton; a later change is a separate small Change | A ¶3 |
-| p18 a slice decision stops a PR's merge: draft, `--disable-auto`, `⛔`; the owner brings it in line, `gh pr ready` with a comment | A ¶4; the owner's part → C |
+| p17 shared files belong to the skeleton; a later change is a separate small Change | A ¶3; the list of shared files (the module matrix of the structure test, the CLI entry and command table, `package.json`, the port interfaces) → S model |
+| p18 a slice decision stops a PR's merge: draft, `--disable-auto`, `⛔`; the owner brings it in line, `gh pr ready` with a comment | A ¶4; what counts as a slice decision (an AREA, an id, the order of Changes) and the owner's part → C |
 | p19 a draft PR is never merged | A ¶4 |
 | p20 the local judge before a push; what an impl-PR may wait on | A ¶5; the accepted waits → C and S "judge" |
 | p21 `update-branch` before the request; the merge asked once; the watcher keeps it up to date and turns auto-merge off on a red `main` | A ¶5 (asked once); the rest → C |
 | p22 read the umbrella before a merge; acknowledge in the PR; `act.mjs merge` refuses | A ¶4 (before `SPECIFIED` too, and the own issue); the PR form → C |
 | p23 `status.mjs` after `init`, stop and ask on a collision | A ¶3 |
 | p24 the maintainer never announces a merge | C "Waiting" |
-| p25 a PR owned by its opener; only the owner watches it; the coordinator owns only its PRs | A ¶5 |
+| p25 a PR owned by its opener; only the owner watches it; the coordinator owns only its PRs | A ¶5 ("owned by the session that opened it" covers the coordinator); stated again in S "Coordinator" |
 | p26 start `wait-pr.mjs` in the background after the push | A ¶5 |
 | p27–p31 the watcher's outcomes and the next step after each | C "Waiting" |
 | p32 `git pull --ff-only` after the watcher's update | C "Waiting" |
@@ -535,8 +528,8 @@ Sentences of today's rules, numbered in order (`p` `process`, `t` `tracking`, `m
 | t13 the coordinator holds the slice, checks `main` before dispatch, writes no Change's code | A ¶5 (the check of `main` → S "Coordinator" and `status.mjs`) |
 | t14–t15 a red `main`, its issue, the freeze, the fix Change | A ¶5 |
 | t16–t20 issues: who opens, title, body, milestone | A ¶2 |
-| t21–t23 labels | A ¶2 |
+| t21–t23 labels | A ¶2 (types and priorities with their meanings for priorities); the meanings of the types (`bug` defect · `enhancement` idea · `question` needs the maintainer's answer) → S |
 | t24 closing by `Closes #N`; refusal `wontfix` | A ¶3 (an order of criteria) |
 | t25 queue `gh issue list --label P1` | S "Coordinator" (`status.mjs` lists open P1) |
-| m1 the list of acts; «❗ Выполнить» in the chat; check the result | A `maintainer-acts` (the request in a marked comment, never in the own chat; the list widened to the five groups of D-12) |
+| m1 the list of acts; «❗ Выполнить» in the chat; check the result | A `maintainer-acts` (the request in a marked comment, never in the executor's own chat, the coordinator's chat being the queue; the list widened to the groups of D-12; the result read by the agent) |
 | m2 one `act.mjs` command after `--dry-run`; acts or refuses | A `maintainer-acts` |
