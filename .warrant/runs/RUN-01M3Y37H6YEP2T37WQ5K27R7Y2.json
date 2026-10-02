@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y37H6YEP2T37WQ5K27R7Y2",
+  "change": "s0-codec-forms",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-codec-forms/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-codec-forms",
+  "started_at": "2026-10-02T10:40:46.347Z",
+  "finished_at": "2026-10-02T10:48:44.639Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:e9440727ca19ef8e9c679fbc527d3e3f66a3da106c8fb1414bc65dca8966c32d",
+  "effective_policy_hash": "sha256:2859a4387fd309afceaecff57708278ca17d2eca30dbeada4f25882fab1cf4c8",
+  "guard_events": []
+}
