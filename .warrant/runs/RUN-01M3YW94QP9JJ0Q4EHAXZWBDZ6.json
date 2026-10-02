@@ -1,0 +1,23 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3YW94QP9JJ0Q4EHAXZWBDZ6",
+  "change": "infra-coordinator",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/infra-coordinator/tasks.md",
+    "openspec/changes/infra-coordinator/design.md",
+    "openspec/changes/infra-coordinator/specs/**"
+  ],
+  "scope": [
+    "openspec/changes/infra-coordinator/**"
+  ],
+  "branch": "impl/infra-coordinator",
+  "started_at": "2026-10-02T17:58:33.566Z",
+  "finished_at": "2026-10-02T17:59:30.737Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:908656cf874403aa1283ddced86fa930b6a65040043be873c7f656cb6ea2c666",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": []
+}
