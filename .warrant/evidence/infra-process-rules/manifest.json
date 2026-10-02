@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-process-rules",
-  "commit": "8841173a8dd61694a2ffec0df6cb4bd7ca2b1475",
+  "commit": "31dc214c6a741750ad743ffb4af9a1a24c01a0c0",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -10,6 +10,12 @@
   },
   "evidence": [
     "EVID-01M3XX1ZKSWPMXX73JW6CSDDH7",
-    "EVID-01M3XXNY3DRN79NGQMM81ZM9T1"
-  ]
+    "EVID-01M3XXNY3DRN79NGQMM81ZM9T1",
+    "EVID-01M3XXQ7T5ZX1D3F3FV622JHCY"
+  ],
+  "gates": {
+    "ids-valid": "PASS",
+    "required-artifacts-present": "PASS",
+    "spec-valid": "PASS"
+  }
 }
