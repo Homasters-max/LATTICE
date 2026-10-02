@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YDAWG5WWX2MKCJBH25NN01",
+  "claim": {
+    "text": "tests-passed passed for infra-merge-flow",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "7e46f00ed7109c10adf2ddd5ab81c69b1e46568f",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/infra-merge-flow@7e46f00ed7109c10adf2ddd5ab81c69b1e46568f",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:15c1cea59b53908c20165d3e8d1ac3a47a84a15b6ce766965945067da58f5318",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T13:37:21.927Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-merge-flow/raw/tests-passed/junit.xml",
+      "sha256": "sha256:1d4308b7533328337dbf0b5906fdc725e393f90af16efea2821b692902a7cc35"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 723
+  }
+}
