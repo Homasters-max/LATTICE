@@ -14,6 +14,8 @@
 - [x] 1.4 The patches of the implementation review, `5-process-paragraph.patch` (I-21) and `6-slice-review.patch`
   (I-20), applied and committed by the maintainer, then `warrant sync`; verified by the commit naming exactly
   `.warrant/local/rules/process.json` and the four `.claude/skills/slice/*` files
+- [x] 1.5 `7-local-judge.patch` (I-23) applied and committed by the maintainer, then `warrant sync`; verified by the
+  commit naming exactly `.warrant/local/rules/process.json` and `.claude/skills/slice/SKILL.md`
 
 ## 2. Checks
 
