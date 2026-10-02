@@ -1,10 +1,12 @@
 // The read view of an opened ledger (REQ-PJ-001): latest revision, every revision, entities, frozen records, and a
-// ledger with repeated and falling revisions read in ledger order (SCN-PJ-011, review 3 F-2).
+// ledger with repeated and falling revisions read in ledger order (SCN-PJ-011).
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { EntityRecord } from "../../src/ledger/index.ts";
+import type { Commit } from "../../src/ledger/records.ts";
 import { isEntityRecord } from "../../src/ledger/records.ts";
+import { rebuild } from "../../src/ledger/projections/view.ts";
 import { commitsOf, typedCase } from "./ledgers.ts";
 
 const deeplyFrozen = (v: unknown): boolean =>
@@ -63,5 +65,13 @@ describe("projections: the read view", () => {
     const n2 = view.referrers("test/n2");
     assert.ok(n2.some((e) => e.from === "test/n10@1" && e.path === "/body/uses/0"));
     assert.ok(!n2.some((e) => e.from === "test/n9@1"));
+
+    // the record object of commit 3 folded again after commit 4: the revision before it is commit 4's, by position
+    const commits = commitsOf(typedCase());
+    const c3 = commits[2] as Commit;
+    const again: Commit = { ...c3, seq: 5, base: 4, records: c3.records.filter((r) => r.id === "test/n8") };
+    const replayed = rebuild([...commits, again]);
+    assert.ok(replayed.referrers("test/n1").some((e) => e.from === "test/n8@1"));
+    assert.ok(!replayed.referrers("test/n3").some((e) => e.from === "test/n8@1"));
   });
 });

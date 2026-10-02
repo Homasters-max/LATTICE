@@ -6,7 +6,6 @@ import type { Commit } from "../records.ts";
 import type { ReadView } from "./view.ts";
 import { rebuild } from "./view.ts";
 
-export type { Edge } from "./projection.ts";
 export type { ReadView } from "./view.ts";
 
 export function latest(commits: readonly Commit[]): ReadView {

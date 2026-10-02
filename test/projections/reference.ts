@@ -2,12 +2,13 @@
 // `node --experimental-strip-types test/projections/reference.ts --write`, when the kernel, the commit or record form,
 // the opening checks or the meaning of a projection change; the diff of `index.json` goes into that PR.
 // `skeleton` goes through apply on the fixed session and clock of the ledger tests; `typed` is built commit by commit
-// without apply, so it can hold what apply would reject (unresolved types, repeated revisions; review 1 F-17).
+// without apply, so it can hold what apply would reject (unresolved types, repeated revisions, an event `id` written
+// twice).
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { argv } from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import type { Hash, Id } from "../../src/kernel/index.ts";
 import { canonical } from "../../src/kernel/index.ts";
 import { commitHash, KERNEL_VERSION, recordHash } from "../../src/ledger/commit.ts";
@@ -17,8 +18,7 @@ import type { Commit, EntityRecord, EventRecord, LedgerRecord } from "../../src/
 import { byCodeUnits, isEntityRecord } from "../../src/ledger/records.ts";
 import { serialize } from "../../src/ledger/projections/view.ts";
 import { AT, committed, fixtureIntents, ledgerOf, revisionOf, session } from "../ledger/cases.ts";
-
-export const FIXTURES = fileURLToPath(new URL("../fixtures/projections/", import.meta.url));
+import { FIXTURES } from "./ledgers.ts";
 
 /** `skeleton`: the fixture `md` imported and applied on an empty ledger, then the revision of SCN-CL-009. */
 function skeleton(): string[] {
@@ -63,6 +63,8 @@ const TYPED: readonly (readonly Draft[])[] = [
   [
     entity("test/n1", 3, "test/node@1", { uses: ["test/n2", "test/n3"], pins: "test/n2@1" }),
     event("test/e1", "test/note@1", { of: { subject: "test/n1@2", about: "test/e0" }, cites: "test/n2" }),
+    event("test/e0", "test/note@1", { of: { subject: "test/n3@1" } }),
+    event("test/e2", "test/phantom@1", { of: { "a/b~c": "test/n3", subject: "test/n2@1" } }),
     entity("test/n4", 1, "test/node@1", { supersedes: ["test/n1@3"] }),
     entity("test/n5", 1, "test/ghost@1", { uses: ["test/n1"] }),
     entity("test/n6", 1, "test/node@1", { uses: ["test/n1"], extra: "not declared" }),

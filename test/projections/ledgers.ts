@@ -4,13 +4,15 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Ledger } from "../../src/ledger/index.ts";
 import { openLedger } from "../../src/ledger/index.ts";
 import type { Commit } from "../../src/ledger/records.ts";
+import { isEntityRecord } from "../../src/ledger/records.ts";
 import type { Edge } from "../../src/ledger/projections/projection.ts";
-import { FIXTURES } from "./reference.ts";
 
-export { FIXTURES };
+/** The folder of the reference ledgers, one subfolder per case. */
+export const FIXTURES = fileURLToPath(new URL("../fixtures/projections/", import.meta.url));
 
 export type Case = { readonly texts: readonly string[]; readonly ledger: Ledger; readonly index: string };
 
@@ -31,31 +33,60 @@ export const skeletonCase = (): Case => readCase(join(FIXTURES, "skeleton"));
 /** The commits of a case, as `openLedger` would read them. */
 export const commitsOf = (c: Case): Commit[] => c.texts.map((text) => JSON.parse(text) as Commit);
 
+/** Every entity `id` the commits write. */
+export const entityIds = (commits: readonly Commit[]): Set<string> =>
+  new Set(commits.flatMap((c) => c.records.filter(isEntityRecord).map((r) => r.id)));
+
+const byUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * The `/type` edges of a ledger in which no type resolves and no event has `of` roles (`skeleton`), computed from the
+ * commits alone: one per last revision of every entity and per event, grouped by the type's `id`, in REQ-PJ-002 order.
+ */
+export function typeEdges(commits: readonly Commit[]): Record<string, Edge[]> {
+  const last = new Map<string, Edge>();
+  const events: Edge[] = [];
+  for (const record of commits.flatMap((c) => c.records)) {
+    if (isEntityRecord(record)) last.set(record.id, { from: `${record.id}@${record.rev}`, path: "/type", ref: record.type });
+    else events.push({ from: record.id, path: "/type", ref: record.type });
+  }
+  const grouped: Record<string, Edge[]> = {};
+  for (const edge of [...last.values(), ...events]) (grouped[edge.ref.slice(0, edge.ref.lastIndexOf("@"))] ??= []).push(edge);
+  for (const list of Object.values(grouped)) list.sort((a, b) => byUnits(a.from, b.from));
+  return Object.fromEntries(Object.keys(grouped).sort(byUnits).map((k) => [k, grouped[k] as Edge[]]));
+}
+
 const edge = (from: string, path: string, ref: string): Edge => ({ from, path, ref });
 
 /** The exact referrers of these targets in `typed`, in the order of REQ-PJ-002. */
 export const EXPECTED: Readonly<Record<string, readonly Edge[]>> = {
-  // SCN-PJ-002, SCN-PJ-003, SCN-PJ-004: one edge from test/e1, the edges of test/n1@3 only, the successor test/n4.
+  // SCN-PJ-002, SCN-PJ-003: one edge from test/e1 (steps 2 and 3 at one path), the successor test/n4.
   "test/n1": [
     edge("test/e1", "/body/of/subject", "test/n1@2"),
     edge("test/n3@1", "/body/uses/0", "test/n1"),
     edge("test/n4@1", "/body/supersedes/0", "test/n1@3"),
   ],
-  // SCN-PJ-002, SCN-PJ-011: test/n10@1 read under the first test/twice@1, test/n9@1 under the second.
+  // SCN-PJ-002, SCN-PJ-011: test/e0 written twice keeps both edges at its `subject`; test/e2 of a type that does not
+  // resolve gives its `of` roles by step 2 alone; test/n10@1 read under the first test/twice@1, test/n9@1 under the
+  // second.
   "test/n2": [
     edge("test/e0", "/body/of/subject", "test/n2@1"),
     edge("test/e1", "/body/cites", "test/n2"),
+    edge("test/e2", "/body/of/subject", "test/n2@1"),
     edge("test/n10@1", "/body/uses/0", "test/n2"),
     edge("test/n1@3", "/body/pins", "test/n2@1"),
     edge("test/n1@3", "/body/uses/0", "test/n2"),
   ],
-  // SCN-PJ-003, SCN-PJ-011: test/n8 and test/n11 at their last revision only.
+  // SCN-PJ-003, SCN-PJ-011: test/n8 and test/n11 at their last revision only; the role `a/b~c` escaped.
   "test/n3": [
+    edge("test/e0", "/body/of/subject", "test/n3@1"),
+    edge("test/e2", "/body/of/a~1b~0c", "test/n3"),
     edge("test/n11@1", "/body/uses/0", "test/n3"),
     edge("test/n1@3", "/body/uses/1", "test/n3"),
     edge("test/n8@1", "/body/uses/0", "test/n3"),
   ],
   "test/e0": [edge("test/e1", "/body/of/about", "test/e0")],
+  "test/note": [edge("test/e0", "/type", "test/note@1"), edge("test/e1", "/type", "test/note@1")],
   "test/node": [
     edge("test/n11@1", "/type", "test/node@1"),
     edge("test/n1@3", "/type", "test/node@1"),
@@ -69,5 +100,6 @@ export const EXPECTED: Readonly<Record<string, readonly Edge[]>> = {
     edge(from, "/type", "core/type@1"),
   ),
   "test/ghost": [edge("test/n5@1", "/type", "test/ghost@1")],
+  "test/phantom": [edge("test/e2", "/type", "test/phantom@1")],
   "test/loop-a": [edge("test/loop-b@1", "/body/extends", "test/loop-a@1"), edge("test/n7@1", "/type", "test/loop-a@1")],
 };

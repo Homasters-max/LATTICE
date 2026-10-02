@@ -3,20 +3,25 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { EXPECTED, commitsOf, skeletonCase, typedCase } from "./ledgers.ts";
+import { EXPECTED, commitsOf, skeletonCase, typeEdges, typedCase } from "./ledgers.ts";
 
 describe("projections: referrers", () => {
   it("SCN-PJ-002 pinned and floating references from entities and events", () => {
     const view = typedCase().ledger.view;
-    for (const target of ["test/n2", "test/n1", "test/e0", "test/node", "core/type"]) {
+    for (const target of ["test/n2", "test/n1", "test/n3", "test/e0", "test/note", "test/node", "core/type"]) {
       assert.deepEqual(view.referrers(target), EXPECTED[target], target);
     }
-    // the role `subject` is found by step 2 and by step 3 (the type declares it): one edge
+    // the role `subject` of test/e1 is found by step 2 and by step 3 (its type declares it): one edge
     assert.equal(view.referrers("test/n1").filter((e) => e.from === "test/e1").length, 1);
+    // test/e2's type does not resolve: its roles come from step 2 alone, the role `a/b~c` escaped
+    assert.ok(view.referrers("test/n3").some((e) => e.from === "test/e2" && e.path === "/body/of/a~1b~0c"));
+    // test/e0 written twice: the union of both events' edges
+    assert.ok(view.referrers("test/n2").some((e) => e.from === "test/e0" && e.ref === "test/n2@1"));
+    assert.ok(view.referrers("test/n3").some((e) => e.from === "test/e0" && e.ref === "test/n3@1"));
     // the block written in the same commit as its type, and sorting before it, has its declared references
     assert.ok(view.referrers("test/n1").some((e) => e.from === "test/n3@1" && e.path === "/body/uses/0"));
-    const frozen = view.referrers("test/n2");
-    assert.ok(Object.isFrozen(frozen) && frozen.every((e) => Object.isFrozen(e)));
+    const listed = view.referrers("test/n2");
+    assert.ok(Object.isFrozen(listed) && listed.every((e) => Object.isFrozen(e)));
     assert.deepEqual(view.referrers("test/nothing"), []);
   });
 
@@ -38,17 +43,13 @@ describe("projections: referrers", () => {
     for (const from of ["test/n5@1", "test/n6@1", "test/n7@1"]) assert.ok(!n1.includes(from), from);
     assert.deepEqual(view.referrers("test/loop-a"), EXPECTED["test/loop-a"]);
 
+    // skeleton: no type record, so every edge of the view is a `/type` edge, as computed from the commits alone
     const skeleton = skeletonCase();
-    const sview = skeleton.ledger.view;
-    const ids = commitsOf(skeleton).flatMap((c) => c.records.map((r) => r.id));
-    const edges = [...new Set(ids)].flatMap((id) => sview.referrers(id));
-    for (const row of sview.entities().filter((r) => r.type !== "lattice/document@1")) {
-      assert.deepEqual(sview.referrers(row.id), [], row.id);
-    }
-    const parsed = JSON.parse(skeleton.index) as { referrers: Record<string, { path: string }[]> };
-    for (const list of Object.values(parsed.referrers)) for (const e of list) assert.equal(e.path, "/type");
-    assert.deepEqual(edges, []);
-    assert.deepEqual(sview.referrers("lattice/document"), [
+    const commits = commitsOf(skeleton);
+    const expected = typeEdges(commits);
+    const ids = new Set([...Object.keys(expected), ...commits.flatMap((c) => c.records.map((r) => r.id))]);
+    for (const id of ids) assert.deepEqual(skeleton.ledger.view.referrers(id), expected[id] ?? [], id);
+    assert.deepEqual(skeleton.ledger.view.referrers("lattice/document"), [
       { from: "lattice/fixture@1", path: "/type", ref: "lattice/document@1" },
     ]);
   });

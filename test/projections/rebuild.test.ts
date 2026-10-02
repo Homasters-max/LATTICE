@@ -48,6 +48,15 @@ describe("projections: rebuild, extend, serialize", () => {
     assert.equal(three.view.revision("test/n1", 2)?.rev, 2);
     assert.deepEqual(extend(three.view, { ...c4, seq: 3 }), { ok: false, tail: 3, base: 3, seq: 3 });
 
+    // two branches from one view: extending the first does not reach the second
+    const other = extend(two, c3);
+    assert.ok(other.ok);
+    const four = extend(three.view, c4);
+    assert.ok(four.ok);
+    assert.equal(serialize(other.view), serialize(rebuild([c1, c2, c3])));
+    assert.equal(other.view.revision("test/n1", 3), undefined);
+    assert.equal(four.view.revision("test/n1", 3)?.rev, 3);
+
     assert.equal(two.seq, 2);
     assert.equal(serialize(two), before);
     assert.equal(two.revision("test/n1", 2), undefined);

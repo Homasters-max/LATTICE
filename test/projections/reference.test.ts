@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { platform } from "node:process";
 import { serialize } from "../../src/ledger/projections/view.ts";
-import { EXPECTED, FIXTURES, readCase, skeletonCase, typedCase } from "./ledgers.ts";
+import { EXPECTED, FIXTURES, commitsOf, entityIds, readCase, skeletonCase, typeEdges, typedCase } from "./ledgers.ts";
 
 type Index = {
   seq: number;
@@ -38,14 +38,17 @@ describe("projections: reference ledgers", () => {
     for (const c of [typedCase(), skeletonCase()]) {
       const index = JSON.parse(c.index) as Index;
       const view = c.ledger.view;
-      assert.equal(index.seq, view.seq);
-      assert.deepEqual(Object.keys(index.latest), view.entities().map((r) => r.id));
+      const commits = commitsOf(c);
+      assert.equal(index.seq, (commits.at(-1) as { seq: number }).seq);
+      assert.deepEqual(Object.keys(index.latest).sort(), [...entityIds(commits)].sort());
       for (const r of view.entities()) assert.deepEqual(index.latest[r.id], { hash: r.hash, rev: r.rev, type: r.type });
       for (const [target, edges] of Object.entries(index.referrers)) {
         assert.ok(edges.length > 0, target);
         assert.deepEqual(edges, view.referrers(target), target);
       }
     }
+    const skeleton = skeletonCase();
+    assert.deepEqual((JSON.parse(skeleton.index) as Index).referrers, typeEdges(commitsOf(skeleton)));
     const typed = JSON.parse(typedCase().index) as Index;
     assert.equal(typed.seq, 4);
     assert.equal(typed.latest["test/n1"]?.rev, 3);

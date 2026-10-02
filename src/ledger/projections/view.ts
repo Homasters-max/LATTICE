@@ -19,7 +19,7 @@ export type ReadView = {
 };
 
 /** The latest revision of every entity (LG-J01): the last record of each `id` in ledger order. */
-const latest: Projection<Map<string, EntityRecord>> = {
+const lastRevision: Projection<Map<string, EntityRecord>> = {
   name: "latest",
   empty: () => new Map(),
   copy: (state) => new Map(state),
@@ -39,7 +39,7 @@ const latest: Projection<Map<string, EntityRecord>> = {
 type AnyProjection = Projection<any>;
 
 /** The projections of a view (REQ-PJ-004); `rebuild` takes any permutation of it. */
-export const PROJECTIONS: readonly AnyProjection[] = Object.freeze([latest, referrers]);
+export const PROJECTIONS: readonly AnyProjection[] = Object.freeze([lastRevision, referrers]);
 
 type State = {
   seq: number;
@@ -69,15 +69,16 @@ function step(state: State, commit: Commit): void {
 }
 
 function viewOf(state: State): ReadView {
-  const current = state.states.get(latest) as Map<string, EntityRecord>;
+  const current = state.states.get(lastRevision) as Map<string, EntityRecord>;
   const index = state.states.get(referrers) as ReferrersState;
+  const revisions = revisionsOf(state);
   let sorted: readonly EntityRecord[] | null = null;
   const view: ReadView = Object.freeze({
     seq: state.seq,
     get: (id: string) => current.get(id),
     entities: () =>
       (sorted ??= Object.freeze([...current.values()].sort((a, b) => byCodeUnits(a.id, b.id)))),
-    revision: (id: string, rev: number) => revisionsOf(state).revision(id, rev),
+    revision: (id: string, rev: number) => revisions.revision(id, rev),
     referrers: (id: string) => referrersOf(index, id),
   });
   STATES.set(view, state);
