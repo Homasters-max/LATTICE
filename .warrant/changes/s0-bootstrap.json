@@ -1,0 +1,53 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "s0-bootstrap",
+  "change_state": "SPECIFIED",
+  "classification": {
+    "profiles": [
+      "feature"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "SYSTEM",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "LOW",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "BREAKING",
+        "from": "proposer"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-02T10:38:23.311Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-10-02T13:18:45.409Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:ab00f02ce88318bb2498f30a161fea025f3ca03d0ca09e5f5f0936007d57b964",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3YC8KSXX8AJADQ7SYN6DFM3"
+      ]
+    }
+  ]
+}

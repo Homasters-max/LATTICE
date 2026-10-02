@@ -1,0 +1,156 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YBV8GA8M6GB76AMQA6EN10",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Three places say three different things about which commands run Opening a store. REQ-LG-010: \"Every command that reads a project store runs both\". REQ-CL-004: \"Every command that reads the ledger of a project store — `apply` and `export` (REQ-CL-005 ...) — runs Opening and then Opening a store\". design D-8: \"`assembly` opens with `openStore` in every command\", and task 4.2: \"every command opens with `openStore`\". `import-md` reads `store/lattice.json` but not the ledger: `importMd` in src/assembly/index.ts never opens it. Take an empty-ledger store from an older `init`, or the store SCN-CL-017 leaves. Built per D-8 and task 4.2, `import-md` on it exits 2 naming `LG-G04`. Built per REQ-CL-004, it exits 0 and writes a proposal. REQ-CL-003 lists no such refusal. REQ-CL-004's explicit list makes the spec testable, but design and tasks point the implementer at the other reading.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CL-004",
+        "REQ-CL-003",
+        "openspec/changes/s0-bootstrap/design.md",
+        "openspec/changes/s0-bootstrap/tasks.md"
+      ],
+      "recommendation": "Use one wording everywhere. In REQ-LG-010 write \"every command that reads the ledger of a project store (`apply`, `export`, REQ-CL-004)\", and in D-8 and task 4.2 write \"`apply` and `export`\". Optionally add to SCN-CL-016 that `import-md` on the emptied-ledger store exits 0. If `import-md` should refuse too, add that refusal to REQ-CL-003 and REQ-CL-004 instead."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-LG-010 refuses \"a store whose history does not start with the four commits of store init\", and lists `LG-G03` as \"the commit's `kernel` is not \\\"0\\\"\". proposal.md says a store \"that holds a commit of another kernel version is refused\". The requirement does not say whether commits after seq 4 are checked for `LG-G03`, and SCN-LG-014 changes only commit 4. Take a ledger of the init commits plus a commit 5 rebuilt with `kernel` \"1\" and its chain kept. It opens under one reading and is refused `LG-G03` seq 5 under the other. The order of checks inside one commit is also implicit: commit 1 rebuilt with `kernel` \"1\" fails both `LG-G03` and `LG-G01`.",
+      "targets": [
+        "REQ-LG-010",
+        "SCN-LG-014"
+      ],
+      "recommendation": "State that every commit, in ledger order, is checked for `LG-G03`, and that commits 1–4 are also checked for `LG-G01`, `LG-G02` and `LG-G04`. Within a commit the bullet order decides which rule is named. Add the commit-5 `kernel` \"1\" case to SCN-LG-014."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "Opening (LG-C04, REQ-CL-004) requires only that `seq` grows, so gaps are allowed. REQ-LG-010 finds the init commits by position (\"the second commit\", \"the third commit\") but names \"the `seq` of the commit\", and for a short ledger it names \"one more than the number of its commits\". Nothing checks that commits 2–4 have `seq` 2, 3, 4 (or `base` 1, 2, 3). A hand-made ledger with seq 1, 5, 6, 7 that holds the right records opens. One with seq 1, 5 is refused naming seq 3, a seq that no commit has and that apply would never write (apply would write 6). The spec assumes consecutive seqs without saying so.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CL-004"
+      ],
+      "recommendation": "Either require init commit n to have `seq` n and refuse it `LG-G04` naming its seq, or say that positions are meant and that a missing commit is named by the tail's seq + 1."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CL-002 says init appends the four commit texts and \"SHALL print one line `{\\\"outcome\\\":\\\"commit\\\",\\\"seq\\\":<seq>}` per commit, in order\". It does not say the lines wait until all four appends have answered `ok`. SCN-CL-017 expects \"it prints no commit line\" after a `moved` answer to the third append. An implementation that prints each line after its own append fits the requirement but prints two lines and fails the scenario. Only design D-10 says the lines come at the end.",
+      "targets": [
+        "REQ-CL-002",
+        "SCN-CL-017"
+      ],
+      "recommendation": "In REQ-CL-002 write: \"After all four appends answered `ok` it SHALL print …; a refusal prints no commit line.\""
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-CL-017 ends with \"`lattice apply` on that store then exits with code 2 naming `LG-G04` and `seq` 3\" but names no proposal file. Without an argument `apply` is a usage error: code 2, but nothing names `LG-G04`. With a path to a missing file in `store/proposals/`, today's `apply` in src/assembly/index.ts reads the proposal bytes before it opens the ledger and refuses \"cannot read\". REQ-CL-004 orders \"open the ledger, read the proposal file\". So whether the scenario passes depends on test input it does not fix. SCN-CL-016, by contrast, names its proposal file.",
+      "targets": [
+        "SCN-CL-017",
+        "REQ-CL-004"
+      ],
+      "recommendation": "Name the input, for example \"on a proposal file written into `store/proposals/` by `import-md` of the fixture\". Optionally state in REQ-CL-004 that Opening and Opening a store come before the proposal file is read."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "After I-4, a store refused `LG-G04` because it holds fewer than four commits is stuck. `init` refuses because `store/` exists, and `apply` and `export` refuse because of `LG-G04`. The only way out is to delete `store/`, which holds no user commit at that point, and run `init` again. The spec does not say this anywhere: the refusal message names only the rule and the seq, and the Migration Plan covers only stores from an older `init`. Review 2's recommendation on F-2 (\"say how a user recovers from a partial init\") was not carried into the spec.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CL-002",
+        "REQ-CL-004",
+        "SCN-CL-017"
+      ],
+      "recommendation": "State in REQ-CL-002 or REQ-CL-004 that a store refused `LG-G04` with fewer than four commits is recovered by removing `store/` and running `init` again. Have the refusal message say so, and check that text in SCN-CL-017."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The modified REQ-CL-001 repeats \"the skeleton has no lock, `fsync` or recovery (LG-C06 comes with the store adapters of S0)\". It now also gives this as the reason a `moved` answer to an `init` append can leave a partial write. The merged store spec contradicts that: REQ-SR-001…REQ-SR-003 (s0-store-2 #57) define the lock with fencing, `fsync` before every JSONL append answers, and recovery. src/adapters/store-jsonl/index.ts, which `assembly` uses, implements them. A partial `init` comes from four separate appends with no transaction across them, not from a missing lock.",
+      "targets": [
+        "REQ-CL-001"
+      ],
+      "recommendation": "Rewrite the clause: \"the four appends of `init` are separate appends (REQ-SR-001) with no transaction across them, so after a `moved` answer or a failed write the store may hold a partial write (refused by Opening a store, REQ-LG-010)\". Drop the claim that the skeleton has no lock or `fsync`."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Opening a store checks commits 3 and 4 only by `id`, `rev` and type. It does not check their session body: `machine` / `init` is checked for commit 2 (`LG-G02`) but not here. It also does not check their act record, the namespace body against the `owner` of `store/lattice.json`, or the `live` fact's key and value. Since apply can no longer write there (I-4), only a hand edit reaches these cases. Still, I-4 says it \"Closes F-7 too\", and review 2 F-7 named the owner as well as the namespace. The spec never says what the configuration's `owner` means after init.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CT-002",
+        "REQ-CL-002"
+      ],
+      "recommendation": "State in REQ-LG-010 or D-8 that only ids and types of commits 3–4 are checked. State that `owner` in `store/lattice.json` is read only by `init`, because ownership later moves by owner act (CT-A02), so a later mismatch is not an error."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-bootstrap/specs/ledger/spec.md",
+      "change": "REQ-LG-010: \"Every command that reads the ledger of a project store (`apply`, `export`, REQ-CL-004) runs both\" (F-1). Check every commit for `LG-G03` and commits 1–4 for G01/G02/G04, in bullet order within a commit (F-2). Init commit n has `seq` n (F-3). Only ids and types of commits 3–4 are checked (F-8). SCN-LG-014: add init + commit 5 with `kernel` \"1\" → `LG-G03` seq 5."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-bootstrap/specs/cli/spec.md",
+      "change": "REQ-CL-002: print the four lines only after all appends answered `ok`, and say a store cut short is recovered by removing `store/` and running `init` again (F-4, F-6). SCN-CL-017: name the proposal file `apply` runs on and the recovery hint (F-5, F-6). REQ-CL-001: replace \"the skeleton has no lock, `fsync` or recovery\" with the four-separate-appends reason (F-7)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-bootstrap/design.md",
+      "change": "D-8 and tasks.md 4.2: \"`apply` and `export` open with `openStore`\" instead of \"every command\" (F-1)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "I checked review 2's findings against the current artifacts. F-1: SCN-TR-002 now gives `currentFacts` only the three `std/live@1` bodies. F-2: REQ-LG-010 `LG-G04` for fewer than four commits, SCN-CL-016 and SCN-CL-017, and the Migration Plan cover it; the recovery path is still missing (F-6 here). F-3: REQ-AC-001 \"either answer or throw\". F-4: REQ-AC-004 filters like `fixtureActs` and has a scenario case. F-5: REQ-CL-002 creates `store/` exclusively. F-6: the Impact test list matches D-11. F-7: closed for the namespace only (F-8 here, INFO)."
+    },
+    {
+      "id": "A-2",
+      "statement": "`import-md` does not open the ledger today. This was read from `importMd` in src/assembly/index.ts, not from a spec."
+    },
+    {
+      "id": "A-3",
+      "statement": "Opening (LG-C04) allows gaps in `seq`. This follows from REQ-CL-004: \"every next `seq` is greater than the one before it\"."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "F-1: should `import-md` refuse a project store that fails Opening a store, such as an empty-ledger store or one cut short by `init`?",
+      "options": [
+        "No: only `apply` and `export` run Opening a store (REQ-CL-004 as written); fix D-8, task 4.2 and REQ-LG-010 wording",
+        "Yes: `import-md` also opens the ledger with `openStore` and refuses with code 2; add it to REQ-CL-003, REQ-CL-004 and SCN-CL-016"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:ab3537f6ba69cda9ba753908888ea18ed90fe416591ec4c168d9ad58fee064ec",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T13:00:00Z",
+    "finished_at": "2026-10-02T13:40:00Z"
+  }
+}
