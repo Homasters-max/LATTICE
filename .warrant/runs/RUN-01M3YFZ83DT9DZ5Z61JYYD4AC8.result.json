@@ -1,0 +1,277 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YFZ83DT9DZ5Z61JYYD4AC8",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "D-10 item 2 and task 2.2 say the maintainer runs `act.mjs queue --run` 'from the impl branch's copy — the first live run of the queue'. Task 3.3 also runs `act.mjs queue` live before VERIFYING. D-12 keeps the copy mechanism ('COPY_FILES stays valid'). In today's act.mjs and copyPlan (act-rules.mjs:87-99, act.mjs:70-92), a copy of act.mjs, act-rules.mjs or rules.mjs that differs from origin/main runs the origin/main version instead. SKILL.md 'Copy' states the purpose: an act 'must not run the code under its own merge'. Until this impl-PR merges, the origin/main act.mjs has no `queue`: its ARITY check rejects `queue`, and every `--…` argument too, with usage exit 64. So tasks 2.2 and 3.3 cannot pass as written. The alternative is that patch 1 exempts `queue`/`--run` from the copy rule. Then the maintainer's credentials run unmerged branch code, which is exactly what the copy rule exists to prevent, and the spec says nothing about such an exemption. The two readings lead to different observable behaviour: a usage error, or an unreviewed copy running with the maintainer's credentials.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-10",
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/tasks.md#2.2",
+        "openspec/changes/infra-coordinator/tasks.md#3.3",
+        ".claude/skills/slice/act-rules.mjs",
+        ".claude/skills/slice/act.mjs"
+      ],
+      "recommendation": "Decide the bootstrap explicitly (see decisions_required D-1). Either request patch 2 by hand like patch 1 and prove `queue` / `--run` after merge (or by tests plus a read-only listing), or state a narrow copy exemption: read-only `queue` without `--run` may run the local copy, and `--run` only ever runs the origin/main copy. Then fix tasks 2.2 and 3.3 to match."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Goals say a session sees, before SPECIFIED and before a merge request, 'every entry it has not acknowledged and every comment of its issue it has not read'. D-3 and pendingEntries (act-rules.mjs:141, `!since || after(c.createdAt, since)`) list only entries and comments newer than the last push. The rule asks for status.mjs only at the two checkpoints, not before every push. Example: an impl-PR is open; the coordinator posts a `[scope]` (or an untagged scope comment on the issue, the #97 case) at T2; the session pushes a CI fix at T3 after running only the judge. At the merge-request checkpoint since = T3, so the entry is neither pending nor unread, and `act.mjs merge` does not refuse. An unacknowledged entry drops out silently. This is the #97 failure mode in the impl phase.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Goals",
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "Either compute `pending` over all touching entries since the Change's init (record transitions[0].at), filtered only by acknowledgement, and keep `since` for `unread`; or require `status.mjs <change>` before every push that opens or updates a PR (next to the judge). Otherwise narrow the Goal to 'newer than its last push' and name the gap. Add a test case: an entry older than the last push and not acknowledged."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Review 1 F-4 is only partly closed. Appendix A `process` ¶2 says 'In a Change, files are written only inside the `write_scope` of the active Run'. It says 'files', not 'project files'. D-10 of this same Change drafts both patches in `D:/tmp/infra-coordinator/`, outside every Run: the implement Run's scope is `openspec/changes/infra-coordinator/**` alone. Change sessions also write PR bodies and review envelopes into temp files, and between Runs they write nothing else legitimately. The literal rule forbids this Change's own delivery path.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-10"
+      ],
+      "recommendation": "Write 'In a Change, project files are written only inside the write_scope of the active Run …; files outside the repository (patches for the maintainer, PR bodies, envelopes) are not project files.'"
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Appendix A `process` ¶3 lets an AREA be added after init only by 'a maintainer's `[decision]` or `[scope]`'. D-4 clears the areasAddedAfterInit flag on any `[decision]` or `[scope]` entry that names the Change and the AREA. It does not check the author, and cannot: the Context 'Logins' says every agent session posts as `homasters`. All three decisions read (5953927808, 5954365385, 5954398284) are authored by `homasters`. D-2 item 3 also has sessions post their own `[scope]` entries. So a session that widens its `Where:` after init can clear its own flag with a `[scope]` it posts. That is the boundary crossing of 2026-10-02 the rule is meant to stop. 'A maintainer's' entry has no observable test.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#D-2"
+      ],
+      "recommendation": "Define what makes an entry the maintainer's: a `[decision]` that links the maintainer's own comment (a roles.maintainer login) or a merged PR, or an entry posted by a roles.maintainer login. Make areasAddedAfterInit clear the flag only on that. Alternatively, drop 'maintainer's' from the rule and say any `[decision]` / `[scope]` clears the flag, with the coordinator judging it."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Appendix A `maintainer-acts` lists 'starting or restarting a session' among the acts never performed by the agent. It also says the agent 'requests one by a comment on the PR or issue the act concerns' with the marker. Appendix A `tracking` ¶5 says the coordinator opens a fix-main issue and 'launches' its session, and D-2 item 1 'Launch' and D-6 describe the coordinator launching sessions. Today's maintainer-acts covers only 'restarting'. The two readings of a launch differ in what can be observed. In one, the chip offer (SKILL.md `spawn_task`) is the launch and no request is posted. In the other, every launch also needs an `<!-- act: session … -->` comment on the Change's issue and a queue entry, which D-2 item 1 never mentions.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-maintainer-acts",
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "State one form. Either 'the coordinator offers a session as a chip; the maintainer starts it (no request comment)', with group 5 limited to restarts and other session acts, or add the `session` request to D-2 item 1 and to the launch procedure."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-12 Trust says 'done for groups 1, 2 and 4 is computed from facts'. Several of the facts it uses can be produced by any agent under the shared login. `patch` is done on any commit after the request whose subject is `<change>: maintainer's patch <basename>`, and the subject is a string any agent commit can carry. `file` is done on a commit on `origin/<branch>` touching `<path>` after the request, by any committer. `tag` is done when the tag exists on origin, pushed by anyone. So a session that commits a human-only file itself (for example `proposal.md`; the guard is blind in worktrees, SRA#138) removes the maintainer's request from the queue. The crossing is then hidden instead of surfaced. act.mjs already distinguishes an agent's git identity (isAgentIdent), so the computed check could too.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "In actDone, require that the commit for `patch` and `file` has a committer that is not an agent identity (isAgentIdent false). For `tag`, mark done by the coordinator, or check the tag's tagger or the commit. Restate Trust: which done conditions are bound to the maintainer's identity and which are not."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The review mark binds `<request comment id> <head sha> [<patch sha256>]`, and `--run` takes its typed arguments from the request's marker. Two boundaries are not covered. (a) A request comment can be edited after it is marked: every agent posts as `homasters` and can edit `homasters` comments. If the marker changes, for example `merge 120` becomes `merge 121`, or the WAV id or change name changes, the mark still names the same comment id and the same head, so the edited act counts as reviewed. (b) Nothing says the queue checks that the marker's target (`<N>`, `<change>`) is the PR or issue the comment is posted on. The head sha the mark binds is the head of the PR reviewed, which need not be the PR the marker names.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "Bind the mark to the request's content: a hash of the marker line, or the comment's `updated_at`, and void it on any edit. Require the marker's target to match the thread: `merge <N>` only on PR #N; `waiver` and `patch` only on the PR whose head is `<kind>/<change>`. Add both cases to the actRequest/actDone tests in task 3.1."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-12 `--run` asks `y/n/q` on stdin and 'a stdin that is not a terminal refuses'. It is meant to run from the Run button of a chat bash block 'in their terminal panel (PowerShell or Git Bash)'. The spec assumes, without a check, that node sees `process.stdin.isTTY` in both shells under that button. Under a mintty-hosted Git Bash, native node gets a pipe, not a TTY, unless winpty is used, so `--run` would always refuse. Whether the app's terminal panel is a ConPTY, and whether the button's command gets an interactive stdin at all, is not stated or tested. If either is false, the maintainer's only way to run the queue refuses every time, and task 2.2 cannot pass.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/tasks.md#2.2"
+      ],
+      "recommendation": "Add a probe task before patch 1: from the Run button in PowerShell and in Git Bash, `node -e \"console.log(process.stdin.isTTY, !!process.env.CLAUDECODE)\"`. Record the result in design Context. Define the fallback when there is no TTY, for example `--run <request id>` running one named act with no prompt, or reading the console device."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "Appendix A `process` ¶2 now says 'A review subagent reads with the file tools and runs no shell command but `warrant run submit`'. The Context Pack of a review holds only the files of `openspec/changes/<change>/`. The intent of a `skip_specs` Change, and the maintainer decisions its proposal cites (#101, #44 comments 5953927808, 5954365385, 5954398284), live only on GitHub. File tools cannot read them. This review could check the act-queue groups and the 'Done when' list only by `gh` reads, and the caller asked for exactly those. As written, the rule makes the reviewer unable to check a Change against its intent, or the caller keeps ordering the crossing the rule forbids.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-9"
+      ],
+      "recommendation": "Either allow named read-only commands in the rule (`git show/log/diff`, `gh issue|pr view`, `gh api` GET) and file an SRA issue for the guard to allow them, or require the session to put the issue body and the cited decision texts into the review prompt next to the Context Pack. State which one."
+    },
+    {
+      "id": "F-10",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Appendix B says every sentence of today's rules has a place, but some clauses are dropped without a row: (1) p17, the list of shared files ('the module matrix of the structure test, the CLI entry and command table, `package.json`, the port interfaces'); Appendix A keeps only 'files shared by several modules', and neither D-1's change.md list nor SKILL.md carries the list; (2) p8, 'a second one waits'; (3) p18, what a slice decision is ('an AREA, an id, the order of Changes — a comment on the umbrella'), now unrelated to the `[decision]`/`[scope]` tags; (4) p25, '(the coordinator owns only the PRs it opens)'; (5) t21–t23, the meaning of the labels (`bug` defect · `enhancement` idea · `question` needs the maintainer's answer) and of the prefixes `sw` and `infra`; (6) t10, 'the state of a slice is computed, never stored in a file' (A `tracking` ¶1 keeps only 'where we are is computed').",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-B",
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#Appendix-tracking"
+      ],
+      "recommendation": "Give each clause a row: keep it in A, or name its place in C/S (the shared-file list in change.md or SKILL.md Model). Or record the drop as intended."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The rule `env` stays unchanged (D-9). It says 'A command for the human («❗ Выполнить») is a `bash` block' and that the marker «❗ Выполнить» is used 'in the chat and in PRs'. The new `maintainer-acts` says the executor 'never writes a command for the maintainer into its own chat', and the D-12 request form and the coordinator's '👤 queue (N)' block do not use «❗ Выполнить». Where the marker is still written is now undefined. The coordinator is the executor of its own PRs (A ¶5) and also writes the '👤 queue' commands into its own chat, which contradicts the literal maintainer-acts sentence.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-maintainer-acts",
+        "openspec/changes/infra-coordinator/design.md#D-9",
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        ".warrant/local/rules/env.json"
+      ],
+      "recommendation": "Say where «❗ Выполнить» is used now, for example the head of each item of the coordinator's block, and adjust `env` or note that its sentence still holds. Write 'an executor other than the coordinator never writes …', or say the coordinator's block is the only place in a chat where a command for the maintainer is written."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Today's UNKNOWN procedure, which moves to change.md, accepts the maintainer's decision as an issue comment or as a PR review (`#pullrequestreview-<id>`). D-12 `decision unknown` is done only on 'a comment by a roles.maintainer login in the spec-PR'. The queue reads `…/issues/comments`, which does not return PR reviews. A decision given as a review leaves the request pending.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "Make `decision unknown` done on a review of the spec-PR too, read through `pulls/<N>/reviews`, and add the case to task 3.1."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The queue lifecycle has open boundaries. (a) `act.mjs queue` reads `issues/comments?since=<30 days>`, so a request older than 30 days and still pending drops out silently. (b) A request on an issue (groups 2–5) is withdrawn only by an `act-withdrawn` mark; closing the issue is not covered (only a PR closed unmerged is). (c) A `merge` request after `act.mjs merge` has turned auto-merge on stays pending until MERGED. `--run` would offer it again, and the queue shows it as unacted while it only waits on CI. Nothing distinguishes that state.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "Name the window as a limit or drop it in favour of a per-thread read of open PRs and issues. Treat a closed issue as withdrawn. Show a `merge` request with auto-merge on as 'waiting (auto-merge on)', skipped by `--run` unless auto-merge is off."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-5 check 1 allows `openspec/changes/<change>/**` for every kind. That lets an agent's impl-PR edit `proposal.md` (outside the implement write_scope; only a human edits it, through `act.mjs patch`) and lets an archive-PR edit artifacts, with no finding. These are the 'write outside its write_scope' crossings the check is meant to catch.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "On impl, allow `openspec/changes/<change>/proposal.md` only through maintainer-authored commits. On archive, allow only what `warrant archive` moves."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Appendix A `process` ¶4 has a session acknowledge an entry 'by a reply on the umbrella'. A Change outside a slice, in no milestone (A `tracking` ¶2), has no umbrella; its decisions are on its own issue (SKILL.md launch template). Where it acknowledges is not stated. pendingEntries accepts an issue comment that names the Change, but the rule does not say so. Separately, for `--mark` on a request of groups 2–5 posted on an issue, `review.mjs <N>` takes a PR number and the mark carries a `<head sha>` an issue lacks.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-process",
+        "openspec/changes/infra-coordinator/design.md#D-5",
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "Write 'a reply on the umbrella (a Change without one: on its issue)'. Say what `review.mjs` does for an issue number, and that the mark of an issue request carries no head."
+    },
+    {
+      "id": "F-16",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Review 1 closure checked against the text. F-1 is closed: Context corrected to 07:25:34Z / 07:25:45.020Z, and task 3.1 uses real data with no flag plus a synthetic flag. F-2 and F-11 are closed (AR exception; entry clears the flag; held Changes only). F-3 is closed ('plus `openspec/changes/<change>/**`'). F-4 is partly closed (see F-3 of this review). F-5 is closed ('the author of the decision'). F-6 is closed. F-7 is closed by Appendix B, with gaps in F-10 of this review. F-8 is closed in the text, but see F-9. F-9, F-10, F-12…F-18 and F-21 are closed. F-19 is closed by task 3.4, which shows the session list but not a real broadcast. F-20 is left to the merge. Appendix A was measured: process 4 798 + tracking 3 203 + maintainer-acts 1 274 bytes, as JSON paragraphs, plus env 1 825 + frame 54 = 11 154, the figure D-1 gives. That is within 12 288 for the whole AGENTS.md.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Review-history",
+        "openspec/changes/infra-coordinator/design.md#D-1"
+      ],
+      "recommendation": "None beyond the findings above."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/infra-coordinator/design.md#D-10",
+      "change": "Resolve the copy-plan bootstrap for `queue` (F-1) and rewrite tasks 2.2 and 3.3 to match. Add a TTY probe task and a no-TTY fallback for `--run` (F-8)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/infra-coordinator/design.md#D-3",
+      "change": "Base `pending` on acknowledgement since init, not on the last push, or require status.mjs before every PR push. Align the Goals sentence with it (F-2)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/infra-coordinator/design.md#Appendix-A",
+      "change": "process ¶2 'project files'; ¶3 define a maintainer's entry; ¶4 acknowledgement without an umbrella. maintainer-acts: the launch/session form and the coordinator's chat block. Keep or relocate the clauses listed in F-10."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/infra-coordinator/design.md#D-12",
+      "change": "Bind actDone of patch, file and tag to a non-agent committer. Bind the review mark to the request's content and its target thread. Make `decision unknown` done on PR reviews too. Settle the 30-day window, closed issues and the auto-merge-on state."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-1",
+      "question": "Does the Run button of a chat bash block give node an interactive TTY stdin (and no CLAUDECODE) in the maintainer's PowerShell and in Git Bash?",
+      "blocking": false
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "AGENTS.md frame bytes (54) stay the same with four rules. Byte counts come from the Appendix A paragraphs of design.md joined into single lines, as the JSON `text` stores them, measured with wc -c."
+    },
+    {
+      "id": "A-2",
+      "statement": "The copy behaviour comes from act.mjs and act-rules.mjs on this branch (identical to infra-merge-flow on main). Patch 1 is assumed not to change copyPlan, because no text says it does."
+    },
+    {
+      "id": "A-3",
+      "statement": "Umbrella `[decision]` entries are posted by `homasters`; checked for 5953927808, 5954365385 and 5954398284 via gh api."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "How is `act.mjs queue [--run]` run before act.mjs with `queue` is on main (F-1)?",
+      "options": [
+        "patch 2 requested by hand; the queue proven by tests and after the merge (no live --run in the impl-PR)",
+        "read-only `queue` may run the local copy; `--run` only the origin/main copy (live --run after merge)",
+        "a copy exemption for `queue --run` (runs unmerged code with the maintainer's credentials; not recommended)"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "Is launching a session (offering a chip) a maintainer's act that needs a `<!-- act: session … -->` request (F-5)?",
+      "options": [
+        "no: the chip is the request; group 5 covers restarts and other session acts",
+        "yes: every launch also posts a session request on the Change's issue"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:61879f16fa180a0ca0cb1c6be319eadd63f296edf090d280137192ea92d8eb00",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T15:00:00Z",
+    "finished_at": "2026-10-02T15:50:00Z"
+  }
+}

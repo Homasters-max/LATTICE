@@ -1,0 +1,21 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3YFZ83DT9DZ5Z61JYYD4AC8",
+  "change": "infra-coordinator",
+  "operation": "review",
+  "skill": "specification/adversarial-review@0.2.0",
+  "model": "claude-opus-5-5",
+  "write_scope": [],
+  "scope": [],
+  "branch": "spec/infra-coordinator",
+  "started_at": "2026-10-02T14:23:26.370Z",
+  "finished_at": "2026-10-02T14:33:11.956Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:61879f16fa180a0ca0cb1c6be319eadd63f296edf090d280137192ea92d8eb00",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "spec_tree": "sha256:f1111fd473e3d991b5d7054630b9029c0e020f8b6d27b23972429a697ecc7efd",
+  "evidence": [
+    "EVID-01M3YGH40GTXHVJTVP2Y65XTT2"
+  ],
+  "guard_events": []
+}
