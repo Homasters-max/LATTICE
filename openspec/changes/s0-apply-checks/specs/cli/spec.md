@@ -61,8 +61,8 @@ REQ-LG-001.
 - `rejected` — the rejections of reading the proposal (REQ-LG-001), of apply (REQ-LG-002) or of the check of the tail
   (REQ-LG-004): `apply` SHALL print the JSON list of all rejections on standard output, in the order of REQ-LG-002;
   keep the proposal file; write nothing; and exit with code 1.
-- `commit` — `apply` SHALL append one line holding the commit text after the `seq` of the commit's `base`. When the
-  store answers that the tail moved, it SHALL open the ledger again — refusing with code 2 if it is broken — and check
+- `commit` — `apply` SHALL append one line holding the commit text after the `seq` of the commit's `base`; it sees a
+  moved tail only through the store's answer `moved` (REQ-LG-004). When the store answers that the tail moved, it SHALL open the ledger again — refusing with code 2 if it is broken — and check
   the commit against it (REQ-LG-004): `existing` is the outcome `existing` below; the rejection `LG-C03` is the outcome
   `rejected` above; when the check gives neither, the store answered `moved` on an unmoved tail and the command
   refuses with code 2 naming the store. After the append it SHALL remove the proposal file, print

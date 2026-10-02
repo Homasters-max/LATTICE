@@ -155,8 +155,10 @@ a case that needs both a crash and a concurrent write of the same entity.
 - `checkTail(ledger, commit)` is pure: `existing` when `ledger.proposals` holds `commit.proposal`; `clear` when
   `commit.base === (ledger.tail?.seq ?? 0)` and `commit.prev === (ledger.tail?.hash ?? null)`; otherwise the rejection
   `{intent: null, rule: "LG-C03", path: "", expected: {seq: commit.base, hash: commit.prev}, got: {seq, hash} of the
-  tail}`. The hash is compared too, so a tail replaced at the same `seq` cannot pass and break the chain (LG-C04,
-  spec review 2, F-6). The `existing` answer covers two writers applying the same proposal: the one that loses the
+  tail}`. The hash is compared too, so a tail replaced at the same `seq` cannot pass `checkTail` (LG-C04, spec review
+  2, F-6). The command reaches `checkTail` only after the store answers `moved`, which compares the `seq` alone, so a
+  tail replaced at the same `seq` outside apply is not seen at the append; the next opening refuses the broken chain
+  (LG-C04, I-14). The `existing` answer covers two writers applying the same proposal: the one that loses the
   race answers the commit the other wrote, as LG-C08 asks (spec review 1, F-12).
 - Removing the proposal file treats `ENOENT` as removed: the winner of that race has already removed it (spec review
   2, F-2, SCN-CL-014).
@@ -196,6 +198,7 @@ SCN-CL-013 cover them.
 
 | Path | Proves |
 |---|---|
+| `test/ledger/cases.ts` (new) | not a test: the fixture `md` imported in process under a numbered session, ledgers from commit texts, `applyText` — shared by the ledger, permutation and CLI tests (I-18) |
 | `test/ledger/apply.test.ts` (new) | SCN-LG-001…005, SCN-LG-007 — `parseProposal`, `apply`, `checkTail`, `differs`, `REJECTION_RULES` in process |
 | `test/ledger/permutation.test.ts` (new) | SCN-LG-006 (D-7) |
 | `test/architecture/rules.test.ts` (changed) | SCN-AR-017 — no enumerated list; `moved.jsonl` for LG-C03 |
@@ -224,6 +227,12 @@ test/fixtures/rules/**,openspec/changes/s0-apply-checks/**`. `src/ledger/proposa
 | I-11 | Apply finds the rejections only when it does not answer `existing` (REQ-LG-002). | Review 2, F-5. | approval of the spec-PR |
 | I-12 | The tail check compares the tail's hash with the commit's `prev` as well as its `seq`; `LG-C03` gives `expected` and `got` as `{seq, hash}` (REQ-LG-002, REQ-LG-004, SCN-LG-005, SCN-CL-011). | Review 2, F-6: a tail replaced at the same `seq` passed and the append broke the chain (LG-C04). | approval of the spec-PR |
 | I-13 | SCN-LG-003 adds a type change with an unchanged body, which is a commit, not a no-op. | Review 2, F-7: an implementation that skipped the type passed every scenario. | approval of the spec-PR |
+| I-14 | REQ-LG-004 and REQ-CL-004 say the writer sees a moved tail only through the store's `moved`, which compares the `seq`; a tail replaced at the same `seq` outside apply is refused at the next opening (LG-C04); D-6 narrows its claim to `checkTail`. | Spec review 3 (`EVID-01M3XT5RCPWN2YENNK0SBDT4XJ`), F-1. | approval of spec-PR #87 (planned there as I-14) |
+| I-15 | The Tail bullet of `proposal.md` names the `existing` answer and the comparison with `prev`. `proposal.md` is outside the `write_scope` of `implement`: a human edit, asked in the impl-PR. | Review 3, F-2. | approval of spec-PR #87 (planned as I-15) |
+| I-16 | SCN-AR-017 runs a copy of `LG-P02` with an empty `expected.json` and one whose ledger does not open; both fail naming the folder. | Review 3, F-3: REQ-AR-011 gained both failures in I-4 without a scenario. | approval of spec-PR #87 (planned as I-16) |
+| I-17 | SCN-LG-003 says "the first proposal" in its type-change case. | Review 3, F-4. | approval of spec-PR #87 (planned as I-17) |
+| I-18 | A test helper `test/ledger/cases.ts` builds the proposals and ledgers of the ledger, permutation and CLI tests in process; SCN-CL-011 also covers `moved` on an unmoved tail (code 2); the SCN-CL-008 test changes the body of its second commit, which would otherwise be a no-op. Spec unchanged. | Implementation: one source of the fixture proposals instead of three copies; the skeleton test wrote an unchanged body at `base` 1. | implementation, this impl-PR |
+| I-19 | Implementation review: `Ledger.proposals` keyed by the branded `Hash` (D-2); one `settled` step in `assembly` removes the proposal file for every final outcome and names a failed removal "cannot remove"; the copies of test helpers moved into `test/ledger/cases.ts`; SCN-AR-017 runs the folder scan itself on a temporary rules folder. Kept: the signature of `duplicate` and the export of `differs` (D-2, reuse by #82). Spec unchanged. | `code-review` of this impl-PR — Standards S-1…S-4, Spec P-3. | implementation, this impl-PR |
 
 ## Risks / Trade-offs
 

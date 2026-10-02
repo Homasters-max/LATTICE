@@ -1,0 +1,15 @@
+[
+  {
+    "intent": null,
+    "rule": "LG-C03",
+    "path": "",
+    "expected": {
+      "seq": 0,
+      "hash": null
+    },
+    "got": {
+      "seq": 1,
+      "hash": "76b8055ae3a359ba424215a7a92721acaf2b1ed682be05b6ab25274099349263"
+    }
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XW4DJHG9F48EKFHYBAX583",
+  "change": "s0-apply-checks",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/s0-apply-checks/tasks.md",
+    "openspec/changes/s0-apply-checks/design.md",
+    "openspec/changes/s0-apply-checks/specs/**"
+  ],
+  "scope": [
+    "src/ledger/apply.ts",
+    "src/ledger/rules.ts",
+    "src/ledger/commit.ts",
+    "src/ledger/index.ts",
+    "src/ledger/differs.ts",
+    "src/assembly/index.ts",
+    "test/ledger/**",
+    "test/architecture/rules.test.ts",
+    "test/cli/apply.test.ts",
+    "test/fixtures/rules/**",
+    "openspec/changes/s0-apply-checks/**"
+  ],
+  "branch": "impl/s0-apply-checks",
+  "started_at": "2026-10-02T08:36:44.302Z",
+  "finished_at": "2026-10-02T08:51:55.129Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:a638da8411633180cdc0e408e5aa2abc8c0dc722950225bc13849e372ccc4598",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}
