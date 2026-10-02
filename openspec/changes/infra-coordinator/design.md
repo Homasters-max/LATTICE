@@ -65,7 +65,7 @@
 **Goals:** the rules fit with 4 KiB free and keep every obligation; the coordinator's routine, the log, the request
 protocol for the maintainer's acts and the path from a failure to a rule survive a restart of the coordinator session because they are written in the
 skill and computed by its scripts; a session sees, before `SPECIFIED` and before a merge request, every entry it has not
-acknowledged and every comment of its issue it has not read; no maintainer act lives only in a chat; the boundaries
+acknowledged and every comment of its issue posted since its last push; no maintainer act lives only in a chat; the boundaries
 crossed on 2026-10-02 are rules, and an AREA added after `init` is flagged by `status.mjs`.
 
 **Non-Goals:** — proposal, Non-goals.
@@ -98,7 +98,7 @@ crossed on 2026-10-02 are rules, and an AREA added after `init` is flagged by `s
   keeps its model and commands and links `change.md`.
 - **Every sentence** of today's `process`, `tracking` and `maintainer-acts` is mapped in Appendix B to its new place;
   the merge of this spec-PR is the decision on that table, and an impl-time change of it is an `I-N` row.
-- **Budget.** `AGENTS.md` after this Change is at most 12 288 bytes (Appendix A measures 11 344), so more than 4 KiB
+- **Budget.** `AGENTS.md` after this Change is at most 12 288 bytes (Appendix A measures 11 528), so more than 4 KiB
   stay free. `status.mjs` prints the size of `AGENTS.md` on `origin/main` in its header and warns above 14 336 bytes
   (2 KiB before WARRANT refuses), naming the fix: move procedure into the skill.
 - The launch template (skill `slice`) says "Process: AGENTS.md and `.claude/skills/slice/change.md`".
@@ -115,23 +115,25 @@ A section of `SKILL.md` the coordinator follows; each item names its trigger and
 practice):
 
 1. **Launch** — the start prompt carries the issue body verbatim and the coordinator's notes (current workarounds, the
-   judge, the act queue, acknowledgement); once the session runs, `list_sessions` gives its `cwd` and
+   judge, the request protocol, acknowledgement); once the session runs, `list_sessions` gives its `cwd` and
    `git worktree list --porcelain` must show that path on `<phase>/<name>` within its first turns; a session on
    `claude/*` or in a second worktree gets a message to switch (#74); the session goes into the slice's sidebar group.
 2. **Before a launch** — an issue whose `Where:` names an AREA but no Change gets its `Where:` and `Depends on:` fixed
    first (#112; `status.mjs` shows it as `needs a Change name`).
 3. **Parallel spec phases** — before any of them is `SPECIFIED`, each live session is asked by message for its planned
-   source and test paths; an overlap is settled by a `[decision]`, or by the sessions themselves in a `[scope]`, which
-   the coordinator then follows (superseding its own decision by a new one).
+   source and test paths; an overlap goes to the maintainer, whose answer the coordinator posts as a `[decision]`; when
+   the sessions settle it between themselves in a `[scope]` first, the coordinator asks the maintainer to confirm it, and
+   a new `[decision]` supersedes the earlier one.
 4. **A session stalls or fails** (no push, no reply, an error the maintainer reports) — read its events
    (`list_events`) before acting; act on what they show, never on a guess.
-5. **A scope change of a launched Change** — a `[scope]` or `[decision]` entry on the umbrella **and** a message to its
-   session with the URL; the coordinator waits for the session's acknowledgement before that session's `SPECIFIED`; a
+5. **A scope change of a launched Change** — a `[scope]` entry on the umbrella (a new AREA: a `[decision]`, D-4) **and**
+   a message to its session with the URL; the coordinator waits for the session's acknowledgement before that session's `SPECIFIED`; a
    change after `SPECIFIED` is an `I-N` row of the impl-PR.
 6. **A request for a maintainer's act** (D-12) — `review <PR>` (D-5) before it is shown to the maintainer; a patch or
-   file is checked (`git apply --check`, size, hash, paths); the owner is told to `git pull --ff-only` after the act
-   lands. At the end of every coordinator message, the block "👤 queue (N)" of the pending requests (until #133: the
-   interim `act-ui.mjs --list`).
+   file is checked (`git apply --check`, size, paths); the owner is told to `git pull --ff-only` after the act lands. At
+   the end of every coordinator message, the block "👤 queue (N)": the pending requests, read from the comments of the
+   repository (`gh api --paginate`; until #133 the coordinator's local `act-ui.mjs --list` is a convenience only), each
+   command a «❗ Выполнить» `bash` block (rule `env`).
 7. **A red check on a queued PR** — read the failing log, send the cause to the owner, keep the PR out of the queue; a
    process gap behind it is a `process` issue and a `[broadcast]` with the interim rule.
 8. **An impl-PR merges** — a Change waiting at the impl gate gets a message that a slot is free.
@@ -147,17 +149,27 @@ practice):
     delete the local branches `<kind>/<name>` and `claude/<random>` for which `git merge-base --is-ancestor <branch>
     origin/main` holds.
 13. **End of a wave** — the architecture audit (ST-A01…A04) and `retro` (D-7).
+14. **Before a dispatch** — `status.mjs <slice>`: the health of `main` and the open `P1` issues without a Change
+    (`gh issue list --label P1` is the queue of P1 debt).
+15. **Own PRs** — the coordinator owns, watches and requests the merge of only the PRs it opens; a Change's PR is its
+    session's.
+16. **Decisions** — a `[decision]` records the maintainer's decision and only the coordinator posts it (sessions post
+    `[scope]`, acknowledgements and status comments); it carries the maintainer's answer and its date.
 
 ### D-3. The decision log
 
-- **Entries** are umbrella comments whose first line starts with a tag: `[decision]` (the maintainer's decision),
+- **Entries** are umbrella comments whose first line starts with a tag: `[decision]` (the maintainer's decision, posted
+  by the coordinator only),
   `[scope]` (a scope change of a Change), `[broadcast]` (to every live session), `[incident]` (a failure, input of the
   retro). The first three bind the sessions they touch; `[incident]` binds no one. An entry names what it touches in a
   `Touches:` line by convention; the matching (`pendingEntries`) reads the whole text, so a name elsewhere touches too.
   Comments on a Change's own issue count the same way.
-- **Acknowledgement** is `pendingEntries` of `act-rules.mjs`, unchanged: the rule asks for a reply on the umbrella that
-  links the entry and names the Change (the log stays in one place); a comment in the PR linking it also counts, as
-  `act.mjs merge` reads it. No second implementation.
+- **Acknowledgement** is `pendingEntries` of `act-rules.mjs`, with one change: a comment whose first line starts with a
+  tag is an entry, never an acknowledgement — today a later entry that links an earlier one and names a Change
+  acknowledges it for that Change (5954398284 and 5954594643 link 5954365385 and name `infra-coordinator`), so the
+  earlier entry is never pending. The rule asks for a reply on the umbrella (a Change outside a slice: on its issue)
+  that links the entry and names the Change; a comment in the PR linking it also counts, as `act.mjs merge` reads it,
+  which gets the same fix. No second implementation.
 - **The last push of a Change** (`changeLastPush` in `act-rules.mjs`, over `lastPush`): the newest commit committed by
   an agent, not a merge, with the subject prefix `<change>: `, over all of its branches on `origin`
   (`spec/`, `impl/`, `archive/`), merged or not. Before the first push nothing is excluded by time.
@@ -182,7 +194,9 @@ practice):
   unless it is `AR` on a `skip_specs` Change, or a `[decision]` entry names the Change and the AREA
   (`` `<AREA>` `` or `AREA <AREA>`); a `[scope]` does not clear it (a session posts its own `[scope]`). The row's AREA
   line says `AREA <X> added after init (<editedAt>) — needs a decision`, and the maintainer queue gets a row; the
-  `[decision]` clears it. A removed AREA and a revision naming another Change (a rename) are not flagged. A failed
+  `[decision]` clears it, posted before or after the edit (a decision usually comes first). An edit within 60 s after
+  `initAt` counts as before it: `initAt` is the session's clock and `editedAt` GitHub's, and a race at `init` is the AREA
+  collision of #94. A removed AREA and a revision naming another Change (a rename) are not flagged. A failed
   query is a warning, not a flag. Trust: every agent, the coordinator included, posts as `homasters`, so the script
   cannot tell the coordinator's `[decision]` from a session's; the rule (only the coordinator posts a `[decision]`, the
   maintainer's) and the log being public are the control.
@@ -210,6 +224,9 @@ before requesting a merge, the coordinator before showing the request. It prints
 finding, and exits 0 when all pass, 1 when one fails, 2 on an error, 64 on usage. It posts nothing (the review mark on a
 request is #133's).
 
+0. **The Change** — from the head branch `<kind>/<change>` (`changeOfBranch`); a PR from any other branch that touches
+   `.warrant/changes/**`, `.warrant/evidence/**`, `.warrant/runs/**` or `openspec/changes/**` is a finding (`a Change's
+   files on a branch outside <kind>/<change>`).
 1. **Scope** (`scopeFindings` in `act-rules.mjs`, next to `patchPathWriter`): the paths of
    `git diff --name-only origin/main...origin/<head>` (the branch's own changes; merges of `main` add none). Allowed for
    the PR's Change:
@@ -246,7 +263,8 @@ A procedure of `SKILL.md`, not a script — a message to a session is a tool of 
 ### D-7. `retro <slice>`
 
 `node .claude/skills/slice/retro.mjs <slice> [--since <ISO date>] [--issues <N,…>]` gathers; the grilling is a
-procedure. A wave is a wave of the slice's plan `[decision]` (5950269274 for S0, or a later plan).
+procedure. A wave is a wave of the slice's plan `[decision]` (5950269274 for S0, or a later plan); #101 runs it once on
+S0's first wave (its "Done when"), and the retro that closes the slice runs at its end.
 1. The issues: labelled `process`, of the slice's milestone or of none, created or closed since `--since` (default:
    the time of the umbrella's last comment starting `[decision] retro`, else the milestone's creation); `--issues`
    fixes the list.
@@ -273,12 +291,14 @@ procedure. A wave is a wave of the slice's plan `[decision]` (5950269274 for S0,
 ### D-9. Rules: boundaries, closing criteria, failure to rule
 
 The texts are in Appendix A; the merge of this spec-PR is the decision on them.
-- `process`: a session runs `warrant` commands that name a Change only on its own Change, and the coordinator only
-  those that write nothing; in a Change, files of the repository only inside the active Run's `write_scope` (patches,
-  PR bodies and envelopes outside the repository are not covered); a review subagent reads with the file tools and runs
+- `process`: a session runs `warrant` commands that name a Change only on its own Change, and the coordinator — or
+  `review.mjs` judging another's PR in a temporary worktree — only those that leave nothing in the repository; in a
+  Change, the agent edits files of the repository only inside the active Run's `write_scope` (what `warrant` and a git
+  merge write, and patches, PR bodies and envelopes outside the repository, are not edits of the agent); a review subagent reads with the file tools and runs
   no shell command but `warrant run submit` — what the review guard allows; until SRA#138 the guard does not stop it in
   a worktree, so the rule does —, and the session puts into its prompt what it needs from GitHub (the issue, the
-  decisions it cites); an AREA added after `init` only by a `[decision]` naming it, or `AR` by a `skip_specs` Change; a
+  decisions it cites); an AREA added after `init` only by a `[decision]` naming it, or `AR` by a `skip_specs` Change; one Change holds an
+  AREA at a time, a second waits; a `[decision]` is the maintainer's, posted by the coordinator; a
   fix of a red `main` exempt from every AREA hold (as `holdersOf` already does; today's text said only the hold of the
   Change that broke it); the log (D-3); the steps in `change.md` (D-1); the merge requested as an act (D-12).
 - `tracking`: closing criteria in order (a Change issue, a `process` issue, a `question`, any other issue); a process
@@ -300,8 +320,9 @@ drafted outside the repository, each checked with `act.mjs patch … --dry-run` 
 Proof before `VERIFYING`: `node --test` of both test files; live outputs of `status.mjs`, `review.mjs`, `judge.mjs`;
 the broadcast's session list; the coordinator's confirmation of the "Coordinator" section; the retro of S0 (tasks).
 Closing (rule `tracking`): the impl-PR carries `Closes #112, #126, #128` (the fixes; #112's prevention, the `unnamed`
-kind with its test, is in place when it merges); the archive-PR `Closes #101, #119` (#101 a Change issue; #119 by the
-maintainer's decision 5953927808).
+kind with its test, is in place when it merges); the archive-PR `Closes #101, #119` (#101 a Change issue; #119 a `process`
+issue whose prevention — the principle of D-1 in the rule `process` and the budget line of `status.mjs` — is in place
+once the impl-PR merges; the archive-PR, as decision 5953927808 asks).
 
 ### D-11. Classification
 
@@ -365,6 +386,18 @@ review prompt); F-10 → Appendix B (rows added); F-11 → D-12 (the coordinator
 in an impl-PR only by the maintainer); F-15 → D-3 (no umbrella: the issue), the mark → #133. Decision D-2 of review 2
 (a launch needs a session request) — no: the chip is the request.
 
+Review 3 (`EVID-01M3YH6FHBDC0DJMMXNJSGQ3VW`, `NOT_PROVEN`: BLOCKER F-1; MAJOR F-2…F-4; MINOR F-5…F-15; INFO F-16,
+F-17), its reviewer bound by the rule of D-9 (file tools only, GitHub facts in the prompt): F-1 → Appendix A `process`,
+proposal (only a `[decision]` adds an AREA after `init`); F-2 → D-2 item 16, D-3, Appendix A `process` (a `[decision]`
+is the maintainer's, posted by the coordinator only); F-3 → D-3, task 3.1 (a tagged entry never acknowledges); F-4 →
+D-2 item 6 (the queue block read from the comments; no hash), Appendix A `maintainer-acts` (the result read from the
+commit, the waiver, the merge), tasks 1.2, 2.2; F-5 → tasks 1.2, 2.2 (verified on `origin/impl/…`); F-6, F-7 → Appendix A
+`maintainer-acts` (a restart asked in the session's chat; the coordinator's «❗ Выполнить» blocks); F-8 → Appendix A
+`process` (outside a slice: on its issue); F-9 → D-9, Appendix A `process` ("the agent edits"); F-10 → D-9, Appendix A
+`process` (the judge of another's PR leaves nothing); F-11 → D-5 check 0; F-12 → D-2 items 14, 15, Appendix A
+`process` ("a second waits"), Appendix B, task 3.2; F-13 → Goals; F-14 → D-4 (60 s; a `[decision]` before or after the
+edit); F-15 → D-10; F-16 → D-7.
+
 ## Appendix A — the rule texts
 
 ### `process`
@@ -373,10 +406,11 @@ Project process. Every change of code and spec is an OpenSpec Change under WARRA
 archive in three PRs — spec, impl, archive; their steps are in the skill `slice`, file `.claude/skills/slice/change.md`,
 and a session follows them as written. The state of a Change is `warrant status`, the gates of a transition
 `warrant verify <change>`; a `warrant` error names its fix in `hint` — follow it. A session runs `warrant` commands that
-name a Change only on its own Change; the coordinator runs only those that write nothing.
+name a Change only on its own Change; the coordinator, and a judge of another's PR, only those that leave nothing in
+the repository.
 
 Records (`.warrant/changes/**`), evidence, waivers, Runs and `openspec/specs/**` are written only by `warrant`; never
-edit them by hand, never call `openspec archive`. In a Change, files of the repository are written only inside the
+edit them by hand, never call `openspec archive`. In a Change, the agent edits files of the repository only inside the
 `write_scope` of the active Run: `specify` the artifacts; `implement` narrowed with `--scope` to the source and test paths its design names
 plus `openspec/changes/<change>/**`. Never bypass a guard `deny` through the shell — narrow the work or ask the
 maintainer. A review subagent reads with the file tools and runs no shell command but `warrant run submit`; the session
@@ -384,9 +418,9 @@ puts into its prompt what it needs from GitHub.
 
 Parallel work (`design-next` SL-T08). An AREA is one spec and the prefix of its REQ/SCN ids. The AREAs of a Change are
 declared in `Where:` of its issue before `warrant init change`; after it an AREA is added only by a maintainer's
-`[decision]` or `[scope]` naming the Change and the AREA, except `AR`, which a `skip_specs` Change (it declares none)
+`[decision]` naming the Change and the AREA, except `AR`, which a `skip_specs` Change (it declares none)
 adds itself when it needs an UNKNOWN. A Change holds its AREAs from `init` until its archive-PR is merged (or it is
-`ABANDONED`); one Change holds an AREA at a time. At most three Changes are in implementation at once, from the first
+`ABANDONED`); one Change holds an AREA at a time, a second waits. At most three Changes are in implementation at once, from the first
 commit of the impl-PR until its merge. A fix of a red `main` (`fix-main-<issue>`) is exempt from the cap and from every
 AREA hold. One worktree and one session per Change; its three branches are made there in turn, each from fresh
 `origin/main`. Two parallel Changes never share a source path; files shared by several modules belong to the skeleton of
@@ -394,9 +428,9 @@ the slice, and a later change of one is a separate small Change. What is held an
 `node .claude/skills/slice/status.mjs`; after `init` a session runs it on its Change, and on a collision stops and asks
 on the umbrella.
 
-Decision log. An umbrella comment whose first line starts with `[decision]`, `[scope]` or `[broadcast]` binds the
-sessions it touches; the session acts on it, then acknowledges it by a reply on the umbrella that links it and names the
-Change. `[incident]` records a failure. Before `SPECIFIED` and before asking for a merge a session runs
+Decision log. An umbrella comment whose first line starts with `[decision]` (the maintainer's, posted by the
+coordinator), `[scope]` or `[broadcast]` binds the sessions it touches; the session acts on it, then acknowledges it by
+a reply on the umbrella (outside a slice: on its issue) that links it and names the Change. `[incident]` records a failure. Before `SPECIFIED` and before asking for a merge a session runs
 `status.mjs <change>`, reads what it lists — the entries it has not acknowledged and the comments of its own issue newer
 than its last push — and brings its work in line first. A slice decision that changes an open PR stops its merge: the
 author of the decision turns the PR to draft, turns its auto-merge off and comments `⛔ Do not merge — <decision URL>`;
@@ -466,14 +500,13 @@ The maintainer's acts — merging a PR (the merge is the approval; GitHub's appr
 the maintainer's account, which cannot approve its own), activating a waiver, editing policy paths
 (`.github/workflows/**`, `.warrant/local/**`), deciding (an UNKNOWN, a `question`, a WARRANT question), repository
 settings and token scopes, files and tags outside `act.mjs` (a freeze tag of `design-next`), starting a session from
-a chip or restarting one — are never performed by the agent. It requests one by a comment on the PR or issue the act
-concerns: first line the marker `<!-- act: <kind> … -->` (skill `slice`), then what and why, the executor (session
+a chip or restarting one — are never performed by the agent. A start is requested by the coordinator's chip, a restart
+in the session's own chat; any other act by a comment on the PR or issue it concerns: first line the marker `<!-- act: <kind> … -->` (skill `slice`), then what and why, the executor (session
 title and `claude://` link) and the one command where there is one — a merge, a waiver activation and a policy-path
 edit are `node <own worktree>/.claude/skills/slice/act.mjs merge <N>` · `waiver <change> <WAV>` ·
 `patch <change> <file>` (a patch outside the repository), after its `--dry-run` passes — and tells the coordinator;
-a session start is requested by the coordinator's chip. Only the coordinator writes the maintainer's commands into its
-chat, as its queue. `act.mjs` acts and verifies, or refuses with the reason and changes nothing; the agent reads the
-result itself (the done mark, the waiver, the merge) and never asks the maintainer whether an act is done.
+only the coordinator writes the maintainer's commands into its chat, as its queue of «❗ Выполнить» blocks. `act.mjs` acts and verifies, or refuses with the reason and changes nothing; the agent reads the
+result itself (the commit, the waiver, the merge) and never asks the maintainer whether an act is done.
 
 ## Appendix B — where each sentence goes
 
@@ -487,7 +520,7 @@ Sentences of today's rules, numbered in order (`p` `process`, `t` `tracking`, `m
 | p5 never bypass a guard `deny` | A ¶2 |
 | p6–p7 SL-T08, AREA defined | A ¶3 |
 | p8 AREAs declared before `init`; `skip_specs` declares none, `AR` for an UNKNOWN | A ¶3 (`AR` added after `init` by the Change itself) |
-| p9 AREA held until the archive-PR merges or `ABANDONED` | A ¶3 |
+| p9 AREA held until the archive-PR merges or `ABANDONED`; a second one waits | A ¶3 |
 | p10 at most three in implementation | A ¶3 |
 | p11–p12 the record runs ahead on its branches | C "Where the record is read"; S model (unchanged) |
 | p13 holds and WIP computed by `slice` | A ¶3 |
@@ -502,7 +535,7 @@ Sentences of today's rules, numbered in order (`p` `process`, `t` `tracking`, `m
 | p22 read the umbrella before a merge; acknowledge in the PR; `act.mjs merge` refuses | A ¶4 (before `SPECIFIED` too, and the own issue); the PR form → C |
 | p23 `status.mjs` after `init`, stop and ask on a collision | A ¶3 |
 | p24 the maintainer never announces a merge | C "Waiting" |
-| p25 a PR owned by its opener; only the owner watches it; the coordinator owns only its PRs | A ¶5 ("owned by the session that opened it" covers the coordinator); stated again in S "Coordinator" |
+| p25 a PR owned by its opener; only the owner watches it; the coordinator owns only its PRs | A ¶5 ("owned by the session that opened it" covers the coordinator); stated again in S "Coordinator" item 15 |
 | p26 start `wait-pr.mjs` in the background after the push | A ¶5 |
 | p27–p31 the watcher's outcomes and the next step after each | C "Waiting" |
 | p32 `git pull --ff-only` after the watcher's update | C "Waiting" |
@@ -525,11 +558,11 @@ Sentences of today's rules, numbered in order (`p` `process`, `t` `tracking`, `m
 | t6–t9 WARRANT issues in `Homasters-max/SRA` | A ¶4 |
 | t10–t11 a slice is a milestone and an umbrella | A ¶5 |
 | t12 one session per Change, what it reads | A ¶5 |
-| t13 the coordinator holds the slice, checks `main` before dispatch, writes no Change's code | A ¶5 (the check of `main` → S "Coordinator" and `status.mjs`) |
+| t13 the coordinator holds the slice, checks `main` before dispatch, writes no Change's code | A ¶5 (the check of `main` → S "Coordinator" item 14 and `status.mjs`) |
 | t14–t15 a red `main`, its issue, the freeze, the fix Change | A ¶5 |
-| t16–t20 issues: who opens, title, body, milestone | A ¶2 |
+| t16–t20 issues: who opens, title, body, milestone | A ¶2; the meanings of the prefixes (`sw` the switch between S0 and S1, SL-T07; `infra` process, WARRANT, CI) → S |
 | t21–t23 labels | A ¶2 (types and priorities with their meanings for priorities); the meanings of the types (`bug` defect · `enhancement` idea · `question` needs the maintainer's answer) → S |
 | t24 closing by `Closes #N`; refusal `wontfix` | A ¶3 (an order of criteria) |
-| t25 queue `gh issue list --label P1` | S "Coordinator" (`status.mjs` lists open P1) |
+| t25 queue `gh issue list --label P1` | S "Coordinator" item 14 (`status.mjs` lists open P1) |
 | m1 the list of acts; «❗ Выполнить» in the chat; check the result | A `maintainer-acts` (the request in a marked comment, never in the executor's own chat, the coordinator's chat being the queue; the list widened to the groups of D-12; the result read by the agent) |
 | m2 one `act.mjs` command after `--dry-run`; acts or refuses | A `maintainer-acts` |

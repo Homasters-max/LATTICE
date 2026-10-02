@@ -37,7 +37,7 @@ its first item: the rules keep what every session must obey, the procedure moves
   `process` with "Root cause" and "Prevention"; the retro at the end of every wave. `status.mjs` lists open issues
   whose closing condition is met.
 - **Boundaries** in the rule `process`: `warrant` commands only on the session's own Change; after `init` an AREA is
-  added to `Where:` only by a maintainer's `[decision]` / `[scope]` naming it, or `AR` by a `skip_specs` Change that
+  added to `Where:` only by a maintainer's `[decision]` naming it, or `AR` by a `skip_specs` Change that
   needs an UNKNOWN (`status.mjs` flags any other, from the issue's edit history); review subagents read with the file
   tools and run no shell command but `warrant run submit` (until SRA#138 the guard does not enforce it).
 - **Requests for the maintainer's acts** (decisions
