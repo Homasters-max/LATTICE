@@ -1,0 +1,228 @@
+// The rules of act.mjs and wait-pr.mjs (Change infra-merge-flow), as pure functions over plain data: no gh, git or
+// warrant here. The scripts gather the facts and act; act-rules.test.mjs checks the rules (node --test).
+import { isFixMain, testResult, versionMatches } from './rules.mjs';
+
+export const END_STATE = { spec: 'SPECIFIED', impl: 'VERIFYING', archive: 'ARCHIVED' };
+export const ENTRY_TAGS = ['[decision]', '[scope]', '[broadcast]'];
+export const COPY_FILES = ['act.mjs', 'act-rules.mjs', 'rules.mjs'];
+const BOOTSTRAP_ACTS = new Set(['patch', 'whoami']);
+
+const refusal = (reason, fix) => ({ reason, fix });
+const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
+const escape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// `impl/s0-store-2` → { kind: 'impl', change: 's0-store-2' }; any other branch → null.
+export function changeOfBranch(branch) {
+  const m = /^(spec|impl|archive)\/([\w.-]+)$/.exec(branch ?? '');
+  return m ? { kind: m[1], change: m[2] } : null;
+}
+
+// ---------- who runs it, and which copy (D-2) ----------
+
+// `Kat <94626159+Homasters-max@users.noreply.github.com> 1727866000 +0300`: is it an agent's identity?
+// Exact, case-insensitive: the name is the login, or the email is `<digits>+<login>@users.noreply.github.com`.
+export function isAgentIdent(ident, agentLogins) {
+  const m = /^(.*?)\s*<([^>]*)>/.exec(ident ?? '');
+  if (!m) return false;
+  const [, name, email] = m;
+  return agentLogins.some((login) => same(name.trim(), login)
+    || new RegExp(`^\\d+\\+${escape(login)}@users\\.noreply\\.github\\.com$`, 'i').test(email.trim()));
+}
+
+// { agentShell, login, maintainers, agentLogins, authorIdent, needsAuthor } → refusals.
+export function actorRefusals({ agentShell, login, maintainers, agentLogins, authorIdent, needsAuthor }) {
+  const out = [];
+  if (agentShell) {
+    out.push(refusal("this is an agent's shell (CLAUDECODE is set)",
+      "act.mjs is the maintainer's act: the agent asks for it, the maintainer runs it in their own terminal"));
+  }
+  if (!login) out.push(refusal('gh has no login here', 'gh auth login with your own account'));
+  else if (!maintainers.some((m) => same(m, login))) {
+    out.push(refusal(`this terminal acts as ${login}, not as a maintainer (${maintainers.join(', ')})`,
+      "run it where gh uses your own login, without the agent's GH_TOKEN"));
+  }
+  if (needsAuthor && isAgentIdent(authorIdent, agentLogins)) {
+    out.push(refusal(`git would author the commit as an agent: ${authorIdent}`,
+      "run it in a terminal without the agent's GIT_AUTHOR_* / GIT_COMMITTER_* variables"));
+  }
+  return out;
+}
+
+// files: [{ name, local, main }] — blob ids of the copy next to the script and of origin/main (null: absent there).
+// → { mode: 'run' | 'reexec' | 'bootstrap' } or { refusals }. A copy that differs runs the version of origin/main.
+export function copyPlan({ files, act, dryRun, reexecuted }) {
+  if (!files.find((f) => f.name === 'act.mjs')?.main) {
+    if (dryRun || BOOTSTRAP_ACTS.has(act)) return { mode: 'bootstrap' };
+    return { refusals: [refusal(`bootstrap: origin/main has no act.mjs, and ${act} must not run the code under its own merge`,
+      'until act.mjs is on main, the merge is asked as gh pr merge <N> --merge --auto')] };
+  }
+  if (files.every((f) => f.local === f.main)) return { mode: 'run' };
+  if (reexecuted) {
+    return { refusals: [refusal('the copy of origin/main differs from origin/main after re-execution',
+      'report it to the agent: the temporary copy could not be written')] };
+  }
+  return { mode: 'reexec' };
+}
+
+// ---------- health of main (D-3, D-7, I-1) ----------
+
+// The last completed `test.yml` run of main and the open issues titled `infra: main red — …` (rule tracking):
+// either one makes main red. → { state: red | green | unknown, note }.
+export function mainHealth({ testRun, openIssueTitles = [] }) {
+  const red = openIssueTitles.filter((t) => /^infra: main red\b/.test(t));
+  if (red.length) return { state: 'red', note: `open issue "${red[0]}"` };
+  return testResult(testRun);
+}
+
+// ---------- entries of the umbrella (D-4, I-3, I-8, I-12, I-13) ----------
+
+// "s0-store" is not in "s0-store-2" (as rules.mjs namesIn); "#11" is not in "#111" nor in "SRA#11".
+const namesChange = (text, change) => !!change && new RegExp(`(?<![\\w.-])${escape(change)}(?![\\w-])`).test(text);
+const namesNumber = (text, n) => !!n && new RegExp(`(?<![\\w/-])#${n}(?!\\d)|/(?:issues|pull)/${n}(?!\\d)`).test(text);
+const namesArea = (text, area) => new RegExp(`\`${escape(area)}\`|\\bAREA ${escape(area)}\\b`).test(text);
+const commentId = (url) => /#issuecomment-(\d+)/.exec(url ?? '')?.[1];
+
+// The time of the last push of a PR: the newest commit that is not a merge and was committed by an agent — a merge
+// of main by the watcher or the owner, and a commit of act.mjs by the maintainer, move nothing. commits: [{ date,
+// committer }] of `git log --no-merges origin/main..<head>`; null when there is none.
+export function lastPush(commits, agentLogins) {
+  const own = commits.filter((c) => isAgentIdent(c.committer, agentLogins)).map((c) => c.date).sort();
+  return own.at(-1) ?? null;
+}
+
+// comments: [{ url, createdAt, body, where: 'umbrella' | 'issue' | 'pr' }] → the entries that touch the PR, are newer
+// than `since` and are not acknowledged. In doubt (no `since`) an entry is pending: a refusal, never a missed entry.
+export function pendingEntries({ comments, change, issue, pr, areas = [], since }) {
+  const touches = (text) => text.trimStart().startsWith('[broadcast]') || namesChange(text, change)
+    || namesNumber(text, issue) || namesNumber(text, pr) || areas.some((a) => namesArea(text, a));
+  const isEntry = (c) => c.where !== 'pr' && ENTRY_TAGS.some((t) => c.body.trimStart().startsWith(t));
+  const acknowledges = (c, entry) => c.createdAt > entry.createdAt && !c.body.trimStart().startsWith('⛔')
+    && c.body.includes(`issuecomment-${commentId(entry.url)}`)
+    && (c.where === 'pr' || namesChange(c.body, change) || namesNumber(c.body, pr));
+  return comments
+    .filter((c) => isEntry(c) && touches(c.body) && (!since || c.createdAt > since))
+    .filter((e) => commentId(e.url) && !comments.some((c) => c !== e && acknowledges(c, e)))
+    .map((e) => ({ url: e.url, createdAt: e.createdAt, line: e.body.trimStart().split(/\r?\n/)[0].slice(0, 120) }));
+}
+
+// ---------- merge (D-3) ----------
+
+const FAILED_CONCLUSIONS = new Set(['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE']);
+const FAILED_STATES = new Set(['FAILURE', 'ERROR']);
+export const failedChecks = (rollup) => (rollup ?? [])
+  .filter((c) => FAILED_CONCLUSIONS.has(c.conclusion) || FAILED_STATES.has(c.state))
+  .map((c) => c.name ?? c.context ?? '?');
+
+// pr: gh pr view fields; record: the Change record on the head (or null); issueFound: an issue names the Change;
+// pending: pendingEntries; main: mainHealth.
+export function mergeRefusals({ pr, record, issueFound, pending, main }) {
+  const out = [];
+  const branch = changeOfBranch(pr.headRefName);
+  if (pr.state !== 'OPEN') out.push(refusal(`PR #${pr.number} is ${pr.state}, not OPEN`, 'nothing to merge'));
+  if (pr.baseRefName !== 'main') out.push(refusal(`PR #${pr.number} targets ${pr.baseRefName}, not main`, 'the owner retargets it'));
+  if (pr.isDraft) out.push(refusal(`PR #${pr.number} is a draft`, 'a draft PR is never merged: the owner marks it ready (gh pr ready)'));
+  const failed = failedChecks(pr.statusCheckRollup);
+  if (failed.length) out.push(refusal(`failed checks: ${failed.join(', ')}`, 'the owner fixes CI and pushes'));
+  if (pr.mergeStateStatus === 'DIRTY') out.push(refusal('a merge conflict with main', 'the owner merges origin/main, resolves and pushes'));
+  if (branch) {
+    const want = END_STATE[branch.kind];
+    if (!record) out.push(refusal(`no record of ${branch.change} on the head`, `the owner commits warrant transition ${branch.change} ${want}`));
+    else if (record.change_state !== want) {
+      out.push(refusal(`the record of ${branch.change} on the head is ${record.change_state}, not ${want}`,
+        `the owner ends the PR with warrant transition ${branch.change} ${want}`));
+    }
+    if (!issueFound) out.push(refusal(`no issue names Change ${branch.change} in its Where: line`, 'the coordinator fixes the issue'));
+  }
+  for (const e of pending) {
+    out.push(refusal(`entry ${e.url} touches this PR, is newer than its last push and not acknowledged: ${e.line}`,
+      'the owner acts on it and comments in the PR with its link'));
+  }
+  if (main.state === 'red' && !(branch && isFixMain(branch.change))) {
+    out.push(refusal(`main is red (${main.note})`, 'only the fix of main is merged (rule tracking); ask again when main is green'));
+  }
+  return out;
+}
+
+// ---------- worktree, waiver, patch (D-5, D-6) ----------
+
+// matches: worktrees on the branch [{ path }]; dirty: lines of `git status --porcelain`;
+// relation of HEAD to origin/<branch>: equal | behind | ahead | diverged | no-remote.
+export function worktreeRefusals({ branch, matches, dirty, relation }) {
+  if (matches.length === 0) return [refusal(`no worktree on ${branch}`, `the owner's session checks out ${branch} in its worktree`)];
+  if (matches.length > 1) return [refusal(`several worktrees on ${branch}: ${matches.map((w) => w.path).join(', ')}`, 'one worktree per Change')];
+  const out = [];
+  if (dirty.length) out.push(refusal(`${matches[0].path} has changes: ${dirty.join('; ')}`, 'the owner commits them, with no Run active, and pushes'));
+  if (relation === 'no-remote') out.push(refusal(`origin/${branch} does not exist`, 'the owner pushes the branch'));
+  if (relation === 'ahead' || relation === 'diverged') out.push(refusal(`${branch} has commits not on origin`, 'the owner pushes first'));
+  return out;
+}
+
+// waiver: the file on origin/impl/<change> (or null); others: [{ ref, change }] — the same id on origin/main and the
+// other origin/impl/* branches (SRA#139); cli: `warrant --version`; kernel of warrant.json.
+export function waiverRefusals({ change, wav, waiver, others, cli, kernel }) {
+  const out = [];
+  if (!waiver) out.push(refusal(`no ${wav} on origin/impl/${change}`, `the owner proposes it (warrant waive ${change} …) and pushes`));
+  else {
+    if (waiver.change !== change) out.push(refusal(`${wav} is a waiver of ${waiver.change}, not of ${change}`, 'check the id'));
+    if (waiver.waiver_state !== 'PROPOSED') out.push(refusal(`${wav} is ${waiver.waiver_state}, not PROPOSED`, 'nothing to activate'));
+  }
+  for (const o of others.filter((x) => x.change !== change)) {
+    out.push(refusal(`${wav} is also a waiver of ${o.change} on ${o.ref}`, `the owner re-proposes it under a new id (SRA#139)`));
+  }
+  if (!versionMatches(cli, kernel)) out.push(refusal(`warrant ${cli || '(none)'} here, the project pins ${kernel}`, `install warrant ${kernel}`));
+  return out;
+}
+
+// '**/' any directories, '**' anything, '*' within one segment.
+export function globToRegExp(glob) {
+  const body = glob.split(/(\*\*\/|\*\*|\*)/).map((p) => (p === '**/' ? '(?:.*/)?' : p === '**' ? '.*' : p === '*' ? '[^/]*' : escape(p))).join('');
+  return new RegExp(`^${body}$`);
+}
+
+// The writer of a path, when it is not the maintainer's patch (refused first, I-2), or null when a patch may carry it.
+export function patchPathWriter(path, change, allowGlobs) {
+  const own = `openspec/changes/${change}/`;
+  const refused = [
+    [['src/**', 'test/**', `${own}design.md`, `${own}tasks.md`, `${own}specs/**`], 'the implement Run'],
+    [['**/AGENTS.md', '.warrant/warrant.lock.json'], 'warrant sync'],
+    [['.warrant/changes/**', '.warrant/evidence/**', '.warrant/runs/**', '.warrant/waivers/**', 'openspec/specs/**'], 'warrant only (rule process)'],
+  ];
+  for (const [globs, writer] of refused) if (globs.some((g) => globToRegExp(g).test(path))) return writer;
+  if (path === `${own}proposal.md` || allowGlobs.some((g) => globToRegExp(g).test(path))) return null;
+  return 'not a path the maintainer patches (profile human-acceptance or the proposal of the Change)';
+}
+
+// file: { exists, insideRepo }; paths of the patch; applies: git apply --check on origin/<branch>.
+export function patchRefusals({ change, file, paths, allowGlobs, applies, applyError }) {
+  const out = [];
+  if (!file.exists) return [refusal(`no patch file ${file.path}`, 'the agent names the path it wrote')];
+  if (file.insideRepo) out.push(refusal(`${file.path} lies inside a worktree of the repository`, 'the agent writes patches outside the repository'));
+  if (!paths.length) out.push(refusal('the patch changes no path', 'the agent re-cuts it'));
+  for (const p of paths) {
+    const writer = patchPathWriter(p, change, allowGlobs);
+    if (writer) out.push(refusal(`${p} is written by ${writer}`, 'the agent drops it from the patch'));
+  }
+  if (!applies) out.push(refusal(`the patch does not apply: ${applyError ?? ''}`.trim(), 'the agent re-cuts it on the branch'));
+  return out;
+}
+
+// ---------- the watcher (D-7) ----------
+
+// facts: { number, state, mergeCommit, url, mergeStateStatus, autoMerge, headRefOid, headRefName, main } (main only
+// while auto-merge is on); memo: { seenAuto, updatedFrom }. → { line, exit, update, disableAuto, memo }.
+export function watchStep(f, memo = {}) {
+  const pr = `PR #${f.number}`;
+  if (f.state === 'MERGED') return { line: `${pr} MERGED ${f.mergeCommit ?? ''} ${f.url}`, exit: 0, memo };
+  if (f.state === 'CLOSED') return { line: `${pr} CLOSED ${f.url}`, exit: 0, memo };
+  if (f.mergeStateStatus === 'DIRTY') return { line: `${pr} CONFLICT ${f.url}`, exit: 4, memo };
+  const fixMain = isFixMain(changeOfBranch(f.headRefName)?.change);
+  if (f.autoMerge && f.main?.state === 'red' && !fixMain) {
+    return { line: `${pr} AUTO-MERGE OFF (main red: ${f.main.note}) ${f.url}`, exit: 5, disableAuto: true, memo };
+  }
+  if (!f.autoMerge && memo.seenAuto) return { line: `${pr} AUTO-MERGE OFF ${f.url}`, exit: 5, memo };
+  const next = { ...memo, seenAuto: memo.seenAuto || !!f.autoMerge };
+  if (f.autoMerge && f.mergeStateStatus === 'BEHIND' && f.headRefOid !== memo.updatedFrom) {
+    return { line: `${pr} behind main — updated`, update: true, memo: { ...next, updatedFrom: f.headRefOid } };
+  }
+  return { memo: next };
+}
