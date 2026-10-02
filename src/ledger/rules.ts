@@ -1,10 +1,10 @@
-// Rejections of apply (LG-A02, REQ-AR-011, design D-5): the closed list of rule IDs apply can name and the only way to
-// build a rejection, so a rule outside the list does not type-check. Every rule ID has a fixture in
+// Rejections of apply (LG-A02, REQ-LG-002, REQ-AR-011, design D-2): the closed list of rule IDs apply can name and the
+// only ways to build a rejection, so a rule outside the list does not type-check. Every rule ID has a fixture in
 // test/fixtures/rules/<RULE-ID>/.
 
 import { byCodeUnits } from "./records.ts";
 
-export const REJECTION_RULES = ["LG-C07", "LG-P01", "LG-P02"] as const;
+export const REJECTION_RULES = ["LG-C03", "LG-C07", "LG-P01", "LG-P02"] as const;
 
 export type RuleId = (typeof REJECTION_RULES)[number];
 
@@ -15,6 +15,10 @@ export type Rejection = {
   readonly path: string;
   readonly expected: unknown;
   readonly got: unknown;
+  /** A duplicate only: the `id` the intent collided with. */
+  readonly with?: string;
+  /** A duplicate only: the paths where the colliding intents differ. */
+  readonly differs?: readonly string[];
 };
 
 export function reject(
@@ -28,7 +32,19 @@ export function reject(
   return Object.freeze({ intent, rule, message, path, expected, got });
 }
 
-/** The order of REQ-CL-004: `intent` (`null` first), `rule`, `path`, then the order they were found in. */
+/** A rejection for a duplicate (LG-A02): it also names the `id` it collided with and the differing paths. */
+export function duplicate(
+  rule: RuleId,
+  intent: string,
+  path: string,
+  message: string,
+  withId: string,
+  differs: readonly string[],
+): Rejection {
+  return Object.freeze({ intent, rule, message, path, expected: null, got: null, with: withId, differs: Object.freeze([...differs]) });
+}
+
+/** The order of REQ-LG-002: `intent` (`null` first), `rule`, `path`, then the order they were found in. */
 export function sortRejections(found: readonly Rejection[]): readonly Rejection[] {
   return [...found].sort((a, b) => {
     if (a.intent !== b.intent) {

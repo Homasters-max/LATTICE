@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3XYH5NDVS571E4FDHRKKBRV",
+  "claim": {
+    "text": "Homasters-max approved s0-kernel for VERIFYING->MERGED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "55b5896819063bc79d1b4b012cacd59b5430a95c",
+    "base_commit": "f915a552622196212058ef6ed4a1fead61d2a53f",
+    "spec_revision": "openspec/changes/s0-kernel@55b5896819063bc79d1b4b012cacd59b5430a95c",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/102"
+  },
+  "context_hash": "sha256:4e4b0d47de387a237eba52188cace8b80a7fecd5fc3d390c965e3fd1b07528fa",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T09:18:39.278Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}

@@ -1,5 +1,5 @@
-// Precondition of format v1 (UNK-KR-006): the runtime NFC is at least Unicode 16.0; the kernel table of assigned
-// code points equals the complement of \p{Cn} on a Unicode 16.0 runtime (UNK-KR-005, design D-7).
+// Precondition of the kernel (REQ-KR-009): the runtime NFC is at least Unicode 16.0; the kernel table of assigned
+// code points equals the complement of \p{Cn} on a Unicode 16.0 runtime.
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -7,15 +7,15 @@ import { assignedRanges, isAssigned16 } from "../../src/kernel/unicode16.ts";
 
 const unicode = process.versions.unicode ?? "0.0";
 
-describe("SCN-KR-025 runtime Unicode", () => {
-  it("SCN-KR-025 Unicode of the runtime is at least 16.0", () => {
+describe("SCN-KR-036 runtime Unicode", () => {
+  it("SCN-KR-036 Unicode of the runtime is at least 16.0", () => {
     const [major = 0, minor = 0] = unicode.split(".").map(Number);
     assert.ok(major > 16 || (major === 16 && minor >= 0), `runtime Unicode ${unicode} is below 16.0`);
   });
 });
 
-describe("SCN-KR-023 Unicode 16.0 table", () => {
-  it("SCN-KR-023 ranges are sorted and disjoint", () => {
+describe("SCN-KR-035 Unicode 16.0 table", () => {
+  it("SCN-KR-035 ranges are sorted and disjoint", () => {
     for (let i = 0; i < assignedRanges.length; i += 2) {
       const start = assignedRanges[i] as number;
       const end = assignedRanges[i + 1] as number;
@@ -25,7 +25,7 @@ describe("SCN-KR-023 Unicode 16.0 table", () => {
   });
 
   // No SCN token in the name: the scenario is proven by the cases of scenarios.test.ts; this cross-check runs only on
-  // a Unicode 16.0 runtime, and WARRANT 0.8.2 turns a skipped test with an SCN id into NOT_PROVEN (06 §2, I-6).
+  // a Unicode 16.0 runtime, and WARRANT turns a skipped test with an SCN id into NOT_PROVEN.
   it(
     "table equals the complement of \\p{Cn} of Unicode 16.0 (runtime 16.0 only)",
     { skip: unicode === "16.0" ? false : `runtime Unicode ${unicode} is not 16.0` },

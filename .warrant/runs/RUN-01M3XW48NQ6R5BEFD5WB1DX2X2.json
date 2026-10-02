@@ -1,0 +1,26 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XW48NQ6R5BEFD5WB1DX2X2",
+  "change": "s0-kernel",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/s0-kernel/tasks.md",
+    "openspec/changes/s0-kernel/design.md",
+    "openspec/changes/s0-kernel/specs/**"
+  ],
+  "scope": [
+    "src/kernel/**",
+    "test/kernel/**",
+    "test/fixtures/jcs-vectors.json",
+    "openspec/changes/s0-kernel/**"
+  ],
+  "branch": "impl/s0-kernel",
+  "started_at": "2026-10-02T08:36:39.280Z",
+  "finished_at": "2026-10-02T09:01:57.260Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:8af23c1b183daa647a448f16b1e4bea20db4168fe54c234c4e43ecc59154b946",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}

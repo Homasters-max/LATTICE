@@ -1,11 +1,11 @@
-// Kernel format v1 (REQ-KR-001): the nine pure functions of the frozen kernel.
+// The kernel interface (REQ-KR-008, OM-L04): parse, canonical form, references, admission against a type, the
+// meta-type, the envelope — and, until #83, the transitional `hash` and `newId` of REQ-KR-018.
 
-export type { Hash, Id, Ref, Refusal, Result } from "./types.ts";
-export type { Revision } from "./revision.ts";
+export type { Admitted, BodyRef, EntityRecord, EventRecord, Hash, Id, Ref, Refusal, Result, Type } from "./types.ts";
 export { checkInput } from "./input.ts";
 export { canonical } from "./canonical.ts";
-export { hash, valueId } from "./hash.ts";
 export { formatRef, parseRef } from "./ref.ts";
-export { newId } from "./ids.ts";
-export { refsOf } from "./refs.ts";
-export { revision } from "./revision.ts";
+export { admit, metaType, typeOf } from "./admission.ts";
+export { entity, event, formatAt } from "./envelope.ts";
+// Transitional (REQ-KR-018): removed by #83.
+export { hash, newId } from "./transitional.ts";

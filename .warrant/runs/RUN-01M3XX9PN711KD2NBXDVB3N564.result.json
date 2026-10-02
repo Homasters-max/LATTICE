@@ -1,0 +1,231 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XX9PN711KD2NBXDVB3N564",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "The rule and the script define the stop after `init` differently. The new `process` sentence (Appendix) says: \"if another Change holds one of its AREAs, it stops and asks on the umbrella\". D-3 defines the stop as a collision printed only for later holders: \"The first holder keeps the AREA and its row is unchanged\", and the collision is \"the session's signal to stop\". Three cases read differently. (a) In the #92 race, the first holder runs `status.mjs <change>` after the second holder's `init`. The header shows `held AREAs: CL (A; B ⚠)` and `busy_areas` lists both, so by the rule text another Change holds its AREA. (b) Right after `init` every Change is `PROPOSED`, so `status.mjs <change>` prints `not startable: … specify → review → spec-PR` whether or not there is a collision. The words \"not startable\" are therefore not a stop signal. (c) A `fix-main-*` Change sharing an AREA with the Change that broke `main` meets the rule's literal condition, but D-3 exempts it. Under one reading only the later Change stops. Under the other, both stop and the first holder's spec work also waits for the maintainer.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Make the signal explicit and single. Have `status.mjs <change>` print a dedicated line, e.g. `AREA: ok` or `AREA collision <A> with <first> — stop`, independent of `startable`. In D-3 and SKILL.md, state that the session stops only on that line. Ask the maintainer to word the `process` sentence as \"if `status.mjs` reports an AREA collision for it\" (his text, D-1), or record that the first holder and `fix-main-*` do not stop."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "The new `maintainer-acts` text names the merge command `gh pr merge <N> --merge` and makes the merge the only act of approval. Nothing says under which account it must run. WARRANT verifies the `APPROVED` ref by `merged_by`: with non-empty `identities.agents`, `merged_by` equal to the author or to an agent is `REF_NOT_VERIFIED` (`packages/cli/src/core/ci/refs.ts` header). Every PR is authored by `homasters`, and sessions run `gh` as `homasters` (design Context). If the «❗ Выполнить» button runs `gh pr merge` in a shell whose `gh` or `GH_TOKEN` is `homasters`, the merge succeeds on GitHub. The next impl-PR is then refused at `APPROVED` in CI. Before this Change the approval was a separate act, so the merging account was less visible. Now the merge carries the whole approval, and the design records the account facts (#95, #72) without turning them into a condition.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "State in D-1/D-5 (and ask the maintainer to add it to his `maintainer-acts` sentence) that the merge is done by `roles.maintainer` (`Homasters-max`): the web UI or a `gh` authenticated as that account. The owner's check after `MERGED` should read `gh pr view <N> --json mergedBy`, and a merge by `homasters` is reported at once, not found later by CI on the impl-PR."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-2 makes a red `main` block only dispatch (`startable` rows). The rule `tracking` says \"while `main` is red no new Change is dispatched and only the fix is merged\". D-2 does not say what the maintainer queue shows on a red `main`. As built today it keeps `merge impl-PR #N`, `merge archive-PR #N` and `merge spec-PR #N` rows for every Change. The Change widens red `main` to a validate failure, as in #92 where every Change's `ids-valid` was red. A PR whose checks ran before `main` broke still shows green and is offered for merge, which the rule forbids. The goal \"a `main` that fails `warrant validate` is red for the rule and for `status.mjs`\" holds only for dispatch.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/tasks.md"
+      ],
+      "recommendation": "Add to D-2: on a red `main`, merge rows of the maintainer queue other than those of a `fix-main-*` Change are marked `— hold: main is red` (or withheld). Add that case to the `rules.test.mjs` fixtures of task 2.1."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Review-1 F-2 is closed in the design but not in the rule text. The `maintainer-acts` text (Appendix) still gives the reason \"PRs are opened under the maintainer's account, which cannot approve its own\". The rule `process` defines \"The maintainer is `roles.maintainer`\" (`Homasters-max`). That account opens no PR and can review PRs authored by `homasters`: UNKNOWN decisions are accepted as its `#pullrequestreview-<id>`. The design re-reads the phrase as `homasters` (Context: \"means `homasters` in this sense\"), but AGENTS.md carries only the rule text. The behaviour (merge, no approve asked) is unambiguous. The stated reason is untrue under the rule's own definition of \"the maintainer\".",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Ask the maintainer to reword the reason in `3c51478`, e.g. \"PRs are opened by the agent account `homasters` (`identities.agents`); the merge by the maintainer is the approval\", or drop the reason."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The new `tracking` sentence (Appendix, D-2) makes a red `main` \"`warrant validate` failing on `origin/main`\", unconditionally. D-2 makes a validate run by a CLI whose version differs from `kernel` of the checkout's lock \"unknown\", because it \"proves nothing about `main`\". A session that runs `warrant validate` by hand with another CLI version and sees errors must, by the rule, open the P1 issue and freeze dispatch, while `status.mjs` reports unknown.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Add the version condition to the patch-3 sentence: \"`warrant validate` of the pinned version failing on `origin/main`\", or name `status.mjs` as the only judge of the validate check."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-2 compares `warrant --version` with the exact `kernel` of the lock (`0.10.0`). `.warrant/warrant.json` pins `kernel: \"0.10\"`, a range. A patch upgrade of the CLI on the machine turns the validate check into a permanent, non-blocking unknown until a pin Change regenerates the lock. That silently disables the check this Change adds. Only a header note remains, and a validate-red `main` then does not block dispatch.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "State the comparison deliberately: exact, with the unknown note naming the fix (`install warrant <lock kernel>` or a pin Change), or within the `warrant.json` range. Have SKILL.md say that an unknown validate check is not a green `main`."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-3 says a `fix-main-*` Change \"neither collides nor waits for an AREA\", but not whether it counts as a holder for others. Take a `fix-main-*` Change that ran `init` first on AREA `CL`, followed by a Change Y on `CL`. Under one reading Y is a later holder in a collision with the fix; under the other the fix is excluded from the order and Y holds `CL` alone. The header, `busy_areas` and the queue differ. Task 2.1 tests only the fix as the later holder.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md",
+        "openspec/changes/infra-process-rules/tasks.md"
+      ],
+      "recommendation": "Say that a `fix-main-*` Change holds its AREAs against later Changes and only its own row is exempt (or the opposite), and add the fixture to task 2.1."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Review-1 F-13 is closed only in SKILL.md (D-4: \"a Change without an umbrella asks in its own issue\"). The rule text every session reads (Appendix, `process`) still says \"reads the umbrella comments newer than its last push\" and \"stops and asks on the umbrella\". A Change outside a slice may have no milestone (rule `tracking`). Its session reads AGENTS.md, not SKILL.md: the precedent `infra-pr-watch` Context says the skill is read only when invoked.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Ask the maintainer to add \"(its own issue when it has no umbrella)\" to the two `process` sentences, or record that SKILL.md alone carries the fallback and why."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "The `tracking` replacement text (Appendix, D-2) ends with an em dash: \"… (skill `slice`, `status.mjs`) —\". It replaces a phrase followed in the rule by \", and never writes a Change's code\". The rendered sentence becomes \"The coordinator session holds the slice — its milestone, dispatch, review, merge queue — checks the health of `main` before dispatching — the last `test` run … (skill `slice`, `status.mjs`) —, and never writes a Change's code\". It has three dash pairs and a stray \"—,\", and goes into AGENTS.md verbatim.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Write the replacement as parentheses or as a separate sentence, e.g. \"checks the health of `main` before dispatching (the last `test` run of `main` and `warrant validate` on `origin/main`, skill `slice`)\"."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-4: for an issue without a milestone, `status.mjs` \"prints that issue alone against the repository-wide holders, with no slice header\". The slice header today carries the `main` health line, WIP and the maintainer queue. The text does not say whether the `main` check and the WIP cap still apply to that row and are printed as its reason. The rule `process` gates the impl-PR on `status.mjs <change>` printing `startable` with WIP < 3 and `main` not red.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "State that `main` health and WIP are computed and printed (one line each) for a no-milestone issue, and only the slice title, umbrella and queue are omitted."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Task 2.2 verifies D-4 and D-5 on live repository state it does not control. It needs an open spec-PR in `SPECIFIED` (\"an open spec-PR asks `merge`\"), and #92, #93, #94 open and labelled `bug` or `question`. #92 or #93 may be closed by then, and an `enhancement` label keeps an issue a docs row by the Non-goals. With no open spec-PR the check is vacuous.",
+      "targets": [
+        "openspec/changes/infra-process-rules/tasks.md"
+      ],
+      "recommendation": "Make the `rules.test.mjs` fixtures of task 2.1 the proof for D-4 and D-5 (spec-PR row, bug/question rows). Keep 2.2 as a smoke run that pastes what exists, and name the fallback when no open spec-PR exists."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "The new `tracking` text (`44a3cb3`) requires each WARRANT issue in `Homasters-max/SRA` to carry \"one label `bug` · `enhancement` · `question`\", set by the agent (`homasters`). GitHub's issue-create API silently drops labels from a user without push or triage access to the repository. The design does not say whether `homasters` has that access, nor what the agent does when the label is missing (review-1 A-4, still open).",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Record the access of `homasters` to `Homasters-max/SRA` as a fact in Context. Otherwise add: the agent checks the label after `gh issue create` and, if it is missing, names the label in its report for the maintainer to set."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Proposal \"What Changes\" attributes both parts of the `tracking` change to \"the maintainer's patch `44a3cb3`\": \"the maintainer's patch `44a3cb3` — a WARRANT defect …; and a red `main` is a failed `test` run **or** a failed `warrant validate` …\". Design D-1 and D-7 say the red-`main` sentences are not in `44a3cb3`. They are patch 3, the agent's draft, and \"the merge of this spec-PR is the decision on the extra sentence\".",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Split the bullet in the proposal: `44a3cb3` (the maintainer's text) for the issue sentence; the red-`main` sentence drafted by this Change (patch 3, decided by the merge of the spec-PR)."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "\"The merge is the approval\" relies on the current WARRANT CLI checking only `merged_by` of the `APPROVED` ref (`refs.ts`, REQ-VER-011). That is consistent with spec-PR #72 being accepted without a review. WARRANT's own `docs/01-principles.md` INV-01 still reads \"merged spec-PR с approving review\". A future pin that enforces INV-01 literally would refuse every Change approved under this rule.",
+      "targets": [
+        "openspec/changes/infra-process-rules/proposal.md"
+      ],
+      "recommendation": "Open an issue in `Homasters-max/SRA` (under the new `tracking` text) asking WARRANT to align INV-01 with REQ-VER-011, and link it from the design Context."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "The new `process` sentence has \"the author of the decision\" (often the coordinator) turn another session's PR to draft and comment in it. The existing paragraph says \"only the owner watches it and acts on its outcome (the coordinator owns only the PRs it opens)\". The more specific sentence wins and the behaviour is clear, but the exception is not named as one.",
+      "targets": [
+        "openspec/changes/infra-process-rules/design.md"
+      ],
+      "recommendation": "Optionally ask the maintainer to add \"(an exception to ownership)\" to the sentence."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "`skip_specs: true`: there are no delta specs. The subject of review is `proposal.md`, with `design.md` (including the Appendix of rule texts) and `tasks.md` read as the contract of this process Change, as in review 1."
+    },
+    {
+      "id": "A-2",
+      "statement": "GitHub facts were not checked: authors and mergers of #65, #70, #72, #87, #89, #95; the refused approve on #95; the labels and states of #91…#94; the bodies of #92, #94, #97. The review guard allows no shell command except `warrant run submit`, so `gh` was not run. The `infra-pr-watch` record was read: `APPROVED` ref is PR #72 with `human-approval: PASS`."
+    },
+    {
+      "id": "A-3",
+      "statement": "The texts of `44a3cb3` and `3c51478` are taken from the design Appendix. The commits and their `git apply --check` on `59711ac` were not run."
+    },
+    {
+      "id": "A-4",
+      "statement": "WARRANT's ref rules are taken from `D:/project/SRA/packages/cli/src/core/ci/refs.ts` at its current checkout, not from the 0.10.0 tag. The lock's `kernel` `0.10.0` and `warrant.json` `kernel` `0.10` were read from this worktree."
+    },
+    {
+      "id": "A-5",
+      "statement": "Review-1 closure was checked against the current text. F-1, F-3, F-5, F-6, F-7, F-8, F-9, F-10, F-11, F-12, F-14, F-15 and F-16 are closed. F-2 is closed in the design Context but not in the rule text (F-4 here). F-4 is closed in `status.mjs` but not in the new `process` stop sentence (F-1 here). F-13 is closed in SKILL.md only (F-8 here)."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "Under which account must the maintainer's `gh pr merge` run, and is a merge by `homasters` detected by the owner at once (F-2)?",
+      "options": [
+        "Only `Homasters-max` (web UI or `gh` authenticated as it); the owner checks `mergedBy` after `MERGED` and reports a merge by an agent",
+        "No condition in the rule; rely on `warrant ci` refusing the ref on the impl-PR"
+      ]
+    },
+    {
+      "id": "D-2",
+      "question": "What exactly makes a session stop after `warrant init change` (F-1)?",
+      "options": [
+        "Only an explicit collision line printed by `status.mjs <change>`, which is never printed for the first holder or a `fix-main-*` Change; the `process` sentence is reworded to say so",
+        "Any other Change listed as a holder of one of its AREAs, first holder included; D-3 changes so that both rows wait for the maintainer"
+      ]
+    },
+    {
+      "id": "D-3",
+      "question": "On a red `main`, does `status.mjs` withhold or mark the merge rows of the maintainer queue other than those of `fix-main-*` (F-3)?",
+      "options": [
+        "Yes, marked `hold: main is red`",
+        "No, only dispatch is blocked; the maintainer reads the header"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:cd08091b1f385446c7f8b979e997c5d518ccf7b6a025560f4b3d37583710f630",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T11:00:00Z",
+    "finished_at": "2026-10-02T11:40:00Z"
+  }
+}
