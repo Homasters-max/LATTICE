@@ -48,7 +48,7 @@
 
 ## 6. Review and verification
 
-- [ ] 6.1 Implementation review (skill `code-review`: Standards and Spec, in the vocabulary of `codebase-design`):
+- [x] 6.1 Implementation review (skill `code-review`: Standards and Spec, in the vocabulary of `codebase-design`):
   findings inside the Change fixed here, findings outside it opened as issues; the impl-PR body lists them; verified by
   the review record in the impl-PR body
 - [ ] 6.2 `warrant verify s0-kernel` green, then `warrant transition s0-kernel VERIFYING`; verified by the `warrant`

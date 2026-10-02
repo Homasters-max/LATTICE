@@ -1,17 +1,20 @@
 // The schema subset (REQ-KR-014, REQ-KR-015, OM-T06, OM-R02, design D-5, D-6): the check that a value is a schema of
-// the closed subset, and the validation of a body against the schemas of an `extends` chain, collecting the references
-// the schemas declare. Paths are JSON Pointers into the body; the caller prefixes them.
+// the closed subset, the validation of a body against the schemas of an `extends` chain, and the references those
+// schemas declare in a valid body. Paths are JSON Pointers into the body; the caller prefixes them.
 
 import type { BodyRef, Ref, Refusal, SchemaCode } from "./types.ts";
-import { byCodeUnits, isPlainObject, refusal, segment } from "./types.ts";
+import { refusal, segment } from "./types.ts";
+import { byCodeUnits, isPlainObject } from "./values.ts";
 import { isIdentifier, parseRef } from "./ref.ts";
 import { codePoints } from "./strings.ts";
 
-type Node = Readonly<Record<string, unknown>>;
+/** A node of an admitted schema. */
+export type SchemaNode = Readonly<Record<string, unknown>>;
+type Node = SchemaNode;
 type Found = Refusal<SchemaCode>;
 
-const TYPES = ["object", "array", "string", "integer", "number", "boolean", "null", "schema"] as const;
-type NodeType = (typeof TYPES)[number];
+const NODE_TYPES = ["object", "array", "string", "integer", "number", "boolean", "null", "schema"] as const;
+type NodeType = (typeof NODE_TYPES)[number];
 
 /** Keywords allowed next to `type`, and the ones a node of that type must have. */
 const KEYWORDS: Readonly<Record<NodeType, { readonly allowed: readonly string[]; readonly required: readonly string[] }>> = {
@@ -26,11 +29,7 @@ const KEYWORDS: Readonly<Record<NodeType, { readonly allowed: readonly string[];
 };
 
 function isNodeType(t: unknown): t is NodeType {
-  return typeof t === "string" && (TYPES as readonly string[]).includes(t);
-}
-
-function isList(v: unknown): v is readonly unknown[] {
-  return Array.isArray(v);
+  return typeof t === "string" && (NODE_TYPES as readonly string[]).includes(t);
 }
 
 function distinct(values: readonly unknown[]): boolean {
@@ -87,7 +86,7 @@ function checkNode(node: unknown, path: string, root: boolean, out: Found[]): vo
         const props = n["properties"];
         const declared = (name: unknown): boolean =>
           typeof name === "string" && isPlainObject(props) && Object.hasOwn(props, name);
-        if (!isList(v) || !distinct(v) || !v.every(declared)) out.push(refusal("bad-keyword", at));
+        if (!Array.isArray(v) || !distinct(v) || !v.every(declared)) out.push(refusal("bad-keyword", at));
         break;
       }
       case "items":
@@ -101,7 +100,7 @@ function checkNode(node: unknown, path: string, root: boolean, out: Found[]): vo
       case "enum": {
         const fits = (x: unknown): boolean =>
           type === "string" ? typeof x === "string" : type === "integer" ? Number.isSafeInteger(x) : typeof x === "number";
-        if (!isList(v) || v.length === 0 || !distinct(v) || !v.every(fits) || Object.hasOwn(n, "ref")) {
+        if (!Array.isArray(v) || v.length === 0 || !distinct(v) || !v.every(fits) || Object.hasOwn(n, "ref")) {
           out.push(refusal("bad-keyword", at));
         }
         break;
@@ -117,7 +116,7 @@ function checkNode(node: unknown, path: string, root: boolean, out: Found[]): vo
 }
 
 /** Refusals of a value that should be a schema of the subset (its root an `object` node). */
-export function checkSchema(value: unknown, path: string): Found[] {
+function checkSchema(value: unknown, path: string): Found[] {
   const out: Found[] = [];
   checkNode(value, path, true, out);
   return out;
@@ -144,6 +143,27 @@ function fitsType(type: NodeType, v: unknown): boolean {
 }
 
 /**
+ * The members of a body object together with the names it must have, in UTF-16 code unit order: `missing` for an absent
+ * required name, `unknown-field` for an undeclared member, otherwise the refusals `check` gives for the member.
+ */
+function eachMember(
+  o: Node,
+  required: ReadonlySet<string>,
+  path: string,
+  declared: (name: string) => boolean,
+  check: (name: string, at: string) => Found[],
+): Found[] {
+  const errors: Found[] = [];
+  for (const name of [...new Set([...Object.keys(o), ...required])].sort(byCodeUnits)) {
+    const at = path + segment(name);
+    if (!Object.hasOwn(o, name)) errors.push(refusal("missing", at));
+    else if (!declared(name)) errors.push(refusal("unknown-field", at));
+    else errors.push(...check(name, at));
+  }
+  return errors;
+}
+
+/**
  * Refusals of `v` (at `path`) against a node of an admitted schema — a node the subset check accepted. Within a node
  * the first check that refuses wins, in the order `wrong-type`, `too-long`, `not-in-enum`, `bad-ref`.
  */
@@ -154,14 +174,11 @@ function validateNode(node: Node, v: unknown, path: string): Found[] {
   switch (type) {
     case "object": {
       const props = node["properties"] as Node;
-      const required = (node["required"] ?? []) as readonly string[];
       const o = v as Node;
-      for (const name of [...new Set([...Object.keys(o), ...required])].sort(byCodeUnits)) {
-        const at = path + segment(name);
-        if (!Object.hasOwn(o, name)) errors.push(refusal("missing", at));
-        else if (!Object.hasOwn(props, name)) errors.push(refusal("unknown-field", at));
-        else errors.push(...validateNode(props[name] as Node, o[name], at));
-      }
+      const required = new Set((node["required"] ?? []) as readonly string[]);
+      errors.push(
+        ...eachMember(o, required, path, (name) => Object.hasOwn(props, name), (name, at) => validateNode(props[name] as Node, o[name], at)),
+      );
       break;
     }
     case "array": {
@@ -212,36 +229,23 @@ function pinnedRef(node: Node, s: string): Ref | null {
 export function validate(body: unknown, roots: readonly Node[]): Found[] {
   if (!isPlainObject(body)) return [refusal("wrong-type", "")];
   const o = body as Node;
-  const errors: Found[] = [];
   const required = new Set<string>();
   for (const s of roots) for (const name of (s["required"] ?? []) as readonly string[]) required.add(name);
-  for (const name of [...new Set([...Object.keys(o), ...required])].sort(byCodeUnits)) {
-    const at = segment(name);
-    if (!Object.hasOwn(o, name)) {
-      errors.push(refusal("missing", at));
-      continue;
-    }
-    const declaring = roots.filter((s) => Object.hasOwn(s["properties"] as Node, name));
-    if (declaring.length === 0) {
-      errors.push(refusal("unknown-field", at));
-      continue;
-    }
-    for (const s of declaring) {
-      const r = validateNode((s["properties"] as Node)[name] as Node, o[name], at);
-      if (r.length > 0) {
-        errors.push(...r);
-        break;
-      }
-    }
-  }
-  return errors;
+  const nodesOf = (name: string): Node[] =>
+    roots.filter((s) => Object.hasOwn(s["properties"] as Node, name)).map((s) => (s["properties"] as Node)[name] as Node);
+  // A member gets the refusals of the first node of the chain that refuses it.
+  const firstRefusal = (name: string, at: string): Found[] =>
+    nodesOf(name)
+      .map((node) => validateNode(node, o[name], at))
+      .find((r) => r.length > 0) ?? [];
+  return eachMember(o, required, "", (name) => nodesOf(name).length > 0, firstRefusal);
 }
 
 /**
  * The references of a valid body (REQ-KR-015): in walk order — members by UTF-16 code units, elements by index —
  * every string at a place where a schema of the chain declares a `ref` node, with the target of the first such node.
  */
-export function refsOf(body: unknown, roots: readonly Node[]): BodyRef[] {
+export function declaredRefs(body: unknown, roots: readonly Node[]): BodyRef[] {
   const out: BodyRef[] = [];
   const walk = (v: unknown, nodes: readonly Node[], path: string): void => {
     if (nodes.length === 0) return;

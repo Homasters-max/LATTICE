@@ -6,7 +6,7 @@ import type { Admitted, Refusal, Type } from "../../src/kernel/index.ts";
 import * as kernel from "../../src/kernel/index.ts";
 
 /** The functions of the kernel interface. */
-export type KernelFn = {
+type KernelFn = {
   [K in keyof typeof kernel]: (typeof kernel)[K] extends (...args: never[]) => unknown ? K : never;
 }[keyof typeof kernel];
 
@@ -26,16 +26,16 @@ export type Case = {
 
 const BS = String.fromCharCode(92);
 /** JSON escape sequence `\uXXXX` as text. */
-export const esc = (hex: string): string => BS + "u" + hex;
-export const cp = (...points: number[]): string => String.fromCodePoint(...points);
-export const nested = (n: number): string => "[".repeat(n) + "]".repeat(n);
+const esc = (hex: string): string => BS + "u" + hex;
+const cp = (...points: number[]): string => String.fromCodePoint(...points);
+const nested = (n: number): string => "[".repeat(n) + "]".repeat(n);
 const r = (code: string, path: string): Refusal => ({ code, path });
 const zeros = (n: number): string => "/0".repeat(n);
 const fail = (message: string): never => {
   throw new Error(message);
 };
 
-export const ULID = "01J8ZQ4N7X5K2M9R3T6V8W0Y1A";
+const ULID = "01J8ZQ4N7X5K2M9R3T6V8W0Y1A";
 // The vector `warrant/REQ-` + `KRN-011` of SCN-KR-042, built so the id check does not read it as a spec id.
 const NOT_AN_ID_REF = "warrant/REQ-" + "KRN-011";
 
@@ -70,34 +70,41 @@ export function mustType(chain: unknown[]): Type {
   return t.ok ? t.value : fail("type of a vector: " + JSON.stringify(t.errors));
 }
 
-export function mustAdmit(text: string, type: Type): Admitted {
+function mustAdmit(text: string, type: Type): Admitted {
   const a = kernel.admit(text, type);
   return a.ok ? a.value : fail("admission of a vector: " + JSON.stringify(a.errors));
 }
 
+/** The chains of the types below, each also a `typeOf` case of the scenario that names it (SCN-KR-026). */
+const chains: { readonly scn: string; readonly name: string; readonly chain: () => unknown[] }[] = [];
+function chainType(scn: string, name: string, chain: () => unknown[]): Type {
+  chains.push({ scn, name, chain });
+  return mustType(chain());
+}
+
 const DOMAIN = (rev: number): Record<string, unknown> =>
   typeRecord("std/domain", rev, { schema: obj({ code: str(), name: str() }, ["code", "name"]) });
-export const T_DOMAIN1 = mustType([DOMAIN(1)]);
-export const T_DOMAIN2 = mustType([DOMAIN(2)]);
-export const T_S = mustType([typeRecord("test/s", 1, { schema: obj({ s: str() }, ["s"]) })]);
+const T_DOMAIN1 = chainType("SCN-KR-044", "std/domain@1", () => [DOMAIN(1)]);
+const T_DOMAIN2 = chainType("SCN-KR-045", "std/domain@2", () => [DOMAIN(2)]);
+export const T_S = chainType("SCN-KR-047", "test/s@1", () => [typeRecord("test/s", 1, { schema: obj({ s: str() }, ["s"]) })]);
 
 const CHILD_BODY = (): Record<string, unknown> => ({
   extends: "std/knowledge@2",
   schema: obj({ rule: str({ enum: ["must", "should"] }), title: str({ maxLength: 5 }) }, ["rule"]),
 });
-export const CHILD = (): Record<string, unknown> => typeRecord("lattice/rule", 1, CHILD_BODY());
-export const PARENT = (rev = 2): Record<string, unknown> =>
+const CHILD = (): Record<string, unknown> => typeRecord("lattice/rule", 1, CHILD_BODY());
+const PARENT = (rev = 2): Record<string, unknown> =>
   typeRecord("std/knowledge", rev, {
     schema: obj({ rule: str({ maxLength: 5 }), summary: str(), title: str({ maxLength: 10 }) }, ["title"]),
   });
-export const T_RULE = mustType([CHILD(), PARENT()]);
+const T_RULE = chainType("SCN-KR-049", "lattice/rule@1", () => [CHILD(), PARENT()]);
 
 /** A record built in code whose schema key is `e` followed by U+0301 (not NFC). */
-export const NFD_RECORD = (): Record<string, unknown> =>
+const NFD_RECORD = (): Record<string, unknown> =>
   typeRecord("test/nfd", 1, { schema: obj({ ["e" + cp(0x301)]: { type: "integer" } }) });
-export const T_NFD = mustType([NFD_RECORD()]);
+const T_NFD = chainType("SCN-KR-049", "test/nfd@1", () => [NFD_RECORD()]);
 
-export const T_ALL = mustType([
+const T_ALL = chainType("SCN-KR-052", "test/all@1", () => [
   typeRecord("test/all", 1, {
     schema: obj(
       {
@@ -115,7 +122,7 @@ export const T_ALL = mustType([
   }),
 ]);
 
-export const T_REFS = mustType([
+const T_REFS = chainType("SCN-KR-053", "test/refs@1", () => [
   typeRecord("test/refs", 1, {
     schema: obj({
       any: str({ ref: "std/need" }),
@@ -127,22 +134,22 @@ export const T_REFS = mustType([
 ]);
 
 /** A child that declares a nested object `m` again, narrower and closed (SCN-KR-049). */
-export const T_MC = mustType([
+const T_MC = chainType("SCN-KR-049", "test/mc@1", () => [
   typeRecord("test/mc", 1, { extends: "test/mp@1", schema: obj({ m: obj({ a: str({ maxLength: 2 }) }) }) }),
   typeRecord("test/mp", 1, { schema: obj({ m: obj({ a: str(), b: str() }) }) }),
 ]);
 
 /** `x` a plain string in the child and a pinned `ref` node in the parent; `y` a `ref` node in both (SCN-KR-053). */
-export const T_RC = mustType([
+const T_RC = chainType("SCN-KR-053", "test/rc@1", () => [
   typeRecord("test/rc", 1, { extends: "test/rp@1", schema: obj({ x: str(), y: str({ ref: "std/a" }) }) }),
   typeRecord("test/rp", 1, { schema: obj({ x: str({ ref: "std/need", pinned: true }), y: str({ ref: "std/b" }) }) }),
 ]);
 
-export const T_EV = mustType([typeRecord("test/ev", 1, { schema: obj({ of: obj({ a: str(), b: str() }), v: str() }) })]);
-export const T_EV2 = mustType([typeRecord("test/ev2", 1, { schema: obj({ of: str() }) })]);
+const T_EV = chainType("SCN-KR-057", "test/ev@1", () => [typeRecord("test/ev", 1, { schema: obj({ of: obj({ a: str(), b: str() }), v: str() }) })]);
+const T_EV2 = chainType("SCN-KR-057", "test/ev2@1", () => [typeRecord("test/ev2", 1, { schema: obj({ of: str() }) })]);
 
 /** Five type records `test/c0@1` … `test/c4@1`, each extending the next; `n` of them, the last without `extends`. */
-export function chainOf(n: number): Record<string, unknown>[] {
+function chainOf(n: number): Record<string, unknown>[] {
   return Array.from({ length: n }, (_, i) =>
     typeRecord("test/c" + String(i), 1, {
       ...(i < n - 1 ? { extends: "test/c" + String(i + 1) + "@1" } : {}),
@@ -166,19 +173,19 @@ const hashOf = (expected: string) => (v: unknown): void => {
 
 // ---- Envelope.
 
-export const HEADER = (): Record<string, unknown> => ({
+const HEADER = (): Record<string, unknown> => ({
   id: "lattice/domain-lifecycle",
   rev: 3,
   by: "lattice/" + ULID,
   at: 1790451612345,
 });
-export const EV_HEADER = (): Record<string, unknown> => ({
+const EV_HEADER = (): Record<string, unknown> => ({
   id: "lattice/01J8ZQ4N7X5K2M9R3T6V8W0Y1B",
   by: "lattice/" + ULID,
   at: 0,
 });
-export const A_DOMAIN = (): Admitted => mustAdmit('{"name":"lifecycle","code":"LCY"}', T_DOMAIN1);
-export const A_EVENT = (): Admitted => mustAdmit('{"of":{"a":"lattice/x@1","b":"lattice/01H8ZQ4N7X5K2M9R3T6V8W0Y1A"},"v":"pass"}', T_EV);
+const A_DOMAIN = (): Admitted => mustAdmit('{"name":"lifecycle","code":"LCY"}', T_DOMAIN1);
+const A_EVENT = (): Admitted => mustAdmit('{"of":{"a":"lattice/x@1","b":"lattice/01H8ZQ4N7X5K2M9R3T6V8W0Y1A"},"v":"pass"}', T_EV);
 
 const H_DOMAIN1 = "sha256:1fc8a412e2a9703d6e71d57a5b1fe958dc2d8947f625b89e512a8dee1a5e2e14";
 const H_DOMAIN2 = "sha256:57d33254aa5ae1a3c23d6f838dfd3b958f636af36f30ebba1556412e3cfd1e53";
@@ -645,7 +652,17 @@ export const cases: Case[] = [
       if (rec["type"] !== "test/ev@1" || rec["at"] !== "1970-01-01T00:00:00.000Z") fail("type or at");
     },
   },
-  { scn: "SCN-KR-057", name: "empty of", fn: "event", args: () => [EV_HEADER(), mustAdmit('{"of":{}}', T_EV)], check: () => undefined },
+  {
+    scn: "SCN-KR-057",
+    name: "empty of",
+    fn: "event",
+    args: () => [EV_HEADER(), mustAdmit('{"of":{}}', T_EV)],
+    check: (v) => {
+      const rec = v as Record<string, unknown>;
+      if (Object.keys(rec).join() !== "id,type,by,at,body") fail("keys " + Object.keys(rec).join());
+      if (rec["type"] !== "test/ev@1" || rec["at"] !== "1970-01-01T00:00:00.000Z") fail("type or at");
+    },
+  },
   { scn: "SCN-KR-057", name: "no of", fn: "event", args: () => [EV_HEADER(), mustAdmit('{"v":"pass"}', T_EV)], errors: [r("bad-of", "/admitted/body/of")] },
   {
     scn: "SCN-KR-057",
@@ -726,8 +743,17 @@ export const cases: Case[] = [
   { scn: "SCN-KR-062", name: "namespace of 65", fn: "newId", args: () => ["a".repeat(65), ULID], errors: [r("bad-namespace", "/namespace")] },
 ];
 
+/** `typeOf` of every chain the types of these cases were made from, so the purity sweep calls it too. */
+export const chainCases: Case[] = chains.map((c) => ({
+  scn: c.scn,
+  name: "typeOf " + c.name,
+  fn: "typeOf",
+  args: () => [c.chain()],
+  check: () => undefined,
+}));
+
 /** A value of the given depth built in code: each level an array of one element, the deepest one empty. */
-export function deepArray(depth: number): unknown[] {
+function deepArray(depth: number): unknown[] {
   let v: unknown[] = [];
   for (let i = 1; i < depth; i++) v = [v];
   return v;

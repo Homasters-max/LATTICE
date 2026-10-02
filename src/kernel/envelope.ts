@@ -1,8 +1,9 @@
 // The envelope (REQ-KR-017, OM-E01…E04, OM-K01, design D-7): entity and event records built from a header and an
 // admitted body, deeply frozen; `at` formatted only here, from integer UTC milliseconds.
 
-import type { EntityRecord, EnvelopeCode, EventRecord, FormatAtCode, Id, Refusal, Result } from "./types.ts";
-import { byCodeUnits, fail, isPlainObject, ok, ownData, refusal, segment } from "./types.ts";
+import type { Admitted, EntityRecord, EnvelopeCode, EventRecord, FormatAtCode, Id, Refusal, Result } from "./types.ts";
+import { fail, ok, refusal, segment } from "./types.ts";
+import { byCodeUnits, isPlainObject, ownData } from "./values.ts";
 import { isIdentifier, isVersion, parseRef } from "./ref.ts";
 import { isAdmitted } from "./admission.ts";
 
@@ -22,65 +23,70 @@ export function formatAt(ms: unknown): Result<string, FormatAtCode> {
   return ok(iso(ms));
 }
 
-type Field = "id" | "rev" | "by" | "at";
-const CODE: Readonly<Record<Field, EnvelopeCode>> = { id: "bad-id", rev: "bad-rev", by: "bad-by", at: "bad-at" };
-const VALID: Readonly<Record<Field, (v: unknown) => boolean>> = { id: isIdentifier, rev: isVersion, by: isIdentifier, at: isAt };
+/** A header that passed its checks; an event header has no `rev`. */
+type Header = { readonly id: Id; readonly rev: number; readonly by: Id; readonly at: number };
+type Field = keyof Header;
 
-/** The refusals of a header with exactly these fields, and its values when it has none. */
-function readHeader(header: unknown, fields: readonly Field[]): { errors: Refusal<EnvelopeCode>[]; values: Record<string, unknown> } {
+const CHECKS: Readonly<Record<Field, { readonly code: EnvelopeCode; readonly valid: (v: unknown) => boolean }>> = {
+  id: { code: "bad-id", valid: isIdentifier },
+  rev: { code: "bad-rev", valid: isVersion },
+  by: { code: "bad-by", valid: isIdentifier },
+  at: { code: "bad-at", valid: isAt },
+};
+
+/** The refusals of a header with exactly these fields, in the order of REQ-KR-017, and the header when it has none. */
+function readHeader(header: unknown, fields: readonly Field[]): { errors: Refusal<EnvelopeCode>[]; header: Header | null } {
+  if (!isPlainObject(header)) return { errors: [refusal("bad-header", "/header")], header: null };
   const errors: Refusal<EnvelopeCode>[] = [];
-  const values: Record<string, unknown> = {};
-  if (!isPlainObject(header)) return { errors: [refusal("bad-header", "/header")], values };
   const own = Reflect.ownKeys(header);
   const extra = own.filter((k): k is string => typeof k === "string" && !(fields as readonly string[]).includes(k));
   for (const k of extra.sort(byCodeUnits)) errors.push(refusal("bad-header", "/header" + segment(k)));
   if (own.some((k) => typeof k === "symbol")) errors.push(refusal("bad-header", "/header"));
+  const values: Record<string, unknown> = {};
   for (const f of fields) {
     const d = ownData(header, f);
-    if (!d.present || !VALID[f](d.value)) errors.push(refusal(CODE[f], "/header/" + f));
+    if (!d.present || !CHECKS[f].valid(d.value)) errors.push(refusal(CHECKS[f].code, "/header/" + f));
     else values[f] = d.value;
   }
-  return { errors, values };
-}
-
-export function entity(header: unknown, admitted: unknown): Result<EntityRecord, EnvelopeCode> {
-  const { errors, values } = readHeader(header, ["id", "rev", "by", "at"]);
-  if (!isAdmitted(admitted)) errors.push(refusal("bad-admitted", "/admitted"));
-  if (errors.length > 0 || !isAdmitted(admitted)) return fail(errors);
-  return ok(
-    Object.freeze({
-      id: values["id"] as Id,
-      rev: values["rev"] as number,
-      type: admitted.type,
-      hash: admitted.hash,
-      by: values["by"] as Id,
-      at: iso(values["at"] as number),
-      body: admitted.body,
-    }),
-  );
+  return { errors, header: errors.length === 0 ? (values as Header) : null };
 }
 
 /** Refusals of the `of` of an event body (OM-E04): an object whose values are references; it may be empty (UNK-KR-009). */
-function ofRefusals(body: unknown): Refusal<EnvelopeCode>[] {
-  const of = isPlainObject(body) ? ownData(body, "of") : { present: false, value: undefined };
+function ofRefusals(a: Admitted): Refusal<EnvelopeCode>[] {
+  const of = isPlainObject(a.body) ? ownData(a.body, "of") : { present: false, value: undefined };
   if (!of.present || !isPlainObject(of.value)) return [refusal("bad-of", "/admitted/body/of")];
-  const roles = Object.keys(of.value).sort(byCodeUnits);
   const o = of.value as Readonly<Record<string, unknown>>;
-  return roles.filter((role) => !parseRef(o[role]).ok).map((role) => refusal("bad-of", "/admitted/body/of" + segment(role)));
+  return Object.keys(o)
+    .sort(byCodeUnits)
+    .filter((role) => !parseRef(o[role]).ok)
+    .map((role) => refusal("bad-of", "/admitted/body/of" + segment(role)));
+}
+
+type Parts =
+  | { readonly ok: true; readonly header: Header; readonly admitted: Admitted }
+  | { readonly ok: false; readonly errors: Refusal<EnvelopeCode>[] };
+
+/** The checked header and admitted body of a record, or every refusal of both, in the order of REQ-KR-017. */
+function parts(header: unknown, admitted: unknown, fields: readonly Field[], bodyRefusals: (a: Admitted) => Refusal<EnvelopeCode>[]): Parts {
+  const read = readHeader(header, fields);
+  if (!isAdmitted(admitted)) return { ok: false, errors: [...read.errors, refusal("bad-admitted", "/admitted")] };
+  const errors = [...read.errors, ...bodyRefusals(admitted)];
+  if (read.header === null || errors.length > 0) return { ok: false, errors };
+  return { ok: true, header: read.header, admitted };
+}
+
+export function entity(header: unknown, admitted: unknown): Result<EntityRecord, EnvelopeCode> {
+  const p = parts(header, admitted, ["id", "rev", "by", "at"], () => []);
+  if (!p.ok) return fail(p.errors);
+  const { id, rev, by, at } = p.header;
+  const { type, hash, body } = p.admitted;
+  return ok(Object.freeze({ id, rev, type, hash, by, at: iso(at), body }));
 }
 
 export function event(header: unknown, admitted: unknown): Result<EventRecord, EnvelopeCode> {
-  const { errors, values } = readHeader(header, ["id", "by", "at"]);
-  if (!isAdmitted(admitted)) errors.push(refusal("bad-admitted", "/admitted"));
-  else errors.push(...ofRefusals(admitted.body));
-  if (errors.length > 0 || !isAdmitted(admitted)) return fail(errors);
-  return ok(
-    Object.freeze({
-      id: values["id"] as Id,
-      type: admitted.type,
-      by: values["by"] as Id,
-      at: iso(values["at"] as number),
-      body: admitted.body,
-    }),
-  );
+  const p = parts(header, admitted, ["id", "by", "at"], ofRefusals);
+  if (!p.ok) return fail(p.errors);
+  const { id, by, at } = p.header;
+  const { type, body } = p.admitted;
+  return ok(Object.freeze({ id, type, by, at: iso(at), body }));
 }

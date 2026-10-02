@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import * as kernel from "../../src/kernel/index.ts";
-import { cases, deepCases, mustType, T_S, typeRecord } from "./vectors.ts";
+import { cases, chainCases, deepCases, mustType, T_S, typeRecord } from "./vectors.ts";
 import type { Case } from "./vectors.ts";
 
 /** sha256 of the bytes of the vector file; the file never changes between kernel versions (OM-H05). */
@@ -177,10 +177,46 @@ function snapshot(root: unknown): string {
   return out.join("\n");
 }
 
+/** The calls of the scenarios above that are not cases of vectors.ts, so the purity sweep covers them too. */
+function contractCases(): Case[] {
+  const out: Case[] = [];
+  const i = fixture.section_3_2_2.input;
+  out.push({
+    scn: "SCN-KR-037",
+    name: "section 3.2.2",
+    fn: "canonical",
+    args: () => [{ numbers: i.numbers, string: String.fromCodePoint(...i.string_code_points), literals: i.literals }],
+  });
+  out.push({
+    scn: "SCN-KR-037",
+    name: "section 3.2.3",
+    fn: "canonical",
+    args: () => [Object.fromEntries(fixture.section_3_2_3.members.map(([k, v]) => [String.fromCodePoint(...k), v]))],
+  });
+  for (const [bits, expected] of fixture.appendix_b.vectors) {
+    const view = new DataView(new ArrayBuffer(8));
+    view.setBigUint64(0, BigInt("0x" + bits));
+    const x = view.getFloat64(0);
+    out.push({ scn: "SCN-KR-037", name: "appendix B " + bits, fn: "canonical", args: () => [x], ...(expected === null ? { errors: [{ code: "not-json", path: "" }] } : {}) });
+  }
+  fixture.nfc.vectors.forEach(([input, nfc], k) => {
+    for (const s of [String.fromCodePoint(...input), String.fromCodePoint(...nfc)]) {
+      out.push({ scn: "SCN-KR-041", name: "NFC vector " + String(k), fn: "admit", args: () => [JSON.stringify({ s }), T_S] });
+    }
+  });
+  for (const c of cases.filter((x) => x.scn === "SCN-KR-042")) {
+    const parsed = kernel.parseRef(c.args()[0]);
+    if (parsed.ok) out.push({ scn: "SCN-KR-042", name: "formatRef " + c.name, fn: "formatRef", args: () => [parsed.value.id, parsed.value.version] });
+  }
+  out.push({ scn: "SCN-KR-054", name: "self-admission", fn: "admit", args: () => [META_TEXT, kernel.metaType] });
+  out.push({ scn: "SCN-KR-054", name: "typeOf of the meta record", fn: "typeOf", args: () => [[typeRecord("core/type", 1, kernel.metaType.body)]] });
+  return out;
+}
+
 const MADE = new Set(["admit", "typeOf", "entity", "event"]);
 
 describe("SCN-KR-026 refusals are values, functions are pure", () => {
-  for (const c of [...cases, ...deepCases]) {
+  for (const c of [...cases, ...chainCases, ...deepCases, ...contractCases()]) {
     it(`SCN-KR-026 ${c.fn} twice, arguments unchanged: ${c.scn} ${c.name}`, () => {
       const fn = kernel[c.fn] as (...args: unknown[]) => unknown;
       const args = c.args();
@@ -210,4 +246,3 @@ describe("SCN-KR-026 refusals are values, functions are pure", () => {
   });
 });
 
-export type { Case };
