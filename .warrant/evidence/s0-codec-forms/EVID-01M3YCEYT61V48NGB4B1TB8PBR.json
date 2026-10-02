@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YCEYT61V48NGB4B1TB8PBR",
+  "claim": {
+    "text": "tests-passed passed for s0-codec-forms",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "1d90c6de7b2ef3cc12620084cf5ed422190bf06e",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/s0-codec-forms@1d90c6de7b2ef3cc12620084cf5ed422190bf06e",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:0a9427293241df90638e7c460a37cbdb97d18e87673ced5b028a549f1e8bdf01",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "created_at": "2026-10-02T13:22:06.792Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-codec-forms/raw/tests-passed/junit.xml",
+      "sha256": "sha256:6c8cda6fd3df252b364adfb0f632d359b2e02e129e45fca4b7d7c4a74acd494c"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 775
+  }
+}
