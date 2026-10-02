@@ -18,6 +18,6 @@
 
 ## 3. Check
 
-- [ ] 3.1 `warrant verify pin-v0-10-1`; check — succeeds
+- [x] 3.1 `warrant verify pin-v0-10-1`; check — succeeds
 - [ ] 3.2 After the `VERIFYING` commit, before the push — `node .claude/skills/slice/judge.mjs`; check — no violation of
   the PR
