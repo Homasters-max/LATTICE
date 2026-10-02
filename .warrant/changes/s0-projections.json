@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-projections",
-  "change_state": "IMPLEMENTING",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
@@ -94,6 +94,14 @@
       "to": "IMPLEMENTING",
       "at": "2026-10-02T13:43:34.258Z",
       "by": "cli:local"
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T13:44:31.032Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:1dc582bc325ec0b9aeda5ceb81d27165ddc5ef768dc4d665969cc04b968a2366",
+      "gates": {},
+      "evidence": []
     }
   ]
 }
