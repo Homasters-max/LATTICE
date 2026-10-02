@@ -1,0 +1,159 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XX5F243PJ2N5CEWBP86P23",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "The release rule of REQ-SR-002 contradicts itself, and the design resolves it the unsafe way. The text says: 'the append SHALL remove the lock if it is still its own, with every lock file of a smaller <n>, and never a lock of another owner'. It also says: 'Removing a lock removes the store's own lock file and every lock file with a smaller <n>'. The files with a smaller <n> are by construction locks of other owners. SCN-SR-003 requires `other`'s lock to be removed ('no lock is left'), so 'never a lock of another owner' cannot hold literally. The spec also never defines 'its own': by name <n>, or by content. Design D-3 Release ('list; remove its own file and every lock file with a smaller <n>') has no 'still its own' condition and identifies the own file by its number. Lock numbers are reused after a release, so this removes a live lock of another writer. Interleaving (JSONL, all at default TTL): (1) A takes lock.1, verifies, checks the tail, then stalls past its expiry before fencing. (2) W looks at lock.1, finds it expired, takes lock.2, appends commit 2 `ok`, and releases, removing lock.2 and lock.1. (3) V looks at no lock, takes lock.1, verifies, checks tail 2, passes fencing, and starts its write and fsync. (4) A resumes: its fencing fails, so it answers `moved`. Its release lists [lock.1] and removes 'its own file' lock.1, which is V's live lock. (5) U looks at no lock, takes lock.1, verifies (no other file), and checks the tail before V's write lands: 2. Then V's write lands and V answers `ok`. U's fencing passes (lock.1 is U's, content U wrote), and U writes a second commit after 2, also `ok`. The result is two commits with seq 3 and a ledger every opener refuses (LG-C04). V and U both act within milliseconds. The only slow actor is A, the stalled-holder case the TTL exists for, so the Limits sentence ('a takeover ... needs the time from the fencing check to the end of the write or cut to exceed half the TTL') and Risks ('the compare-and-swap of D-3 leaves no other window') are false under the design reading. The memory adapter (D-6: release only when `ledger.lock === mine`) does not have this defect, so the two adapters diverge. No scenario covers it: in SCN-SR-004 and SCN-SR-012 nothing is left to remove when the taken-over writer releases. The same 'own file by name' applies to the recovery release (D-4 step 7) and to the cleanup of a failed take.",
+      "targets": [
+        "REQ-SR-002",
+        "REQ-SR-004",
+        "SCN-SR-003",
+        "SCN-SR-004",
+        "SCN-SR-012",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "State the release precisely in REQ-SR-002. The store's own lock file is the file at the number it created, with the content it wrote (name and content). If that file still exists, release removes it and every lock file with a smaller <n>: these are superseded or expired locks, since a take holds only when its file is the greatest and the looked-at one is directly below. If that file is gone or its content differs, release removes nothing. Replace 'and never a lock of another owner' with 'and never a lock file with a greater <n>, and nothing when its own file is gone'. Apply the same name-and-content identity to the cleanup of a failed take. Align D-3 Release and the Risks bullet. Add a scenario on both adapters: A takes at time 0 with TTL 100 and pauses at 'fence'; B at time 100 appends and releases; C takes the lock and pauses at its own 'fence'; then A resumes and answers `moved`. Then C's lock is unchanged, C answers `ok`, and the ledger holds commits 1, B's 2 and C's 3."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "Off mode is not consistent with the lock protocol for a read during another writer's append. With recovery on, a torn tail under an unexpired lock of another owner is 'an append in progress', and read returns the commits before it (REQ-SR-004, SCN-SR-007). With recovery off, REQ-SR-001 says read 'SHALL hand the torn tail over as its text' and never consults the lock. So while one store appends (its writeSync loop has written part of the line, or the whole text without its line feed), an off-mode reader gets `torn` set and the opener refuses the ledger as broken, naming LG-C04. Off is the CLI's default until #98. A `lattice export` that runs while another `lattice apply` appends therefore reports a broken ledger, although the ledger is healthy and the lock says exactly that the tail is being written. With a write cut inside a multi-byte character, the off-mode read throws instead ('also one whose torn tail is not' valid UTF-8). The spec has no scenario for an off-mode read under a live lock, and the Risks entry '[Until #98, the CLI does not recover a torn tail]' covers only crashed tails, not in-progress ones. No test under test/cli/** has a lock, so either choice keeps them passing.",
+      "targets": [
+        "REQ-SR-001",
+        "REQ-SR-004",
+        "SCN-SR-013",
+        "SCN-SR-007",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "Decide (D-1 below). Option A: in off mode, when read finds a torn tail it looks at the lock (D-3 look), and under an unexpired lock of another owner it returns the commits before the tail with `torn: null` and moves nothing. Then add the off-mode counterpart of SCN-SR-007 to SCN-SR-013. Option B: keep the hand-over and state in REQ-SR-001 and in Risks that, with recovery off, a read concurrent with an append may see an in-progress tail, which the opener refuses (LG-C04) until #98."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The options `ttl` and `now` (D-2) carry the safety of the lock, and nothing constrains their values. REQ-SR-002 says the expiry is 'the time it was taken plus the TTL ..., in integer UTC milliseconds', and a lock file whose `expires` is not a safe integer 'cannot be read as a lock and counts as expired'. So a fractional TTL, or a `now` that returns a fraction, writes a lock that every other writer takes over at once. A TTL of 0 or below makes every fresh lock expired, and makes fencing (`now() < expires - ttl/2`) fail always, so every append answers `moved`. NaN writes `null`, and an unreadable lock follows. The test seams and #98 (the CLI's TTL) are the callers that set these options. The spec does not say whether such a value is refused, thrown or rounded.",
+      "targets": [
+        "REQ-SR-002",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "In REQ-SR-002 (or D-2): the TTL is a positive safe integer, and a store made with another value is refused by throwing when it is made. `now()` must return a safe integer, and an append or read that gets another value throws. Add one contract case (or a line to SCN-SR-003): making a store with TTL 0 or 1.5 throws."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-SR-001 says: 'The scenarios of REQ-SR-004 run with recovery on; the others hold with recovery on and off.' SCN-SR-013 is one of 'the others' (it belongs to REQ-SR-001), and it holds only with recovery off: with recovery on, the read returns `torn: null` and the tail is moved. The sentence also leaves open whether the contract suite must run SCN-SR-001…004, -008 and -011 in both modes. D-7 names the mode only for REQ-SR-004, so the claim 'hold with recovery on' is unproven by any planned test.",
+      "targets": [
+        "REQ-SR-001",
+        "SCN-SR-013",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "Write: 'The scenarios of REQ-SR-004 run with recovery on, SCN-SR-013 with recovery off; every other scenario runs, and holds, in both modes.' Make D-7 and tasks 1.2 and 2.1 name the tests per mode, or drop 'on and off' and name the single mode they run in."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "The owner is part of a file name: the temporary lock file is '<ledger>.lock.<owner>.tmp' (REQ-SR-002). The `owner` option (D-2) accepts any string. A string with '/', '\\', ':', a control character, or one too long for a file name makes the take a thrown failure, or makes it write in another folder. REQ-SR-002 requires the owner to be 'unique to the store that took it', but nothing enforces this. Two stores given the same owner collide on the temporary file name, and each takes the other's unexpired lock as 'a lock of its own' (I-7), so they are not mutually excluded. The contract harness and #98 are the callers that set `owner`.",
+      "targets": [
+        "REQ-SR-002",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "Constrain the owner (e.g. `[A-Za-z0-9-]{1,64}`, which a UUID satisfies), and refuse another value by throwing when the store is made. State that uniqueness of a given owner is the caller's duty, and that two live stores with one owner are not excluded from each other."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-SR-002 covers failures of a take only 'after its lock file was created'. Three cases of the temporary file are left open. (a) Exclusive creation of '<ledger>.lock.<owner>.tmp' finds the name taken: a leftover of the same store whose earlier removal failed (with recovery on, one store takes twice: the read that recovers, then the append), or another store with the same owner. Is that `moved` or a thrown failure? (b) Writing or flushing the temporary file fails before the link: is the file removed, or left like a crash leftover? (c) Removing the temporary file after a successful link fails, e.g. on Windows a scanner holds it. By D-3 this is a thrown failure inside the take, so an append whose lock was fine throws, and its file then blocks every later take of that store. Review 3 (F-3) recommended swallowing this failure, and I-23 does not say so.",
+      "targets": [
+        "REQ-SR-002",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "In REQ-SR-002: if the temporary file name exists, the take is a thrown failure (or `moved`; pick one) that removes nothing. A failure before the link removes the temporary file and is thrown. A failure to remove the temporary file after the link is swallowed, the take continues, and the leftover is inert. Mirror this in D-3."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-SR-001 says the JSONL adapter 'refuses, by throwing, a ledger whose complete lines are not valid UTF-8', but only for `read`. For `append` the spec does not say what happens when, under the lock, the complete lines are not valid UTF-8: D-5 step 3 compares the `seq` of the last line, read from the bytes. The append could throw, answer `moved`, or compare a `seq` decoded with replacement characters. The skeleton's append throws, because it calls read. Under recovery off, the same question applies to a torn tail that is not valid UTF-8: D-5 answers `moved` from the bytes, while read throws.",
+      "targets": [
+        "REQ-SR-001",
+        "openspec/changes/s0-store-2/design.md"
+      ],
+      "recommendation": "Say in REQ-SR-001 that an append that finds complete lines that are not valid UTF-8 throws, writes nothing and removes its lock, as read does. Say that a torn tail with recovery off answers `moved` whatever its bytes."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "With the half-TTL margin, a recovery whose copy, file flush and folder flush take longer than TTL/2 always fails its check before the cut (REQ-SR-004). Each opening then adds one more copy of the same tail to recovered/, the cut never happens, and every append answers `moved`. With a TTL of 10 s and a small tail this needs a pathological disk, but the outcome is unbounded growth of recovered/ with no signal beyond `moved`.",
+      "targets": [
+        "REQ-SR-004",
+        "REQ-SR-002"
+      ],
+      "recommendation": "Optionally name it in Limits or Risks. A copy that fails the check could also be skipped when recovered/ already holds an identical last entry."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-store-2/specs/store/spec.md",
+      "change": "REQ-SR-002: define the own lock file by name and content; release removes it and every smaller file only while it exists with its own content, and otherwise nothing; drop 'never a lock of another owner' in favour of 'never a greater <n>' (F-1); add a scenario of a taken-over writer releasing after the next holder took the lock (F-1); constrain `ttl`, `now` and `owner` (F-3, F-5); give the temporary file's failure rules (F-6). REQ-SR-001: name the mode of each scenario (F-4), the off-mode read under a live lock (F-2), and append on bytes that are not UTF-8 (F-7)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-store-2/design.md",
+      "change": "D-3 Release and failed-take cleanup: content-checked own file, conditional removal (F-1); Risks: drop 'the compare-and-swap of D-3 leaves no other window' until F-1 is fixed; D-2: validation of options (F-3, F-5); D-7: the test modes (F-4); a new I-N row per accepted finding."
+    }
+  ],
+  "unknowns": [],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Closures of review 3 of #89, checked. I-21: the fencing margin is in REQ-SR-002, in the cut check of REQ-SR-004 and in SCN-SR-004 case 2 (50 < 100 - 50 is false, so `moved`), and the Limits sentence is restated. I-22: a failed take removes only its own lock file and temporary file, and SCN-SR-008 and -011 say 'no lock of A is left'. I-23: the temporary file is named and created with `wx`, but see F-6 for its failure cases. I-24: closed. I-25: closed. I-26: closed. Fencing compares content, so the margin closes the window of review 3 F-1 for the fenced writer itself. F-1 above is a new window, in the release path."
+    },
+    {
+      "id": "A-2",
+      "statement": "As specified, no test outside test/store/** breaks. I read test/cli/apply.test.ts, commands.test.ts, project.ts, test/e2e/roundtrip.test.ts and test/architecture/rules.test.ts. SCN-CL-005: the unit test is on an empty ledger, so the append takes and releases a lock and answers `moved` for after=1 and then `ok`; the torn tail is handed over and append answers `moved` with recovery off. SCN-CL-008: the read hands over the tail, then LG-C04; the bytes [0xff,0x0a] have no torn tail and throw; a directory throws EISDIR; a missing file is refused by assembly first. SCN-CL-011 uses its own store. No test lists store/ itself: commands.test lists p.dir only before init, and roundtrip lists store/proposals. rules.test only reads with recovery off on fixtures without a torn tail, so no lock is touched. The CLI's clock port is fixedClock(0), but the store uses its own Date.now, so locks expire normally. CI runs on a disk with hard links (ext4 or NTFS)."
+    },
+    {
+      "id": "A-3",
+      "statement": "Apart from F-1, I found no interleaving that lets two writers both pass verify and fencing with operations shorter than half the TTL. I tried stale looks below and above a live holder, number reuse (SCN-SR-011), the transient files of failing takers, and three or more writers with one clock. Exceptions are a taker with a non-integer or tiny TTL (F-3) and a duplicated owner (F-5)."
+    },
+    {
+      "id": "A-4",
+      "statement": "Writers are processes on one machine and share one wall clock. The guard allowed no shell command, so issues #44, #86 and #98 were not read. Their content is taken from proposal.md, design.md and the caller's message."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "With recovery off (the CLI default until #98), what should read return for a torn tail while another owner holds an unexpired lock (F-2)?",
+      "options": [
+        "Treat it as an append in progress, as with recovery on: return the commits before it with `torn: null` and move nothing. A concurrent export then sees the ledger before the append. No test under test/cli/** has a lock, so they keep passing.",
+        "Keep handing it over as `torn` (the skeleton's behaviour) and state in REQ-SR-001 and Risks that a read concurrent with an append may be refused naming LG-C04 until #98."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:aae1c9419c18f667ce4c88bb04cfbf621c54acbc3e1193c896c434d38cb4c392",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T14:00:00Z",
+    "finished_at": "2026-10-02T14:55:00Z"
+  }
+}
