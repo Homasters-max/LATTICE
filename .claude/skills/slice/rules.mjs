@@ -25,19 +25,25 @@ export function parseIssue(i) {
   const change = where.match(/Change `([^`]+)`/)?.[1] ?? null;
   const labels = (i.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name));
   const deps = dependsOn(body);
+  const declaredAreas = areasOfWhere(where);
   return {
     ...i,
     labels,
     change,
-    // An AREA is held by a Change (SL-T08): without a Change the line names none.
-    // "AREA `TR` + `AC` + `CT`" — the "+"-joined list right after the word; trailing prose is ignored.
-    areas: change ? (where.match(/AREA\s+(`?[A-Z]{2,}`?(?:\s*\+\s*`?[A-Z]{2,}`?)*)/)?.[1] ?? '').match(/[A-Z]{2,}/g) ?? [] : [],
+    // An AREA is held by a Change (SL-T08): without a Change the line holds none, but declares it (#112).
+    declaredAreas,
+    areas: change ? declaredAreas : [],
     depIssues: deps.issues,
     depBranches: deps.branches,
     umbrella: /^\s*- \[[ x]\] #\d+/m.test(body),
-    kind: issueKind(change, labels),
+    kind: issueKind(change, labels, declaredAreas),
   };
 }
+
+// "AREA `TR` + `AC` + `CT`" — the "+"-joined list right after the word; trailing prose is ignored.
+export const areasOfWhere = (where) => (where.match(/AREA\s+(`?[A-Z]{2,}`?(?:\s*\+\s*`?[A-Z]{2,}`?)*)/)?.[1] ?? '').match(/[A-Z]{2,}/g) ?? [];
+const whereOf = (body) => (body ?? '').match(/^Where:(.*)$/m)?.[1] ?? '';
+const changeOfWhere = (where) => where.match(/Change `([^`]+)`/)?.[1] ?? null;
 
 // Several issues may name one Change in `Where:` — its own issue and, say, a bug it fixes (rule tracking).
 // The Change's issue is the one whose title names it (`<prefix>: <change> — …`), else the oldest; the others
@@ -52,14 +58,16 @@ export function claimChanges(issues) {
     owner.set(change, [...(titled.length ? titled : list)].sort((a, b) => a.number - b.number)[0].number);
   }
   return issues.map((i) => (!i.change || owner.get(i.change) === i.number ? i
-    : { ...i, change: null, refersTo: i.change, areas: [], kind: issueKind(null, i.labels) }));
+    : { ...i, change: null, refersTo: i.change, areas: [], kind: issueKind(null, i.labels, []) }));
 }
 
-// change | bug | question | docs. A bug or a question without a Change is not a docs PR.
-export function issueKind(change, labels) {
+// change | bug | question | unnamed | docs, in this order. A bug or a question without a Change is not a docs PR; nor
+// is an issue whose `Where:` declares an AREA but names no Change (#112): it needs a Change name.
+export function issueKind(change, labels, declaredAreas = []) {
   if (change) return 'change';
   if (labels.includes('bug')) return 'bug';
   if (labels.includes('question')) return 'question';
+  if (declaredAreas.length) return 'unnamed';
   return 'docs';
 }
 
@@ -102,13 +110,14 @@ export function validateResult(envelope, ref) {
 
 // ---------- AREAs ----------
 
-// Holders of AREAs, each { change, areas, initAt } (initAt: ISO time of `warrant init change`, or null).
+// Holders of AREAs, each { change, areas, initAt, areaAt } (initAt: ISO time of `warrant init change`, or null;
+// areaAt: { AREA: time } for an AREA added after init by a [decision], held from that decision — I-1).
 // Per AREA the holders are ordered by initAt; the first keeps it, each later one is in a collision.
 // A fix-main-* Change is never a later holder (exempt), but holds against later ones when it came first.
 // When the order cannot be read (a time missing, or two equal), every holder that is not fix-main collides.
 export function holdersOf(holders) {
   const byArea = new Map();
-  for (const h of holders) for (const a of h.areas) byArea.set(a, [...(byArea.get(a) ?? []), h]);
+  for (const h of holders) for (const a of h.areas) byArea.set(a, [...(byArea.get(a) ?? []), { ...h, initAt: h.areaAt?.[a] ?? h.initAt }]);
   const busy = new Map();       // AREA -> [change, …] in init order
   const collisions = [];        // { area, first, later: [change, …] }
   for (const [area, holdersOfArea] of byArea) {
@@ -153,6 +162,7 @@ export function nextAction(r, ctx) {
   if (!r.state && r.issueState === 'CLOSED') return r.change ? say('closed without a Change — needs a decision', '👤 maintainer') : say('done', '—');
   if (p && p.checks === 'red') return say(`fix CI on #${p.number}`, 'agent');
   if (p && p.isDraft) return say('finish draft PR (blocking UNKNOWN, or ⛔ a slice decision)', 'agent');
+  if (r.kind === 'unnamed') return say('needs a Change name: its Where: declares an AREA (#112)', '👤 coordinator');
   if (!r.change && p) return say(`review + merge #${p.number}${ci}`, '👤 maintainer', 'merge');
   // A bug or a question without a Change is not a docs PR (rule tracking).
   if (r.kind === 'bug') return say(r.refersTo ? `bug: fixed by Change ${r.refersTo}` : 'bug: needs a fix Change or a PR that closes it', '—');
@@ -207,4 +217,83 @@ export function maintainerQueue({ rows, collisions, busy, depPRs, mainState }) {
       merge: !isFixMain(d.head.split('/').slice(1).join('/')) })),
   ].filter((q, k, a) => a.findIndex((x) => (q.url ? x.url === q.url : x.what === q.what)) === k);
   return queue.map(({ what, url, merge }) => ({ what: mainState === 'red' && merge ? `${what} — held: main is red` : what, url }));
+}
+
+// ---------- the decision log and issues (Change infra-coordinator) ----------
+
+const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const instant = (t) => Date.parse(t);
+export const INIT_GRACE_MS = 60 * 1000;
+
+// An AREA added to `Where:` after `warrant init change` (D-4). revisions: [{ editedAt, body }] of the issue's
+// userContentEdits (the oldest is the body as created; none: never edited). The revision in effect at init is the newest
+// one edited at or before initAt + INIT_GRACE_MS (initAt is the session's clock, editedAt GitHub's). An AREA of today's
+// Where: not in it is added — except AR on a skip_specs Change. A [decision] with a line `Adds: AREA <X> to <change>`
+// clears it (I-7), and the Change holds it from that decision (I-1). → [{ area, editedAt, decision: { url, createdAt } | null }].
+export function areasAddedAfterInit({ change, body, revisions = [], initAt, skipSpecs = false, decisions = [] }) {
+  if (!initAt || !revisions.length) return [];
+  const today = areasOfWhere(whereOf(body));
+  const sorted = [...revisions].sort((a, b) => instant(a.editedAt) - instant(b.editedAt));
+  const atInit = [...sorted].reverse().find((r) => instant(r.editedAt) <= instant(initAt) + INIT_GRACE_MS) ?? sorted[0];
+  const where = whereOf(atInit.body);
+  if (changeOfWhere(where) !== change) return [];
+  const before = new Set(areasOfWhere(where));
+  return today.filter((a) => !before.has(a) && !(skipSpecs && a === 'AR')).map((area) => {
+    const first = sorted.find((r) => instant(r.editedAt) > instant(atInit.editedAt) && areasOfWhere(whereOf(r.body)).includes(area));
+    const adds = new RegExp(`^Adds: AREA \`?${escapeRe(area)}\`? to \`?${escapeRe(change)}\`?\\s*$`, 'm');
+    const d = decisions.find((c) => c.body.trimStart().startsWith('[decision]') && adds.test(c.body));
+    return { area, editedAt: first?.editedAt ?? null, decision: d ? { url: d.url, createdAt: d.createdAt } : null };
+  });
+}
+
+// A section of an issue body by its name ("Root cause", "Prevention"): a heading or a bold label line, up to the next
+// heading, bold label line or `Where:` / `Depends on:` / `Why:` / `Done when` line. → its text, or null.
+export function section(body, name) {
+  const lines = (body ?? '').split(/\r?\n/);
+  const start = lines.findIndex((l) => new RegExp(`^(#{1,6}\\s*${name}\\b|\\*\\*${name}\\b|${name}:)`, 'i').test(l.trim()));
+  if (start < 0) return null;
+  const stop = (l) => /^#{1,6}\s/.test(l.trim()) || /^\*\*[^*]+\*\*:?/.test(l.trim()) || /^(Where|Depends on|Why|Done when)\b/.test(l.trim());
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex(stop);
+  const first = lines[start].trim().replace(new RegExp(`^(#{1,6}\\s*|\\*\\*)?${name}(\\*\\*)?:?(\\*\\*)?\\s*`, 'i'), '');
+  return [first, ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim();
+}
+export const firstSentence = (text) => (text ?? '').replace(/\s+/g, ' ').trim().replace(/^[-*]\s+/, '').split(/(?<=[.;])\s/)[0] ?? '';
+
+// The references of a text: `#N` of this repository (not `SRA#N`, not `owner/repo#N`) and its URLs; any other
+// repository counts as foreign.
+export function references(text, repo = 'Homasters-max/LATTICE') {
+  const local = new Set();
+  let foreign = 0;
+  for (const m of (text ?? '').matchAll(/(?<![\w/-])#(\d+)(?!\d)/g)) local.add(Number(m[1]));
+  for (const m of (text ?? '').matchAll(/github\.com\/([\w.-]+\/[\w.-]+)\/(?:issues|pull)\/(\d+)/g)) {
+    if (m[1].toLowerCase() === repo.toLowerCase()) local.add(Number(m[2])); else foreign++;
+  }
+  foreign += [...(text ?? '').matchAll(/[\w.-]+\/[\w.-]+#\d+|\bSRA#\d+/g)].length;
+  return { local: [...local].sort((a, b) => a - b), foreign };
+}
+
+// Is an open issue closable by rule tracking (a hint the coordinator judges)? ctx: { archivedOnMain(change),
+// prState(n) → MERGED | OPEN | CLOSED | null (not a PR), issueOf(n) → { state, change } | null }. → reason or null.
+export function closable(i, ctx) {
+  if (i.state !== 'OPEN') return null;
+  if (i.change) return ctx.archivedOnMain(i.change) ? 'archived' : null;
+  if (i.labels.includes('process')) {
+    const refs = references(section(i.body, 'Prevention'));
+    if (!refs.local.length || refs.foreign) return null;
+    const done = (n) => { const pr = ctx.prState(n); if (pr) return pr === 'MERGED';
+      const o = ctx.issueOf(n); return !!o && (o.change ? ctx.archivedOnMain(o.change) : o.state === 'CLOSED'); };
+    return refs.local.every(done) ? 'prevention landed' : null;
+  }
+  if (i.labels.includes('question')) return null;
+  return i.refersTo && ctx.archivedOnMain(i.refersTo) ? `fixed by ${i.refersTo}` : null;
+}
+
+// The size of AGENTS.md against WARRANT's limit (16 KiB): a warning above 14 KiB (D-1).
+export const AGENTS_LIMIT = 16384;
+export const AGENTS_WARN = 14336;
+export function agentsBudget(bytes) {
+  if (bytes == null) return { state: 'unknown', note: 'AGENTS.md: not read' };
+  const note = `AGENTS.md ${bytes} / ${AGENTS_LIMIT} bytes`;
+  return bytes > AGENTS_WARN ? { state: 'warn', note: `${note} ⚠ — move procedure from the rules into the skill` } : { state: 'ok', note };
 }

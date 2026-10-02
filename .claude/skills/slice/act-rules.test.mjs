@@ -1,11 +1,11 @@
 // node --test .claude/skills/slice/act-rules.test.mjs — the rules of act.mjs and wait-pr.mjs on fixtures
-// (Change infra-merge-flow, design D-8).
+// (Change infra-merge-flow, design D-8; Change infra-coordinator, D-3, D-5, D-8).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  actorRefusals, changeOfBranch, copyPlan, globToRegExp, isAgentIdent, lastPush, mainHealth, mergeRefusals,
+  actorRefusals, changeLastPush, changeOfBranch, copyPlan, globToRegExp, isAgentIdent, lastPush, mainHealth, mergeRefusals,
   judgeVerdict, parsePatchPaths, parseWorktrees, patchSubject,
-  patchPathWriter, patchRefusals, pendingEntries, waiverRefusals, watchStep, worktreeRefusals,
+  patchPathWriter, patchRefusals, pendingEntries, scopeFindings, waiverRefusals, watchStep, worktreeRefusals,
 } from './act-rules.mjs';
 
 const reasons = (refusals) => refusals.map((r) => r.reason).join(' | ');
@@ -323,5 +323,105 @@ describe('the local judge (#124, I-22)', () => {
     assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: spec }).ok, false);
     assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: null }).ok, false);
     assert.equal(judgeVerdict({ validate: null, syncCheck: ok, ci: { ok: true, data: { kind: 'archive' } } }).ok, false);
+  });
+});
+
+// ---------- Change infra-coordinator (design D-3, D-5, D-8; #128) ----------
+
+describe('the decision log (infra-coordinator D-3, I-4)', () => {
+  const U = 'https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-';
+  const c = (id, at, body, where = 'umbrella') => ({ url: `${U}${id}`, createdAt: at, body, where });
+  const entry = c(5954365385, '2026-10-02T14:11:26Z', '[decision] The act queue. Touches: `infra-coordinator` (#101).');
+  it('a later tagged entry that links an earlier one and names the Change does not acknowledge it (#44 5954398284)', () => {
+    const amend = c(5954398284, '2026-10-02T14:13:10Z', `[decision] Amends ${U}5954365385: every act. Touches: \`infra-coordinator\` (#101).`);
+    const incident = c(5954398300, '2026-10-02T14:14:00Z', `[incident] see ${U}5954365385 — \`infra-coordinator\``);
+    const pending = pendingEntries({ comments: [entry, amend, incident], change: 'infra-coordinator', issue: 101, repo: 'Homasters-max/LATTICE' });
+    assert.deepEqual(pending.map((e) => e.url), [`${U}5954365385`, `${U}5954398284`]);
+  });
+  it('a plain reply naming the Change acknowledges every entry it links', () => {
+    const amend = c(5954398284, '2026-10-02T14:13:10Z', `[decision] Amends ${U}5954365385. Touches: \`infra-coordinator\`.`);
+    const ack = c(5954407479, '2026-10-02T14:13:44Z', `\`infra-coordinator\` (#101) acknowledges ${U}5954365385 and ${U}5954398284.`);
+    assert.deepEqual(pendingEntries({ comments: [entry, amend, ack], change: 'infra-coordinator', issue: 101 }), []);
+  });
+  it('with no time cut an entry older than a later push stays pending until acknowledged', () => {
+    assert.equal(pendingEntries({ comments: [entry], change: 'infra-coordinator', issue: 101, since: null }).length, 1);
+    assert.equal(pendingEntries({ comments: [entry], change: 'infra-coordinator', issue: 101, since: '2026-10-02T15:00:00Z' }).length, 0);
+  });
+  it("the last push of a Change spans its branches, merged or not, and only its own agents' commits", () => {
+    const commits = [
+      { date: '2026-10-02T14:59:00Z', committer: AGENT, subject: 'infra-coordinator: verify, transition SPECIFIED' },
+      { date: '2026-10-02T15:05:06Z', committer: AGENT, subject: 'infra-coordinator: verify, transition APPROVED' },
+      { date: '2026-10-02T16:00:00Z', committer: MAINTAINER, subject: "infra-coordinator: maintainer's patch 1-skill.patch" },
+      { date: '2026-10-02T17:00:00Z', committer: AGENT, subject: 'infra-coordinator-2: init change' },
+      { date: '2026-10-02T18:00:00Z', committer: AGENT, subject: 's0-bootstrap: implement' },
+    ];
+    assert.equal(changeLastPush(commits, 'infra-coordinator', ['homasters']), '2026-10-02T15:05:06.000Z');
+    assert.equal(changeLastPush([], 'infra-coordinator', ['homasters']), null);
+  });
+});
+
+describe('review of a PR: scope (infra-coordinator D-5)', () => {
+  const profile = ['.warrant/warrant.json', '.warrant/local/**', '.claude/**', '**/AGENTS.md', '.github/workflows/**', 'package.json'];
+  const run = { id: 'RUN-01IMPL', change: 'c', operation: 'implement', write_scope: ['src/**', 'test/**', 'openspec/changes/c/tasks.md'], scope: ['src/ledger/projections/**', 'test/projections/**', 'openspec/changes/c/**'] };
+  const f = (path, status = 'M') => ({ path, status });
+  const review = (branch, files, extra = {}) => scopeFindings({ branch, files, runs: [run], agentLogins: ['homasters'], humanGlobs: profile,
+    authorsOf: (p) => (p.startsWith('.claude/') ? [MAINTAINER] : [AGENT]), ...extra }).map((x) => `${x.path}: ${x.why}`);
+  it("an impl-PR within its Runs' scope, its record, evidence, Runs and the maintainer's patch passes", () => {
+    assert.deepEqual(review('impl/c', [f('src/ledger/projections/index.ts'), f('test/projections/a.test.ts', 'A'), f('openspec/changes/c/design.md'),
+      f('.warrant/changes/c.json'), f('.warrant/evidence/c/EVID-1.json', 'A'), f('.warrant/runs/RUN-01IMPL.json', 'A'), f('.claude/skills/slice/SKILL.md')]), []);
+  });
+  it('evidence or a record of another Change, a path outside the scope, a policy path by an agent are findings', () => {
+    assert.deepEqual(review('impl/c', [f('.warrant/evidence/s0-kernel/EVID-2.json', 'A'), f('.warrant/changes/s0-kernel.json'),
+      f('src/ledger/commit.ts'), f('.warrant/local/rules/process.json'), f('.warrant/runs/RUN-01OTHER.json', 'A')]), [
+      '.warrant/evidence/s0-kernel/EVID-2.json: evidence of another Change',
+      ".warrant/changes/s0-kernel.json: another Change's record",
+      "src/ledger/commit.ts: outside the Runs' scope",
+      '.warrant/local/rules/process.json: a policy path not by the maintainer',
+      ".warrant/runs/RUN-01OTHER.json: another Change's Run",
+    ]);
+  });
+  it('the proposal in an impl-PR only by the maintainer; AGENTS.md only with a rule change', () => {
+    assert.deepEqual(review('impl/c', [f('openspec/changes/c/proposal.md'), f('AGENTS.md')]), [
+      'openspec/changes/c/proposal.md: the proposal, not by the maintainer', 'AGENTS.md: a policy path not by the maintainer']);
+    const byMaintainer = { authorsOf: () => [MAINTAINER] };
+    assert.deepEqual(review('impl/c', [f('.warrant/local/rules/process.json'), f('AGENTS.md'), f('.warrant/warrant.lock.json')], byMaintainer), []);
+  });
+  it('a spec-PR writes only its own folder; an archive-PR moves it and writes the specs of its delta', () => {
+    assert.deepEqual(review('spec/c', [f('openspec/changes/c/proposal.md', 'A'), f('src/x.ts')]), ['src/x.ts: outside the spec of the Change']);
+    assert.deepEqual(review('archive/c', [f('openspec/changes/c/proposal.md', 'D'), f('openspec/changes/archive/2026-10-02-c/specs/projections/spec.md', 'A'),
+      f('openspec/specs/projections/spec.md'), f('openspec/specs/cli/spec.md')]), ['openspec/specs/cli/spec.md: outside the archive of the Change']);
+  });
+  it('a PR without a Change: no Change files, no policy path', () => {
+    assert.deepEqual(review('docs/issue-66', [f('design-next/reviews/a.md', 'A'), f('.github/workflows/test.yml'), f('openspec/changes/c/tasks.md')]), [
+      '.github/workflows/test.yml: a policy path in a PR without a Change (rule tracking)',
+      "openspec/changes/c/tasks.md: a Change's files on a branch outside <kind>/<change>",
+    ]);
+  });
+});
+
+describe('the local judge: informational findings (#128)', () => {
+  const ok = { ok: true, errors: [] };
+  // The shape of `warrant ci` of #123 at ba1b278: only gates waiting on CI and the merge, and FRONTEND_HOOKS_INACTIVE.
+  const at123 = { ok: false, data: { kind: 'impl',
+    gates: { 'factory-golden-passed': 'BLOCKED', 'human-approval': 'BLOCKED', 'tests-passed': 'BLOCKED', 'scope-valid': 'PASS' },
+    findings: [
+      { code: 'ATTESTATION_REQUIRED', gate: 'factory-golden-passed', kind: 'test-report' },
+      { code: 'ATTESTATION_REQUIRED', gate: 'tests-passed', kind: 'test-report' },
+      { code: 'NO_EVIDENCE', gate: 'human-approval', kind: 'human-approval' },
+      { code: 'FRONTEND_HOOKS_INACTIVE', paths: ['src/ledger/projections/index.ts'], more: 0, message: 'changed without a post event of warrant guard in the Runs of the Change: src/ledger/projections/index.ts' },
+    ] },
+    errors: ['factory-golden-passed', 'tests-passed'].map((g) => ({ code: 'GATE_NOT_PASSED', message: `gate ${g}` })) };
+  it('FRONTEND_HOOKS_INACTIVE alone beyond the gates waiting on CI is a note, not a violation', () => {
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: at123 });
+    assert.equal(v.ok, true);
+    assert.equal(v.notes.length, 1);
+    assert.match(v.notes[0], /^FRONTEND_HOOKS_INACTIVE: changed without a post event/);
+  });
+  it('with another finding it is still a violation', () => {
+    const scope = structuredClone(at123);
+    scope.data.findings.push({ code: 'SCOPE_VIOLATION', gate: 'scope-valid' });
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: scope });
+    assert.equal(v.ok, false);
+    assert.doesNotMatch(v.lines.join(), /FRONTEND_HOOKS_INACTIVE/);
   });
 });

@@ -4,7 +4,7 @@
 // worktree outside the repository, removed afterwards, so no evidence of the judge lands in a Change's folder.
 // Run it from the worktree of the branch before a push that opens or updates a PR (rule process). The verdict is
 // `judgeVerdict` of act-rules.mjs.
-// Usage: node judge.mjs
+// Usage: node judge.mjs [<ref>]   (default HEAD; review.mjs passes origin/<head> of another PR)
 // Exit: 0 no violation of the PR (an impl-PR may wait on CI and the merge) · 1 a violation or a conflict · 2 an error ·
 //       64 usage.
 import { execFileSync } from 'node:child_process';
@@ -12,11 +12,14 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { judgeVerdict } from './act-rules.mjs';
+import { JUDGE_PREFIX, sweepStale } from './temp.mjs';
 
-if (process.argv.length > 2) {
-  console.error('usage: node judge.mjs   (from the worktree of the branch to judge)');
+const argv = process.argv.slice(2);
+if (argv.length > 1 || argv[0]?.startsWith('-')) {
+  console.error('usage: node judge.mjs [<ref>]   (from a worktree of the repository; default HEAD)');
   process.exit(64);
 }
+const REF = argv[0] ?? 'HEAD';
 const WIN = process.platform === 'win32';
 function sh(cmd, args, { cwd, ok = false, shell = false } = {}) {
   try {
@@ -31,11 +34,12 @@ const envelope = (out) => { try { return JSON.parse(out); } catch { return null;
 let dir;
 let code = 2;
 try {
-  const head = sh('git', ['rev-parse', 'HEAD']).trim();
-  if (sh('git', ['status', '--porcelain']).trim()) console.log('note: uncommitted changes are not judged — only HEAD');
   sh('git', ['fetch', '-q', 'origin']);
+  const head = sh('git', ['rev-parse', '--verify', `${REF}^{commit}`]).trim();
+  if (REF === 'HEAD' && sh('git', ['status', '--porcelain']).trim()) console.log('note: uncommitted changes are not judged — only HEAD');
+  sweepStale([JUDGE_PREFIX]);
   const main = sh('git', ['rev-parse', 'origin/main']).trim();
-  dir = mkdtempSync(join(tmpdir(), 'lattice-judge-'));
+  dir = mkdtempSync(join(tmpdir(), JUDGE_PREFIX));
   sh('git', ['worktree', 'add', '-q', '--detach', dir, main]);
   console.log(`judge ${head.slice(0, 7)} merged with origin/main ${main.slice(0, 7)}:`);
   try {
@@ -49,6 +53,7 @@ try {
   const run = (args) => envelope(sh('warrant', args, { cwd: dir, ok: true, shell: WIN }));
   const verdict = judgeVerdict({ validate: run(['validate']), syncCheck: run(['sync', '--check']), ci: run(['ci']) });
   for (const l of verdict.lines) console.log(`  ${l}`);
+  for (const n of verdict.notes) console.log(`  note: ${n}`);
   console.log(verdict.ok ? 'judge: no violation of the PR — push' : 'judge: violation — fix it before the push');
   code = verdict.ok ? 0 : 1;
 } catch (e) {

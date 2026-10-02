@@ -1,9 +1,10 @@
-// node --test .claude/skills/slice/rules.test.mjs — the rules of the skill slice on fixtures (Change infra-process-rules).
+// node --test .claude/skills/slice/rules.test.mjs — the rules of the skill slice on fixtures (Changes infra-process-rules,
+// infra-coordinator).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  claimChanges, dependsOn, dispatch, holdersOf, isOpenP1WithoutChange, issueKind, mainState, maintainerQueue, nextAction,
-  parseIssue, testResult, validateResult, versionMatches,
+  agentsBudget, areasAddedAfterInit, claimChanges, closable, dependsOn, dispatch, firstSentence, holdersOf, isOpenP1WithoutChange,
+  issueKind, mainState, maintainerQueue, nextAction, parseIssue, references, section, testResult, validateResult, versionMatches,
 } from './rules.mjs';
 
 const label = (...names) => names.map((name) => ({ name }));
@@ -191,5 +192,104 @@ describe('issues (D-4, I-16, I-17)', () => {
     assert.deepEqual(dependsOn('Depends on: #55, #56 and `impl/pin-v0.10.0`. Refs #92.'), { issues: [55, 56], branches: ['impl/pin-v0.10.0'] });
     assert.deepEqual(dependsOn('Depends on: #54'), { issues: [54], branches: [] });
     assert.deepEqual(dependsOn('No such line'), { issues: [], branches: [] });
+  });
+});
+
+// ---------- Change infra-coordinator (design D-4, I-1, I-7; #112) ----------
+
+const where57 = (change, areas) => `Why: …\n\nWhere: Change \`${change}\`, AREA ${areas.map((a) => `\`${a}\``).join(' + ')} (\`SR\`, not \`ST\`).\n\nDepends on: #55.`;
+// The edit history of #57 as GitHub keeps it (userContentEdits; the oldest is the body as created).
+const history57 = [
+  { editedAt: '2026-10-01T17:14:29Z', body: where57('s0-store', ['ST']) },
+  { editedAt: '2026-10-01T17:27:18Z', body: where57('s0-store', ['SR']) },
+  { editedAt: '2026-10-02T07:25:34Z', body: where57('s0-store', ['SR', 'CL']) },
+  { editedAt: '2026-10-02T08:25:59Z', body: where57('s0-store-2', ['SR', 'CL']) },
+  { editedAt: '2026-10-02T08:46:29Z', body: where57('s0-store-2', ['SR']) },
+];
+
+describe('an AREA added after init (infra-coordinator D-4)', () => {
+  it('the real history of #57 raises no flag: CL came 11 s before the init of s0-store, s0-store-2 kept SR', () => {
+    const today = history57.at(-1).body;
+    assert.deepEqual(areasAddedAfterInit({ change: 's0-store', body: today, revisions: history57, initAt: '2026-10-02T07:25:45.020Z' }), []);
+    assert.deepEqual(areasAddedAfterInit({ change: 's0-store-2', body: today, revisions: history57, initAt: '2026-10-02T08:49:09.533Z' }), []);
+    assert.deepEqual(areasAddedAfterInit({ change: 's0-store', body: history57[2].body, revisions: history57.slice(0, 3), initAt: '2026-10-02T07:25:45.020Z' }), []);
+  });
+  it('an edit after init is flagged, with the time of the edit that added it', () => {
+    const later = [...history57, { editedAt: '2026-10-02T09:30:00Z', body: where57('s0-store-2', ['SR', 'CL']) }];
+    assert.deepEqual(areasAddedAfterInit({ change: 's0-store-2', body: later.at(-1).body, revisions: later, initAt: '2026-10-02T08:49:09.533Z' }),
+      [{ area: 'CL', editedAt: '2026-10-02T09:30:00Z', decision: null }]);
+  });
+  it('an edit within 60 s after init counts as before it (two clocks); 90 s does not', () => {
+    const at = (s) => new Date(Date.parse('2026-10-02T10:00:00Z') + s * 1000).toISOString();
+    const revs = (s) => [{ editedAt: '2026-10-01T10:00:00Z', body: where57('x', ['SR']) }, { editedAt: at(s), body: where57('x', ['SR', 'CL']) }];
+    assert.deepEqual(areasAddedAfterInit({ change: 'x', body: revs(30)[1].body, revisions: revs(30), initAt: '2026-10-02T10:00:00Z' }), []);
+    assert.equal(areasAddedAfterInit({ change: 'x', body: revs(90)[1].body, revisions: revs(90), initAt: '2026-10-02T10:00:00Z' }).length, 1);
+  });
+  it('a [decision] with "Adds: AREA CL to x" clears it, whenever posted; a [scope] or a decision without the line does not (I-7)', () => {
+    const revs = [{ editedAt: '2026-10-01T10:00:00Z', body: where57('x', ['SR']) }, { editedAt: '2026-10-02T12:00:00Z', body: where57('x', ['SR', 'CL']) }];
+    const run = (decisions) => areasAddedAfterInit({ change: 'x', body: revs[1].body, revisions: revs, initAt: '2026-10-02T10:00:00Z', decisions })[0].decision;
+    const decision = { url: 'u#issuecomment-1', createdAt: '2026-10-02T09:00:00Z', body: '[decision] x takes CL. Touches: `x`.\n\nAdds: AREA `CL` to `x`' };
+    assert.deepEqual(run([decision]), { url: 'u#issuecomment-1', createdAt: '2026-10-02T09:00:00Z' });
+    assert.equal(run([{ ...decision, body: decision.body.replace('[decision]', '[scope]') }]), null);
+    assert.equal(run([{ ...decision, body: '[decision] x must not take `CL`. Touches: `x`.' }]), null);
+    assert.equal(run([{ ...decision, body: decision.body.replace('to `x`', 'to `x-2`') }]), null);
+  });
+  it('AR on a skip_specs Change is its own to add; a never edited issue and a renamed Change are not compared', () => {
+    const revs = [{ editedAt: '2026-10-01T10:00:00Z', body: 'Where: Change `infra-x`, no AREA.' }, { editedAt: '2026-10-02T12:00:00Z', body: 'Where: Change `infra-x`, AREA `AR`.' }];
+    assert.deepEqual(areasAddedAfterInit({ change: 'infra-x', body: revs[1].body, revisions: revs, initAt: '2026-10-02T10:00:00Z', skipSpecs: true }), []);
+    assert.equal(areasAddedAfterInit({ change: 'infra-x', body: revs[1].body, revisions: revs, initAt: '2026-10-02T10:00:00Z' }).length, 1);
+    assert.deepEqual(areasAddedAfterInit({ change: 'x', body: where57('x', ['SR', 'CL']), revisions: [], initAt: '2026-10-02T10:00:00Z' }), []);
+  });
+  it('an AREA added by a [decision] is held from that decision: an earlier holder keeps it (I-1)', () => {
+    const h = holdersOf([
+      { change: 'a', areas: ['CL'], initAt: '2026-10-02T08:00:00Z' },
+      { change: 'b', areas: ['SR', 'CL'], initAt: '2026-10-02T07:00:00Z', areaAt: { CL: '2026-10-02T09:00:00Z' } },
+    ]);
+    assert.deepEqual(h.collisions, [{ area: 'CL', first: 'a', later: ['b'] }]);
+    assert.deepEqual(h.busy.get('SR'), ['b']);
+  });
+});
+
+describe('issues: kinds, sections, closable (infra-coordinator D-4, D-7; #112)', () => {
+  it('an AREA with no Change is unnamed, not a docs PR — the old Where: of #86; bug and question come first', () => {
+    const old86 = parseIssue({ number: 86, title: 's0: store port', state: 'OPEN', labels: label('enhancement', 'P3'),
+      body: 'Why: …\n\nWhere: a separate small Change after `s0-store-2` is archived, AREA `SR`.\n' });
+    assert.equal(old86.kind, 'unnamed');
+    assert.deepEqual(old86.areas, []);
+    assert.deepEqual(old86.declaredAreas, ['SR']);
+    assert.equal(nextAction({ ...old86, deps: [], merged: {} }, { heldFor: () => [], wipCount: 0 }).who, '👤 coordinator');
+    assert.equal(issueKind(null, ['bug'], ['CL']), 'bug');
+    assert.equal(issueKind(null, ['question'], ['CL']), 'question');
+    assert.equal(issueKind(null, [], []), 'docs');
+  });
+  it('Root cause and Prevention as bold lines or headings, up to the next label', () => {
+    const body = 'Why: x\n\n**Root cause:**\n- the rule names no exception.\n\n**Prevention:** #97 items 2, 4 — the merge is the approval.\nMore.\n\nWhere: process';
+    assert.equal(firstSentence(section(body, 'Root cause')), 'the rule names no exception.');
+    assert.equal(section(body, 'Prevention'), '#97 items 2, 4 — the merge is the approval.\nMore.');
+    assert.equal(section('## Prevention\nA test.\n## Other\nno', 'Prevention'), 'A test.');
+    assert.equal(section('Why: nothing', 'Prevention'), null);
+  });
+  it('references: #N and its URL are local; SRA#N and another repository are foreign', () => {
+    assert.deepEqual(references('#97, https://github.com/Homasters-max/LATTICE/pull/108 and Homasters-max/SRA#138; SRA#139'),
+      { local: [97, 108], foreign: 2 });
+  });
+  it('closable: an archived Change, a process issue whose prevention landed, a bug fixed by a Change; never a question', () => {
+    const ctx = { archivedOnMain: (c) => c === 'done-change', prState: (n) => ({ 108: 'MERGED', 109: 'OPEN' })[n] ?? null,
+      issueOf: (n) => ({ 97: { state: 'CLOSED', change: 'done-change' }, 98: { state: 'OPEN', change: null } })[n] ?? null };
+    const proc = (prevention) => ({ state: 'OPEN', change: null, labels: ['bug', 'process'], body: `**Root cause:** x.\n\n**Prevention:** ${prevention}` });
+    assert.equal(closable({ state: 'OPEN', change: 'done-change', labels: [] }, ctx), 'archived');
+    assert.equal(closable({ state: 'OPEN', change: 'open-change', labels: ['process'] }, ctx), null);
+    assert.equal(closable(proc('#97 and #108.'), ctx), 'prevention landed');
+    assert.equal(closable(proc('#97 and #109.'), ctx), null);
+    assert.equal(closable(proc('#97 and Homasters-max/SRA#138.'), ctx), null);
+    assert.equal(closable(proc('a rule, some day.'), ctx), null);
+    assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['bug'] }, ctx), 'fixed by done-change');
+    assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['question'] }, ctx), null);
+    assert.equal(closable({ state: 'CLOSED', change: 'done-change', labels: [] }, ctx), null);
+  });
+  it('the AGENTS.md budget warns above 14 336 bytes', () => {
+    assert.equal(agentsBudget(11528).state, 'ok');
+    assert.equal(agentsBudget(16276).state, 'warn');
+    assert.equal(agentsBudget(null).state, 'unknown');
   });
 });
