@@ -1,32 +1,34 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-projections",
-  "change_state": "SPECIFIED",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
-      "feature"
+      "factory-change",
+      "feature",
+      "human-acceptance"
     ],
     "risk": {
       "data_loss": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
         "value": "LOCAL",
-        "from": "proposer"
+        "from": "record"
       },
       "security_impact": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
@@ -49,6 +51,57 @@
       "evidence": [
         "EVID-01M3YBS1QWTZQNNVFM0XK1503J"
       ]
+    },
+    {
+      "to": "APPROVED",
+      "at": "2026-10-02T13:17:04.212Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {
+        "adversarial-review": "PASS",
+        "blocking-unknowns-resolved": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3YBPV7H231R3WA0ZV3Z6E58",
+        "EVID-01M3YC4SBYK6F69VTPFVB64CH2",
+        "EVID-01M3YC5GS2K7PP1P20NBFFNYC9"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/118"
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-10-02T13:17:07.689Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {
+        "branch-isolated": "PASS"
+      },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T13:40:41.548Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:1dc582bc325ec0b9aeda5ceb81d27165ddc5ef768dc4d665969cc04b968a2366",
+      "gates": {},
+      "evidence": []
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-10-02T13:43:34.258Z",
+      "by": "cli:local"
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T13:44:31.032Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:1dc582bc325ec0b9aeda5ceb81d27165ddc5ef768dc4d665969cc04b968a2366",
+      "gates": {},
+      "evidence": []
     }
   ]
 }

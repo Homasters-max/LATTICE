@@ -1,0 +1,27 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3YDCP8XRYTN43XHNKX8H3KZ",
+  "change": "s0-projections",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/s0-projections/tasks.md",
+    "openspec/changes/s0-projections/design.md",
+    "openspec/changes/s0-projections/specs/**"
+  ],
+  "scope": [
+    "src/ledger/projections/**",
+    "test/projections/**",
+    "test/fixtures/projections/**",
+    "test/process/baseline.test.ts",
+    "openspec/changes/s0-projections/**"
+  ],
+  "branch": "impl/s0-projections",
+  "started_at": "2026-10-02T13:38:21.270Z",
+  "finished_at": "2026-10-02T13:39:09.563Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:c4c5f03dcdac31b8653e59d8b1dfa1bacab77b6050cf3951b79006467beedd03",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "guard_events": []
+}
