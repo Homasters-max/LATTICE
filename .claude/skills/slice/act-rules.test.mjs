@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   actorRefusals, changeOfBranch, copyPlan, globToRegExp, isAgentIdent, lastPush, mainHealth, mergeRefusals,
-  parsePatchPaths, parseWorktrees, patchSubject,
+  judgeVerdict, parsePatchPaths, parseWorktrees, patchSubject,
   patchPathWriter, patchRefusals, pendingEntries, waiverRefusals, watchStep, worktreeRefusals,
 } from './act-rules.mjs';
 
@@ -281,5 +281,47 @@ describe('the watcher (D-7)', () => {
     assert.deepEqual([s.exit, s.disableAuto], [5, true]);
     assert.match(s.line, /AUTO-MERGE OFF \(main red: test red r\)/);
     assert.equal(watchStep(f({ autoMerge: true, main: red, headRefName: 'impl/fix-main-120' })).exit, undefined);
+  });
+});
+
+describe('the local judge (#124, I-22)', () => {
+  const ok = { ok: true, errors: [] };
+  // The shape of `warrant ci` on this impl-PR at VERIFYING, before CI and the merge.
+  const implWaiting = { ok: false, data: { kind: 'impl',
+    gates: { 'analyze-clean': 'PASS', 'evidence-complete': 'FAIL', 'factory-golden-passed': 'BLOCKED', 'human-approval': 'BLOCKED', 'ids-valid': 'PASS', 'scope-valid': 'PASS', 'spec-approved': 'PASS', 'tests-passed': 'BLOCKED' },
+    findings: [
+      { code: 'STALE', kind: 'human-approval', reason: 'commit' },
+      { code: 'EVIDENCE_MISSING', gate: 'evidence-complete', items: ['test-report'] },
+      { code: 'ATTESTATION_REQUIRED', gate: 'factory-golden-passed', kind: 'test-report' },
+      { code: 'NO_EVIDENCE', gate: 'human-approval', kind: 'human-approval' },
+      { code: 'ATTESTATION_REQUIRED', gate: 'tests-passed', kind: 'test-report' },
+    ] },
+    errors: ['evidence-complete', 'factory-golden-passed', 'tests-passed'].map((g) => ({ code: 'GATE_NOT_PASSED', message: `gate ${g}` })) };
+  it('an impl-PR waiting only on CI and the merge passes', () => {
+    const v = judgeVerdict({ validate: ok, syncCheck: ok, ci: implWaiting });
+    assert.equal(v.ok, true);
+    assert.deepEqual(v.waits, ['evidence-complete', 'factory-golden-passed', 'human-approval', 'tests-passed']);
+  });
+  it('a failed validate is a violation though warrant ci waits only on CI (the case of #122)', () => {
+    const v = judgeVerdict({ validate: { ok: false, errors: [{ code: 'ID_DANGLING' }] }, syncCheck: ok, ci: implWaiting });
+    assert.equal(v.ok, false);
+    assert.match(v.lines.join('\n'), /warrant validate: ID_DANGLING/);
+  });
+  it('a stale generated file is a violation', () => {
+    assert.equal(judgeVerdict({ validate: ok, syncCheck: { ok: false, errors: [{ code: 'GENERATED_DRIFT' }] }, ci: { ok: true, data: { kind: 'spec' } } }).ok, false);
+  });
+  it('an impl-PR with another failed gate or an IMPLEMENTING record is a violation', () => {
+    const scope = structuredClone(implWaiting);
+    scope.data.gates['scope-valid'] = 'FAIL';
+    scope.data.findings.push({ code: 'SCOPE_VIOLATION', gate: 'scope-valid' });
+    assert.match(judgeVerdict({ validate: ok, syncCheck: ok, ci: scope }).lines.join(), /gate scope-valid, SCOPE_VIOLATION \(scope-valid\)/);
+    const early = { ...implWaiting, errors: [...implWaiting.errors, { code: 'CHANGE_NOT_VERIFYING' }] };
+    assert.match(judgeVerdict({ validate: ok, syncCheck: ok, ci: early }).lines.join(), /CHANGE_NOT_VERIFYING/);
+  });
+  it('a spec-PR must pass warrant ci outright; no JSON is a violation', () => {
+    const spec = { ok: false, data: { kind: 'spec', gates: { 'human-approval': 'BLOCKED' }, findings: [{ code: 'NO_EVIDENCE', kind: 'human-approval' }] }, errors: [{ code: 'GATE_NOT_PASSED' }] };
+    assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: spec }).ok, false);
+    assert.equal(judgeVerdict({ validate: ok, syncCheck: ok, ci: null }).ok, false);
+    assert.equal(judgeVerdict({ validate: null, syncCheck: ok, ci: { ok: true, data: { kind: 'archive' } } }).ok, false);
   });
 });

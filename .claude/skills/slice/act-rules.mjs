@@ -245,6 +245,44 @@ export function patchRefusals({ change, file, paths, allowGlobs, applies, applyE
   return out;
 }
 
+// ---------- the local judge (#124, I-22) ----------
+
+// The gates an impl-PR waits on from CI and the merge (rule process): a test-report attested by CI, the evidence that
+// follows from it, and the maintainer's merge.
+const WAITS_ON_CI = new Set(['tests-passed', 'factory-golden-passed', 'evidence-complete', 'human-approval']);
+const waitsOnCi = (f) => (f.code === 'ATTESTATION_REQUIRED' && f.kind === 'test-report')
+  || (f.code === 'EVIDENCE_MISSING' && (f.items ?? []).every((i) => i === 'test-report'))
+  || f.kind === 'human-approval';
+const codes = (env) => (env?.errors ?? []).map((e) => e.code).join(', ') || 'failed';
+
+// The envelopes of the three steps of the job `warrant / warrant`, in its order. → { ok, lines, waits }: ok when
+// validate and sync --check pass and `warrant ci` reports no violation of the PR (an impl-PR may wait on CI and the
+// merge only).
+export function judgeVerdict({ validate, syncCheck, ci }) {
+  const lines = [];
+  let ok = true;
+  for (const [name, env] of [['warrant validate', validate], ['warrant sync --check', syncCheck]]) {
+    if (env?.ok === true) lines.push(`${name}: ok`);
+    else { ok = false; lines.push(`${name}: ${env ? codes(env) : 'no JSON envelope'}`); }
+  }
+  const kind = ci?.data?.kind ?? '?';
+  if (!ci) { lines.push('warrant ci: no JSON envelope'); return { ok: false, lines, waits: [] }; }
+  if (ci.ok) { lines.push(`warrant ci (${kind}): ok`); return { ok, lines, waits: [] }; }
+  const gates = Object.entries(ci.data?.gates ?? {}).filter(([, v]) => v !== 'PASS').map(([g]) => g);
+  const findings = ci.data?.findings ?? [];
+  const violations = [
+    ...(ci.errors ?? []).filter((e) => e.code !== 'GATE_NOT_PASSED').map((e) => e.code),
+    ...(kind === 'impl' ? gates.filter((g) => !WAITS_ON_CI.has(g)) : gates).map((g) => `gate ${g}`),
+    ...(kind === 'impl' ? findings.filter((f) => !waitsOnCi(f)) : findings).map((f) => `${f.code}${f.gate ? ` (${f.gate})` : ''}`),
+  ];
+  if (violations.length) {
+    lines.push(`warrant ci (${kind}): ${[...new Set(violations)].join(', ')}`);
+    return { ok: false, lines, waits: [] };
+  }
+  lines.push(`warrant ci (${kind}): waits on CI and the merge only — ${gates.join(', ')}`);
+  return { ok, lines, waits: gates };
+}
+
 // ---------- the watcher (D-7) ----------
 
 // facts: { number, state, mergeCommit, url, mergeStateStatus, autoMerge, headRefOid, headRefName, main } (main only

@@ -68,7 +68,11 @@ docs phase: replace the Process line with "a docs PR closing #<N>, no Change".
 
 ### The coordinator's own PRs
 
-Work without a Change (docs, process) is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change (rule `tracking`). Before a push that opens or updates a PR, run `warrant ci` on the merge with fresh `origin/main` in a scratch worktree outside the repository, removed afterwards, and push only when it reports no violation of the PR (rule `process`); before the merge is asked, a PR behind `main` is updated with `gh pr update-branch <N>`; the merge is asked once, as `act merge` below.
+Work without a Change (docs, process) is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change (rule `tracking`). Before a push that opens or updates a PR, run `judge` below and push only when it reports no violation of the PR (rule `process`); before the merge is asked, a PR behind `main` is updated with `gh pr update-branch <N>`; the merge is asked once, as `act merge` below.
+
+### judge — the local CI judge
+
+`node .claude/skills/slice/judge.mjs` — from the worktree of the branch, before every push that opens or updates a PR (rule `process`; #124). It merges `HEAD` with fresh `origin/main` in a temporary worktree outside the repository (`lattice-judge-*` in the OS temp directory, removed afterwards, so no evidence of the judge lands in a Change's folder) and runs the three steps of the job `warrant / warrant` in its order: `warrant validate`, `warrant sync --check`, `warrant ci`. Exit 0 when the first two pass and `warrant ci` reports no violation of the PR — an impl-PR may wait only on CI and the merge (`tests-passed`, `factory-golden-passed`, `evidence-complete` of a `test-report`, `human-approval`); exit 1 on a violation or a conflict with `main`; 2 an error; 64 usage. Only `HEAD` is judged: commit first. Its verdict is `judgeVerdict` of `act-rules.mjs`.
 
 ### act — the maintainer's acts
 
