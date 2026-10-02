@@ -10,6 +10,7 @@
     "the contract suite runs every changed scenario on both adapters"
   ],
   "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
   "expires_at": "2026-10-31",
-  "waiver_state": "PROPOSED"
+  "waiver_state": "ACTIVE"
 }
