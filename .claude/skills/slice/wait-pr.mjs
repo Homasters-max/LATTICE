@@ -35,7 +35,7 @@ function facts() {
   const f = { ...p, mergeCommit: p.mergeCommit?.oid, autoMerge: !!p.autoMergeRequest };
   if (f.state === 'OPEN' && f.autoMerge) {
     const [testRun] = ghJson('run', 'list', '--workflow', 'test.yml', '--branch', 'main', '--status', 'completed', '--limit', '1', '--json', 'conclusion,url');
-    const open = ghJson('issue', 'list', '--state', 'open', '--limit', '200', '--json', 'title');
+    const open = ghJson('issue', 'list', '--state', 'open', '--limit', '1000', '--json', 'title');
     f.main = mainHealth({ testRun, openIssueTitles: open.map((i) => i.title) });
   }
   return f;
@@ -47,13 +47,14 @@ let memo = {};
 for (;;) {
   let step;
   try {
-    step = watchStep(facts(), memo);
+    const f = facts();
+    step = watchStep(f, memo);
     if (step.disableAuto) gh('pr', 'merge', pr, '--disable-auto');
     if (step.update) {
       try {
         gh('pr', 'update-branch', pr);
       } catch (e) {
-        if (/conflict/i.test(errorText(e))) step = { line: `PR #${pr} CONFLICT (update-branch: ${errorText(e)})`, exit: 4 };
+        if (/conflict/i.test(errorText(e))) step = { line: `PR #${pr} CONFLICT ${f.url} (update-branch: ${errorText(e)})`, exit: 4 };
         else throw e;
       }
     }

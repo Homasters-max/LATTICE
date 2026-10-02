@@ -12,9 +12,39 @@ const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLower
 const escape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // `impl/s0-store-2` → { kind: 'impl', change: 's0-store-2' }; any other branch → null.
+export const CHANGE_NAME = /^[\w.-]+$/;
 export function changeOfBranch(branch) {
   const m = /^(spec|impl|archive)\/([\w.-]+)$/.exec(branch ?? '');
   return m ? { kind: m[1], change: m[2] } : null;
+}
+
+// ---------- parsing of git output ----------
+
+// `git worktree list --porcelain` → [{ path, branch }].
+export const parseWorktrees = (out) => out.split(/\r?\n\r?\n/).map((b) => ({
+  path: b.match(/^worktree (.+)$/m)?.[1],
+  branch: b.match(/^branch refs\/heads\/(.+)$/m)?.[1],
+})).filter((w) => w.path);
+
+// Paths of `git apply --numstat -z`: "a\td\tpath\0", a rename "a\td\t\0old\0new\0" (both paths count).
+export function parsePatchPaths(out) {
+  const tokens = out.split('\0');
+  const paths = [];
+  for (let k = 0; k < tokens.length; k++) {
+    const m = /^[\d-]+\t[\d-]+\t(.*)$/s.exec(tokens[k].replace(/^\r?\n/, ''));
+    if (!m) continue;
+    if (m[1]) paths.push(m[1]);
+    else { paths.push(tokens[k + 1], tokens[k + 2]); k += 2; }
+  }
+  return [...new Set(paths.filter(Boolean))].sort();
+}
+
+// The Subject of a `git format-patch` mail, unfolded (a long one spans several header lines, RFC 5322), without
+// `[PATCH]` and without a leading `<change>: `; null for a plain diff.
+export function patchSubject(text, change) {
+  const header = text.split(/\r?\n\r?\n/)[0].replace(/\r?\n[ \t]+/g, ' ');
+  const raw = /^Subject: (?:\[PATCH[^\]]*\]\s*)?(.+)$/m.exec(header)?.[1]?.trim();
+  return raw?.startsWith(`${change}: `) ? raw.slice(change.length + 2) : raw ?? null;
 }
 
 // ---------- who runs it, and which copy (D-2) ----------
@@ -29,22 +59,26 @@ export function isAgentIdent(ident, agentLogins) {
     || new RegExp(`^\\d+\\+${escape(login)}@users\\.noreply\\.github\\.com$`, 'i').test(email.trim()));
 }
 
-// { agentShell, login, maintainers, agentLogins, authorIdent, needsAuthor } → refusals.
-export function actorRefusals({ agentShell, login, maintainers, agentLogins, authorIdent, needsAuthor }) {
+// { agentShell, login, maintainers, agentLogins, authorIdent, committerIdent, needsAuthor } → refusals. The committer
+// counts too: `lastPush` reads it, so an agent's committer would hide pending entries.
+export function actorRefusals({ agentShell, login, maintainers, agentLogins, authorIdent, committerIdent, needsAuthor }) {
   const out = [];
   if (agentShell) {
     out.push(refusal("this is an agent's shell (CLAUDECODE is set)",
       "act.mjs is the maintainer's act: the agent asks for it, the maintainer runs it in their own terminal"));
   }
   if (!login) out.push(refusal('gh has no login here', 'gh auth login with your own account'));
-  else if (!maintainers.some((m) => same(m, login))) {
+  else if (maintainers.length && !maintainers.some((m) => same(m, login))) {
     out.push(refusal(`this terminal acts as ${login}, not as a maintainer (${maintainers.join(', ')})`,
       "run it where gh uses your own login, without the agent's GH_TOKEN"));
   }
-  if (needsAuthor && isAgentIdent(authorIdent, agentLogins)) {
-    out.push(refusal(`git would author the commit as an agent: ${authorIdent}`,
-      "run it in a terminal without the agent's GIT_AUTHOR_* / GIT_COMMITTER_* variables"));
+  for (const [role, ident] of [['author', authorIdent], ['committer', committerIdent]]) {
+    if (needsAuthor && isAgentIdent(ident, agentLogins)) {
+      out.push(refusal(`the git ${role} of the commit would be an agent: ${ident}`,
+        "run it in a terminal without the agent's GIT_AUTHOR_* / GIT_COMMITTER_* variables"));
+    }
   }
+  if (!maintainers.length) out.push(refusal('origin/main names no maintainer (roles.maintainer of .warrant/warrant.json)', 'report it to the agent'));
   return out;
 }
 
@@ -76,9 +110,10 @@ export function mainHealth({ testRun, openIssueTitles = [] }) {
 
 // ---------- entries of the umbrella (D-4, I-3, I-8, I-12, I-13) ----------
 
-// "s0-store" is not in "s0-store-2" (as rules.mjs namesIn); "#11" is not in "#111" nor in "SRA#11".
+// "s0-store" is not in "s0-store-2" (as rules.mjs namesIn); "#11" is not in "#111" nor in "SRA#11", and a URL counts
+// only for this repository (`<owner>/<repo>`).
 const namesChange = (text, change) => !!change && new RegExp(`(?<![\\w.-])${escape(change)}(?![\\w-])`).test(text);
-const namesNumber = (text, n) => !!n && new RegExp(`(?<![\\w/-])#${n}(?!\\d)|/(?:issues|pull)/${n}(?!\\d)`).test(text);
+const namesNumber = (text, n, repo) => !!n && new RegExp(`(?<![\\w/-])#${n}(?!\\d)${repo ? `|github\\.com/${escape(repo)}/(?:issues|pull)/${n}(?!\\d)` : ''}`, 'i').test(text);
 const namesArea = (text, area) => new RegExp(`\`${escape(area)}\`|\\bAREA ${escape(area)}\\b`).test(text);
 const commentId = (url) => /#issuecomment-(\d+)/.exec(url ?? '')?.[1];
 
@@ -86,21 +121,24 @@ const commentId = (url) => /#issuecomment-(\d+)/.exec(url ?? '')?.[1];
 // of main by the watcher or the owner, and a commit of act.mjs by the maintainer, move nothing. commits: [{ date,
 // committer }] of `git log --no-merges origin/main..<head>`; null when there is none.
 export function lastPush(commits, agentLogins) {
-  const own = commits.filter((c) => isAgentIdent(c.committer, agentLogins)).map((c) => c.date).sort();
-  return own.at(-1) ?? null;
+  const own = commits.filter((c) => isAgentIdent(c.committer, agentLogins)).map((c) => Date.parse(c.date));
+  return own.length ? new Date(Math.max(...own)).toISOString() : null;
 }
+// Times compare as instants: GitHub writes `…:00Z`, `toISOString` `…:00.000Z`.
+const after = (a, b) => Date.parse(a) > Date.parse(b);
 
 // comments: [{ url, createdAt, body, where: 'umbrella' | 'issue' | 'pr' }] → the entries that touch the PR, are newer
 // than `since` and are not acknowledged. In doubt (no `since`) an entry is pending: a refusal, never a missed entry.
-export function pendingEntries({ comments, change, issue, pr, areas = [], since }) {
+// repo: `<owner>/<repo>` of the PR.
+export function pendingEntries({ comments, change, issue, pr, areas = [], since, repo }) {
   const touches = (text) => text.trimStart().startsWith('[broadcast]') || namesChange(text, change)
-    || namesNumber(text, issue) || namesNumber(text, pr) || areas.some((a) => namesArea(text, a));
+    || namesNumber(text, issue, repo) || namesNumber(text, pr, repo) || areas.some((a) => namesArea(text, a));
   const isEntry = (c) => c.where !== 'pr' && ENTRY_TAGS.some((t) => c.body.trimStart().startsWith(t));
-  const acknowledges = (c, entry) => c.createdAt > entry.createdAt && !c.body.trimStart().startsWith('⛔')
-    && c.body.includes(`issuecomment-${commentId(entry.url)}`)
-    && (c.where === 'pr' || namesChange(c.body, change) || namesNumber(c.body, pr));
+  const acknowledges = (c, entry) => after(c.createdAt, entry.createdAt) && !c.body.trimStart().startsWith('⛔')
+    && new RegExp(`issuecomment-${commentId(entry.url)}(?!\\d)`).test(c.body)
+    && (c.where === 'pr' || namesChange(c.body, change) || namesNumber(c.body, pr, repo));
   return comments
-    .filter((c) => isEntry(c) && touches(c.body) && (!since || c.createdAt > since))
+    .filter((c) => isEntry(c) && touches(c.body) && (!since || after(c.createdAt, since)))
     .filter((e) => commentId(e.url) && !comments.some((c) => c !== e && acknowledges(c, e)))
     .map((e) => ({ url: e.url, createdAt: e.createdAt, line: e.body.trimStart().split(/\r?\n/)[0].slice(0, 120) }));
 }
@@ -192,7 +230,8 @@ export function patchPathWriter(path, change, allowGlobs) {
   return 'not a path the maintainer patches (profile human-acceptance or the proposal of the Change)';
 }
 
-// file: { exists, insideRepo }; paths of the patch; applies: git apply --check on origin/<branch>.
+// file: { exists, insideRepo }; paths of the patch; applies: git apply --check on origin/<branch> (null: not checked,
+// there is no worktree — its own refusal says so).
 export function patchRefusals({ change, file, paths, allowGlobs, applies, applyError }) {
   const out = [];
   if (!file.exists) return [refusal(`no patch file ${file.path}`, 'the agent names the path it wrote')];
@@ -202,7 +241,7 @@ export function patchRefusals({ change, file, paths, allowGlobs, applies, applyE
     const writer = patchPathWriter(p, change, allowGlobs);
     if (writer) out.push(refusal(`${p} is written by ${writer}`, 'the agent drops it from the patch'));
   }
-  if (!applies) out.push(refusal(`the patch does not apply: ${applyError ?? ''}`.trim(), 'the agent re-cuts it on the branch'));
+  if (applies === false) out.push(refusal(`the patch does not apply: ${applyError ?? ''}`.trim(), 'the agent re-cuts it on the branch'));
   return out;
 }
 

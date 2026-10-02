@@ -8,11 +8,11 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, relative, resolve, isAbsolute } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  COPY_FILES, actorRefusals, changeOfBranch, copyPlan, mainHealth, mergeRefusals, patchRefusals, pendingEntries,
-  lastPush, waiverRefusals, worktreeRefusals,
+  CHANGE_NAME, COPY_FILES, actorRefusals, changeOfBranch, copyPlan, lastPush, mainHealth, mergeRefusals,
+  parsePatchPaths, parseWorktrees, patchRefusals, patchSubject, pendingEntries, waiverRefusals, worktreeRefusals,
 } from './act-rules.mjs';
 import { claimChanges, parseIssue } from './rules.mjs';
 
@@ -28,7 +28,8 @@ const args = argv.filter((a) => a !== '--dry-run');
 const [act, ...rest] = args;
 const ARITY = { merge: 1, waiver: 2, patch: 2, whoami: 0 };
 if (!(act in ARITY) || rest.length !== ARITY[act] || args.some((a) => a.startsWith('--'))
-  || (act === 'merge' && !/^\d+$/.test(rest[0])) || (act === 'waiver' && !/^WAV-[\w-]+$/.test(rest[1]))) {
+  || (act === 'merge' && !/^\d+$/.test(rest[0])) || (act === 'waiver' && !/^WAV-[\w-]+$/.test(rest[1]))
+  || ((act === 'waiver' || act === 'patch') && !CHANGE_NAME.test(rest[0]))) {
   console.error(USAGE);
   process.exit(64);
 }
@@ -47,9 +48,14 @@ const repo = process.env.LATTICE_ACT_REPO || sh('git', ['-C', scriptDir, 'rev-pa
 const git = (a, opts = {}) => sh('git', ['-C', opts.cwd ?? repo, ...a], opts);
 const gh = (...a) => JSON.parse(sh('gh', a, { cwd: repo }));
 const ghLines = (...a) => sh('gh', a, { cwd: repo }).split('\n').filter(Boolean).map((l) => JSON.parse(l));
-const warrant = (a, cwd) => sh('warrant', a, { cwd, shell: WIN });
-const fromMain = (path) => git(['show', `origin/main:${path}`], { ok: true });
 const lines = (s) => s.split(/\r?\n/).filter(Boolean);
+const nulList = (s) => s.split('\0').filter(Boolean).sort();
+// A file of origin/main, parsed; a missing one is an error, not an empty object.
+function fromMain(path) {
+  const text = git(['show', `origin/main:${path}`], { ok: true });
+  if (!text) throw new Error(`origin/main has no ${path}`);
+  return JSON.parse(text);
+}
 
 function refuse(refusals) {
   for (const r of refusals) console.log(`refused: ${r.reason} — ${r.fix}`);
@@ -60,7 +66,7 @@ function fail(msg) {
   process.exit(2);
 }
 
-// ---------- copy (D-2) ----------
+// ---------- copy (D-2, I-5) ----------
 git(['fetch', '-q', '--prune', 'origin']);
 const files = COPY_FILES.map((name) => ({
   name,
@@ -86,26 +92,28 @@ if (plan.mode === 'reexec') {
 }
 
 // ---------- project and actor (D-2) ----------
-const config = JSON.parse(fromMain('.warrant/warrant.json') || '{}');
+let config;
+try { config = fromMain('.warrant/warrant.json'); } catch (e) { fail(e.message); }
 const maintainers = config.roles?.maintainer ?? [];
 const agentLogins = (config.identities?.agents ?? []).map((a) => a.login);
-const login = sh('gh', ['api', 'user', '--jq', '.login'], { cwd: repo, ok: true }).trim();
-const authorIdent = git(['var', 'GIT_AUTHOR_IDENT'], { ok: true }).trim();
+let login = '';
+try { login = sh('gh', ['api', 'user', '--jq', '.login'], { cwd: repo }).trim(); } catch (e) {
+  if (!dryRun || act === 'whoami') console.log(`note: ${e.message.split('\n')[0]}`);
+}
+const ident = (v) => git(['var', v], { ok: true }).trim();
 const actor = actorRefusals({
-  agentShell: !!process.env.CLAUDECODE, login, maintainers, agentLogins, authorIdent, needsAuthor: act !== 'merge',
+  agentShell: !!process.env.CLAUDECODE, login, maintainers, agentLogins,
+  authorIdent: ident('GIT_AUTHOR_IDENT'), committerIdent: ident('GIT_COMMITTER_IDENT'), needsAuthor: act !== 'merge',
 });
 if (act === 'whoami') {
   if (actor.length) refuse(actor);
-  console.log(`ok: gh acts as ${login}, git authors as ${authorIdent.replace(/ \d+ [+-]\d{4}$/, '')}`);
+  console.log(`ok: gh acts as ${login}, git authors as ${ident('GIT_AUTHOR_IDENT').replace(/ \d+ [+-]\d{4}$/, '')}`);
   process.exit(0);
 }
 if (!dryRun && actor.length) refuse(actor);
 
 // ---------- worktrees ----------
-const worktrees = git(['worktree', 'list', '--porcelain']).split(/\r?\n\r?\n/).map((b) => ({
-  path: b.match(/^worktree (.+)$/m)?.[1],
-  branch: b.match(/^branch refs\/heads\/(.+)$/m)?.[1],
-})).filter((w) => w.path);
+const worktrees = parseWorktrees(git(['worktree', 'list', '--porcelain']));
 
 function relation(cwd, branch) {
   const remote = git(['rev-parse', '--verify', '-q', `origin/${branch}`], { ok: true }).trim();
@@ -125,28 +133,28 @@ function changeWorktree(branches) {
   return { wt: matches[0], branch, relation: rel, refusals: worktreeRefusals({ branch, matches, dirty, relation: rel }) };
 }
 
-// The act on a worktree: fast-forward, the change, commit, push. Any failure before the push rolls the worktree back
-// to where it started (it was clean, at or behind its remote).
+// The act on a worktree: fast-forward, the change, commit, push, verification. A failure before the push resets the
+// worktree to where it started (it was clean, at or behind its remote); untracked files are never deleted — any left
+// are named. A failure after the push names what was pushed.
 function writeAndPush({ wt, branch, relation: rel }, change, message) {
   const start = git(['rev-parse', 'HEAD'], { cwd: wt.path }).trim();
-  let pushed = false;
   try {
     if (rel === 'behind') git(['merge', '-q', '--ff-only', `origin/${branch}`], { cwd: wt.path });
     change();
     git(['commit', '-q', '-m', message], { cwd: wt.path });
     git(['push', '-q', 'origin', `HEAD:${branch}`], { cwd: wt.path });
-    pushed = true;
   } catch (e) {
-    if (pushed) fail(`${e.message} (pushed ${git(['rev-parse', 'HEAD'], { cwd: wt.path }).trim()})`);
     git(['reset', '-q', '--hard', start], { cwd: wt.path, ok: true });
-    for (const l of lines(git(['status', '--porcelain'], { cwd: wt.path, ok: true }))) {
-      if (l.startsWith('?? ')) rmSync(join(wt.path, l.slice(3).replace(/^"|"$/g, '')), { recursive: true, force: true });
-    }
-    fail(`${e.message} — ${wt.path} rolled back to ${start.slice(0, 7)}`);
+    const left = lines(git(['status', '--porcelain'], { cwd: wt.path, ok: true }));
+    fail(`${e.message} — ${wt.path} reset to ${start.slice(0, 7)}${left.length ? `; left as they are: ${left.join('; ')}` : ''}`);
   }
-  git(['fetch', '-q', 'origin']);
   const head = git(['rev-parse', 'HEAD'], { cwd: wt.path }).trim();
-  if (git(['rev-parse', `origin/${branch}`]).trim() !== head) fail(`pushed, but origin/${branch} is not ${head}`);
+  try {
+    git(['fetch', '-q', 'origin']);
+    if (git(['rev-parse', `origin/${branch}`]).trim() !== head) throw new Error(`origin/${branch} is not ${head}`);
+  } catch (e) {
+    fail(`pushed ${head} to ${branch}, but the check after it failed: ${e.message}`);
+  }
   return head;
 }
 
@@ -158,6 +166,7 @@ function comments(issue, where) {
 function merge(n) {
   const pr = gh('pr', 'view', n, '--json', 'number,url,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,'
     + 'statusCheckRollup,autoMergeRequest,comments,closingIssuesReferences');
+  const repoSlug = /github\.com\/([^/]+\/[^/]+)\/pull\//.exec(pr.url)?.[1];
   const branch = changeOfBranch(pr.headRefName);
   const record = branch ? JSON.parse(git(['show', `${pr.headRefOid}:.warrant/changes/${branch.change}.json`], { ok: true }) || 'null') : null;
   const issues = claimChanges(gh('issue', 'list', '--state', 'all', '--limit', String(ISSUE_LIMIT), '--json',
@@ -171,9 +180,11 @@ function merge(n) {
     ...(pr.comments ?? []).map((c) => ({ url: c.url, createdAt: c.createdAt, body: c.body, where: 'pr' })),
   ];
   const commits = lines(git(['log', '--no-merges', '--format=%cI%x09%cn <%ce>', `origin/main..${pr.headRefOid}`], { ok: true }))
-    .map((l) => { const [date, committer] = l.split('\t'); return { date: new Date(date).toISOString(), committer }; });
+    .map((l) => { const [date, committer] = l.split('\t'); return { date, committer }; });
   const since = lastPush(commits, agentLogins);
-  const pending = pendingEntries({ comments: all, change: branch?.change, issue: issue?.number, pr: pr.number, areas: issue?.areas ?? [], since });
+  const pending = pendingEntries({
+    comments: all, change: branch?.change, issue: issue?.number, pr: pr.number, areas: issue?.areas ?? [], since, repo: repoSlug,
+  });
   const [testRun] = gh('run', 'list', '--workflow', 'test.yml', '--branch', 'main', '--status', 'completed', '--limit', '1', '--json', 'conclusion,url');
   const main = mainHealth({ testRun, openIssueTitles: issues.filter((i) => i.state === 'OPEN').map((i) => i.title) });
 
@@ -184,7 +195,10 @@ function merge(n) {
   if (dryRun) { console.log(`would merge #${pr.number} (auto-merge): ${pr.url}`); return; }
 
   sh('gh', ['pr', 'merge', n, '--merge', '--auto'], { cwd: repo });
-  const after = gh('pr', 'view', n, '--json', 'state,mergeCommit,autoMergeRequest,url');
+  let after;
+  try { after = gh('pr', 'view', n, '--json', 'state,mergeCommit,autoMergeRequest,url'); } catch (e) {
+    fail(`gh pr merge ${n} --merge --auto succeeded, but reading the PR after it failed: ${e.message} — see gh pr view ${n}`);
+  }
   if (after.state === 'MERGED') console.log(`merged #${n} ${after.mergeCommit?.oid ?? ''} ${after.url}`);
   else if (after.autoMergeRequest) console.log(`auto-merge on for #${n}: merges when its checks pass and it is up to date; the owner's watcher keeps it up to date — ${after.url}`);
   else fail(`gh pr merge --auto returned, but #${n} is ${after.state} without auto-merge`);
@@ -194,7 +208,7 @@ function merge(n) {
 function waiver(change, wav) {
   const target = changeWorktree([`impl/${change}`]);
   const path = `.warrant/waivers/${wav}.json`;
-  const read = (ref) => { try { return JSON.parse(git(['show', `${ref}:${path}`], { ok: true }) || 'null'); } catch { return null; } };
+  const read = (ref) => JSON.parse(git(['show', `${ref}:${path}`], { ok: true }) || 'null');
   const refs = ['origin/main', ...lines(git(['for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin/impl']))]
     .filter((r) => r !== `origin/impl/${change}`);
   const others = refs.map((ref) => ({ ref, change: read(ref)?.change })).filter((o) => o.change);
@@ -204,63 +218,53 @@ function waiver(change, wav) {
   if (dryRun) { console.log(`would activate ${wav} on impl/${change} in ${target.wt.path} (--by ${login || '<maintainer>'})`); return; }
 
   const head = writeAndPush(target, () => {
-    warrant(['waive', '--activate', wav, '--by', login], target.wt.path);
-    const changed = lines(git(['status', '--porcelain'], { cwd: target.wt.path })).map((l) => l.slice(3));
+    sh('warrant', ['waive', '--activate', wav, '--by', login], { cwd: target.wt.path, shell: WIN });
+    const changed = nulList(git(['status', '--porcelain', '-z'], { cwd: target.wt.path })).map((l) => l.slice(3));
     if (changed.length !== 1 || changed[0] !== path) throw new Error(`warrant changed ${changed.join(', ')}, not only ${path}`);
     git(['add', path], { cwd: target.wt.path });
   }, `${change}: activate ${wav} (act.mjs)`);
   const state = read(`origin/impl/${change}`)?.waiver_state;
-  if (state !== 'ACTIVE') fail(`pushed ${head}, but ${wav} on origin/impl/${change} is ${state}`);
+  if (state !== 'ACTIVE') fail(`pushed ${head} to impl/${change}, but ${wav} there is ${state}`);
   console.log(`${wav} ACTIVE on impl/${change} ${head}`);
 }
 
 // ---------- patch (D-6) ----------
-// Paths of `git apply --numstat -z`: "a\td\tpath\0", a rename "a\td\t\0old\0new\0".
-function patchPaths(out) {
-  const tokens = out.split('\0');
-  const paths = [];
-  for (let k = 0; k < tokens.length; k++) {
-    const m = /^[\d-]+\t[\d-]+\t(.*)$/s.exec(tokens[k]);
-    if (!m) continue;
-    if (m[1]) paths.push(m[1]);
-    else { paths.push(tokens[k + 1], tokens[k + 2]); k += 2; }
-  }
-  return [...new Set(paths.filter(Boolean))].sort();
-}
 function patch(change, fileArg) {
   const file = resolve(fileArg);
+  if (!existsSync(file)) refuse(patchRefusals({ file: { path: file, exists: false } }));
   const insideRepo = worktrees.some((w) => { const r = relative(resolve(w.path), file); return !r.startsWith('..') && !isAbsolute(r); });
   const target = changeWorktree(['spec', 'impl', 'archive'].map((k) => `${k}/${change}`));
-  if (!existsSync(file)) refuse(patchRefusals({ file: { path: file, exists: false } }));
   const cwd = target.wt?.path ?? repo;
-  const paths = patchPaths(sh('git', ['apply', '--numstat', '-z', file], { cwd, ok: true }));
-  // Applies on origin/<branch>, checked in a temporary index: the worktree is not touched.
-  let applies = false;
+  const paths = parsePatchPaths(sh('git', ['apply', '--numstat', '-z', file], { cwd, ok: true }));
+  // Applies on origin/<branch>, checked in a temporary index: the worktree is not touched. No worktree: not checked.
+  let applies = null;
   let applyError = '';
-  const tmp = mkdtempSync(join(tmpdir(), 'lattice-act-index-'));
-  try {
-    const env = { ...process.env, GIT_INDEX_FILE: join(tmp, 'index') };
-    if (target.relation && target.relation !== 'no-remote') {
+  if (target.wt && target.relation !== 'no-remote') {
+    const tmp = mkdtempSync(join(tmpdir(), 'lattice-act-index-'));
+    try {
+      const env = { ...process.env, GIT_INDEX_FILE: join(tmp, 'index') };
       sh('git', ['read-tree', `origin/${target.branch}`], { cwd, env });
       sh('git', ['apply', '--cached', '--check', file], { cwd, env });
       applies = true;
+    } catch (e) {
+      applies = false;
+      applyError = e.message.split('\n').slice(-3).join(' ');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
-  } catch (e) {
-    applyError = e.message.split('\n').slice(-3).join(' ');
-  } finally {
-    rmSync(tmp, { recursive: true, force: true });
   }
-  const profile = JSON.parse(fromMain('.warrant/local/profiles/human-acceptance.json') || '{}');
+  let profile;
+  try { profile = fromMain('.warrant/local/profiles/human-acceptance.json'); } catch (e) { fail(e.message); }
   const refusals = [...target.refusals, ...patchRefusals({
     change, file: { path: file, exists: true, insideRepo }, paths, allowGlobs: profile.match?.paths ?? [], applies, applyError,
   })];
   if (refusals.length) refuse(refusals);
   if (dryRun) { console.log(`would patch ${target.branch} in ${target.wt.path}: ${paths.join(', ')}`); return; }
 
-  const subject = /^Subject: (?:\[PATCH[^\]]*\]\s*)?(.+)$/m.exec(readFileSync(file, 'utf8'))?.[1]?.trim();
+  const subject = patchSubject(readFileSync(file, 'utf8'), change);
   const head = writeAndPush(target, () => {
     git(['apply', '--index', file], { cwd: target.wt.path });
-    const staged = lines(git(['diff', '--cached', '--name-only'], { cwd: target.wt.path })).sort();
+    const staged = nulList(git(['diff', '--cached', '--name-only', '--no-renames', '-z'], { cwd: target.wt.path }));
     if (staged.join('\n') !== paths.join('\n')) throw new Error(`staged ${staged.join(', ')}, the patch names ${paths.join(', ')}`);
   }, `${change}: maintainer's patch ${basename(file)} (act.mjs)${subject ? ` — ${subject}` : ''}`);
   console.log(`patched ${target.branch} ${head}: ${paths.join(', ')}`);

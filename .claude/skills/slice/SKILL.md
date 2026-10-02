@@ -85,7 +85,7 @@ Work without a Change (docs, process) is a commit and a PR that touches no polic
 
 ### wait `<N>`
 
-`node .claude/skills/slice/wait-pr.mjs <N> [--max-hours <h>]` — run in the background right after the push that makes PR <N> wait for the maintainer's merge (rule `process`, "Waiting for the maintainer"); a spec-PR is offered only with `SPECIFIED` as its last commit, so every PR waits only for a merge. While auto-merge is on, it updates the PR when it falls behind `main` (`gh pr update-branch`, a merge commit; prints `PR #<N> behind main — updated` and goes on) — so `git pull --ff-only` before your next commit on that branch — and turns auto-merge off on a red `main` (not for `fix-main-*`). Outcomes:
+`node .claude/skills/slice/wait-pr.mjs <N> [--max-hours <h>]` — run in the background right after the push that makes PR <N> wait for the maintainer's merge (rule `process`, "Waiting for the maintainer"); a spec-PR is offered only with `SPECIFIED` as its last commit, so every PR waits only for a merge. While auto-merge is on, it updates the PR when it falls behind `main` (`gh pr update-branch`, a merge commit of `main` into an already judged head, so CI judges it instead of the local judge; prints `PR #<N> behind main — updated` and goes on) — so `git pull --ff-only` before your next commit on that branch — and turns auto-merge off on a red `main` (not for `fix-main-*`). Outcomes:
 - `PR #<N> MERGED <sha> <url>` or `PR #<N> CLOSED <url>`, exit 0;
 - `PR #<N> CONFLICT <url>`, exit 4 — merge `origin/main` into the branch, resolve, run the local judge, push, start it again;
 - `PR #<N> AUTO-MERGE OFF [(main red: …)] <url>`, exit 5 — report to the maintainer why (a draft, ⛔, a red `main`, GitHub) and ask the merge again once it is fixed;

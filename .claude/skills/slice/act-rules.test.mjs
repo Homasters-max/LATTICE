@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   actorRefusals, changeOfBranch, copyPlan, globToRegExp, isAgentIdent, lastPush, mainHealth, mergeRefusals,
+  parsePatchPaths, parseWorktrees, patchSubject,
   patchPathWriter, patchRefusals, pendingEntries, waiverRefusals, watchStep, worktreeRefusals,
 } from './act-rules.mjs';
 
@@ -20,7 +21,7 @@ describe('who runs act.mjs (D-2)', () => {
     const r = actorRefusals({ ...project, agentShell: true, login: 'homasters', authorIdent: AGENT, needsAuthor: true });
     assert.match(reasons(r), /CLAUDECODE/);
     assert.match(reasons(r), /acts as homasters/);
-    assert.match(reasons(r), /author the commit as an agent/);
+    assert.match(reasons(r), /git author of the commit would be an agent/);
   });
   it('logins compare exactly and case-insensitively: homasters is not Homasters-max', () => {
     assert.deepEqual(actorRefusals({ ...project, login: 'homasters-MAX', needsAuthor: false }), []);
@@ -67,7 +68,52 @@ const scopePJ = { where: 'umbrella', url: `${U}#issuecomment-5950536272`, create
   body: '[scope] `s0-projections` (#60, AREA `PJ`, spec phase). Touches: paths outside `src/ledger/projections/**`.' };
 const incident = { where: 'umbrella', url: `${U}#issuecomment-5950268972`, createdAt: '2026-10-02T10:22:44Z',
   body: '[incident] Transcripts of the S0 sessions … #111: `act.mjs merge` …' };
-const ctx = { change: 'infra-merge-flow', issue: 111, pr: 116, since: '2026-10-02T10:00:00Z' };
+const ctx = { change: 'infra-merge-flow', issue: 111, pr: 116, since: '2026-10-02T10:00:00Z', repo: 'Homasters-max/LATTICE' };
+
+describe('pending entries — implementation review (I-20)', () => {
+  it('the plan comment does not touch a Change it does not name (P-1)', () => {
+    assert.deepEqual(pendingEntries({ ...ctx, change: 's0-kernel', issue: 55, pr: 102, comments: [plan] }), []);
+  });
+  it('a URL of another repository does not name the issue (P-3)', () => {
+    const e = { where: 'umbrella', url: `${U}#issuecomment-7`, createdAt: '2026-10-02T10:30:00Z',
+      body: '[decision] see https://github.com/Homasters-max/SRA/issues/111' };
+    assert.deepEqual(pendingEntries({ ...ctx, comments: [e] }), []);
+  });
+  it('an acknowledgement links the whole comment id, not a prefix of it (P-4)', () => {
+    const e = { ...plan, url: `${U}#issuecomment-595026927` };
+    const ack = { where: 'pr', url: 'p#issuecomment-2', createdAt: '2026-10-02T11:00:00Z', body: `Read ${U}#issuecomment-5950269274` };
+    assert.equal(pendingEntries({ ...ctx, comments: [e, ack] }).length, 1);
+  });
+  it('times compare as instants whatever their format (S-7)', () => {
+    const e = { ...plan, createdAt: '2026-10-02T10:00:00Z' };
+    assert.equal(pendingEntries({ ...ctx, since: '2026-10-02T10:00:00.000Z', comments: [e] }).length, 0);
+    assert.equal(pendingEntries({ ...ctx, since: '2026-10-02T09:59:59.500Z', comments: [e] }).length, 1);
+  });
+  it("an agent's committer is refused like an agent's author (S-2)", () => {
+    const r = actorRefusals({ ...project, login: 'Homasters-max', authorIdent: MAINTAINER, committerIdent: AGENT, needsAuthor: true });
+    assert.match(reasons(r), /git committer of the commit would be an agent/);
+  });
+});
+
+describe('parsing of git output (S-1, S-4)', () => {
+  it('numstat -z: plain paths and both sides of a rename', () => {
+    assert.deepEqual(parsePatchPaths('1\t1\t.warrant/local/rules/env.json\0' + '0\t0\t\0.claude/a.mjs\0.claude/b.mjs\0'),
+      ['.claude/a.mjs', '.claude/b.mjs', '.warrant/local/rules/env.json']);
+    assert.deepEqual(parsePatchPaths(''), []);
+  });
+  it('worktree list --porcelain', () => {
+    const out = 'worktree D:/project/LATTICE\nHEAD abc\nbranch refs/heads/main\n\nworktree D:/wt\nHEAD def\ndetached\n';
+    assert.deepEqual(parseWorktrees(out), [{ path: 'D:/project/LATTICE', branch: 'main' }, { path: 'D:/wt', branch: undefined }]);
+  });
+  it('a folded Subject is read whole, without [PATCH] and the Change prefix', () => {
+    const mail = 'From abc Mon Sep 17 00:00:00 2001\nFrom: x <x@y>\nSubject: [PATCH] infra-merge-flow: rules maintainer-acts,\n process, env (design Appendix)\n\nbody\n';
+    assert.equal(patchSubject(mail, 'infra-merge-flow'), 'rules maintainer-acts, process, env (design Appendix)');
+    assert.equal(patchSubject('diff --git a/x b/x\n', 'infra-merge-flow'), null);
+  });
+  it('a patch with no worktree to check against is not called "does not apply" (S-9)', () => {
+    assert.deepEqual(patchRefusals({ change: 'x', allowGlobs: ['.claude/**'], applies: null, file: { path: 'p', exists: true }, paths: ['.claude/a'] }), []);
+  });
+});
 
 describe('pending entries (D-4, I-3, I-8, I-12, I-13)', () => {
   it('an entry naming the issue and newer than the last push is pending; an [incident] is not an entry', () => {
