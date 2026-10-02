@@ -1,0 +1,199 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XRKEY2S4KKPY9Z9K0P5KQB",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "REQ-LG-003 says a commit has 'records one record per intent that is not a no-op' while 'proposal' is the hash over every intent (REQ-LG-001; design D-4: 'the proposal hash still covers every intent'). REQ-LG-003 also lists LG-P04 under Implements, and LG-P04 says 'The commit holds the intents in full; its header holds their hash'. In the skeleton the intents can be rebuilt exactly from the records (an entity record gives kind entity and base = rev - 1; an event record gives its fields), so the header hash can be recomputed from the commit. Once no-op intents are dropped, a commit with a partial no-op (SCN-LG-003, second case) has a 'proposal' hash that nothing in the ledger can reproduce. That weakens a later LG-C04 or LG-P05 (2) check that rebuilds the intents from the commit. The proposal file is gone after apply (LG-P04).",
+      "targets": [
+        "REQ-LG-003",
+        "SCN-LG-003",
+        "REQ-LG-001"
+      ],
+      "recommendation": "Decide (decisions_required D-1) and write the decision into REQ-LG-003: either say that the header hash covers intents the records do not hold and name where LG-P05 (2) gets them, or keep no-op intents recoverable, or remove LG-P04 from Implements and add an I-N row naming the conflict with design-next LG-P04."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "ambiguity",
+      "statement": "No spec states the closed list of rule IDs any more. REQ-LG-002 says 'rule an ID of the closed list of REQ-AR-011'. The modified REQ-AR-011 says 'The list itself is not enumerated here: each rule is defined by the requirement that names it', and design D-1 says the list lives in REJECTION_RULES. So the references go in a circle and end in code. SCN-AR-017 checks only that the code list and the fixture folders match. An extra ID in REJECTION_RULES with its own folder, or a missing LG-C03, would pass every test, and no reviewer can check the code list against the spec.",
+      "targets": [
+        "REQ-LG-002",
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "State the closed list in the ledger spec, for example in REQ-LG-002: 'The closed list is LG-C03, LG-C07, LG-P01, LG-P02'. Make REQ-AR-011 refer to 'the closed list of REQ-LG-002'. #82 then changes REQ-LG-002 (AREA LG only), which keeps the goal of D-1 that later rules do not hold AR."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The modified REQ-CL-004 keeps its heading 'apply turns a proposal into a commit or into rejections' but now also defines the outcomes 'existing' and 'no-op'. Design D-1 rejects an alternative for exactly this reason: \"REQ-CL-004's 'a commit or rejections' would contradict no-op and existing\".",
+      "targets": [
+        "REQ-CL-004",
+        "openspec/changes/s0-apply-checks/specs/cli/spec.md"
+      ],
+      "recommendation": "Rename the requirement, for example 'apply runs a proposal and acts on its outcome', using a RENAMED section of the delta so that OpenSpec still matches it to REQ-CL-004."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-LG-002 says 'Apply SHALL find, against one state ..., these rejections', and its table includes LG-C03. REQ-CL-001 says code 1 means 'the proposal was rejected by apply ... (apply, REQ-LG-002)'. But REQ-LG-003 makes apply pure, and its outcome 'rejected' holds only LG-C07 and LG-P02. LG-C03 comes from a separate check (REQ-LG-004) that the command runs after the store answers moved. The text names two producers of LG-C03.",
+      "targets": [
+        "REQ-LG-002",
+        "REQ-LG-003",
+        "REQ-LG-004",
+        "REQ-CL-001"
+      ],
+      "recommendation": "In REQ-LG-002, separate the rejections apply finds (LG-C07, LG-P02) from the one the tail check finds (LG-C03, REQ-LG-004). In REQ-CL-001, say 'rejected by apply or by the tail check (REQ-LG-002, REQ-LG-004)'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-LG-001 says the proposal hash 'does not depend on the order of the intents in the text'. The canonical order is only 'entity intents by id, then event intents by id', so two intents of the same kind and the same id tie, and the hash of such a proposal depends on their order in the text. This changes nothing observable, because such a proposal never matches a commit and is rejected by LG-C07. The claim is still false as written.",
+      "targets": [
+        "REQ-LG-001"
+      ],
+      "recommendation": "Qualify the claim ('for a proposal whose intents have distinct ids'), or define a total order, for example breaking ties by the canonical JSON of the intent."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-011 adds moved.jsonl ('the commits another writer appends after ledger.jsonl was opened') and checks the commit 'against the tail of ledger.jsonl followed by moved.jsonl'. It does not require the joined ledger to open (LG-C04: canonical lines, seq growing, prev chained). The command path re-opens the ledger and refuses a broken one with code 2 (REQ-CL-004). The fixture path would accept a moved.jsonl such as {\"seq\":1}, so the fixture could prove LG-C03 on a ledger the command never accepts.",
+      "targets": [
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "State that ledger.jsonl followed by moved.jsonl SHALL open as a ledger (REQ-CL-004 Opening), and that a fixture whose joined ledger is refused fails the test, naming its folder."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-AR-011 requires 'exactly the expected rejections ... every one naming the rule ID of its folder'. Nothing requires expected.json to be non-empty. A folder with expected.json [] whose proposal commits, is a no-op or is existing passes vacuously, which contradicts LG-A02 ('Every rule ID has at least one fixture that triggers it'). Today the test asserts found.length > 0, but the spec does not.",
+      "targets": [
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "Add 'expected.json holds at least one rejection' to REQ-AR-011."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-LG-003 and SCN-CL-012 build a proposal from 'a new session event and the four entity intents of that commit, each with base 1 and its body unchanged'. A commit holds records, not intents, and taken literally the old 'by' would remain. That proposal fails LG-P01 (every by must be the session id), not no-op. The scenarios also leave implicit the rule they depend on: a different 'by' does not prevent a no-op, because only type and record hash are compared (OM-H03).",
+      "targets": [
+        "SCN-LG-003",
+        "SCN-CL-012",
+        "REQ-LG-003"
+      ],
+      "recommendation": "State in both scenarios that each entity intent has 'by' set to the new session id, 'base' 1, and the type and body of its record. In REQ-LG-003, say that 'by' is not compared for a no-op."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-LG-001 says 'then from that proposal with a second session event appended; then from that proposal with its intents in reverse order'. 'that proposal' can refer to the proposal just modified (base removed at position 2). On that reading, the session count is never checked (it runs only when every intent passes the form), and the reverse-order case gives an LG-P01 rejection instead of a proposal. Only the THEN clause shows that the unmodified fixture proposal is meant.",
+      "targets": [
+        "SCN-LG-001"
+      ],
+      "recommendation": "Write 'the fixture proposal of SCN-CL-003 with ...' in the third and fourth cases."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-LG-005 runs the permutation test on 'the proposals ... of SCN-LG-001…005, each on its ledger'. SCN-LG-001 names no ledger. SCN-LG-003 has three proposals and SCN-LG-004 two ledgers. SCN-LG-005 checks one commit against two ledgers. 'every permutation of its intents in the text' is undefined for a text without an intents list ({\"intents\": 5}, SCN-LG-001). Design D-7 decides these points ('a permutation ... is the text itself'), but the spec does not.",
+      "targets": [
+        "REQ-LG-005",
+        "SCN-LG-006"
+      ],
+      "recommendation": "In REQ-LG-005, name the ledger for SCN-LG-001 (the empty ledger), say that every proposal and ledger pair of a scenario is a case, and say that a text whose value has no intents list has only itself as its permutation."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "REQ-CL-004 adds a new code-2 refusal: after the store answers moved, 'when the check gives no rejection, the command refuses with code 2 naming the store'. The list of code-2 refusals in the modified REQ-CL-001 does not include it, although it removed 'a ledger whose tail moved' from that same list.",
+      "targets": [
+        "REQ-CL-001",
+        "REQ-CL-004"
+      ],
+      "recommendation": "Add 'a store that answers that the tail moved while it did not (REQ-CL-004)' to the code-2 refusals of REQ-CL-001."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "After a moved answer, REQ-CL-004 only checks the tail again (REQ-LG-004) and does not run apply again. Suppose two runs of 'lattice apply' work on the same proposal file at once, for example a repair run racing an interrupted one. The loser answers LG-C03 with exit 1 and 'the proposal file stays', but the winner has already committed that proposal and removed the file. LG-C08 would answer 'existing'. The behaviour is acceptable, because the caller runs again (LG-C03), but the text assumes one writer per proposal.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-LG-004"
+      ],
+      "recommendation": "Either state that a moved tail is always LG-C03 even when it holds this proposal, or let the command look up the proposal hash in the re-opened ledger and answer existing."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-apply-checks/specs/ledger/spec.md",
+      "change": "REQ-LG-002: add 'The closed list of rule IDs is LG-C03, LG-C07, LG-P01, LG-P02; a Change that adds a rule modifies this list and adds its fixture (REQ-AR-011)'. Separate the rejections of apply (LG-C07, LG-P02) from that of the tail check (LG-C03, REQ-LG-004) (F-2, F-4)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-apply-checks/specs/architecture/spec.md",
+      "change": "REQ-AR-011: 'the closed list of REQ-LG-002'; 'expected.json holds at least one rejection'; 'ledger.jsonl followed by moved.jsonl SHALL open as a ledger (REQ-CL-004 Opening)' (F-2, F-6, F-7)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-apply-checks/specs/cli/spec.md",
+      "change": "Rename REQ-CL-004 through a RENAMED section (F-3). In REQ-CL-001, attribute code 1 to apply or the tail check and add the store fault to the code-2 list (F-4, F-11). In SCN-CL-012, state that each entity intent's 'by' is the new session id (F-8)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "design-next/03-ledger.md (LG-P04, LG-P05, LG-C07, LG-C08) and 02-object-model.md (OM-H03) are the source the spec must agree with. I did not read issue #56 itself; I took its scope as the caller described it (typed checks moved to #82)."
+    },
+    {
+      "id": "A-2",
+      "statement": "SCN-CL-011 is driven, as today, through an injected store port in the in-process CLI test, so 'a store whose ledger gains a commit between opening and appending' can be tested."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "A commit with a partial no-op drops the records of its no-op intents, but its 'proposal' hash still covers them (REQ-LG-003, design D-4). This conflicts with design-next LG-P04 ('The commit holds the intents in full'), and the header hash can no longer be recomputed from the commit. Which rule holds?",
+      "options": [
+        "Keep D-4. State in REQ-LG-003 that the header hash covers intents the records do not hold, and that LG-P05 (2) reads the intents elsewhere (the proposal file in the PR diff). Record the deviation from LG-P04 in an I-N row.",
+        "Hash only the intents that become records. LG-C08 then cannot find a re-applied proposal with no-op intents, and that run ends as LG-P02 or no-op.",
+        "Keep no-op intents in the commit in a form that writes no revision (needs a header or record change; OM-E01 says a new header field requires a new kernel version)."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:c5b941859db3717340d0e6e5924185fcf89a951135e3c779bb64db7fa7def51d",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:45:00Z"
+  }
+}
