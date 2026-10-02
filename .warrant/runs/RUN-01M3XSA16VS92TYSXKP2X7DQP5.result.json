@@ -1,0 +1,158 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XSA16VS92TYSXKP2X7DQP5",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "In REQ-LG-003, outcome 1 decides `existing` by 'the hash of the held intents', and a no-op needs the latest revision to have `rev` equal to the intent's `base`. Whether an intent is held therefore depends on the current tail. The text then claims 'So a proposal applied again after its commit — even one whose other intents were no-ops — answers that commit'. REQ-CL-004 makes the same claim for `existing`: 'so a run interrupted between the append and the removal ends as it would have'. Design D-5 says 'its intents that were no-ops are still no-ops'. Counterexample: proposal P = {S2, E1 (base 1, unchanged), E2 (base 1, changed)} on a ledger where E1 and E2 are at rev 1. The commit at seq 2 holds {S2, E2}, and the process crashes before removing the file. Another writer then commits E1 at rev 2. When P is run again, E1 has `rev` 2, which is not its `base` 1, so E1 is no longer a no-op. The held set becomes {S2, E1, E2} and its hash matches no commit. The outcome is `rejected` with LG-P02 on E1 and E2, exit 1, and the proposal file stays, although the change of P is already in the ledger. The rule as written and its stated consequence give different observable results. Design-next LG-C08 says re-apply 'covers a crash between writing the commit and removing the proposal file'. That holds here only while no later commit touches an entity whose intent was a no-op.",
+      "targets": [
+        "REQ-LG-003",
+        "REQ-CL-004",
+        "SCN-LG-004",
+        "openspec/changes/s0-apply-checks/design.md"
+      ],
+      "recommendation": "Decide decisions_required D-1 and write the answer into REQ-LG-003. If the current rule stays, qualify the 'So …' sentence of REQ-LG-003, the `existing` sentence of REQ-CL-004 and D-5 with 'unless a later commit changed an entity whose intent was a no-op', and add a scenario that pins the outcome in that case. Otherwise change how LG-C08 finds the commit (D-1 option 2)."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "I-6 adds `existing` to the tail check for two writers of one proposal: 'the one that loses the race answers the commit the other wrote' (D-6). At the command level the winner has already removed the proposal file (REQ-CL-004 `commit`). The loser then reaches `existing`, which 'SHALL … remove the proposal file', and 'A removal that fails after `existing` or `no-op` is refused with code 2 naming the proposal file'. Removing a file that is already gone fails on a plain reading, as unlinkSync does in src/assembly/index.ts. So the loser exits with code 2 naming a 'proposal file left behind' that does not exist, not with code 0 and `{\"outcome\":\"commit\",\"seq\":N}`. The spec does not say whether an already missing proposal file counts as removed. No scenario covers the `existing` answer of the tail check at the command level: SCN-CL-011 covers only a commit of another proposal, and SCN-LG-005 covers only the pure check.",
+      "targets": [
+        "REQ-CL-004",
+        "REQ-LG-004",
+        "SCN-CL-011"
+      ],
+      "recommendation": "In REQ-CL-004, state that a proposal file already gone when it is to be removed counts as removed, after `commit` and after `existing`. Add a CL scenario: the store answers `moved`, and the re-opened ledger holds the commit of the same proposal, written by another writer that also removed the file. The command exits 0, prints `{\"outcome\":\"commit\",\"seq\":<that seq>}` and appends nothing."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "proposal.md, What Changes, defines a no-op as 'an entity intent whose type and record hash equal the latest revision of its id writes no record'. It omits the condition `rev` = `base` that I-3 added to REQ-LG-003. By the proposal's definition, a second import of the same table (base 0 over rev 1, same bodies) is a no-op of every entity, so apply answers `no-op`. REQ-LG-003 and SCN-CL-006 answer LG-P02 for that case.",
+      "targets": [
+        "openspec/changes/s0-apply-checks/proposal.md",
+        "REQ-LG-003",
+        "SCN-CL-006"
+      ],
+      "recommendation": "Add 'and whose `base` is that revision' to the No-op bullet of proposal.md. This is a human edit after approval, so do it before the spec-PR is approved."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-LG-001 defines 'the proposal hash is the hash of all intents of the proposal (LG-C02)'. Under REQ-LG-003, the LG-C02 header field `proposal` is the hash of the held intents, which differs from the proposal hash whenever a proposal has a no-op. So the term cited for LG-C02 is not the value LG-C02 stores. proposal.md's Re-apply bullet, 'a proposal whose hash is already the `proposal` of a commit answers that commit', reads with the REQ-LG-001 definition (all intents). On that reading a crash after a partial no-op never gives `existing`, which contradicts REQ-LG-003 outcome 1. The proposal file name `<proposal hash>.json` (REQ-CL-003) also stops matching the commit's `proposal` in that case.",
+      "targets": [
+        "REQ-LG-001",
+        "REQ-LG-003",
+        "openspec/changes/s0-apply-checks/proposal.md"
+      ],
+      "recommendation": "In REQ-LG-001, drop '(LG-C02)' from the proposal hash, or say it names the proposal file (REQ-CL-003). Say once that the commit's `proposal` (LG-C02) is the hash of the held intents and equals the proposal hash only when no intent is a no-op. In proposal.md, write 'a proposal the hash of whose held intents is already …'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-LG-002 says 'Apply (REQ-LG-003) SHALL find, against one state …, every rejection of these rules, never only the first' without a condition. REQ-LG-003 decides `existing` first and 'finds nothing else', and SCN-LG-004 expects 'no rejection LG-P02' for a proposal that has stale bases. Read alone, REQ-LG-002 requires those LG-P02 rejections, and LG-C07 rejections of no-op duplicates in a proposal whose held intents match a commit.",
+      "targets": [
+        "REQ-LG-002",
+        "REQ-LG-003",
+        "SCN-LG-004"
+      ],
+      "recommendation": "Qualify REQ-LG-002: 'when apply does not answer `existing` (REQ-LG-003), it SHALL find … every rejection …'."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-LG-004 decides 'no rejection when the `seq` of the ledger's tail … equals the commit's `base`'. It never compares the tail's commit hash with the commit's `prev`. A ledger whose tail commit was replaced by another commit with the same `seq` gives `clear`, which the reference states as 'the tail it was built on' and LG-C03 as 'if the tail has moved'. Appending that commit then breaks LG-C04, because its `prev` is not the hash of the commit before it. The text assumes that a `seq` identifies a tail. In REQ-CL-004, `clear` after `moved` is a code-2 store fault, so the effect there is limited. In the fixture and permutation tests, `clear` is the result that counts.",
+      "targets": [
+        "REQ-LG-004",
+        "SCN-LG-005"
+      ],
+      "recommendation": "Define 'the tail it was built on' as the tail whose `seq` is the commit's `base` and whose commit hash is the commit's `prev` (`null` for an empty ledger). Answer LG-C03 otherwise, keeping `expected` and `got` as `seq`s, or add an explicit statement that S0 identifies a tail by `seq` alone."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-LG-003 compares the intent's `type` as part of the no-op, and design D-4 explains why: the S0 record hash omits `@n`, so `type@1 → type@2` with the same body would otherwise be a no-op (OM-H01). No scenario covers this. SCN-LG-003 changes only bodies, so an implementation that compares only the record hash passes every scenario.",
+      "targets": [
+        "REQ-LG-003",
+        "SCN-LG-003"
+      ],
+      "recommendation": "Add a case to SCN-LG-003: after SCN-CL-005, an intent for `lattice/fx-a02` with `base` 1, type `lattice/table.rule@2` and an unchanged body gives a commit with that record at `rev` 2, not `no-op`."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "A no-op needs `rev` = `base`, but import-md writes every entity intent with `base` 0 (REQ-CL-003). So re-importing an unchanged `md` file in S0 is never a no-op: it is LG-P02 (SCN-CL-006). A no-op can be reached only through a proposal written by hand (SCN-CL-012). LG-C05 and OM-H03 read as if unchanged content were a no-op. This is acceptable in S0, but a later Change that has import set `base` from the projection inherits the rule.",
+      "targets": [
+        "REQ-LG-003",
+        "REQ-CL-003"
+      ],
+      "recommendation": "No change needed in this Change. Note the dependency on #82 or the import Change that sets `base`."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-apply-checks/specs/ledger/spec.md",
+      "change": "REQ-LG-003: write the decision of D-1. Either qualify 'So a proposal applied again … answers that commit' with 'unless a later commit changed an entity whose intent was a no-op' and add a scenario that pins that outcome, or redefine how `existing` finds its commit (F-1). REQ-LG-002: 'when apply does not answer `existing`' before 'SHALL find every rejection' (F-5). REQ-LG-001: the proposal hash names the proposal file; the commit's `proposal` (LG-C02) is the hash of the held intents (F-4). REQ-LG-004: a tail is identified by `seq` and commit hash (`prev`) (F-6). SCN-LG-003: add a case with a type change and an unchanged body (F-7)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-apply-checks/specs/cli/spec.md",
+      "change": "REQ-CL-004: 'a proposal file already gone counts as removed'. Align the `existing` sentence 'ends as it would have' with D-1 (F-1). Add a scenario for the tail check answering `existing` after `moved` at the command level, where the other writer already removed the file: exit 0 and `{\"outcome\":\"commit\",\"seq\":N}` (F-2)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-apply-checks/proposal.md",
+      "change": "No-op bullet: add 'and whose `base` is that revision' (F-3). Re-apply bullet: 'a proposal the hash of whose held intents is already the `proposal` of a commit' (F-4). This is a human edit."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "I read issue #56 from the scratchpad copy i56.md, not through `gh issue view 56`: the guard of the review Run allows no shell command except `warrant run submit`. I took its scope (typed checks moved to #82) from that copy."
+    },
+    {
+      "id": "A-2",
+      "statement": "I treated design-next/03-ledger.md (LG-C03, LG-C05, LG-C08, LG-P04, LG-P05) and 02-object-model.md (OM-H01, OM-H03, OM-E01) as the source the spec must agree with. I treated the merged openspec/specs/{cli,architecture} as the baseline of the MODIFIED requirements."
+    },
+    {
+      "id": "A-3",
+      "statement": "I found review 1's F-2…F-12 closed by I-4…I-7 as the author described. The list is enumerated in REQ-LG-002 and SCN-LG-007. REQ-AR-011 requires ledgers that open and a non-empty expected.json. REQ-CL-004 is RENAMED. REQ-CL-001 lists the store fault. The hash claim is qualified. The scenarios name the fixture proposal and `by`. REQ-LG-005 lists its cases. I-6 adds `existing` to the tail check. F-1 is closed for a crash with no writer in between: the held set, and so the hash, is stable when nothing else changed. The residual gap is F-1 of this review. I-6 is closed at the level of the pure check, and its command-level gap is F-2 of this review."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "LG-C08 looks up the hash of the held intents, and which intents are held depends on the current tail. A crash after a partial no-op, followed by a commit that changes an entity whose intent was a no-op, makes a re-run answer LG-P02 rather than the commit (F-1). Which rule holds?",
+      "options": [
+        "Keep the current rule. State the exception in REQ-LG-003 and REQ-CL-004, and pin the outcome (`rejected`, file kept) in a scenario. The user deletes the proposal file by hand.",
+        "Find the candidate commit by the proposal's session event: the commit whose records hold an event record equal to the session event. Answer `existing` when its `proposal` equals the hash of the intents held against the projection at that commit's `base`. This is exact, and it relies on session event ids being unique, which a ULID gives in practice and OM-D01 (#82) would enforce.",
+        "Go back to hashing every intent while the records hold only the held ones. This was rejected in I-3 because the header could no longer be recomputed from the commit (LG-P04, LG-P05 (2))."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:97098d043b8bcd24da320f7016376c931e0527f9a700f4a19233c86d0a30ffe0",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T12:00:00Z",
+    "finished_at": "2026-10-02T12:40:00Z"
+  }
+}
