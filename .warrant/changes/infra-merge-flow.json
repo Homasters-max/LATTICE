@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "infra-merge-flow",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-02T10:36:18.069Z",
+      "by": "cli:local"
+    }
+  ]
+}
