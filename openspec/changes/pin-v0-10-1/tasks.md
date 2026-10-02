@@ -14,7 +14,7 @@
 
 - [ ] 2.1 Tests (design D-4): check — `warrant check pin-v0-10-1 tests-passed` `PROVEN`, `npm run typecheck` green,
   `node --test .claude/skills/slice/*.test.mjs` green
-- [ ] 2.2 The guard probe (design D-5): check — both writes denied, no file created; the deny reasons in an `I-N` row
+- [x] 2.2 The guard probe (design D-5): check — both writes denied, no file created; the deny reasons in an `I-N` row
 
 ## 3. Check
 

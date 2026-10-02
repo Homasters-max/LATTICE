@@ -134,8 +134,23 @@ of the profile `human-acceptance`).
 
 ## Implementation Notes
 
+Rows I-1…I-10 take the findings of the spec review (EVID-01M3Z17ZJ9MJ7SKCMT1WTNDMZ5, `PROVEN`: MAJOR F-1, F-2; MINOR
+F-3…F-9; INFO F-10) as proposed in the spec-PR; the maintainer's decision is its merge
+([PR #141](https://github.com/Homasters-max/LATTICE/pull/141)).
+
 | # | Decision |
 |---|---|
+| I-1 | F-1: from the CLI install until this impl-PR merges, `main` judges with `@v0.10.0` while every session writes with `0.10.1`. A `[broadcast]` on #44 (https://github.com/Homasters-max/LATTICE/issues/44#issuecomment-5960036179): no `warrant waive` and no `transition … PROPOSED` in any Change until the merge |
+| I-2 | F-2: `scopeFindings` exempted only `AGENTS.md` and the lock, only when a rule changed; `.warrant/schemas/**` written by `sync` was "outside the Runs' scope". The D-2 patch exempts what `warrant sync` writes — `AGENTS.md`, `.warrant/warrant.lock.json`, `.warrant/schemas/**` — when the diff changes a rule or the lock (the job's `validate` and `sync --check` prove it is `sync`'s output), with a test. `sync` output under `.claude/**`, if any, goes as a second maintainer patch |
+| I-3 | F-3: the guard is one `warrant` process per hook event — after the install every session is guarded at once; a restart is needed only if `sync` changes `.claude/`. Shown by I-11 without a restart |
+| I-4 | F-4: the stale text of `SKILL.md` (#93 in the start-prompt notes, coordinator item 10, the waiver bullet) is updated in the D-2 patch |
+| I-5 | F-5: `Closes #93` in the archive-PR only because the probe of I-11 is denied |
+| I-6 | F-6: `WAIVER_ID` is the id pattern of `waiver.1.schema.json` of `v0.10.1` (`^WAV-([0-9]{4}-[0-9]{3}\|[0-9A-HJKMNP-TV-Z]{26})$`); `act-rules.test.mjs` samples both forms and seven refused ids |
+| I-7 | F-7: the probe adds an allowed write in scope — this table — and records that no "start a Run first" hint followed it (I-11) |
+| I-8 | F-8: a probe file that passed would be removed here by this session, in the main checkout by the coordinator's session; none passed (I-11) |
+| I-9 | F-9: `change.md` — the rework is asked in the spec-PR or, once merged, on the Change's issue; a merged spec-PR is followed by a new one and the impl-PR waits for it |
+| I-10 | F-10: accepted; the transitions `APPROVED` and `IMPLEMENTING` were made with CLI `0.10.0` before the install, so no `0.10.1` command ran on the `0.10.0` lock before `sync` |
+| I-11 | The guard probe (D-5), CLI `0.10.1`, no restart of the session, Run `RUN-01M3Z29ETAMR4D8A0RHZJPW3YJ` (`implement`, scope `openspec/changes/pin-v0-10-1/**`): Write `design-next/guard-probe-pin-v0-10-1.md` — denied, "outside the Run RUN-01M3Z29ETAMR4D8A0RHZJPW3YJ of pin-v0-10-1: write_scope: …"; Write `D:/project/LATTICE/guard-probe-pin-v0-10-1.md` (the main checkout) — denied, "the edit is in another checkout under WARRANT, where a Run is active or this session runs one". Neither file exists. The allowed write of this table followed by no "start a Run first" hint. Under `0.10.0` the first write passed (#93). #93 closes by the archive-PR |
 
 ## Risks / Trade-offs
 
