@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "infra-coordinator",
-  "change_state": "VERIFYING",
+  "change_state": "ARCHIVED",
   "classification": {
     "profiles": [
       "chore",
@@ -88,6 +88,42 @@
       "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
       "gates": {},
       "evidence": []
+    },
+    {
+      "to": "MERGED",
+      "at": "2026-10-02T18:06:12.269Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "analyze-clean": "PASS",
+        "evidence-complete": "PASS",
+        "factory-golden-passed": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "scope-valid": "PASS",
+        "spec-approved": "PASS",
+        "tests-passed": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3YWF6Q8XJDFQ7KQ809M4987",
+        "EVID-01M3YWPYXZA40EJTFNQ8C9PC1H"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/136"
+    },
+    {
+      "to": "ARCHIVED",
+      "at": "2026-10-02T18:06:23.264Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "analyze-clean": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3YWQ8M02WA4T0TD4X0J6013"
+      ]
     }
   ]
 }

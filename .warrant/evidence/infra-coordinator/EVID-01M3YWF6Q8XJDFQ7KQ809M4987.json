@@ -1,0 +1,43 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YWF6Q8XJDFQ7KQ809M4987",
+  "claim": {
+    "text": "tests-passed passed for infra-coordinator",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "3123d179e4509ca029e593a13fa0012202a41583",
+    "base_commit": "bc2981253e906c953ede854d6c024be867658696",
+    "spec_revision": "openspec/changes/infra-coordinator@3123d179e4509ca029e593a13fa0012202a41583",
+    "tree": "b8880fafb3626b15372d82e1dc8e047fd1dae663",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "ci",
+    "ref": "https://github.com/Homasters-max/LATTICE/actions/runs/37044615607/attempts/1"
+  },
+  "context_hash": "sha256:c72bc6932ca82ce61aef7079340e0b3b763e353cd7f67b65eb635f6d74176b1e",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T18:01:52.105Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-coordinator/raw/tests-passed/junit.xml",
+      "sha256": "sha256:29ab16c97207a012530476ddd69f7528d890f5a0da13a2c495b2eda4600d4f6a"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 1,
+    "tests": 849
+  }
+}
