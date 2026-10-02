@@ -8,16 +8,17 @@
 - [ ] 1.2 `src/adapters/store-memory/index.ts` — `memoryLedger`, `memoryStore` with the lock generations, fencing and
   recovery of D-4, D-5, D-6 (`REQ-SR-001`, `REQ-SR-002`, `REQ-SR-004`, design D-2, D-6) and
   `test/store/contract.test.ts`; verified by the `[memory]` tests with the tokens `SCN-SR-001`, `SCN-SR-002`,
-  `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-006`, `SCN-SR-007`, `SCN-SR-008`, `SCN-SR-009` passing, and by `SCN-AR-008`
-  passing with the new adapter folder
+  `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-006`, `SCN-SR-007`, `SCN-SR-008`, `SCN-SR-009`, `SCN-SR-011`, `SCN-SR-012`
+  passing, and by `SCN-AR-008` passing with the new adapter folder
 
 ## 2. JSONL adapter hardened
 
-- [ ] 2.1 `src/adapters/store-jsonl/index.ts` — options, lock files as generations, compare-and-swap take, fencing,
-  release, `append` of D-5 (`REQ-SR-001`, `REQ-SR-002`, design D-1, D-2, D-3, D-5); verified by the `[jsonl]` tests
-  with the tokens `SCN-SR-001`, `SCN-SR-002`, `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-008` passing
-- [ ] 2.2 Recovery of a torn tail on bytes, determined again under the lock, in `read` and in `append` (`REQ-SR-004`,
-  design D-4); verified by the `[jsonl]` tests with the tokens `SCN-SR-006`, `SCN-SR-007`, `SCN-SR-009` passing, and
+- [ ] 2.1 `src/adapters/store-jsonl/index.ts` — options, lock files created whole and verified (compare-and-swap),
+  fencing, release, `append` of D-5 (`REQ-SR-001`, `REQ-SR-002`, design D-1, D-2, D-3, D-5); verified by the `[jsonl]`
+  tests with the tokens `SCN-SR-001`, `SCN-SR-002`, `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-008`, `SCN-SR-011` passing
+- [ ] 2.2 Recovery of a torn tail on bytes, determined again under the lock and fenced before the cut, in `read` and in
+  `append` (`REQ-SR-004`, design D-4); verified by the `[jsonl]` tests with the tokens `SCN-SR-006`, `SCN-SR-007`,
+  `SCN-SR-009`, `SCN-SR-012` passing, and
   the tests with the tokens `SCN-SR-006` (the cut UTF-8 character) and `SCN-SR-010` in `test/store/jsonl.test.ts`
   passing
 - [ ] 2.3 Durable append: write loop, `fsync`, swallowed release failure, the `fs` option (`REQ-SR-002`, `REQ-SR-003`,

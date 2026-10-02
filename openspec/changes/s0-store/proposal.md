@@ -56,8 +56,9 @@ the JSONL and the memory adapter in CI.
   SCN-CL-012).
 - Unchanged shared files (SL-T08): the `store` port interface `src/ledger/ports/store.ts`, the module matrix, the CLI
   entry and command table, `src/assembly/index.ts`, `package.json`. No new dependency.
-- Files on disk: a lock file `store/knowledge.jsonl.lock.<n>` exists while an append runs (and after a crash, until
-  its TTL); `store/recovered/` appears only after a torn tail was recovered, and shows in `git status` so the
+- Files on disk: a lock file `store/knowledge.jsonl.lock.<n>` exists while an append runs or a read recovers a torn
+  tail; after a crash or a failed removal it stays until the next store that takes the lock, once it has expired,
+  removes it; `store/recovered/` appears only after a torn tail was recovered, and shows in `git status` so the
   maintainer sees that a write was cut.
 - Follow-ups opened from the spec review: issue #86 (the port comment on `torn`, a `locked` reason for `append`).
 - AREAs: `SR` (new spec `store`) and `CL` (decision on umbrella #44,

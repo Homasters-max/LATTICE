@@ -24,7 +24,7 @@ says, and is never handed over. The store does not check that `seq` grows or tha
 empty ledger, and refuses, by throwing, a ledger whose complete lines are not valid UTF-8.
 
 `append(commit, after)` SHALL write the text of `commit` as the next commit only when the `seq` of the last commit is
-`after` (`0` on an empty ledger) and the writer holds the lock until the write is done (REQ-SR-002), and then answer
+`after` (`0` on an empty ledger) and the writer took the lock and passed its fencing check (REQ-SR-002), and then answer
 `ok`; otherwise it SHALL answer `moved` and write nothing (LG-C03). After `ok`, every store made on the ledger reads the
 commit. The JSONL adapter creates a missing ledger file on the first append; a missing folder of the ledger is a
 failure of the file system. A failure of the file system is thrown and never answered `ok`.
@@ -57,27 +57,32 @@ took it — and its expiry: the time it was taken plus the TTL of the store, in 
 clock. The store first looks at the current lock. While another owner holds a lock that has not expired (its expiry is
 after the store's current time), the append SHALL answer `moved` and write nothing; it never waits. Otherwise — no lock,
 an expired lock, a lock that cannot be read as a lock, or a lock of its own — it takes the lock. Taking is a
-compare-and-swap: it succeeds only while the current lock is still the one the store looked at; when another writer
-took the lock in between, the append SHALL answer `moved` and write nothing.
+compare-and-swap over the whole lock: it succeeds only when, once the store's lock is in place, the lock it replaces is
+still exactly the one the store looked at — the same lock, not merely one in the same place — and no other writer took
+a lock in between; otherwise the append SHALL answer `moved`, write nothing and leave no lock of its own.
 
 In the JSONL adapter a lock is a file next to the ledger file, named as the ledger file followed by `.lock.<n>`, `<n>` a
 positive decimal integer without leading zeros; the current lock is the file with the greatest `<n>`, and there is no
-lock when there is no such file. Taking the lock creates the file with `<n>` one more than the greatest `<n>` the store
-looked at (`1` when there was none) and fails when that file already exists. The content of a lock file is the
-canonical JSON of an object with exactly a string `owner` and a safe integer `expires`, followed by a line feed
-(`{"expires":10000,"owner":"a"}`); any other content, a partly written file included, cannot be read as a lock and
-counts as expired. A failure of the file system while looking at the lock is thrown, never taken for an expired lock.
-Removing a lock removes the store's own lock file and every lock file with a smaller `<n>`. In the memory adapter the
-lock is part of the shared ledger.
+lock when there is no such file. The content of a lock file is the canonical JSON of an object with exactly a string
+`owner` and a safe integer `expires`, followed by a line feed (`{"expires":10000,"owner":"a"}`); a lock file appears
+only with its whole content, so any other content cannot be read as a lock and counts as expired. Taking the lock
+creates, whole, the file with `<n>` one more than the greatest `<n>` the store looked at (`1` when there was none) —
+failing when that file already exists — and then looks again: the take holds only when its own file is the current lock
+and the greatest other lock file is the one it looked at, with the same content (none when it looked at none);
+otherwise it removes its own file. A lock file that disappears while the store looks at it is looked at again; any
+other failure of the file system while looking at the lock is thrown, never taken for an expired lock. Removing a lock
+removes the store's own lock file and every lock file with a smaller `<n>`. In the memory adapter the lock is a value
+of the shared ledger, and the compare-and-swap compares the lock value itself.
 
-Fencing: after it has checked the tail and right before it writes, the append SHALL check that the current lock is still
-its own and has not expired by its clock; if not, it answers `moved` and writes nothing. Whatever the answer, and when a
-failure is thrown, the append SHALL remove the lock if it is still its own, and never a lock of another owner. A failure
-to remove the lock is never thrown: the lock then expires by its TTL.
+Fencing: right before it writes, the append SHALL check that the current lock is still its own and has not expired by
+its clock; if not, it answers `moved` and writes nothing. Whatever the answer, and when a failure is thrown, the append
+SHALL remove the lock if it is still its own, and never a lock of another owner. A failure to remove the lock is never
+thrown: the lock file then stays until a store takes the lock after it has expired and removes it on release.
 
-Limits: the fencing check and the write are two steps, and a takeover between them is not detected — it needs a writer
-stalled right there for longer than the TTL. An expiry written by one process is compared with the clock of another,
-so a clock that jumps forward can expire a live lock early. Only a local disk is supported (LG-C06).
+Limits: the fencing check and the write (or the cut of REQ-SR-004) are two steps, and a takeover between them is not
+detected — it needs a writer stalled right there for longer than the TTL. An expiry written by one process is compared
+with the clock of another, so a clock that jumps forward can expire a live lock early. Only a local disk whose file
+system has hard links is supported (LG-C06); on another file system taking the lock is a thrown failure.
 
 Implements: LG-C06, LG-S02
 
@@ -106,6 +111,15 @@ Implements: LG-C06, LG-S02
   lock and still holds it, unexpired
 - **THEN** A answers `moved`; the ledger holds commit 1 only; the lock of the other writer is unchanged
 
+#### Scenario: A lock replaced in its place is not taken over
+<!-- id: SCN-SR-011 -->
+- **WHEN** a ledger holds commit `seq` 1 and an expired lock of owner `other`; store A looks at that lock to append its
+  commit `seq` 2 after 1, and between A's look and A's taking of the lock every lock of the ledger is removed and a
+  writer `c` takes a new lock that has not expired, in the place of the first one (in the JSONL adapter, the file with
+  the same `<n>`)
+- **THEN** A answers `moved`; the ledger holds commit 1 only; the lock of `c` is unchanged and is the current lock; no
+  lock of A is left
+
 ### Requirement: A JSONL append is on the disk before it answers
 <!-- id: REQ-SR-003 -->
 
@@ -113,7 +127,8 @@ The JSONL adapter SHALL write the line of a commit and its line feed to the end 
 the disk (`fsync`), and only then remove its lock and answer `ok` (LG-C06). A failure of the file system during an
 append is thrown. When it comes before the whole line and its line feed are written, the bytes already written stay as a
 torn tail, which the next opening of the ledger recovers (REQ-SR-004). When it comes after — while flushing or closing
-the file —, the commit stays in the ledger and every later read returns it.
+the file —, the commit is in the ledger file and later reads return it, unless the machine stops before the file reaches
+the disk.
 
 Implements: LG-C06
 
@@ -139,20 +154,25 @@ The torn tail of a ledger is what follows its last commit end marker: in the JSO
 line feed — any bytes, valid UTF-8 or not, a complete commit text included; in the memory adapter, a text after the last
 commit. When `read` finds a torn tail and no other owner holds an unexpired lock, it SHALL take the lock (REQ-SR-002)
 and read the ledger again: the torn tail is what then follows the last commit end marker, and when nothing does — the
-append that was writing it has completed — nothing is moved. It SHALL move the torn tail out of the ledger, holding
-exactly its bytes, cut the ledger right after its last line feed, flush the moved tail and the ledger to the disk, remove
-its lock, and return the commits. When it cannot take the lock, or another owner holds an unexpired one, the torn tail
-is an append in progress: `read` SHALL return the commits before it and move nothing, and an append answers `moved`. An
-append that holds the lock SHALL recover a torn tail the same way before it checks the tail.
+append that was writing it has completed — nothing is moved. Otherwise it SHALL copy the torn tail out of the ledger,
+holding exactly its bytes, and flush the copy to the disk; then, right before cutting, check that the lock is still its
+own and unexpired and that the ledger is still exactly what it read under the lock (fencing, REQ-SR-002); then cut the
+ledger at the offset found under the lock — right after the last line feed —, flush it, remove its lock, and return the
+commits before the tail. When that check fails it cuts nothing and returns the commits before the tail as it read
+them; the copy stays. When it cannot take the lock, or another owner holds an unexpired one, the torn tail is an append
+in progress: `read` SHALL return the commits before it and move nothing, and an append answers `moved`. An append that
+holds the lock SHALL recover a torn tail the same way before it checks the tail, and answers `moved` when the check
+before the cut fails.
 
-The JSONL adapter moves a torn tail to a new file in the folder `recovered/` next to the ledger file, named as the
+The JSONL adapter copies a torn tail to a new file in the folder `recovered/` next to the ledger file, named as the
 ledger file followed by `.<n>.torn`, `<n>` one more than the greatest `<n>` there (`1` for the first), never replacing
-an existing file; the order of `<n>` is the order of recovery. The memory adapter keeps recovered tails, in the order of
-recovery, as a list of the shared ledger. A recovered tail is never read again by any store.
+an existing file; the order of `<n>` is the order of recovery. It flushes that file, and the folder `recovered/` where
+the operating system allows a folder to be flushed (not on Windows), before the cut. The memory adapter keeps recovered
+tails, in the order of recovery, as a list of the shared ledger. A recovered tail is never read again by any store.
 
-A failure of the file system during recovery is thrown, and the store removes its lock as REQ-SR-002 says. A failure
-after the moved tail is written and before the ledger is cut leaves the tail in the ledger too; the next opening
-recovers it again, so `recovered/` may hold the same tail twice and never loses one.
+A failure of the file system during recovery is thrown, and the store removes its lock as REQ-SR-002 says. A failure,
+or a failed check, after the copy is written and before the ledger is cut may leave the tail in the ledger too, or let
+another store recover it as well; so `recovered/` may hold the same tail twice and never loses one.
 
 Implements: LG-C06, LG-C04
 
@@ -189,3 +209,11 @@ Implements: LG-C06, LG-C04
 - **THEN** the first read throws and leaves no lock; `recovered/` holds one file with the bytes of the tail, and the
   ledger file is unchanged; the second read returns commit 1 only, `recovered/` holds two files with the same bytes,
   and the ledger file ends with the line feed of commit 1
+
+#### Scenario: A recovery that lost its lock cuts nothing
+<!-- id: SCN-SR-012 -->
+- **WHEN** a ledger holds commit `seq` 1 and a torn tail with no lock; store R with TTL 100 reads it at time 0, takes
+  the lock and copies the tail out, and between the copy and R's cut store W, at time 100, appends its commit `seq` 2
+  after 1
+- **THEN** W answers `ok`; R's read returns commit 1 only and R cuts nothing; the ledger holds commits 1 and 2, each
+  ended by its commit end marker; the recovered tails are the torn tail twice; no lock is left

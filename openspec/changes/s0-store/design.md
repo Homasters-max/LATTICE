@@ -59,7 +59,7 @@ type StoreOptions = {
   owner?: string;                            // lock owner; default randomUUID() of node:crypto — unique per store
   now?: () => number;                        // integer UTC ms; default Date.now
   ttl?: number;                              // ms; default 10_000
-  pause?: (point: "take" | "write") => void; // test seam, see below
+  pause?: (point: "take" | "fence") => void; // test seam, see below
 };
 jsonlStore(file: string, options?: StoreOptions & { fs?: JsonlFs }): Store;
 memoryLedger(): MemoryLedger;
@@ -73,61 +73,79 @@ small line with `fsync` on a local disk, and short enough that a crashed CLI blo
 most.
 
 `pause` is the seam that lets a test act as another writer in the middle of an operation: `"take"` — after the store
-looked at the current lock and before it takes it (SCN-SR-008, SCN-SR-009); `"write"` — after the tail check and
-before the fencing check (SCN-SR-004). It is not a port and has no production caller; LG-S02 names "two writers" and
+looked at the current lock and before it takes it (SCN-SR-008, SCN-SR-009, SCN-SR-011); `"fence"` — right before a
+fencing check: in an append after the tail check (SCN-SR-004), in a recovery after the copy and before the cut
+(SCN-SR-012). It is not a port and has no production caller; LG-S02 names "two writers" and
 "expired lock" as what the contract tests must show, and they cannot be shown in one synchronous process without it.
 
 Rejected: the `clock` port for the TTL — `store-*` adapters may import only the `store` interface (REQ-AR-009); timing
 tests with real sleeps or child processes — slow and flaky, and still unable to hit the window between two steps.
 
-### D-3. The JSONL lock: generations of lock files
+### D-3. The JSONL lock: lock files created whole, then verified
 
 A lock is a file `<ledger file>.lock.<n>` (REQ-SR-002); the current lock is the greatest `<n>` in a listing of the
 folder (`readdirSync`, names matching `^<ledger file name>\.lock\.([1-9][0-9]*)$`).
-- Look: list the folder; read the greatest file. Content `{"expires":<ms>,"owner":"<owner>"}` + `\n`, readable when it
-  is exactly the canonical JSON of that object (`JSON.parse`, two keys, `owner` a string, `expires` a safe integer, and
-  re-serialised text equal to the file); anything else counts as expired. A failure of `readdirSync` or of reading the
-  file is thrown — except `ENOENT` of the file, which means it was removed between the listing and the read, so the
-  store looks again.
-- Take: `openSync(<ledger file>.lock.<k+1>, "wx")` where `k` is the greatest `<n>` it looked at (`0` when none), write
-  the content, `fsync`, close. `wx` fails with `EEXIST` when another writer created that generation since the look,
-  and only one creator of a name can succeed: this is the compare-and-swap. `EEXIST` answers `moved`.
-- Fencing: look again; own when the greatest file is this store's (same `owner`) and `now() < expires`.
-- Release: list; remove this store's own file and every lock file with a smaller `<n>`; errors are swallowed (REQ-SR-002:
-  never thrown). A file with a greater `<n>` is never removed.
+- Look: list the folder; read the greatest file; the result is `{ n, text }` (or none). The text is a readable lock when
+  it is exactly the canonical JSON of `{"expires":<ms>,"owner":"<owner>"}` and a line feed (`JSON.parse`, two keys,
+  `owner` a string, `expires` a safe integer, re-serialised text equal to the file); anything else counts as expired.
+  `ENOENT` while reading the file means it was removed after the listing: look again. Any other failure is thrown.
+- Take: write the content to `<ledger file>.lock.<owner>.tmp`, `fsync`, close; `linkSync(tmp, <ledger file>.lock.<k+1>)`
+  where `k` is the `<n>` it looked at (`0` when none) — atomic, fails with `EEXIST` when the name exists, and makes the
+  file appear with its whole content; remove the temporary file. `EEXIST` answers `moved`.
+- Verify (the second half of the compare-and-swap): look again at the whole listing; the take holds only when the
+  greatest file is its own and the greatest *other* file is `{ n: k, text }` exactly as looked at (no other file when it
+  looked at none). Otherwise it removes its own file and answers `moved`.
+- Fencing: look again; own when the greatest file is its own (same `owner`, the content it wrote) and `now() < expires`.
+- Release: list; remove its own file and every lock file with a smaller `<n>`; failures are swallowed (REQ-SR-002). A
+  file with a greater `<n>` is never removed.
 
-Why it is safe: the right to write is "the greatest generation is mine", and a generation can be created once. A writer
-that looked at a stale listing either collides on `wx` (`moved`) or creates a smaller generation and fails fencing. A
-partly written lock (crash between `wx` and the write) counts as expired; the next taker creates the next generation and
-the half-written owner, if alive, fails fencing. Removing a smaller generation only ever makes a stalled writer fail
-fencing.
+Why it is safe. A lock file of a live holder H at `<n>` is removed only by H's release, by the release of a holder with a
+greater `<n>` — which took the lock only after it looked at H's lock as expired —, or never. While H's file is the
+greatest, another writer W either looked at H's lock (unexpired: `moved`), or looked at a stale listing whose greatest
+`<k>` is below `<n>`: then W's `<k+1>` collides with an existing name (`EEXIST`), or is below `<n>` and W's verify finds
+that its own file is not the greatest. Numbers are reused after a release, but a reused name never carries the same
+content (the owner is unique per store and the expiry is part of the content), so the verify of a writer that looked
+before the reuse fails (review 2 F-1, interleaving 1: SCN-SR-011). A lock file never appears half-written, so a fresh
+lock is never mistaken for an expired one (interleaving 2). Two verifies can both fail (each sees the other's file);
+both answer `moved`, which is safe. What remains is the gap between a fencing check and the write or the cut
+(REQ-SR-002, Limits).
 
-Rejected: one lock file replaced with `renameSync` — review 1 F-1: two takers of one expired lock both "win"; a
-rename-aside of the expired lock before taking — narrows the race but a stale rename can move a fresh lock aside and
-open a window for a third writer; one lock file taken with `linkSync` and taken over by rename — the same race on
-take-over, and `linkSync` needs hard links (FAT, exFAT); OS file locks — no portable `flock` in Node without a package;
-a lock folder (`mkdir`) — carries no owner or expiry atomically.
+Rejected: one lock file replaced with `renameSync` — review 1 F-1: two takers of one expired lock both "win"; exclusive
+creation of the next number without a verify — review 2 F-1: numbers are reused after a release, and a lock created
+with `wx` is visible empty before its content is written; a lock number that never decreases (a marker left at release)
+— it closes the reuse but leaves a marker file behind after every command; a rename-aside of the expired lock — a stale
+rename can move a fresh lock aside; OS file locks — no portable `flock` in Node without a package; a lock folder
+(`mkdir`) — carries no owner or expiry atomically. Hard links exist on NTFS, ext4 and APFS, the local disks LG-C06
+means; on FAT or exFAT `linkSync` throws and the command refuses with code 2 (stated in REQ-SR-002).
 
 ### D-4. JSONL `read` and recovery
 
 `read` reads the file as bytes (a missing file is empty). The torn tail is the bytes after the last `0x0a`. Without a
 torn tail the bytes are decoded as strict UTF-8 and split as today. With one:
 1. look at the lock (D-3); an unexpired lock of another owner → return the complete lines only (an append in progress);
-2. `pause?.("take")`; take the lock (D-3); `EEXIST` → as in 1;
+2. `pause?.("take")`; take and verify the lock (D-3); `moved` → as in 1;
 3. under the lock, read the bytes again and find the torn tail again; when there is none, nothing is moved;
-4. otherwise recover: `mkdirSync(recovered/, recursive)`; list it; write the tail bytes to
+4. otherwise copy: `mkdirSync(recovered/, recursive)`; list it; write the tail bytes to
    `<ledger file name>.<k+1>.torn`, `k` the greatest `<n>` of the names `<ledger file name>.<n>.torn` there, opened with
-   `wx` (on `EEXIST`, list again and retry); `fsync`, close; then `openSync(file, "r+")`, `ftruncateSync` to the byte
-   after the last line feed, `fsync`, close;
-5. release the lock (D-3) in a `finally`; decode and return the complete lines.
+   `wx` (on `EEXIST`, list again and retry); `fsync`, close; then, except on Windows (`process.platform === "win32"`,
+   where Node cannot open a folder), open `recovered/` read-only, `fsync`, close;
+5. `pause?.("fence")`; fencing (D-3) and a check that the ledger file still has the size and the tail bytes read in 3;
+   when either fails, cut nothing and return the complete lines read in 3 (an append answers `moved`);
+6. cut: `openSync(file, "r+")`, `ftruncateSync` to the offset found in 3 — the byte after the last line feed —, `fsync`,
+   close;
+7. release the lock (D-3) in a `finally` over 3–6; decode and return the complete lines.
 
-A failure in 4 is thrown after the release. A crash or failure after the recovered file is written and before the cut
-leaves the tail in both places; the next opening recovers it again into a new file — a duplicate in `recovered/`, never
-a loss (SCN-SR-010). An `append` that holds the lock runs steps 3–4 before its tail check.
+A failure in 4–6 is thrown after the release. A crash, a failure or a failed check after the copy and before the cut
+leaves the tail in both places; the next opening copies it again into a new file — a duplicate in `recovered/`, never a
+loss (SCN-SR-010, SCN-SR-012). The cut is fenced like a write, because a recovering store whose lock was taken over
+would otherwise cut at an offset after which the new holder may already have appended a commit answered `ok` (review 2
+F-2). An `append` that holds the lock runs steps 3–6 before its tail check.
 
 What the maintainer does with `recovered/`: it is evidence of a cut write, for the maintainer to read and delete; it is
-never read by LATTICE and never meant to be committed. A lock file outlives its command only after a crash and expires
-by its TTL. Neither `init` nor this Change writes a `.gitignore`; S0 projects have only the throwaway stores of tests
+never read by LATTICE and never meant to be committed. A lock file that outlives its command expires by its TTL and is
+removed by the release of the next store that takes the lock. A lock file exists while an append runs
+or a read recovers a torn tail, and stays after a crash or a failed removal. Neither `init` nor this Change writes a
+`.gitignore`; S0 projects have only the throwaway stores of tests
 and of manual acceptance (LG-G05).
 
 Rejected: decoding the whole file before finding the tail — a write cut inside a character would make the file
@@ -139,10 +157,10 @@ tail is something the maintainer must see: in `store/` it shows in `git status`.
 ### D-5. JSONL `append`
 
 1. look at the lock (D-3); an unexpired lock of another owner → `moved`;
-2. `pause?.("take")`; take the lock; `EEXIST` → `moved`;
-3. read the bytes, recover a torn tail (D-4 steps 3–4), compare the `seq` of the last line with `after` → `moved` on a
-   mismatch;
-4. `pause?.("write")`;
+2. `pause?.("take")`; take and verify the lock (D-3); `moved` when either fails;
+3. read the bytes, recover a torn tail (D-4 steps 3–6; `moved` when its check before the cut fails), compare the `seq`
+   of the last line with `after` → `moved` on a mismatch;
+4. `pause?.("fence")`;
 5. fencing (D-3) → `moved` when the lock is not its own;
 6. `openSync(file, "a")` (creates a missing file; a missing folder throws `ENOENT`), `writeSync` in a loop until every
    byte of `text + "\n"` is written, `fsyncSync`, `closeSync`;
@@ -159,14 +177,16 @@ torn tail, or the whole line when `fsync` or `close` failed (REQ-SR-003). File o
 `MemoryLedger` is a plain mutable object exported for tests:
 
 ```ts
-type MemoryLock = { gen: number; owner: string; expires: number } | { gen: number; unreadable: true };
+type MemoryLock = { readonly owner: string; readonly expires: number } | { readonly unreadable: true };
 type MemoryLedger = { lines: string[]; torn: string | null; lock: MemoryLock | null; recovered: string[] };
 ```
 
-`memoryStore` runs D-4 and D-5 over it with the same steps and the same options except `fs`. Take is
-`lock?.gen === looked?.gen ? (lock = { gen: looked.gen + 1, … }) : moved` — the same compare-and-swap as `wx` on the
-next generation; release sets `lock = null` when `lock.owner` is its own; recovery pushes `torn` onto `recovered` and
-sets it to `null`; the write pushes the text onto `lines`. `seq` is read from each text as the JSONL adapter does
+`memoryStore` runs D-4 and D-5 over it with the same steps and the same options except `fs`. Every take makes a new,
+frozen lock object, and the compare-and-swap compares identities: `ledger.lock === looked ? (ledger.lock = mine) :
+moved`; so a lock removed and taken again by another writer is a different object even with the same owner and expiry
+(SCN-SR-011). Fencing is `ledger.lock === mine && now() < mine.expires`; release sets `lock = null` when
+`ledger.lock === mine`; recovery pushes `torn` onto `recovered`, fences, then sets `torn` to `null`; the write pushes
+the text onto `lines`. `seq` is read from each text as the JSONL adapter does
 (`JSON.parse`, `NaN` otherwise).
 
 Rejected: the memory adapter as a JSONL adapter over an in-memory file system — it would test the same code twice and
@@ -177,7 +197,7 @@ prove nothing about a second adapter (ST-M02).
 | Path | Proves |
 |---|---|
 | `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `lockOwner()`, `recovered()` (in order), `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
-| `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009 on both adapters, one `describe` per adapter, test names `SCN-SR-00n [jsonl] …` / `[memory]` |
+| `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009, -011, -012 on both adapters, one `describe` per adapter, test names `SCN-SR-0nn [jsonl] …` / `[memory]` |
 | `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, lock removal), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`) |
 | `test/cli/store.test.ts` | SCN-CL-011 (the lock files of another owner, through `run` with the default store), SCN-CL-012 |
 | `test/cli/apply.test.ts` | removed: the JSONL unit test under SCN-CL-005 (now SCN-SR-001), the test "a complete commit without its line feed is named by its seq" and the torn half of "a torn tail and a non-canonical line" under SCN-CL-008 (now SCN-CL-012, SCN-SR-006); nothing else changes |
@@ -210,11 +230,23 @@ rebased branch (an `I-N` row records it).
 | I-11 | Recovered files are `<ledger>.<n>.torn`, in recovery order by `<n>` (REQ-SR-004). | Review 1, F-12. | design, spec review 1 |
 | I-12 | REQ-CL-001: a failure of the store names the ledger file, followed by the message of the operating system as it is. | Review 1, F-13: `assembly` is not changed. | design, spec review 1 |
 | I-13 | Clock jumps and the file systems supported are named in REQ-SR-002 and Risks; the intent of `recovered/` and of a leftover lock file is in D-4. | Review 1, F-14, F-15 (INFO). | design, spec review 1 |
+| I-14 | The take is create-whole (`linkSync` of a written temporary file) plus a verify that the greatest other lock is the one looked at, with the same content; memory compares lock identities. REQ-SR-002, D-3, D-6; new SCN-SR-011. I-1's exclusive creation alone is replaced. | Spec review 2 (`EVID-01M3XSPNW5GPCGR86073RC305Z`), F-1 BLOCKER: lock numbers are reused after a release and a `wx` lock is visible empty, so two writers could both write. | design, spec review 2 |
+| I-15 | Recovery copies the tail, then fences (lock still its own, ledger unchanged), then cuts at the offset found under the lock; a failed check cuts nothing. REQ-SR-004, D-4; new SCN-SR-012. | Review 2, F-2. | design, spec review 2 |
+| I-16 | A lock file that disappears while being looked at is looked at again; other failures are thrown (REQ-SR-002). | Review 2, F-3. | design, spec review 2 |
+| I-17 | REQ-SR-001 says the writer "took the lock and passed its fencing check" instead of "holds the lock until the write is done". | Review 2, F-4: it contradicted the Limits. | design, spec review 2 |
+| I-18 | The lifetime of a lock file is stated in proposal.md Impact and D-4. | Review 2, F-5. | design, spec review 2 |
+| I-19 | The copy of a torn tail and its folder are flushed before the cut, except the folder on Windows (REQ-SR-004, D-4). | Review 2, F-6. | design, spec review 2 |
+| I-20 | REQ-SR-003: after a failed flush the commit is in the ledger file "unless the machine stops before the file reaches the disk". | Review 2, F-7 (INFO). | design, spec review 2 |
 
 ## Risks / Trade-offs
 
 - [The fencing check and the write are two steps] → stated in REQ-SR-002; local disk only (LG-C06); a TTL of 10 s
-  against an append of milliseconds; the compare-and-swap of D-3 leaves no other window.
+  against an append of milliseconds; the compare-and-swap of D-3 leaves no other window; the cut of a recovery is
+  fenced the same way (D-4).
+- [Hard links are required] → NTFS, ext4, APFS have them; on FAT or exFAT taking the lock throws and every append
+  refuses with code 2 (REQ-SR-002).
+- [Windows cannot flush a folder] → a power loss right after a recovery on Windows may lose the new entry of
+  `recovered/`; NTFS journals its metadata, and the cut follows only after the copy itself is flushed.
 - [A clock that jumps forward expires a live lock early] → the expired writer then fails fencing unless it is already
   past it; stated in REQ-SR-002.
 - [Windows: a lock file or the ledger held open by another process (antivirus, indexer) makes an operation fail with
