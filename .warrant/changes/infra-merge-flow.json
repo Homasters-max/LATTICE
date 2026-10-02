@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "infra-merge-flow",
-  "change_state": "MERGED",
+  "change_state": "ARCHIVED",
   "classification": {
     "profiles": [
       "chore",
@@ -122,6 +122,21 @@
         "EVID-01M3YDSYKWZ7WGZ08KBY673NME"
       ],
       "ref": "https://github.com/Homasters-max/LATTICE/pull/117"
+    },
+    {
+      "to": "ARCHIVED",
+      "at": "2026-10-02T13:45:52.344Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+      "gates": {
+        "analyze-clean": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3YDT9Z50WZT9YPVNTWEQCP7"
+      ]
     }
   ]
 }

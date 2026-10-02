@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://evidence-manifest/1",
   "change": "infra-merge-flow",
-  "commit": "7f6a78e109648353f4d900a84e4f6a0a3ef735fc",
+  "commit": "9745714f2defe5731074b9470e0b3580c3551f9b",
   "versions": {
     "warrant": "0.10.0",
     "openspec": "1.13.1",
@@ -17,7 +17,8 @@
     "EVID-01M3YCPRRAD8RCXV0BSS6D225T",
     "EVID-01M3YDAWG5WWX2MKCJBH25NN01",
     "EVID-01M3YDNNYQEHVDDW6BSGAE0HEY",
-    "EVID-01M3YDSYKWZ7WGZ08KBY673NME"
+    "EVID-01M3YDSYKWZ7WGZ08KBY673NME",
+    "EVID-01M3YDT9Z50WZT9YPVNTWEQCP7"
   ],
   "gates": {
     "adversarial-review": "PASS",
