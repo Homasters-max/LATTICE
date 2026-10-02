@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-store",
-  "change_state": "SPECIFIED",
+  "change_state": "ABANDONED",
   "classification": {
     "profiles": [
       "chore",
@@ -49,6 +49,11 @@
       "evidence": [
         "EVID-01M3XTP7FE36SG32MNSVDSVS1T"
       ]
+    },
+    {
+      "to": "ABANDONED",
+      "at": "2026-10-02T08:24:35.973Z",
+      "by": "cli:local"
     }
   ]
 }
