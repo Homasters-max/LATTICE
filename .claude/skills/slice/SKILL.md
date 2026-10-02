@@ -12,7 +12,7 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 
 - **Slice** = GitHub milestone (`S0`, `SW`, `S1`…`S4`) + its **umbrella** issue (task list of Change issues, plan, slice-level decisions as comments linking `I-N` rows and PRs).
 - **Change issue** = one per Change, title `<slice>: <change> — …`, body lines ``Where: Change `<name>`, AREA `<AREA>` `` (several: `` `TR` + `AC` + `CT` ``) and `Depends on: #N, …`. An issue whose `Where:` names no Change is a docs PR.
-- **One worktree per Change**, `D:/project/LATTICE-wt/<change>`; its session makes the three branches there in turn: `spec/<change>`, `impl/<change>`, `archive/<change>`, each from fresh `origin/main`.
+- **One worktree per Change**: the one the app makes for its session (`.claude/worktrees/<random>`, branch `claude/<random>`); the session makes the three branches there in turn: `spec/<change>`, `impl/<change>`, `archive/<change>`, each from fresh `origin/main`. `status.mjs` finds the worktree by those branches, not by its path.
 - **State is computed, never stored**: Change state from warrant records (refs and worktrees), PRs and checks from GitHub, worktrees from `git worktree list`, health of `main` from its last completed `test.yml` run. `status.mjs` computes all of it.
 - **Rules**, enforced by `next`:
   - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED; a Change dependency is done only then, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
@@ -35,18 +35,21 @@ Run `status.mjs <slice> --next`: the rows that may start now, by issue number �
 ### launch `<change | #issue>`
 
 1. `status.mjs <change>` prints `startable`; otherwise report its reason (a red `main` included) and stop. Phase: `spec` for a not-started Change, `impl` for `start impl-PR`, `docs` for an issue without a Change.
-2. Worktree `D:/project/LATTICE-wt/<name>` (`<name>` = change, or `issue-<N>` for docs):
-   - no worktree: `git fetch origin`, then `git worktree add D:/project/LATTICE-wt/<name> -b <phase>/<name> origin/main` (branch exists: drop `-b`, pass the branch);
-   - worktree exists: reuse it; the Change session makes the next branch there itself.
+2. Worktree (`<name>` = change, or `issue-<N>` for docs): the coordinator makes none; the app makes it when the session starts. `status.mjs <name> --json` names the worktree already on a branch `<kind>/<name>`:
+   - none: go on to step 3;
+   - its session is alive (`list_sessions`, same `cwd`): send it the next phase with `mcp__ccd_session_mgmt__send_message` and stop — no new session;
+   - its session is gone: the worktree is clean and its branches are pushed; remove it (`git worktree remove`), then step 3.
 3. Compose the start prompt from the template below, with the issue body verbatim (`gh issue view <N> --json body`).
-4. Offer it as a chip: `mcp__ccd_session__spawn_task` with `title` "Start <change>", `tldr` (one sentence: which Change, which phase, why it may start now), `prompt`, `cwd` = the worktree path. Without that tool: print the prompt in a fenced block for the maintainer to paste into a new session opened in the worktree.
+4. Offer it as a chip: `mcp__ccd_session__spawn_task` with `title` "Start <change>", `tldr` (one sentence: which Change, which phase, why it may start now), `prompt`, and no `cwd` (the app takes `cwd` as a project root and makes its own worktree inside it). Without that tool: print the prompt in a fenced block for the maintainer to paste into a new session with a worktree.
 5. Optional, when `mcp__ccd_sidebar__*` tools are present: a sidebar group named after the slice (create it if missing); move the Change session into it once the maintainer starts it.
+
+Done: when the archive-PR (docs: the docs PR) is merged, archive the session (`mcp__ccd_session_mgmt__archive_session`, the app removes its worktree), then delete the local branches `<kind>/<name>` and `claude/<random>` that `origin/main` contains.
 
 Start prompt:
 
 ```text
 You run <phase> of Change `<change>`, slice <slice> (issue #<N>, umbrella #<U>).
-Working directory: D:/project/LATTICE-wt/<name> — the one worktree of this Change. Work, commit and push only there.
+Working directory: the worktree the app opened this session in — the one worktree of this Change. Work, commit and push only there. First act: git fetch origin, then git switch -c <phase>/<name> origin/main; the app's claude/* branch stays unused.
 Branches, made here in turn, each from fresh origin/main: spec/<change>, then impl/<change>, then archive/<change>. Before impl/<change>: node .claude/skills/slice/status.mjs <change> must print "startable" (WIP < 3, main not red); otherwise report and wait.
 
 <issue body>
