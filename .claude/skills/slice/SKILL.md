@@ -11,22 +11,23 @@ The coordinator session holds a slice: it dispatches Changes, reviews them, and 
 ## Model
 
 - **Slice** = GitHub milestone (`S0`, `SW`, `S1`…`S4`) + its **umbrella** issue (task list of Change issues, plan, slice-level decisions as comments linking `I-N` rows and PRs).
-- **Change issue** = one per Change, title `<slice>: <change> — …`, body lines ``Where: Change `<name>`, AREA `<AREA>` `` (several: `` `TR` + `AC` + `CT` ``) and `Depends on: #N, …`. An issue whose `Where:` names no Change is a docs PR.
+- **Change issue** = one per Change, title `<slice>: <change> — …`, body lines ``Where: Change `<name>`, AREA `<AREA>` `` (several: `` `TR` + `AC` + `CT` ``) and `Depends on: #N, …` (read to the end of its first sentence: `Depends on: none. Closes #94.` has no dependency). AREAs are read only from a `Where:` that names a Change. When several issues name one Change (its own issue and, say, a bug it fixes), its issue is the one whose title names it, else the oldest; the others refer to it and are read by their labels. An issue whose `Where:` names no Change is a docs PR — unless it is labelled `bug` (a fix Change or a PR that closes it) or `question` (the maintainer's answer).
 - **One worktree per Change**: the one the app makes for its session (`.claude/worktrees/<random>`, branch `claude/<random>`); the session makes the three branches there in turn: `spec/<change>`, `impl/<change>`, `archive/<change>`, each from fresh `origin/main`. `status.mjs` finds the worktree by those branches, not by its path.
-- **State is computed, never stored**: Change state from warrant records (refs and worktrees), PRs and checks from GitHub, worktrees from `git worktree list`, health of `main` from its last completed `test.yml` run. `status.mjs` computes all of it.
+- **State is computed, never stored**: Change state from warrant records (refs and worktrees), PRs and checks from GitHub, worktrees from `git worktree list`, health of `main` from its last completed `test.yml` run and from `warrant validate` on a temporary detached checkout of `origin/main` (removed after the run). `status.mjs` computes all of it; its rules are pure functions in `rules.mjs`, checked by `node --test .claude/skills/slice/rules.test.mjs`.
 - **Rules**, enforced by `next`:
-  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED; a Change dependency is done only then, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
+  - one capability = one AREA = at most one active Change (SL-T08); an AREA is **held** from `warrant init change` (a record exists) until the archive-PR is merged into `main` (the record is ARCHIVED on `origin/main`) or the Change is ABANDONED; holders come from every issue of the repository, ordered by the time of their `init`: the first keeps the AREA, a later one is an **AREA collision — needs a decision** (👤 maintainer; equal or missing times: all collide); a Change dependency is done only then, a docs issue when it is closed; an ABANDONED dependency, or a Change issue closed without a record, needs a decision;
   - at most 3 Changes **in implementation**: from the first commit of the impl-PR until it merges (impl-PR open, or record APPROVED…VERIFYING without a merged impl-PR); a Change waiting only for its archive-PR is out;
-  - a **red** `main` (last `test` run on main failed) blocks dispatch; no `test.yml` yet = unknown, a warning only;
+  - a **red** `main` (last `test` run on main failed, or `warrant validate` fails on `origin/main`) blocks dispatch and marks merge rows `held: main is red`; no `test.yml` yet, or a `warrant` on `PATH` outside the `kernel` range of `main`'s `warrant.json` = unknown, a warning only;
+  - a `fix-main-<issue>` Change (rule `tracking`) is not blocked by a red `main`, not counted in WIP, never waits for or collides on an AREA;
   - shared files belong to the skeleton Change; `implement` Runs are narrowed with `--scope <source and test paths named by its design>,openspec/changes/<change>/**`.
 
 ## Commands
 
-`node .claude/skills/slice/status.mjs <slice | change | #issue> [--next] [--json]` — fetches `origin`, takes ~10 s. Paste its markdown output as is.
+`node .claude/skills/slice/status.mjs <slice | change | #issue> [--next] [--json] [--main-ref <ref>]` — fetches `origin`, takes about a minute (a `warrant status` per Change worktree, one `warrant validate`). Paste its markdown output as is. `--main-ref <ref>` validates another ref in place of `origin/main` (a replay of a past `main`); the `test` check still reads `main`. An issue without a milestone is shown alone, against the repository-wide holders.
 
 ### status `<slice>`
 
-Run `status.mjs <slice>`. Header: `main` health, WIP of 3, held AREAs, 👤 maintainer queue (with the PR URL where a PR is open; a decision on a dependency has none). Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
+Run `status.mjs <slice>`. Header: `main` health (both checks), WIP of 3, held AREAs (a collision marked ⚠), `Open P1 without a Change` (bug / question issues of the slice and of no milestone), 👤 maintainer queue (one row per AREA collision) (with the PR URL where a PR is open; a decision on a dependency has none). Table: issue, Change, AREA, state, open PR and checks, depends on (✓ / ⏳), next action, who acts. End with one line: what the coordinator does now.
 
 ### next `<slice>`
 
@@ -58,7 +59,7 @@ Process: AGENTS.md of the working directory — the <phase>-PR of the Change, fr
 Read: this issue, the design-next IDs it names, merged specs of its dependencies (openspec/specs/**).
 Steps: skill progress, 🛠 development — the list at start and after every step.
 A decision that touches the slice (another Change, an AREA, a shared file, the order): a comment on umbrella #<U> linking the I-N row or PR.
-Acts of the maintainer (approval, merge, UNKNOWN decision): ask as AGENTS.md says and wait.
+Acts of the maintainer (merge — the merge is the approval —, UNKNOWN decision): ask as AGENTS.md says and wait.
 ```
 
 docs phase: replace the Process line with "a docs PR closing #<N>, no Change".
