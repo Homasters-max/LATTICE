@@ -11,6 +11,7 @@ import { counterIds } from "../../src/adapters/ids-counter/index.ts";
 import { newId } from "../../src/kernel/index.ts";
 import type { Store } from "../../src/ledger/ports/store.ts";
 import { initialised, onlyProposal } from "./project.ts";
+import { committed, fixtureIntents, ledgerOf, revisedIntents, textOf } from "../ledger/cases.ts";
 import type { Project } from "./project.ts";
 
 type Json = Record<string, unknown>;
@@ -144,7 +145,15 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
     {
       name: "with intent 1 twice",
       change: (xs) => void xs.push(xs[1] as Json),
-      expect: { intent: "lattice/fx-a01", rule: "LG-C07", path: "/intents/5/id", expected: null, got: null },
+      expect: {
+        intent: "lattice/fx-a01",
+        rule: "LG-C07",
+        path: "/intents/5/id",
+        expected: null,
+        got: null,
+        with: "lattice/fx-a01",
+        differs: [],
+      },
     },
   ];
 
@@ -224,22 +233,116 @@ describe("SCN-CL-007 a malformed proposal is rejected by LG-P01 and LG-C07", () 
   });
 });
 
+/** A store whose other writer acts between opening and appending: `before` runs, then the store answers `moved`. */
+function racing(before: (real: Store, text: string) => void): { store: Store; bind(dir: string): void } {
+  let real: Store | null = null;
+  const store: Store = {
+    read: () => (real as Store).read(),
+    append: (commit) => {
+      before(real as Store, commit.text);
+      return { ok: false, reason: "moved" };
+    },
+  };
+  return { store, bind: (dir) => void (real = jsonlStore(join(dir, "store", "knowledge.jsonl"))) };
+}
+
 describe("SCN-CL-011 a tail that moved during apply is refused", () => {
-  it("SCN-CL-011 the store answers moved: code 2 naming LG-C03, nothing appended, the proposal stays", () => {
-    let real: Store | null = null;
-    const moving: Store = {
-      read: () => (real as Store).read(),
-      append: () => ({ ok: false, reason: "moved" }),
-    };
-    const p = initialised({ store: moving });
-    real = jsonlStore(join(p.dir, "store", "knowledge.jsonl"));
+  it("SCN-CL-011 another writer's commit lands first: one LG-C03 rejection, code 1, nothing appended", () => {
+    const other = committed([], fixtureIntents(9))[0] as string;
+    const race = racing((real) => assert.deepEqual(real.append({ seq: 1, text: other }, 0), { ok: true }));
+    const p = initialised({ store: race.store });
+    race.bind(p.dir);
+    try {
+      const proposal = imported(p);
+      const r = p.lattice("apply", proposal);
+      assert.equal(r.code, 1, r.err.join("\n"));
+      const rejections = (JSON.parse(r.out[0] as string) as Json[]).map(({ message, ...rest }) => {
+        assert.ok(typeof message === "string" && message !== "");
+        return rest;
+      });
+      assert.deepEqual(rejections, [
+        { intent: null, rule: "LG-C03", path: "", expected: { seq: 0, hash: null }, got: { seq: 1, hash: ledgerOf([other]).tail?.hash } },
+      ]);
+      assert.equal(p.file("store/knowledge.jsonl"), other + "\n");
+      assert.ok(p.exists(proposal));
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it("SCN-CL-011 a store answering moved on an unmoved tail is a store fault, code 2", () => {
+    const race = racing(() => {});
+    const p = initialised({ store: race.store });
+    race.bind(p.dir);
     try {
       const proposal = imported(p);
       const r = p.lattice("apply", proposal);
       assert.equal(r.code, 2);
-      assert.match(r.err.join("\n"), /LG-C03/);
+      assert.match(r.err.join("\n"), /store answered that the tail moved/);
       assert.equal(p.file("store/knowledge.jsonl"), "");
       assert.ok(p.exists(proposal));
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-012 an unchanged proposal is a no-op", () => {
+  it("SCN-CL-012 the four entities at base 1 with a new session: no-op, ledger unchanged, proposal removed", () => {
+    const p = initialised();
+    try {
+      assert.equal(p.lattice("apply", imported(p)).code, 0);
+      const ledger = p.file("store/knowledge.jsonl");
+      p.write("store/proposals/again.json", textOf(revisedIntents(2)));
+      const r = p.lattice("apply", "store/proposals/again.json");
+      assert.equal(r.code, 0, r.err.join("\n"));
+      assert.deepEqual(r.out, ['{"outcome":"no-op"}']);
+      assert.equal(p.file("store/knowledge.jsonl"), ledger);
+      assert.ok(!p.exists("store/proposals/again.json"));
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-013 a proposal applied again answers its commit", () => {
+  it("SCN-CL-013 the same proposal file written back: commit seq 1, ledger unchanged, proposal removed", () => {
+    const p = initialised();
+    try {
+      const proposal = imported(p);
+      const bytes = p.file(proposal);
+      assert.equal(p.lattice("apply", proposal).code, 0);
+      const ledger = p.file("store/knowledge.jsonl");
+      p.write(proposal, bytes);
+      const r = p.lattice("apply", proposal);
+      assert.equal(r.code, 0, r.err.join("\n"));
+      assert.deepEqual(r.out, ['{"outcome":"commit","seq":1}']);
+      assert.equal(p.file("store/knowledge.jsonl"), ledger);
+      assert.ok(!p.exists(proposal));
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-014 two writers of one proposal both answer its commit", () => {
+  it("SCN-CL-014 the other writer appends the same commit and removes the file: code 0, commit seq 1", () => {
+    let proposal = "";
+    let dir = "";
+    const race = racing((real, text) => {
+      assert.deepEqual(real.append({ seq: 1, text }, 0), { ok: true });
+      rmSync(join(dir, proposal));
+    });
+    const p = initialised({ store: race.store });
+    race.bind(p.dir);
+    dir = p.dir;
+    try {
+      proposal = imported(p);
+      const r = p.lattice("apply", proposal);
+      assert.equal(r.code, 0, r.err.join("\n"));
+      assert.deepEqual(r.out, ['{"outcome":"commit","seq":1}']);
+      assert.equal(p.file("store/knowledge.jsonl").split("\n").length, 2);
+      assert.ok(!p.exists(proposal));
     } finally {
       p.dispose();
     }
@@ -252,11 +355,12 @@ describe("SCN-CL-008 a broken hash chain is refused", () => {
     try {
       assert.equal(p.lattice("apply", imported(p)).code, 0);
       const ledger = p.file("store/knowledge.jsonl").replace("synthetic rule of the walking", "synthetic rule of the walkinG");
-      // a second commit on top: the second fixture row at expected revision 1
+      // a second commit on top: the second fixture row at expected revision 1, changed (unchanged would be a no-op)
       const second = imported(p);
       const value = JSON.parse(p.file(second)) as { intents: Json[] };
       value.intents = value.intents.filter((x) => x.id === "lattice/fx-a02" || x.kind === "event");
       (value.intents[0] as Json).base = 1;
+      (value.intents[0] as Json).body = { Rule: "The second synthetic rule, changed." };
       p.write(second, JSON.stringify(value));
       assert.equal(p.lattice("apply", second).code, 0);
       const two = p.file("store/knowledge.jsonl").split("\n");

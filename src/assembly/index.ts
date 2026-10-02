@@ -9,6 +9,7 @@ import { canonical, checkInput, newId } from "../kernel/index.ts";
 import type { Ledger, Rejection } from "../ledger/index.ts";
 import {
   apply as applyProposal,
+  checkTail,
   openLedger,
   parseProposal,
   proposalHash,
@@ -186,18 +187,41 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       const text = decode(bytes);
       const parsed = text === null ? unreadableProposal() : parseProposal(text);
       if (!parsed.ok) return { kind: "rejected", rejections: parsed.rejections };
+      // LG-P04: the proposal file goes once the outcome is final; a file another writer of the same proposal already
+      // removed counts as removed (REQ-CL-004, design D-6).
+      const removeProposal = (): string | null => {
+        if (!existsSync(path)) return null;
+        const failed = writing(path, () => unlinkSync(path));
+        return failed !== null && existsSync(path) ? failed : null;
+      };
+      const settled = (seq: number): Outcome => {
+        const removed = removeProposal();
+        if (removed !== null) return refused(`the commit seq ${seq} stays; ${removed} — the proposal file is left behind`);
+        return done(JSON.stringify({ outcome: "commit", seq }));
+      };
+
       const applied = applyProposal(ledger, parsed.proposal);
       if (applied.outcome === "rejected") return { kind: "rejected", rejections: applied.rejections };
-      const after = ledger.tail?.seq ?? 0;
+      if (applied.outcome === "existing") return settled(applied.seq); // LG-C08
+      if (applied.outcome === "no-op") {
+        const removed = removeProposal(); // LG-C05
+        return removed === null ? done(JSON.stringify({ outcome: "no-op" })) : refused(`${removed} — the proposal file is left behind`);
+      }
       let appended: ReturnType<Store["append"]> | undefined;
       const failed = writing(ledgerFile, () => {
-        appended = s.append({ seq: applied.commit.seq, text: applied.text }, after);
+        appended = s.append({ seq: applied.commit.seq, text: applied.text }, applied.commit.base);
       });
       if (failed !== null) return refused(failed);
-      if (appended?.ok !== true) return refused("LG-C03: the tail of the ledger moved; nothing was appended");
-      const removed = writing(path, () => unlinkSync(path));
-      if (removed !== null) return refused(`the commit seq ${applied.commit.seq} stays; ${removed} — the proposal file is left behind`);
-      return done(JSON.stringify({ outcome: "commit", seq: applied.commit.seq }));
+      if (appended?.ok !== true) {
+        // LG-C03: the tail moved since opening — read the ledger again and check the commit against it (REQ-LG-004)
+        const again = open(s);
+        if (typeof again === "string") return refused(again);
+        const check = checkTail(again, applied.commit);
+        if (check.outcome === "existing") return settled(check.seq);
+        if (check.outcome === "rejected") return { kind: "rejected", rejections: check.rejections };
+        return refused("the store answered that the tail moved, but its tail is the one the commit was built on; nothing was appended");
+      }
+      return settled(applied.commit.seq);
     },
 
     exportTo(out) {

@@ -56,10 +56,14 @@ function readableSeq(text: string): number | null {
   return typeof v === "object" && v !== null && "seq" in v && typeof v.seq === "number" ? v.seq : null;
 }
 
-/** An opened ledger: its tail and the latest-revision projection over its commits (LG-J01). */
+/**
+ * An opened ledger: its tail, the latest-revision projection over its commits (LG-J01), and the `proposal` hash of
+ * every commit mapped to the `seq` of the first commit holding it (LG-C08, design D-2).
+ */
 export type Ledger = {
   readonly tail: { readonly seq: number; readonly hash: Hash } | null;
   readonly view: ReadView;
+  readonly proposals: ReadonlyMap<string, number>;
 };
 
 /** Opens a stored ledger and verifies its hash chain (LG-C04); a refusal names the first broken commit. */
@@ -67,6 +71,7 @@ export function openLedger(stored: StoredLedger): { readonly ok: true; readonly 
   const broken = (seq: number | null, line: number, why: string) =>
     ({ ok: false, message: `LG-C04: ${seq === null ? `line ${line}` : `seq ${seq}`}: ${why}` }) as const;
   const commits: Commit[] = [];
+  const proposals = new Map<string, number>();
   let tail: { seq: number; hash: Hash } | null = null;
   for (const [i, { text }] of stored.commits.entries()) {
     const admitted = checkInput(text);
@@ -81,10 +86,11 @@ export function openLedger(stored: StoredLedger): { readonly ok: true; readonly 
       return broken(value.seq, i + 1, "prev is not the hash of the commit before");
     }
     commits.push(frozen(value));
+    if (!proposals.has(value.proposal)) proposals.set(value.proposal, value.seq);
     tail = { seq: value.seq, hash: commitHash(value) };
   }
   if (stored.torn !== null) {
     return broken(readableSeq(stored.torn), stored.commits.length + 1, "a tail without a commit end marker");
   }
-  return { ok: true, ledger: { tail, view: latest(commits) } };
+  return { ok: true, ledger: { tail, view: latest(commits), proposals } };
 }

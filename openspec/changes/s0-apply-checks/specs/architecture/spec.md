@@ -25,7 +25,8 @@ Implements: LG-A02, ST-A01
 #### Scenario: Each rule of apply is triggered by its fixture
 <!-- id: SCN-AR-017 -->
 - **WHEN** the rule test runs on the project, then on a declared list holding a rule ID that has no fixture folder,
-  then with a fixture folder whose name is not on the declared list
+  then with a fixture folder whose name is not on the declared list, then on a copy of the folder `LG-P02` whose
+  `expected.json` is `[]`, then on that copy with the original `expected.json` and a `ledger.jsonl` that does not open
 - **THEN** on the project every rule ID of the declared list has exactly one folder and every folder names a declared
   rule ID, every fixture gives exactly its expected rejections, each naming the rule of its folder; the missing folder
-  is reported with its rule ID; the extra folder is reported with its name
+  is reported with its rule ID; the extra folder is reported with its name; both copies fail, naming the folder
