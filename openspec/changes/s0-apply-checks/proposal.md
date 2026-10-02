@@ -31,8 +31,9 @@ own capability (AREA `LG`, SL-T08); every later Change that adds an apply check 
   `no-op` and writes nothing. A commit holds only the intents that are not no-ops, and its `proposal` is their hash.
 - **Re-apply (LG-C08)**: a proposal whose held intents hash to the `proposal` of a commit answers that commit and
   writes nothing.
-- **Tail (LG-C03)**: a commit whose `base` is not the tail of the ledger when it is appended is rejected with rule
-  `LG-C03` instead of being refused with code 2.
+- **Tail (LG-C03)**: a commit whose `base` and `prev` are not the tail of the ledger when it is appended is rejected
+  with rule `LG-C03` instead of being refused with code 2 — unless the ledger already holds a commit of the same held
+  intents, which is answered as `existing` (LG-C08).
 - **`cli`**: REQ-CL-004, renamed "apply turns a proposal into a commit, a no-op or rejections", keeps the command —
   the proposal file, opening the ledger (LG-C04), what it writes, prints and removes on each outcome; REQ-CL-001 moves
   LG-C03 from the code-2 refusals to the rejections of code 1.
