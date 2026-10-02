@@ -61,7 +61,10 @@ LG-G01 says genesis is "produced by kernel code": its hash is a constant of the 
   calls `apply` (no cycle): a test applies `GENESIS` and compares the commit hash with `GENESIS_HASH` and with its own
   literal (SCN-LG-009), so a change of the genesis needs both edits.
 
-The kernel stays untouched (no `KR`): the session type is data of kernel version `0` written by the ledger.
+The kernel stays untouched (no `KR`): the session type is data of kernel version `0` written by the ledger. It declares
+every member of CT-P01 — `participant`, `kind`, `purpose`, `of` required; `software`, `version`, `established`
+(CT-P03) and `pipeline` optional, because no session of S0 writes them yet (review 1, F-2). The genesis hash depends
+on this body, so it is settled here once for kernel `0`.
 
 Rejected: `sessionType` in `src/kernel/` next to `metaType` — it would hold `KR` and grow the kernel perimeter (ST-K01)
 for a constant the kernel never reads.
@@ -92,7 +95,8 @@ proposals of REQ-LG-008 in order; ids through the transitional `newId` (`std` fo
   as a frozen constant; `exempt(ledger, proposal, rule)` answers from the conditions of REQ-LG-002 — the genesis
   proposal hash on an empty ledger; the tail equal to `GENESIS_HASH` at `seq` 1, a `machine` / `init` session, no other
   event, and `packageHash` of the entity intents equal to `STD_HASH`. Nothing reads a key to decide an exemption.
-- The check is one more pass of `rejectionsOf`: every intent whose `id` starts with `core/` or `std/`, unless exempt.
+- The check is one more pass of `rejectionsOf`: every intent whose namespace has `core` or `std` as its first
+  `.`-separated part (`std/x`, `std.y/x`), unless exempt (review 1, F-11).
 - Only the reserved part of CT-N02 is checked. "Only project namespaces are writable" would also reject an `id` whose
   namespace has no namespace entity; every ledger test of S0 applies `lattice/…` on an empty ledger, and the check
   belongs with the writers of the namespace (CT-N03), a later slice. Then the third exemption of LG-A07 — a namespace
@@ -123,7 +127,11 @@ proposals of REQ-LG-008 in order; ids through the transitional `newId` (`std` fo
 ### D-8. Opening a store (`commit.ts`)
 
 `openStore(stored)` = `openLedger` (unchanged, still used by the tests of every module) followed by the checks of
-REQ-LG-010 over the commits it read. `openLedger` keeps its signature; an internal reader shared by both keeps the
+REQ-LG-010 over the commits it read. Two words, two checks (review 1, F-1): REQ-CL-004 **Opening** stays LG-C04 —
+what the rule fixtures (REQ-AR-011, `test/architecture/rules.test.ts` with `openLedger`), L1 and the reference ledgers
+of #60 pass —, and **Opening a store** is the genesis chain, run only on a project store. So no fixture outside this
+Change's paths has to move onto the genesis chain. The `LG-G02` check of opening repeats the conditions of the
+apply exemption (F-12). `openLedger` keeps its signature; an internal reader shared by both keeps the
 parsed commits. The checks need `GENESIS_HASH` and `packageHash`/`STD_HASH`, so `commit.ts` imports `genesis.ts` and
 `std.ts`, which import only `kernel`, `proposal.ts` and `records.ts`. `assembly` opens with `openStore` in every
 command; the refusal message is `<rule>: seq <n>: <why>`, like LG-C04's.
@@ -141,13 +149,14 @@ Each imports only `src/ledger/ports/acts.ts` (REQ-AR-009) and freezes what it an
 
 ### D-10. `init` in `assembly` and `cli`
 
-`lattice(root, ports).init(namespace, owner)`: check the options; read and check the package (`readStd`) — a refusal
-names `LG-G02` before anything is written; then create `store/`, `store/proposals/`, `store/lattice.json`, an empty
-`store/knowledge.jsonl`; take one `at` = `formatAt(clock.now())` and four ULIDs in order; build `initProposals`; for each
-proposal open the ledger (`openStore`), `apply` it with `[]` (genesis) or `initActs(owner).actsOn(proposalHash(p))`,
-append through the `store` port, and collect `{"outcome":"commit","seq":n}`. Any other outcome refuses with code 2
-naming the commit (REQ-CL-002). `commands/init.ts` keeps its options and prints the lines. The `apply` command passes no
-acts (REQ-CL-004).
+`lattice(root, ports).init(namespace, owner)`: check the options; read and check the package (`readStd`); take one
+`at` = `formatAt(clock.now())` and four ULIDs in order; build `initProposals`; then, **in memory** (review 1, F-8), for
+each proposal open the texts built so far (`openStore` over a `StoredLedger` of them), `apply` it with `[]` (genesis)
+or `initActs(owner).actsOn(proposalHash(p))`, and keep the commit text — any other outcome refuses with code 2 naming
+the commit. Every refusal so far writes nothing. Only then create `store/`, `store/lattice.json`, `store/proposals/`,
+an empty `store/knowledge.jsonl`, and append the four texts through the `store` port, each after the `seq` before it;
+a `moved` answer refuses with code 2 naming the store (SCN-CL-017). Print the four lines `{"outcome":"commit","seq":n}`.
+`commands/init.ts` keeps its options and prints the lines. The `apply` command passes no acts (REQ-CL-004).
 
 ### D-11. Tests
 
@@ -171,8 +180,22 @@ acts (REQ-CL-004).
 `test/trust/**`, `test/acts/**`, `test/ledger/**`, `test/cli/**`, `test/e2e/**`, `test/fixtures/rules/CT-N02/**`,
 `test/fixtures/acts/**`, `openspec/changes/s0-bootstrap/**`.
 
+Conditionally: `test/fixtures/projections/*/ledger.jsonl` and their `index.json` — by the maintainer's decision
+(row `I-2`), the one of #59 and #60 whose impl-PR merges last regenerates them with `test/projections/reference.ts`
+and shows the `index.json` diff in its PR. Commits without acts keep their form (D-6), so #59 expects no diff; if #60
+merges first, the impl-PR of #59 still runs the generator and adds these paths to its `--scope` only when it changes
+a byte.
+
 Not in it: `src/ledger/projections/**`, `test/projections/**` (#60), `src/codec/**`, `test/codec/**` (#58),
-`src/ledger/ports/**`, `src/cli/table.ts`, `src/cli/main.ts`, `test/architecture/**`, `package.json` (skeleton).
+`src/ledger/ports/**`, `src/cli/table.ts`, `src/cli/main.ts`, `test/architecture/**`, `package.json` (skeleton). The
+callers of `apply` and `openLedger` in `src/codec/**` and `test/codec/**` (#58) need no edit: `apply` gains only an
+optional third argument and `openLedger` keeps its signature and behaviour (D-6, D-8).
+
+### D-13. Known gaps of the `std` schemas
+
+The kernel subset (REQ-KR-015) cannot say "exactly one of `login` and `kind`" or "exactly one of `value` and
+`revoked`", so `std/namespace` and `std/live` admit bodies that `policyOf` and `currentFacts` reject (review 1, F-17).
+The pure functions of `trust` are the check in S0; admitting bodies under their types is #82.
 
 ### Coverage
 
@@ -199,6 +222,8 @@ Not in it: `src/ledger/projections/**`, `test/projections/**` (#60), `src/codec/
 | Row | Decision | Reason | By |
 |---|---|---|---|
 | I-1 | #59 holds `TR` + `AC` + `CT` + `LG` + `CL` (D-1). | "Done when" needs the commit form, apply and opening (`LG`) and `init` (`CL`, REQ-CL-002). | the maintainer, 2026-10-02 (session of #59, before `init`; issue #59 edited; umbrella #44 comment 5950552798) |
+| I-2 | `src/ledger/commit.ts` and `src/ledger/index.ts` belong to #59 alone; #60 keeps `src/ledger/projections/**`, `test/projections/**`, `test/fixtures/projections/**`; #59's impl does not wait for #60's; whichever impl-PR merges last regenerates the reference ledgers of #60 (D-12). | The two sessions settled the overlap (umbrella #44 comment 5950598775); #59 keeps `view: latest(commits)` in `openLedger`. | the maintainer, 2026-10-02 (umbrella #44 comment 5950938286, superseding items 1–3 of 5950571583) |
+| I-3 | Spec review 1 (`EVID-01M3Y4GWN1C7DRB0V0DN1M6WAF`, NOT_PROVEN): F-1 Opening split from Opening a store (D-8); F-2 every CT-P01 member in the session type (D-2); F-3 the table is read only for a valid session; F-4 the fact body and the revision value; F-5 tokens; F-6 no transport in S0; F-7 stems `namespace` and `setup` refused; F-8 init builds in memory first (D-10), `moved` during init; F-9 non-empty act strings; F-10 failed reads and paging; F-11 dotted reserved namespaces; F-12 opening repeats the exemption; F-13 who reads `recordedActs`; F-14 the order of `policyOf`; F-15, F-16 wording; F-17 D-13; F-18 exact logins and the synchronous transport stated in REQ-AC-005. | The findings of review 1, all taken. | this spec-PR |
 
 ## Risks / Trade-offs
 

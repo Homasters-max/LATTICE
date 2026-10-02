@@ -15,7 +15,11 @@ Its body is the namespace policy (CT-N03): `{"owner": <login>, "writers": [<writ
 `trust` SHALL give `policyOf(body)`: the policy when the body is an object with exactly these three keys, `owner` a
 login `[A-Za-z0-9-]+`, `writers` a list of objects each with exactly one key — `login` holding a login or `kind` one of
 the three kinds —, and `owner_acts` a list of distinct non-empty strings; otherwise a refusal naming the JSON pointer
-of the first deviation, in the order of the keys above. `actLogins(policy)` SHALL give the logins of the writers listed
+of the first deviation in this order: a body that is not an object (an array included), at `""`; then `owner`, missing
+or invalid, at `/owner`; then `writers` — missing or not a list at `/writers`, otherwise its first invalid element at
+`/writers/<i>`; then `owner_acts` — missing or not a list at `/owner_acts`, otherwise its first element that is not a
+non-empty string or repeats an earlier one at `/owner_acts/<i>`; then the first key outside the three, by UTF-16 code
+units, at `/<key>`. `actLogins(policy)` SHALL give the logins of the writers listed
 by name, each once, ordered by UTF-16 code units: only they can make an act; an entry by kind never gives one (CT-A05).
 
 In S0 apply does not check writers or owner acts (CT-N03, TR-F06); the policy is written and read, not enforced.
@@ -26,10 +30,11 @@ Implements: CT-N01, CT-A05, CT-N03
 <!-- id: SCN-CT-001 -->
 - **WHEN** `policyOf` gets the policy of SL-K04 — `{"owner":"Homasters-max","writers":[{"login":"Homasters-max"},{"kind":"agent"}],"owner_acts":[]}`
   — and then `{"owner":"Homasters-max","writers":[{"login":"a","kind":"agent"}],"owner_acts":[]}`,
-  `{"owner":"x y","writers":[],"owner_acts":[]}` and `{"owner":"Homasters-max","writers":[],"owner_acts":[],"extra":1}`;
-  and `actLogins` gets the first policy
-- **THEN** the first is a policy; the others are refused at `/writers/0`, `/owner` and `/extra`; `actLogins` gives
-  `["Homasters-max"]`
+  `{"owner":"x y","writers":[],"owner_acts":[]}`, `{"owner":"Homasters-max","writers":[],"owner_acts":[],"extra":1}`,
+  `[]`, `{"writers":[{"x":1}],"zz":1}` and `{"owner":"Homasters-max","writers":[],"owner_acts":["a","a"]}`; and
+  `actLogins` gets the first policy
+- **THEN** the first is a policy; the others are refused at `/writers/0`, `/owner`, `/extra`, `""`, `/owner` and
+  `/owner_acts/1`; `actLogins` gives `["Homasters-max"]`
 
 ### Requirement: Store init creates the project namespace
 <!-- id: REQ-CT-002 -->

@@ -43,14 +43,17 @@
 
 ## 4. Command
 
-- [ ] 4.1 `assembly/index.ts` — `init` writes the four commits through apply with the `init` adapter, `Ports.std`, the
-  refusal naming `LG-G02`; `commands/init.ts` prints the commit lines (`REQ-CL-002`, design D-3, D-10); verified by
-  tests with the tokens `SCN-CL-002` and `SCN-CL-015` passing
+- [ ] 4.1 `assembly/index.ts` — `init` builds the four commits in memory through apply with the `init` adapter, then
+  writes them; `Ports.std`; the refusals naming `LG-G02` and the store; `commands/init.ts` prints the commit lines
+  (`REQ-CL-002`, design D-3, D-10); verified by tests with the tokens `SCN-CL-002`, `SCN-CL-015` and `SCN-CL-017`
+  passing
 - [ ] 4.2 `assembly/index.ts` — every command opens with `openStore` (`REQ-CL-004`, `REQ-CL-001`, design D-8); the CLI
   tests on a store holding the init commits (design D-11); verified by tests with the tokens `SCN-CL-001`,
   `SCN-CL-003` … `SCN-CL-014` and `SCN-CL-016` passing
 - [ ] 4.3 The round trip through the entry still gives the fixture bytes (`REQ-CL-006`); verified by tests with the token
   `SCN-CL-010` passing
+- [ ] 4.4 Before the last commit of the impl-PR: run `test/projections/reference.ts`; if a reference ledger of #60 or its
+  `index.json` changes, commit the regenerated files and show the diff in the impl-PR (design D-12, row `I-2`)
 
 ## 5. Review
 

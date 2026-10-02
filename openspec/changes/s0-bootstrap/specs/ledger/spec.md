@@ -19,7 +19,7 @@ every rejection of these rules, never only the first:
 
 | Rule | When | `intent` | `path` | `expected` | `got` | Also |
 |---|---|---|---|---|---|---|
-| `CT-N02` | an intent's `id` is in the namespace `core` or `std` — its part before `/` is `core` or `std` — and no exemption below lifts `CT-N02` for the proposal — one rejection per such intent | the intent's `id` | `/intents/<i>/id` | `null` | `null` | — |
+| `CT-N02` | an intent's `id` is in a reserved namespace — the first `.`-separated part of its namespace (the part before `/`) is `core` or `std`, so `std/x` and `std.y/x` alike — and no exemption below lifts `CT-N02` for the proposal — one rejection per such intent | the intent's `id` | `/intents/<i>/id` | `null` | `null` | — |
 | `LG-C07` | an intent names an `id` that an intent earlier in the text already names — one rejection per such later intent | that `id` | `/intents/<i>/id` of the later intent | `null` | `null` | `with` that `id`; `differs` the paths where the intents naming that `id` differ |
 | `LG-P02` | an entity intent's `base` differs from the latest revision of its `id` in the projection (`0` when the `id` has none) | the intent's `id` | `/intents/<i>/base` | the latest revision | the `base` | — |
 
@@ -70,14 +70,16 @@ Implements: LG-A02, LG-A03, LG-C07, LG-P02, LG-C03, LG-J03, CT-N02, LG-A07
 #### Scenario: Reserved namespaces and their exemptions
 <!-- id: SCN-LG-008 -->
 - **WHEN** apply runs, on an empty ledger, the fixture proposal of SCN-CL-003 with an entity intent `std/x` of type
-  `lattice/table.rule@1` added; the fixture proposal with the `id` of its session event, and every `by`, changed to
+  `lattice/table.rule@1` added; the same with `std.y/x` instead of `std/x`; the same with `stdx/x`; the fixture
+  proposal with the `id` of its session event, and every `by`, changed to
   `core/01J8ZQ4N7X5K2M9R3T6V8W0Y1A`; the genesis proposal (REQ-LG-006); the genesis proposal with the `at` of its
   session event changed to `1970-01-01T00:00:00.001Z`; the `std` proposal of store init (REQ-LG-008); then, on the
   ledger of the genesis commit, the `std` proposal; the `std` proposal with the body of `std/live` changed; the `std`
   proposal with its session `purpose` `work`; and, on the ledger of store init (SCN-LG-011), the genesis proposal
 - **THEN** the first gives exactly one rejection `CT-N02` for `std/x` at its `/intents/<i>/id`; the second exactly one
-  `CT-N02` for the session `id`; the third a commit; the fourth exactly three `CT-N02`, one per intent; the fifth
-  exactly four `CT-N02`; on the genesis ledger the `std` proposal gives a commit and each of the other two exactly four
+  for `std.y/x`; the third a commit; the next exactly one `CT-N02` for the session `id`; the genesis proposal a
+  commit; the changed genesis exactly three `CT-N02`, one per intent; the `std` proposal on the empty ledger exactly
+  four `CT-N02`; on the genesis ledger the `std` proposal gives a commit and each of the other two exactly four
   `CT-N02`; the last answers `existing` with `seq` 1
 
 ### Requirement: Apply answers a commit, a no-op, an existing commit or rejections
@@ -119,9 +121,10 @@ key `acts` is absent from a commit whose act record is empty, so a commit withou
 acts existed. The outcomes `existing`, `rejected` and `no-op` do not depend on the acts.
 
 The commit form, which opening a ledger checks (REQ-CL-004), is: exactly the eight keys above, or those and `acts`; an
-`acts` value is a non-empty list of objects with exactly the keys `login` (a string), `names` (a non-empty list of
-strings) and `ref` (a string); every record of `records` has exactly the keys of the entity record or of the event
-record.
+`acts` value is a non-empty list of objects with exactly the keys `login` (a non-empty string), `names` (a non-empty
+list of non-empty strings) and `ref` (a non-empty string) — the form of an act (REQ-AC-001); every record of
+`records` has exactly the keys of the entity record or of the event record. Apply records only acts of that form: an
+act given in another form is not recorded.
 
 Hashes are kernel hashes as in REQ-LG-001: the **commit hash** is of type id `core/commit` over the commit object; the
 **record hash** of an entity record is of its type without the `@n` suffix over its body (OM-H01 over `type@n` comes
@@ -196,8 +199,11 @@ session `id` is `core/00000000000000000000000000` and its `at` `1970-01-01T00:00
 - the entity `core/type`, type `core/type@1`, `base` 0, body the body of the meta-type (`metaType.body`, REQ-KR-016) —
   typed by itself;
 - the entity `core/session`, type `core/type@1`, `base` 0, body the session event type, in canonical form
-  `{"schema":{"properties":{"kind":{"enum":["agent","human","machine"],"type":"string"},"of":{"properties":{},"type":"object"},"participant":{"maxLength":128,"type":"string"},"pipeline":{"pinned":true,"ref":"std/pipeline","type":"string"},"purpose":{"enum":["bench","check","import","init","work"],"type":"string"}},"required":["kind","of","participant","purpose"],"type":"object"}}`
-  — the members of a session of CT-P01 and the closed list of purposes of TR-B02;
+  `{"schema":{"properties":{"established":{"maxLength":128,"type":"string"},"kind":{"enum":["agent","human","machine"],"type":"string"},"of":{"properties":{},"type":"object"},"participant":{"maxLength":128,"type":"string"},"pipeline":{"pinned":true,"ref":"std/pipeline","type":"string"},"purpose":{"enum":["bench","check","import","init","work"],"type":"string"},"software":{"maxLength":128,"type":"string"},"version":{"maxLength":128,"type":"string"}},"required":["kind","of","participant","purpose"],"type":"object"}}`
+  — the members of a session of CT-P01: `participant`, `kind`, `purpose` (the closed list of TR-B02) and `of`
+  required; `software`, `version`, `established` (how the kind was established, CT-P03) and the `pipeline@n` of a run
+  optional, because the sessions written in S0 — the codec's and store init's — do not record them yet, and a later
+  kernel version may require them;
 - the genesis session event — the session that records itself —, type `core/session@1`, body
   `{"of": {}, "participant": "lattice", "kind": "machine", "purpose": "init"}`;
 
@@ -316,15 +322,19 @@ Implements: TR-B02, LG-A05, LG-A03
 ### Requirement: Opening a store checks its genesis chain
 <!-- id: REQ-LG-010 -->
 
-`openStore(stored)` SHALL open the ledger as opening does (LG-C04, REQ-CL-004) and then refuse a store whose history
-is not a prefix of the chain kernel `0` knows (LG-G01): checking the commits in ledger order, the first of these
-refuses, naming its rule and the `seq` of the commit:
+`openStore(stored)` SHALL open the ledger as `openLedger` does — the checks of LG-C04 only, REQ-CL-004 **Opening** —
+and then refuse a store whose history is not a prefix of the chain kernel `0` knows (LG-G01): checking the commits in
+ledger order, the first of these refuses, naming its rule and the `seq` of the commit:
 - `LG-G03` — the commit's `kernel` is not `"0"` (no transition commit is known, LT-01);
 - `LG-G01` — the first commit's commit hash is not the genesis hash;
-- `LG-G02` — the second commit holds a record other than its entity records and its session event, or its entity
-  records, as `{"id", "type", "body"}` in record order, do not have the package hash of the `std` package (REQ-LG-007).
+- `LG-G02` — the second commit is not a load of the `std` package by the conditions of its exemption (REQ-LG-002): it
+  holds records other than its entity records and its session event (the record whose `id` is the commit's `by`);
+  the session body does not have `kind` `machine` and `purpose` `init`; or its entity records, as `{"id", "type",
+  "body"}` in record order, do not have the package hash of the `std` package (REQ-LG-007).
 
-An empty ledger is a prefix and opens. Every command that opens a store opens it this way (REQ-CL-004).
+An empty ledger is a prefix and opens. `openLedger` itself is unchanged: it opens ledgers that are not stores, such as
+the ledgers of rule fixtures (REQ-AR-011) and L1 (REQ-LG-003). Every command that reads a project store runs both
+(REQ-CL-004, **Opening a store**). `openStore` reads no acts.
 
 Implements: LG-G01, LG-G02, LG-G03
 
@@ -332,7 +342,8 @@ Implements: LG-G01, LG-G02, LG-G03
 <!-- id: SCN-LG-014 -->
 - **WHEN** `openStore` gets an empty ledger; the ledger of store init (SCN-LG-011); that ledger followed by the commit
   of the fixture proposal of SCN-CL-003; L1 (REQ-LG-003); the genesis commit followed by the commit of the fixture
-  proposal applied on it; and the ledger of store init with commit 4 rebuilt with `kernel` `"1"` and its hash chain
-  kept
-- **THEN** the first three open; the fourth is refused naming `LG-G01` and `seq` 1; the fifth `LG-G02` and `seq` 2; the
-  last `LG-G03` and `seq` 4
+  proposal applied on it; the genesis commit followed by a commit of the `std` package whose session body has
+  `purpose` `work`, its hash chain kept; and the ledger of store init with commit 4 rebuilt with `kernel` `"1"` and its
+  hash chain kept
+- **THEN** the first three open; the fourth is refused naming `LG-G01` and `seq` 1; the fifth and the sixth `LG-G02`
+  and `seq` 2; the last `LG-G03` and `seq` 4; `openLedger` opens every one of them

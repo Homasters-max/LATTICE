@@ -51,16 +51,18 @@ act and the switch (SL-T07 (4)) needs for CI.
 
 ### Modified Capabilities
 
-- `ledger`: REQ-LG-002 (the rule `CT-N02` and its exemptions), REQ-LG-003 (apply takes acts; the commit's act record);
-  new requirements for genesis, the `std` package, the init proposals, the act record and basis of records, and the
-  opening checks of a store.
+- `ledger`: REQ-LG-002 (the rule `CT-N02` and its exemptions), REQ-LG-003 (apply takes acts; the commit's act record),
+  REQ-LG-005 (the permutation cases gain acts and the init proposals); new requirements for genesis, the `std`
+  package, the init proposals, the basis of records, and the opening checks of a store.
 - `cli`: REQ-CL-001 (code 2 for a store outside the genesis chain and a refused `std` package), REQ-CL-002 (`init`
-  writes commits 1–4), REQ-CL-003 and REQ-CL-004 (their scenarios run on a store that holds the init commits; opening
-  checks the genesis chain).
+  builds commits 1–4 in memory, then writes them), REQ-CL-003 (the stems `namespace` and `setup` are refused; its
+  scenario runs on a store that holds the init commits) and REQ-CL-004 (its scenarios run on that store; a separate
+  step "Opening a store" checks the genesis chain).
 
 ## Impact
 
-- Code: `src/trust/**`; `src/ledger/{apply,commit,rules,records,index}.ts` and new `src/ledger/{genesis,std,init,basis}.ts`;
+- Code: `src/trust/**`; `src/ledger/{apply,commit,rules,records,proposal,index}.ts` and new
+  `src/ledger/{genesis,std,init,basis}.ts`;
   new adapters `src/adapters/acts-{init,fixture,recorded,github}/`; the `init`, `apply` and opening paths of
   `src/assembly/index.ts`; `src/cli/commands/init.ts`; the package `std/std.json`.
 - Tests: new `test/trust/**`, `test/acts/**`, `test/ledger/{genesis,init,basis}.test.ts`, a rule fixture
