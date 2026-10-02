@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3XWJVVZ18T5K6XVVS9DX6Y0",
+  "claim": {
+    "text": "tests-passed passed for s0-apply-checks",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "f76170e66139065c8454b51b13d08375ab2c4d4c",
+    "base_commit": "6e262604db6ee762bd6e870abc48b7174ee56ace",
+    "spec_revision": "openspec/changes/s0-apply-checks@f76170e66139065c8454b51b13d08375ab2c4d4c",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:e60dc4a669fc30c3d2c681ca922e03d2347d12ebff4f4c57076e8d45a497bdc4",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "created_at": "2026-10-02T08:44:37.633Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-apply-checks/raw/tests-passed/junit.xml",
+      "sha256": "sha256:a923b4af008599ac29fce8574d6413f74051692362b2bfad9651f98f4e6256ad"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 510
+  }
+}

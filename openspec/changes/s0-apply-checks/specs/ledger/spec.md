@@ -135,7 +135,7 @@ Implements: LG-A01, LG-C01, LG-C02, LG-C05, LG-C08, OM-H03, LG-P01, LG-P04
 <!-- id: SCN-LG-003 -->
 - **WHEN** after the commit of SCN-CL-005 apply runs on a proposal of a new session event and the four entity intents
   of that commit, each with `base` 1, `by` the new session's `id` and its type and body unchanged; then on the same
-  proposal with the body of `lattice/fx-a02` changed; then on the same proposal with the type of `lattice/fx-a01`
+  proposal with the body of `lattice/fx-a02` changed; then on the first proposal with the type of `lattice/fx-a01`
   changed to `lattice/table.rule@2` and its body unchanged; then on a proposal holding only a new session event
 - **THEN** the first answers `no-op`; the second a commit with `seq` 2 and `base` 1 whose records are
   `lattice/fx-a02` at `rev` 2 and the session event, and whose `proposal` is the hash of those two intents; the third
@@ -159,8 +159,10 @@ this order: `existing` with the `seq` of the first commit of the ledger whose `p
 `seq` equals the commit's `base` and its commit hash the commit's `prev` (`0` and `null` for an empty ledger), so the
 appended commit keeps the hash chain (LG-C04); otherwise exactly one rejection `LG-C03` (REQ-LG-002). The writer of a commit SHALL append
 it only after the `seq` of its `base`; when the ledger has moved since it was opened, the writer reads it again and
-checks the commit against it. There are no locks and no automatic merge at this level; after `LG-C03` the caller
-applies the proposal again on the new tail (LG-C03).
+checks the commit against it. The writer learns of a moved tail only from the store's answer `moved`, which compares
+the `seq`: a tail replaced at the same `seq` outside apply (a checkout or a hand edit of the ledger file) is not seen
+at the append, and the next opening refuses the broken chain (LG-C04). There are no locks and no automatic merge at
+this level; after `LG-C03` the caller applies the proposal again on the new tail (LG-C03).
 
 Implements: LG-C03, LG-C08
 

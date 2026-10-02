@@ -1,13 +1,13 @@
 {
   "$schema": "warrant://waiver/1",
   "id": "WAV-2026-004",
-  "change": "s0-kernel",
+  "change": "s0-apply-checks",
   "gate": "spec-approved",
-  "reason": "I-1…I-6: the rows of spec review 2 (EVID-01M3XTFX7JNF7XD6AM676SBRZZ) edit the delta spec after approval — refs under a chain, member order, of targets, a nested chain case, the REQ-KR-002 Migration; the approval of spec-PR #88 is the decision on them",
+  "reason": "I-14, I-16, I-17: edits of the delta specs (REQ-LG-004, REQ-CL-004, SCN-AR-017, SCN-LG-003) planned in spec-PR #87 from spec review 3 (EVID-01M3XT5RCPWN2YENNK0SBDT4XJ) and decided by its approval",
   "risk": "LOW",
   "compensating_controls": [
-    "the spec edits are exactly the review-2 rows I-1…I-6 of design.md, each with its finding",
-    "tests SCN-KR-049, SCN-KR-051, SCN-KR-053 assert the edited scenarios; tests-passed 659/0"
+    "the impl-PR body lists each spec edit with its I-N row; the maintainer reads the spec diff before merge",
+    "tests SCN-AR-017, SCN-LG-003, SCN-LG-005 prove the edited scenarios"
   ],
   "owner": "human:Homasters-max",
   "approved_by": "human:Homasters-max",
