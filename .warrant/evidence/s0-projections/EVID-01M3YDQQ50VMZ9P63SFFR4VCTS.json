@@ -1,0 +1,41 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YDQQ50VMZ9P63SFFR4VCTS",
+  "claim": {
+    "text": "tests-passed passed for s0-projections",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "974f3d18ecdec0254cf441a122d68556ecce9ff2",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/s0-projections@974f3d18ecdec0254cf441a122d68556ecce9ff2",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:b696ea00d206bc1441404a9be86933412e164822e8cfd85f0e42dbac2437355f",
+  "effective_policy_hash": "sha256:1dc582bc325ec0b9aeda5ceb81d27165ddc5ef768dc4d665969cc04b968a2366",
+  "created_at": "2026-10-02T13:44:22.434Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-projections/raw/tests-passed/junit.xml",
+      "sha256": "sha256:c00622f2cb3820ba92139bb7db0081c028a2e3831a1288eeb631f687fc670476"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 787
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YDT9Z50WZT9YPVNTWEQCP7",
+  "claim": {
+    "text": "openspec-validate passed for infra-merge-flow",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "9745714f2defe5731074b9470e0b3580c3551f9b",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/infra-merge-flow@9745714f2defe5731074b9470e0b3580c3551f9b",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:6ecaa0bfb41a0fcef1a8b068d3293e4d4b2344bbbb37f37156a9f3ce8f0c867b",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T13:45:47.238Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-merge-flow/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:0ad80100d355014e501f14ef3f62b18707869ad7994114a610b8b4bcee5134db"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YDSYKWZ7WGZ08KBY673NME",
+  "claim": {
+    "text": "Homasters-max approved infra-merge-flow for VERIFYING->MERGED",
+    "targets": []
+  },
+  "kind": "human-approval",
+  "level": "L0",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "7f6a78e109648353f4d900a84e4f6a0a3ef735fc",
+    "base_commit": "6136dbae2983f8458ead46e01619a70fe94f42b8",
+    "spec_revision": "openspec/changes/infra-merge-flow@7f6a78e109648353f4d900a84e4f6a0a3ef735fc",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "human",
+    "id": "Homasters-max"
+  },
+  "attestation": {
+    "type": "human-review",
+    "ref": "https://github.com/Homasters-max/LATTICE/pull/117"
+  },
+  "context_hash": "sha256:033ad564f33d7f57fdd8acf2848a1c81995c49c03ae476cbddaae61850c0fa7b",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T13:45:35.613Z",
+  "artifacts": [],
+  "limitations": [
+    "ref not verified (phase 4: warrant ci)"
+  ]
+}
