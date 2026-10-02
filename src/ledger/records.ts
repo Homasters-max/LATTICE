@@ -3,6 +3,7 @@
 // `Revision` gives way to it with s0-kernel (#55, design I-23).
 
 import type { Hash, Id } from "../kernel/index.ts";
+import type { Act } from "./ports/acts.ts";
 
 export type EntityRecord = {
   readonly id: Id;
@@ -33,6 +34,8 @@ export type Commit = {
   readonly by: Id;
   readonly at: string;
   readonly records: readonly LedgerRecord[];
+  /** The act record (LG-A05, REQ-LG-003): present only when an act confirms a held intent. */
+  readonly acts?: readonly Act[];
 };
 
 export function isEntityRecord(r: LedgerRecord): r is EntityRecord {

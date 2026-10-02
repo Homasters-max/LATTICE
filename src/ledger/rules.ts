@@ -4,9 +4,18 @@
 
 import { byCodeUnits } from "./records.ts";
 
-export const REJECTION_RULES = ["LG-C03", "LG-C07", "LG-P01", "LG-P02"] as const;
+export const REJECTION_RULES = ["CT-N02", "LG-C03", "LG-C07", "LG-P01", "LG-P02"] as const;
 
 export type RuleId = (typeof REJECTION_RULES)[number];
+
+/**
+ * The exemptions of apply (LG-A07, REQ-LG-002): each names the rule it lifts and the rule that grants it, decided from
+ * the proposal and the ledger as a whole, never from an `id` alone.
+ */
+export const EXEMPTIONS: readonly { readonly rule: RuleId; readonly by: string }[] = Object.freeze([
+  Object.freeze({ rule: "CT-N02", by: "LG-G01" }),
+  Object.freeze({ rule: "CT-N02", by: "LG-G02" }),
+]);
 
 export type Rejection = {
   readonly intent: string | null;

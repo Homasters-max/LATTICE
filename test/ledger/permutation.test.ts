@@ -8,10 +8,14 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { canonical } from "../../src/kernel/index.ts";
-import { checkTail } from "../../src/ledger/index.ts";
-import type { Ledger, Rejection } from "../../src/ledger/index.ts";
+import { checkTail, parseProposal, proposalHash } from "../../src/ledger/index.ts";
+import type { Ledger, Proposal, Rejection } from "../../src/ledger/index.ts";
+import type { Act } from "../../src/ledger/ports/acts.ts";
+import { initActs } from "../../src/adapters/acts-init/index.ts";
 import {
   applyText,
+  initCase,
+  initTexts,
   bare,
   committed,
   duplicateOfFirstRow,
@@ -26,7 +30,19 @@ import {
   textOf,
 } from "./cases.ts";
 
-type Case = { readonly name: string; readonly text: string; readonly ledger: Ledger; readonly after: Ledger };
+function proposalOf(intents: readonly unknown[]): Proposal {
+  const parsed = parseProposal(textOf(intents));
+  if (!parsed.ok) throw new Error("the form of LG-P01");
+  return parsed.proposal;
+}
+
+type Case = {
+  readonly name: string;
+  readonly text: string;
+  readonly ledger: Ledger;
+  readonly after: Ledger;
+  readonly acts?: readonly Act[];
+};
 
 function cases(): Case[] {
   const all: Case[] = [];
@@ -57,6 +73,19 @@ function cases(): Case[] {
     on("another type revision", first, revisedIntents(2, editing("lattice/fx-a01", (x) => (x.type = "lattice/table.rule@2")))),
     on("only a session", first, sessionOnly(2)),
   );
+  // s0-bootstrap: the first proposal of SCN-LG-012 with its acts, and each proposal of store init with the owner's act
+  const fixtureHash = proposalHash(proposalOf(fixtureIntents(1)));
+  const act = (names: string[], ref: string): Act => ({ login: "Homasters-max", names, ref });
+  all.push({
+    ...on("the fixture proposal with acts", [], fixtureIntents(1)),
+    acts: [act(["lattice/zzz"], "u4"), act(["lattice/fx-a02", "lattice/fx-a01"], "u2"), act([fixtureHash], "u1")],
+  });
+  const init = initTexts();
+  for (const [i, proposal] of initCase().entries()) {
+    const ledger = ledgerOf(init.slice(0, i));
+    const acts = i === 0 ? [] : initActs("Homasters-max").actsOn(proposalHash(proposal));
+    all.push({ name: `store init proposal ${i + 1}`, text: textOf(proposal.intents), ledger, after: ledger, acts });
+  }
   return all;
 }
 
@@ -109,7 +138,7 @@ const stripped = (rejections: readonly Rejection[]): string[] =>
 
 /** The result of a proposal text, in the terms REQ-LG-005 compares. */
 function resultOf(c: Case, text: string): unknown {
-  const answer = applyText(c.ledger, text);
+  const answer = applyText(c.ledger, text, c.acts);
   switch (answer.outcome) {
     case "rejected":
       return { outcome: "rejected", rejections: stripped(answer.rejections) };

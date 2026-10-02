@@ -3,10 +3,21 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { checkTail, differs, parseProposal, proposalHash, REJECTION_RULES } from "../../src/ledger/index.ts";
-import type { Applied } from "../../src/ledger/index.ts";
+import {
+  apply,
+  checkTail,
+  differs,
+  EXEMPTIONS,
+  GENESIS,
+  parseProposal,
+  proposalHash,
+  REJECTION_RULES,
+} from "../../src/ledger/index.ts";
+import type { Applied, Proposal } from "../../src/ledger/index.ts";
 import {
   applyText,
+  initCase,
+  initTexts,
   bare,
   committed,
   duplicateOfFirstRow,
@@ -97,8 +108,12 @@ describe("SCN-LG-002 a duplicate names the id it collided with and the differing
 });
 
 describe("SCN-LG-007 the rule list is closed", () => {
-  it("SCN-LG-007 the ledger module exports exactly LG-C03, LG-C07, LG-P01, LG-P02", () => {
-    assert.deepEqual([...REJECTION_RULES], ["LG-C03", "LG-C07", "LG-P01", "LG-P02"]);
+  it("SCN-LG-007 the ledger module exports exactly CT-N02, LG-C03, LG-C07, LG-P01, LG-P02 and two exemptions", () => {
+    assert.deepEqual([...REJECTION_RULES], ["CT-N02", "LG-C03", "LG-C07", "LG-P01", "LG-P02"]);
+    assert.deepEqual(EXEMPTIONS, [
+      { rule: "CT-N02", by: "LG-G01" },
+      { rule: "CT-N02", by: "LG-G02" },
+    ]);
   });
 });
 
@@ -196,5 +211,98 @@ describe("SCN-LG-005 a commit built on an older tail is rejected by LG-C03", () 
     assert.equal(check.outcome, "rejected");
     if (check.outcome !== "rejected") return;
     assert.deepEqual(check.rejections.map(bare)[0]?.got, { seq: 2, hash: replaced.tail?.hash });
+  });
+});
+
+/** The proposal of `intents`, which must pass the form of LG-P01. */
+function proposalOf(intents: readonly unknown[]): Proposal {
+  const parsed = parseProposal(textOf(intents));
+  if (!parsed.ok) throw new Error("the form of LG-P01");
+  return parsed.proposal;
+}
+
+/** A copy of a proposal through JSON, changed by `edit`. */
+function changed(p: Proposal, edit: (intents: Json[]) => void): Proposal {
+  const intents = JSON.parse(JSON.stringify(p.intents)) as Json[];
+  edit(intents);
+  return proposalOf(intents);
+}
+
+const reservedOf = (answer: Applied): (string | null)[] =>
+  rejections(answer).filter((r) => r.rule === "CT-N02").map((r) => r.intent as string | null);
+
+describe("SCN-LG-008 reserved namespaces and their exemptions", () => {
+  const empty = ledgerOf([]);
+  const std = initCase()[1] as Proposal;
+  const genesisLedger = ledgerOf(initTexts().slice(0, 1));
+  const withRow = (id: string): Json[] => [
+    ...fixtureIntents(1),
+    { kind: "entity", id, type: "lattice/table.rule@1", base: 0, by: session(1), body: { Rule: "x" } },
+  ];
+
+  it("SCN-LG-008 std/x and std.y/x are rejected, stdx/x is not", () => {
+    const one = applyText(empty, textOf(withRow("std/x")));
+    assert.deepEqual(rejections(one).map((r) => [r.rule, r.intent, r.path]), [["CT-N02", "std/x", "/intents/5/id"]]);
+    assert.deepEqual(reservedOf(applyText(empty, textOf(withRow("std.y/x")))), ["std.y/x"]);
+    assert.equal(applyText(empty, textOf(withRow("stdx/x"))).outcome, "commit");
+  });
+
+  it("SCN-LG-008 a session in core is rejected", () => {
+    const core = "core/01J8ZQ4N7X5K2M9R3T6V8W0Y1A";
+    const intents = fixtureIntents(1).map((x) => ({ ...x, by: core, ...(x.kind === "event" ? { id: core } : {}) }));
+    assert.deepEqual(reservedOf(applyText(empty, textOf(intents))), [core]);
+  });
+
+  it("SCN-LG-008 the genesis proposal is exempt by LG-G01 only as it is, only on an empty ledger", () => {
+    assert.equal(apply(empty, GENESIS).outcome, "commit");
+    const later = changed(GENESIS, (xs) => void ((xs.find((x) => x.kind === "event") as Json).at = "1970-01-01T00:00:00.001Z"));
+    assert.equal(reservedOf(apply(empty, later)).length, 3);
+  });
+
+  it("SCN-LG-008 the std proposal is exempt by LG-G02 only right after genesis, unchanged, machine / init", () => {
+    assert.equal(reservedOf(apply(empty, std)).length, 4);
+    assert.equal(apply(genesisLedger, std).outcome, "commit");
+    const body = changed(std, (xs) => {
+      const live = xs.find((x) => x.id === "std/live") as Json;
+      live.body = { schema: { type: "object", properties: {} } };
+    });
+    assert.equal(reservedOf(apply(genesisLedger, body)).length, 4);
+    const work = changed(std, (xs) => {
+      const s = xs.find((x) => x.kind === "event") as Json;
+      s.body = { ...(s.body as Json), purpose: "work" };
+    });
+    assert.equal(reservedOf(apply(genesisLedger, work)).length, 4);
+  });
+
+  it("SCN-LG-008 the genesis proposal on the ledger of store init answers existing seq 1", () => {
+    assert.deepEqual(apply(ledgerOf(initTexts()), GENESIS), { outcome: "existing", seq: 1 });
+  });
+});
+
+describe("SCN-LG-012 acts that confirm intents become the act record", () => {
+  const proposal = proposalOf(fixtureIntents(1));
+  const h = proposalHash(proposal);
+  const act = (names: string[], ref: string) => ({ login: "Homasters-max", names, ref });
+  const a = act([h], "u1");
+
+  it("SCN-LG-012 kept acts carry the check result, once, in order of canonical JSON", () => {
+    const acts = [act(["lattice/zzz"], "u4"), act(["f".repeat(64)], "u3"), act(["lattice/fx-a02", "lattice/fx-a01"], "u2"), a, a];
+    const answer = apply(ledgerOf([]), proposal, acts);
+    assert.equal(answer.outcome, "commit");
+    if (answer.outcome !== "commit") return;
+    assert.deepEqual(answer.commit.acts, [act([answer.commit.proposal], "u1"), act(["lattice/fx-a01", "lattice/fx-a02"], "u2")]);
+  });
+
+  it("SCN-LG-012 without acts the commit has no key acts and is the commit of L1", () => {
+    const answer = apply(ledgerOf([]), proposal);
+    assert.equal(answer.outcome, "commit");
+    if (answer.outcome !== "commit") return;
+    assert.equal(Object.hasOwn(answer.commit, "acts"), false);
+    assert.equal(answer.text, committed([], fixtureIntents(1))[0]);
+  });
+
+  it("SCN-LG-012 a no-op proposal stays a no-op with an act", () => {
+    const l1 = ledgerOf(committed([], fixtureIntents(1)));
+    assert.equal(apply(l1, proposalOf(revisedIntents(2)), [a]).outcome, "no-op");
   });
 });

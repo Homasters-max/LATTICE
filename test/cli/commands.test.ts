@@ -3,7 +3,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
-import { project } from "./project.ts";
+import { join } from "node:path";
+import { jsonlStore } from "../../src/adapters/store-jsonl/index.ts";
+import type { Store } from "../../src/ledger/ports/store.ts";
+import { initTexts, stdText } from "../ledger/cases.ts";
+import { initialised, onlyProposal, project } from "./project.ts";
 
 describe("SCN-CL-001 an unknown command prints the usage", () => {
   it("SCN-CL-001 no command, an unknown one and export without --out exit 2 and write nothing", () => {
@@ -26,13 +30,14 @@ describe("SCN-CL-001 an unknown command prints the usage", () => {
 });
 
 describe("SCN-CL-002 a store is created once", () => {
-  it("SCN-CL-002 init writes the configuration, an empty ledger and proposals; a second init changes nothing", () => {
+  it("SCN-CL-002 init writes the configuration, the four init commits and proposals; a second init changes nothing", () => {
     const p = project();
     try {
       const first = p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max");
-      assert.equal(first.code, 0);
+      assert.equal(first.code, 0, first.err.join("\n"));
+      assert.deepEqual(first.out, [1, 2, 3, 4].map((seq) => JSON.stringify({ outcome: "commit", seq })));
       assert.equal(p.file("store/lattice.json"), '{"namespace":"lattice","owner":"Homasters-max"}\n');
-      assert.equal(p.file("store/knowledge.jsonl"), "");
+      assert.equal(p.file("store/knowledge.jsonl"), initTexts().map((t) => t + "\n").join(""));
       assert.deepEqual(p.proposals(), []);
       assert.ok(p.exists("store/proposals"));
       p.write("store/proposals/kept.json", "{}");
@@ -72,6 +77,58 @@ describe("SCN-CL-002 a store is created once", () => {
       assert.equal(p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max").code, 0);
       p.write("store/lattice.json", '{"namespace": "lattice", "owner": "Homasters-max"}\n');
       assert.equal(p.lattice("export", "--out", "out").code, 2);
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-015 a refused std package creates nothing", () => {
+  it("SCN-CL-015 one schema character changed: code 2 naming LG-G02, no store/", () => {
+    const changed = stdText().replace('"maxLength":128', '"maxLength":129');
+    const p = project({ std: changed });
+    try {
+      const r = p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max");
+      assert.equal(r.code, 2);
+      assert.match(r.err.join("\n"), /LG-G02/);
+      assert.equal(p.exists("store"), false);
+    } finally {
+      p.dispose();
+    }
+  });
+});
+
+describe("SCN-CL-017 a store that moves during init is refused", () => {
+  it("SCN-CL-017 moved on the third append: code 2 naming the store, no commit line, two commits; apply then LG-G04", () => {
+    let real: Store | null = null;
+    let appends = 0;
+    const store: Store = {
+      read: () => (real as Store).read(),
+      append: (commit, after) => (++appends === 3 ? { ok: false, reason: "moved" } : (real as Store).append(commit, after)),
+    };
+    const p = project({ store });
+    real = jsonlStore(join(p.dir, "store", "knowledge.jsonl"));
+    try {
+      const r = p.lattice("init", "--namespace", "lattice", "--owner", "Homasters-max");
+      assert.equal(r.code, 2);
+      assert.match(r.err.join("\n"), /knowledge\.jsonl.*tail moved/);
+      assert.deepEqual(r.out, []);
+      assert.equal(p.file("store/knowledge.jsonl"), initTexts().slice(0, 2).map((t) => t + "\n").join(""));
+      p.write("fixture.md", "| ID | Rule |\n| --- | --- |\n| FX-A01 | x |\n");
+      assert.equal(p.lattice("import-md", "fixture.md").code, 0);
+      const a = p.lattice("apply", onlyProposal(p));
+      assert.equal(a.code, 2);
+      assert.match(a.err.join("\n"), /LG-G04: seq 3/);
+    } finally {
+      p.dispose();
+    }
+  });
+
+  it("SCN-CL-017 an initialised store opens: apply of a fresh import runs (control)", () => {
+    const p = initialised();
+    try {
+      assert.equal(p.lattice("import-md", "fixture.md").code, 0);
+      assert.equal(p.lattice("apply", onlyProposal(p)).code, 0);
     } finally {
       p.dispose();
     }

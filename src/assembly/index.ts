@@ -5,26 +5,35 @@
 
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { canonical, checkInput, newId } from "../kernel/index.ts";
+import { fileURLToPath } from "node:url";
+import { canonical, checkInput, formatAt, newId } from "../kernel/index.ts";
 import type { Ledger, Rejection } from "../ledger/index.ts";
 import {
   apply as applyProposal,
   checkTail,
+  initProposals,
   openLedger,
+  openStore,
   parseProposal,
   proposalHash,
   proposalText,
+  readStd,
   unreadableProposal,
 } from "../ledger/index.ts";
-import type { Store } from "../ledger/ports/store.ts";
+import type { StoredCommit, Store } from "../ledger/ports/store.ts";
 import { exportMd, importMd as importTable, stemOf } from "../codec/index.ts";
 import type { Clock } from "../runtime/ports/clock.ts";
 import type { Ids } from "../runtime/ports/ids.ts";
 import { jsonlStore } from "../adapters/store-jsonl/index.ts";
 import { systemClock } from "../adapters/clock-system/index.ts";
 import { ulidIds } from "../adapters/ids-ulid/index.ts";
+import { initActs } from "../adapters/acts-init/index.ts";
 
-export type Ports = { readonly store?: Store; readonly clock?: Clock; readonly ids?: Ids };
+/** The `std` package of this LATTICE installation (LG-S05, REQ-LG-007). */
+const STD_FILE = fileURLToPath(new URL("../../std/std.json", import.meta.url));
+
+/** `std` — the text of the `std` package, injected by tests in place of `std/std.json` (s0-bootstrap design D-3). */
+export type Ports = { readonly store?: Store; readonly clock?: Clock; readonly ids?: Ids; readonly std?: string };
 
 export type { Rejection };
 
@@ -50,6 +59,8 @@ type Config = { readonly namespace: string; readonly owner: string };
 const NAMESPACE = /^[a-z][a-z0-9-]*$/;
 const LOGIN = /^[A-Za-z0-9-]+$/;
 const RESERVED = new Set(["core", "std"]);
+/** The local parts of the entities store init writes; a document of that stem would collide (REQ-CL-003 step 1). */
+const INIT_STEMS = new Set(["namespace", "setup"]);
 
 const done = (...output: string[]): Outcome => ({ kind: "done", output });
 const refused = (message: string): Outcome => ({ kind: "refused", message });
@@ -118,11 +129,11 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
     }
   };
 
-  /** Opens the ledger of `s` (LG-C04); an unreadable ledger file is a refusal too (REQ-CL-001). */
-  const open = (s: Store): Ledger | string => {
+  /** Opens the store of `s` (LG-C04, then REQ-LG-010); an unreadable ledger file is a refusal too (REQ-CL-001). */
+  const open = (s: Store, config: Config): Ledger | string => {
     if (ports.store === undefined && !existsSync(ledgerFile)) return `${shown(ledgerFile)} is missing`;
     try {
-      const opened = openLedger(s.read());
+      const opened = openStore(s.read(), config.namespace);
       return opened.ok ? opened.ledger : opened.message;
     } catch (e) {
       return `cannot read ${shown(ledgerFile)}: ${(e as Error).message}`;
@@ -134,12 +145,60 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       if (existsSync(storeDir)) return refused(`${shown(storeDir)} already exists`);
       if (!namespaceOk(namespace)) return refused(`the namespace ${namespace} is not [a-z][a-z0-9-]*, at most 64 characters, not core or std`);
       if (!LOGIN.test(owner)) return refused(`the owner ${owner} is not a login [A-Za-z0-9-]+`);
-      const failed = writing(storeDir, () => {
-        mkdirSync(proposalsDir, { recursive: true });
+      let stdText = ports.std;
+      if (stdText === undefined) {
+        try {
+          stdText = readFileSync(STD_FILE, "utf8");
+        } catch {
+          return refused(`LG-G02: cannot read the std package ${shown(STD_FILE)}`);
+        }
+      }
+      const std = readStd(stdText);
+      if (!std.ok) return refused(std.message);
+      const at = formatAt(clock.now());
+      if (!at.ok) return refused(`the clock gave a time the kernel refuses: ${clock.now()}`);
+      const built = initProposals({
+        namespace,
+        owner,
+        at: at.value,
+        ulids: [ids.ulid(), ids.ulid(), ids.ulid(), ids.ulid()],
+        std: std.entities,
+      });
+      if (!built.ok) return refused(built.message);
+
+      // REQ-CL-002: the four commits are built in memory through apply before anything is written.
+      const commits: StoredCommit[] = [];
+      for (const [i, proposal] of built.proposals.entries()) {
+        const opened = openLedger({ commits, torn: null });
+        if (!opened.ok) return refused(`store init: commit ${i + 1}: ${opened.message}`);
+        const acts = i === 0 ? [] : initActs(owner).actsOn(proposalHash(proposal));
+        const applied = applyProposal(opened.ledger, proposal, acts);
+        if (applied.outcome !== "commit") return refused(`store init: commit ${i + 1}: apply answered ${applied.outcome}`);
+        commits.push({ seq: applied.commit.seq, text: applied.text });
+      }
+
+      let made = writing(storeDir, () => mkdirSync(storeDir)); // fails when another init made it since the check
+      if (made !== null) return refused(existsSync(storeDir) ? `${shown(storeDir)} already exists` : made);
+      made = writing(storeDir, () => {
+        mkdirSync(proposalsDir);
         writeFileSync(configFile, configText({ namespace, owner }));
         writeFileSync(ledgerFile, "");
       });
-      return failed === null ? done() : refused(failed);
+      if (made !== null) return refused(made);
+      const s = store();
+      let after = 0;
+      for (const commit of commits) {
+        let appended: ReturnType<Store["append"]> | undefined;
+        const failed = writing(ledgerFile, () => {
+          appended = s.append(commit, after);
+        });
+        if (failed !== null) return refused(failed);
+        if (appended?.ok !== true) {
+          return refused(`${shown(ledgerFile)}: the store answered that the tail moved during init (another writer); the store may hold a partial write`);
+        }
+        after = commit.seq;
+      }
+      return done(...commits.map((c) => JSON.stringify({ outcome: "commit", seq: c.seq })));
     },
 
     importMd(file) {
@@ -153,8 +212,12 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
         return refused(`cannot read ${shown(path)}`);
       }
       // step 1 (the file name) before step 2 (the encoding), REQ-CL-003
-      if (stemOf(basename(path)) === null) {
+      const stem = stemOf(basename(path));
+      if (stem === null) {
         return { kind: "refused-input", message: `${shown(path)}:0: the file name is not <stem>.md of the form` };
+      }
+      if (INIT_STEMS.has(stem.toLowerCase())) {
+        return { kind: "refused-input", message: `${shown(path)}:0: the stem ${stem} names an entity of store init` };
       }
       const text = decode(bytes);
       if (text === null) return { kind: "refused-input", message: `${shown(path)}:0: the file is not valid UTF-8` };
@@ -182,7 +245,7 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
         return refused(`cannot read ${shown(path)}`);
       }
       const s = store();
-      const ledger = open(s);
+      const ledger = open(s, config);
       if (typeof ledger === "string") return refused(ledger);
       const text = decode(bytes);
       const parsed = text === null ? unreadableProposal() : parseProposal(text);
@@ -212,7 +275,7 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       if (failed !== null) return refused(failed);
       if (appended?.ok !== true) {
         // LG-C03: the tail moved since opening — read the ledger again and check the commit against it (REQ-LG-004)
-        const again = open(s);
+        const again = open(s, config);
         if (typeof again === "string") return refused(again);
         const check = checkTail(again, applied.commit);
         if (check.outcome === "existing") return settled({ outcome: "commit", seq: check.seq });
@@ -225,7 +288,7 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
     exportTo(out) {
       const config = readConfig();
       if (typeof config === "string") return refused(config);
-      const ledger = open(store());
+      const ledger = open(store(), config);
       if (typeof ledger === "string") return refused(ledger);
       const exported = exportMd(ledger.view, config.namespace);
       if (!exported.ok) return refused(`export refused: ${exported.message}`);
