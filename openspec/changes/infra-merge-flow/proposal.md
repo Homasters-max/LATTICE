@@ -27,13 +27,13 @@ controls WARRANT checks.
 ## What Changes
 
 - **`act.mjs`** (`.claude/skills/slice/act.mjs`, new): one command per maintainer act — `merge <N>`,
-  `waiver <change> <WAV>`, `patch <change> <file>`. It checks who runs it and the state of the PR or worktree, does the
-  act, commits, pushes and verifies the result, or refuses with a reason and changes nothing. `--dry-run` runs every
-  check and acts on nothing; the agent runs it before asking. `merge` turns on auto-merge (`gh pr merge --merge
-  --auto`).
+  `waiver <change> <WAV>`, `patch <change> <file>`, and `whoami`. It checks who runs it and the state of the PR or
+  worktree, does the act, commits, pushes and verifies the result, or refuses with a reason and changes nothing.
+  `--dry-run` runs every check and acts on nothing; the agent runs it before asking. `merge` turns on auto-merge
+  (`gh pr merge --merge --auto`).
 - **`wait-pr.mjs`**: while auto-merge is on, a PR that falls `BEHIND` `main` is updated by the owner's watcher
-  (`gh pr update-branch`); a conflict and a lost auto-merge are new outcomes the owner acts on. A PR is asked for merge
-  once.
+  (`gh pr update-branch`), and a red `main` turns auto-merge off; a conflict and a lost auto-merge are new outcomes the
+  owner acts on. A PR is asked for merge once.
 - **Pure rules** of both scripts in `.claude/skills/slice/act-rules.mjs`, checked by `act-rules.test.mjs`
   (`node --test`).
 - **Rules** `maintainer-acts`, `process`, `env` (`.warrant/local/rules/*.json`): every request for a maintainer act is
@@ -60,7 +60,7 @@ None: the product LATTICE does not change (`skip_specs: true`).
   `human-acceptance`, outside the `implement` write scope); all come as the maintainer's patch. Generated:
   `AGENTS.md`, `.warrant/warrant.lock.json`.
 - Every session of the project: the way it asks for a maintainer act and waits for a merge.
-- Closes #111 (design D-9).
+- Closes or refs #111, by what of its "Done when" is seen at the archive-PR (design D-9).
 
 ## Non-goals
 
