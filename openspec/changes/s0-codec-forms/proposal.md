@@ -61,7 +61,10 @@ None. The `cli` spec (AREA `CL`, held by `s0-bootstrap` #59 and then `s0-store-c
   shared files of the skeleton (SL-T08): the module matrix of the structure test, the CLI entry and command table,
   `package.json`, the port interfaces. No new dependency.
 - AREA `CD` only.
-- Follow-ups (issues): the CLI on the document form and the corpus round trip — #61; the codec types onto `std` types
+- Types: the document and the rows of the document form are the next revisions of the skeleton's types,
+  `<ns>/document@2` and `<ns>/table.<slugs>@2`, because their bodies differ (OM-T05); paragraphs, examples and
+  sections are new project types at `@1`. No type entity is written (as in the skeleton).
+- Follow-ups (issues): the CLI on the document form and the corpus round trip — #61; #113, the codec types onto `std` types
   (`example`, `composition`, `knowledge`, OM-L02) when `std` is loaded (#59) and apply admits bodies against their type
   (#82).
 

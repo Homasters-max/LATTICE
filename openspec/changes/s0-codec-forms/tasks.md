@@ -13,8 +13,8 @@
 
 - [ ] 2.1 `src/codec/form.ts` — steps 1–4 of `REQ-CD-001`: lines, code points, elements and layout, the cell and table
   line, the separator `|---|`, paragraphs with continuation lines, tables, lists, fences, and their rendering
-  (`REQ-CD-001`, `REQ-CD-002`, `REQ-CD-003`, `REQ-CD-005`, design D-2, D-8); verified by the tests with the token
-  `SCN-CD-001` and the refusal tests with the tokens `SCN-CD-002`, `SCN-CD-005` passing
+  (`REQ-CD-001`, `REQ-CD-002`, `REQ-CD-003`, `REQ-CD-005`, design D-2, D-8); verified by the tests with the tokens
+  `SCN-CD-001`, `SCN-CD-010` and the refusal tests with the tokens `SCN-CD-002`, `SCN-CD-005` passing
 - [ ] 2.2 `src/codec/references.ts` — mentions, code spans, ranges (`REQ-CD-006`, design D-5); verified by the tests
   with the token `SCN-CD-006` in `test/codec/references.test.ts` and `test/codec/refusals.test.ts` passing
 
