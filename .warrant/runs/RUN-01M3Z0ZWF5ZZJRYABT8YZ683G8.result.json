@@ -1,0 +1,175 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Z0ZWF5ZZJRYABT8YZ683G8",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-1 has the maintainer install the global CLI 0.10.1 between the spec-PR merge and the impl-PR. The workflow on main stays @v0.10.0 until the impl-PR merges, and another PR's pull_request job runs the workflow of its merge result. So for that whole window every other S0 session on the machine writes with 0.10.1: `warrant waive` gives WAV-<ULID> ids, and `transition PROPOSED` becomes available. Their PRs are still judged by 0.10.0, which cannot read a WAV-<ULID> waiver. This is the version mixing the CHANGELOG warns against and that D-1 'Rejected' gives as its reason for this Change. Risks p. 2 covers only this Change ('no waiver in this Change'), and judge.mjs run locally with 0.10.1 would pass a PR that CI then fails.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        "openspec/changes/pin-v0-10-1/proposal.md"
+      ],
+      "recommendation": "Name the window and how it is controlled in D-1 and Risks. For example: when the CLI is installed, a coordinator [broadcast] says that no Change proposes a waiver or uses `transition PROPOSED` until the impl-PR of pin-v0-10-1 merges and its own PR has merged main. Or move the install to right before the impl-PR's Run and keep that window short. State that a PR opened before the merge is judged @v0.10.0 until it is updated with main."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "In D-1 p. 3 the agent commits what `warrant sync` writes: the lock, AGENTS.md and `.warrant/schemas/waiver.1.schema.json`. If 0.10.1 regenerates `.claude/agents/warrant-reviewer.md`, that file is committed too. review.mjs (`scopeFindings` in act-rules.mjs) accepts only AGENTS.md and the lock in an impl-PR when a rule changes. `.warrant/schemas/**` is not in the human-acceptance globs and not in the implement Run's scope (`openspec/changes/pin-v0-10-1/**`), so review.mjs reports it as \"outside the Runs' scope\". A `.claude/**` file committed by the agent is reported as 'a policy path not by the maintainer'. change.md asks for the merge only after review.mjs passes, so the plan as written cannot get the impl-PR into the queue. pin-v0-10-0 committed config.1.schema.json before review.mjs existed.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        "openspec/changes/pin-v0-10-1/proposal.md",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "Add to D-2 (act-rules.mjs is already in the patch): when the lock is in the diff, `scopeFindings` also accepts the paths listed in the lock's `generated` (or `.warrant/schemas/**`), with a case in act-rules.test.mjs. Or state that the review.mjs scope finding on these paths is expected, and record the maintainer's decision in an I-N row. Name `.claude/agents/warrant-reviewer.md` as a possible sync output."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-1 says this session must restart 'so its hooks run the new guard; until the restart the workaround of #93 holds'. Risks p. 1 says every hook call runs 0.10.1 on its next event, 'the switch is immediate', and only a change of the hook configuration in .claude/ needs a restart. Proposal Non-goals says every session restarts 'on its own schedule'. These texts disagree on when a session, this one or another S0 session, is guarded and may drop the #93 workaround.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        "openspec/changes/pin-v0-10-1/proposal.md"
+      ],
+      "recommendation": "Pick one model, either a per-event process or a restart, and state it once. Make D-5's precondition and the other sessions' workaround follow from it."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-2 edits SKILL.md only in the judge.mjs paragraph. Other text in it goes stale with this Change and would contradict it after the merge. The start-prompt step names 'current workarounds such as the guard of #93' as coordinator notes. Coordinator item 10 reads 'until SRA#139'. The `waiver` bullet says 'SRA#139: re-propose under a new id'. The coordinator, who dispatches the other S0 sessions, is not named as the one who stops passing the #93 workaround on.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        ".claude/skills/slice/SKILL.md"
+      ],
+      "recommendation": "Extend the SKILL.md item of D-2: drop the #93 workaround from the start-prompt notes, and drop or rewrite coordinator item 10 and the waiver bullet's SRA#139 note for WAV-<ULID>. Or record why each one stays."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Proposal Impact ('Closes #140 and #93 (by the archive-PR)') and Migration Plan p. 4 ('Closes #93') close #93 unconditionally. D-5 says that if a probe write passes, #93 stays open and its workaround holds.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/proposal.md",
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "recommendation": "Make 'Closes #93' conditional on the D-5 result in both places, for example 'Closes #93 when the probe of D-5 shows both writes denied'."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-2 fixes WAIVER_ID as `/^WAV-(?:\\d{4}-\\d{3}|[0-9A-HJKMNP-TV-Z]{26})$/` 'as `warrant id WAV` writes it'. Nothing checks this against the `waiver/1` schema of 0.10.1, which `sync` copies to `.warrant/schemas/waiver.1.schema.json`. The schema decides the alphabet, the case and the length. If they differ, `act.mjs waiver` exits 64 on a valid id or accepts an invalid one. The current check `/^WAV-[\\w-]+$/` already accepts a ULID id, so the edit narrows what is accepted. Issue #140 says 'must accept both', which the current code already does.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "In D-2/D-4, add a case to act-rules.test.mjs that reads the `id` pattern of `.warrant/schemas/waiver.1.schema.json` after sync and checks that WAIVER_ID agrees with it on the listed samples. Or derive WAIVER_ID from the schema. State that the edit narrows the check and is not a fix."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-5 expects 'the PostToolUse hint \"start a Run first\" is gone while the Run is RUNNING'. Both probe writes are expected to be denied in PreToolUse, so no PostToolUse event follows them. D-5 names no write that would show the hint's absence, and task 2.2 does not check it, so the expectation cannot be tested as written.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        "openspec/changes/pin-v0-10-1/tasks.md"
+      ],
+      "recommendation": "Name an in-scope write inside the Run that shows the hint's absence, for example the edit of tasks.md, and add it to the check of task 2.2. Or drop the sentence."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-actor",
+      "statement": "D-5 fallback: if the write to `D:/project/LATTICE/guard-probe-pin-v0-10-1.md` passes, 'the file is removed'. It does not say who removes it or how. Removing it from this worktree session is itself an edit of another checkout, which the CHANGELOG leaves to that checkout's own session ('Править основной checkout — из его сессии'). The guard may also deny the shell. The same gap applies to `design-next/guard-probe-pin-v0-10-1.md`, which is outside the Run's write_scope.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "recommendation": "Name who removes each file: the coordinator or the main checkout's session for the main-checkout file, and this session after `warrant run finish` (or the maintainer) for the worktree file. Name the check that each is gone, for example `git status --short` in both checkouts."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The rework paragraph for change.md (D-2) allows a rework after the spec-PR has merged with `SPECIFIED` ('a merged one is followed by a new spec-PR on the same branch name'). It does not say where the maintainer asks for that rework, since the spec-PR is closed. It also does not say what keeps the impl-PR from starting meanwhile: main's record is `SPECIFIED`, so `status.mjs` may print `startable` and the coordinator may dispatch the impl phase.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md",
+        ".claude/skills/slice/change.md"
+      ],
+      "recommendation": "Name where the request is made for a merged spec-PR (for example the Change's issue or a [decision]) and state that no impl-PR starts until the rework spec-PR merges at `SPECIFIED`. Or restrict the rework to an open spec-PR."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "D-7 `reversibility: EASY` and Migration Plan p. 5 depend on 'no WAV-<ULID> waiver exists'. With one global CLI 0.10.1, the first `warrant waive` of any Change on the machine ends that condition. After that, a rollback means rewriting waivers or abandoning them. D-1 p. 1 also runs `warrant verify` and transitions with CLI 0.10.1 while the lock is still 0.10.0 (sync is p. 3). This assumes 0.10.1 reports no lock or generated drift there, which the CHANGELOG's backward compatibility suggests but does not state.",
+      "targets": [
+        "openspec/changes/pin-v0-10-1/design.md"
+      ],
+      "recommendation": "State that reversibility is EASY only until the first new waiver of any Change. Note in D-1 that verify and transitions before sync are expected to pass on the 0.10.0 lock, and say what to do if they do not (run sync first)."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/pin-v0-10-1/design.md",
+      "change": "Risks: add a bullet for the window between the CLI install and the impl-PR merge, when other Changes run 0.10.1 locally and are judged @v0.10.0, with its control: a [broadcast] by the coordinator, no new waiver and no `transition PROPOSED` until merge (F-1)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/pin-v0-10-1/design.md",
+      "change": "D-2 act-rules.mjs: when the lock changes, `scopeFindings` accepts the lock's generated paths (`.warrant/schemas/**`, `.claude/agents/warrant-reviewer.md`), with a test case; task 1.1 lists it (F-2)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/pin-v0-10-1/proposal.md",
+      "change": "Impact: 'Closes #140; closes #93 when the guard probe of design D-5 shows both writes denied' (F-5)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "Claims about WARRANT 0.10.1 come from the CHANGELOG section in the review context: the guard decides from the event's cwd and denies a write to another checkout while a Run is active, and `--no-record` gives the same verdict. They were not checked against the 0.10.1 code."
+    },
+    {
+      "id": "A-2",
+      "statement": "review.mjs/`scopeFindings` as on this branch (from main) is what the owner and the coordinator run on the impl-PR, and its scope FAIL keeps a PR out of the maintainer's queue (change.md 'Requests')."
+    },
+    {
+      "id": "A-3",
+      "statement": "`warrant sync` with 0.10.1 changes `.warrant/schemas/waiver.1.schema.json`, as the CHANGELOG and the proposal say. Whether it also changes `.claude/agents/warrant-reviewer.md` is not known."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "How are other S0 Changes protected while the machine's CLI is 0.10.1 but main's CI is still @v0.10.0 (F-1)?",
+      "options": [
+        "A coordinator [broadcast] when the CLI is installed: no waiver and no `transition PROPOSED` in any Change until pin-v0-10-1's impl-PR merges",
+        "The CLI is installed only right before the impl-PR's Run, and the impl-PR is merged first in the queue",
+        "Accept the risk: no S0 Change is expected to propose a waiver in the window"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:41c9ba34bbed78c91e955db7bf051c61742a7d135348eacd2c803c9225409950",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T10:00:00Z",
+    "finished_at": "2026-10-02T10:40:00Z"
+  }
+}
