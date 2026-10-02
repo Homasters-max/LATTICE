@@ -60,7 +60,14 @@ function seqOf(text: string): number {
 }
 
 const codeOf = (e: unknown): string | undefined => (e as NodeJS.ErrnoException).code;
-const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const UTF8 = new TextDecoder("utf-8", { fatal: true });
+/** The ledger bytes split at the last line feed: the complete lines and the torn tail (empty when there is none). */
+const split = (bytes: Uint8Array): { readonly complete: Uint8Array; readonly tail: Uint8Array } => {
+  const end = bytes.lastIndexOf(LF) + 1;
+  return { complete: bytes.subarray(0, end), tail: bytes.subarray(end) };
+};
+const sameBytes = (a: Uint8Array, b: Uint8Array): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
 const lockText = (owner: string, expires: number): string => JSON.stringify({ expires, owner }) + "\n";
 
 function parseLock(text: string): Looked["lock"] {
@@ -79,7 +86,7 @@ function parseLock(text: string): Looked["lock"] {
 
 /** The complete lines of `bytes` (which end with a line feed or are empty), decoded as strict UTF-8. */
 function commitsOf(bytes: Uint8Array): StoredCommit[] {
-  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const text = UTF8.decode(bytes);
   if (text === "") return [];
   const lines = text.split("\n");
   lines.pop();
@@ -97,8 +104,8 @@ export function jsonlStore(file: string, options: StoreOptions & { readonly fs?:
 
   const dir = dirname(file);
   const name = basename(file);
-  const LOCK = new RegExp(`^${escape(name)}\\.lock\\.([1-9][0-9]*)$`);
-  const TORN = new RegExp(`^${escape(name)}\\.([1-9][0-9]*)\\.torn$`);
+  const LOCK = new RegExp(`^${escapeRegExp(name)}\\.lock\\.([1-9][0-9]*)$`);
+  const TORN = new RegExp(`^${escapeRegExp(name)}\\.([1-9][0-9]*)\\.torn$`);
   const lockFile = (n: number): string => join(dir, `${name}.lock.${n}`);
   const tmpFile = join(dir, `${name}.lock.${owner}.tmp`);
   const recoveredDir = join(dir, "recovered");
@@ -237,10 +244,8 @@ export function jsonlStore(file: string, options: StoreOptions & { readonly fs?:
    */
   const recoverTail = (mine: Held): { readonly complete: Uint8Array; readonly cut: boolean } => {
     const bytes = readBytes();
-    const end = bytes.lastIndexOf(LF) + 1;
-    const complete = bytes.subarray(0, end);
-    if (end === bytes.length) return { complete, cut: true };
-    const tail = bytes.subarray(end);
+    const { complete, tail } = split(bytes);
+    if (tail.length === 0) return { complete, cut: true };
     fs.mkdirSync(recoveredDir, { recursive: true });
     for (let i = 0; ; i++) {
       const k = numbered(TORN, fs.readdirSync(recoveredDir)).at(-1) ?? 0;
@@ -260,12 +265,10 @@ export function jsonlStore(file: string, options: StoreOptions & { readonly fs?:
       }
     }
     pause("fence");
-    const again = readBytes();
-    const unchanged = again.length === bytes.length && again.every((b, i) => b === bytes[i]);
-    if (!unchanged || !fenced(mine)) return { complete, cut: false };
+    if (!sameBytes(readBytes(), bytes) || !fenced(mine)) return { complete, cut: false };
     const fd = fs.openSync(file, "r+");
     try {
-      fs.ftruncateSync(fd, end);
+      fs.ftruncateSync(fd, complete.length);
       fs.fsyncSync(fd);
     } finally {
       fs.closeSync(fd);
@@ -277,21 +280,18 @@ export function jsonlStore(file: string, options: StoreOptions & { readonly fs?:
     read(): StoredLedger {
       for (let i = 0; ; i++) {
         const bytes = readBytes();
-        const end = bytes.lastIndexOf(LF) + 1;
-        const complete = bytes.subarray(0, end);
-        if (end === bytes.length) return { commits: commitsOf(complete), torn: null };
-        // A torn tail: the lock decides whether it is an append in progress (REQ-SR-001, I-30, I-37).
+        const { complete, tail } = split(bytes);
+        if (tail.length === 0) return { commits: commitsOf(complete), torn: null };
+        // A torn tail: the lock decides whether it is an append in progress (REQ-SR-001, I-30, I-37). Look, read
+        // again, look again; while the lock or the bytes change, start over — after RETRIES rounds of change the tail
+        // counts as an append in progress (I-44).
         const first = look();
-        const again = readBytes();
+        const stable = sameBytes(readBytes(), bytes);
         const second = look();
-        const same = again.length === bytes.length && again.every((b, j) => b === bytes[j]);
-        if ((!sameLock(first, second) || !same) && i < RETRIES) continue;
-        if (!sameLock(first, second) || !same || heldByOther(second, clock())) {
-          return { commits: commitsOf(complete), torn: null };
-        }
-        if (!recover) {
-          return { commits: commitsOf(complete), torn: new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(end)) };
-        }
+        const settled = stable && sameLock(first, second);
+        if (!settled && i < RETRIES) continue;
+        if (!settled || heldByOther(second, clock())) return { commits: commitsOf(complete), torn: null };
+        if (!recover) return { commits: commitsOf(complete), torn: UTF8.decode(tail) };
         const mine = take(second);
         if (mine === null) return { commits: commitsOf(complete), torn: null };
         try {
@@ -306,9 +306,9 @@ export function jsonlStore(file: string, options: StoreOptions & { readonly fs?:
       const mine = take(look());
       if (mine === null) return MOVED;
       try {
-        let complete = readBytes();
-        const end = complete.lastIndexOf(LF) + 1;
-        if (end !== complete.length) {
+        const parts = split(readBytes());
+        let complete = parts.complete;
+        if (parts.tail.length > 0) {
           if (!recover) return MOVED;
           const recovered = recoverTail(mine);
           if (!recovered.cut) return MOVED;

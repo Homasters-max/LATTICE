@@ -76,10 +76,12 @@ export function memoryStore(ledger: MemoryLedger, options: StoreOptions = {}): S
   const recoverTail = (mine: Held): boolean => {
     const tail = ledger.torn;
     if (tail === null) return true;
-    const length = ledger.lines.length;
+    const lines = ledger.lines.slice();
     ledger.recovered.push(tail);
     pause("fence");
-    if (!fenced(mine) || ledger.torn !== tail || ledger.lines.length !== length) return false;
+    const unchanged =
+      ledger.torn === tail && ledger.lines.length === lines.length && ledger.lines.every((l, i) => l === lines[i]);
+    if (!fenced(mine) || !unchanged) return false;
     ledger.torn = null;
     return true;
   };

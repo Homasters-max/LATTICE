@@ -228,9 +228,9 @@ prove nothing about a second adapter (ST-M02).
 
 | Path | Proves |
 |---|---|
-| `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `lockOwner()`, `recovered()` (in order), `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
+| `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `replaceLock(owner, expires)`, `removeLocks()`, `current()`, `held(t)`, `recovered()` (in order), `raw()`, `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
 | `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009, -011, -012, -013, -014 on both adapters, one `describe` per adapter, test names `SCN-SR-0nn [jsonl] …` / `[memory]`; SCN-SR-013 with `recover: false`, every other with `recover: true`; the option checks of D-2 |
-| `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, release), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`) |
+| `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, release), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`); the thrown failures of REQ-SR-001 (bytes that are not UTF-8, a missing folder) and REQ-SR-002 (a temporary lock file left, a failure after the link) under the tokens SCN-SR-001 and SCN-SR-008 |
 
 `test/cli/**`, `test/e2e/**` and `test/architecture/rules.test.ts` are not edited and must pass as they are: the CLI's
 default store keeps recovery off, and the frozen `ledger.jsonl` fixtures of the rule test have no torn tail.
@@ -289,6 +289,8 @@ spec; their evidence ids are those of #89.
 | I-41 | A clock reading below 0 and an expiry that is not a safe integer are thrown failures (REQ-SR-001, REQ-SR-002). Spec edited. | Review 2, F-7. | approval of #106 |
 | I-42 | On Windows an `EPERM` while reading a lock file is looked at again, like `ENOENT`, at most 50 times (REQ-SR-002, D-3). Spec edited. | Review 2, F-8. | approval of #106 |
 | I-43 | Lock files are found by the ledger file name as given; two spellings or a link are outside the contract (Limits of REQ-SR-002). Spec edited. | Review 2, F-9. | approval of #106 |
+| I-44 | Retries are bounded: a look retries a lock file that disappears (or, on Windows, is being replaced) at most 50 times, then throws; a `read` whose lock or bytes keep changing for 50 rounds counts the torn tail as an append in progress (no torn tail, nothing moved), the conservative answer of REQ-SR-001. Spec unchanged. | Implementation review (Spec), finding (b): the spec says "looked at again" without a bound. | implementation, this impl-PR |
+| I-45 | A temporary lock file left by a crash of a store with the same owner makes every take of that owner a thrown failure (REQ-SR-002, I-33), kept as specified: an owner is unique per store, and the default is a fresh UUID. | Implementation review (Standards), finding 2. | implementation, this impl-PR |
 
 ## Risks / Trade-offs
 

@@ -24,9 +24,8 @@ function on(make: () => Harness, body: (h: Harness, store: (o?: StoreOptions) =>
 }
 
 for (const make of harnesses) {
-  const name = make().name;
-  // the probe above made a JSONL folder: dispose of it before the tests
-  const probe = make();
+  const probe = make(); // only for its name; a JSONL harness makes a folder, so it is disposed of at once
+  const name = probe.name;
   probe.dispose();
 
   describe(`store contract [${name}]`, () => {
@@ -170,7 +169,13 @@ for (const make of harnesses) {
         assert.deepEqual(h.recovered(), [piece]);
         assert.deepEqual(s.append({ seq: 2, text: commit(2) }, 1), OK);
         h.tear(commit(3));
-        assert.deepEqual(texts(s), [commit(1), commit(2)]);
+        assert.deepEqual(s.read(), {
+          commits: [
+            { seq: 1, text: commit(1) },
+            { seq: 2, text: commit(2) },
+          ],
+          torn: null,
+        });
         assert.deepEqual(h.recovered(), [piece, commit(3)]);
         assert.deepEqual(s.read(), {
           commits: [
@@ -265,6 +270,8 @@ for (const make of harnesses) {
         assert.throws(() => h.make({ ttl: 2.5 }), RangeError);
         const s = h.make({ owner: "s", now: () => 1.5 });
         assert.throws(() => s.append({ seq: 1, text: commit(1) }, 0), RangeError);
+        const before = h.make({ owner: "before", now: () => -1 });
+        assert.throws(() => before.append({ seq: 1, text: commit(1) }, 0), RangeError);
         const late = h.make({ owner: "late", now: () => Number.MAX_SAFE_INTEGER });
         assert.throws(() => late.append({ seq: 1, text: commit(1) }, 0), RangeError);
         assert.equal(h.raw(), "");

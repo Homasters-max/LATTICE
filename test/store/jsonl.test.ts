@@ -188,3 +188,51 @@ describe("store JSONL adapter: recovery on bytes", () => {
     }
   });
 });
+
+describe("store JSONL adapter: thrown failures", () => {
+  it("SCN-SR-001 complete lines or a handed-over torn tail that are not UTF-8, and a missing folder, are thrown", () => {
+    const h = jsonlHarness();
+    try {
+      nodeFs.writeFileSync(h.file, Buffer.from([0xff, 0x0a]));
+      assert.throws(() => jsonlStore(h.file).read(), TypeError);
+      assert.throws(() => jsonlStore(h.file, { owner: "a" }).append({ seq: 1, text: commit(1) }, 0), TypeError);
+      assert.equal(h.held(Date.now()), false);
+      nodeFs.writeFileSync(h.file, Buffer.concat([Buffer.from(commit(1) + "\n"), Buffer.from([0xff])]));
+      assert.throws(() => jsonlStore(h.file).read(), TypeError);
+      const missing = jsonlStore(join(h.dir, "missing", "knowledge.jsonl"), { owner: "a" });
+      assert.deepEqual(missing.read(), { commits: [], torn: null });
+      assert.throws(() => missing.append({ seq: 1, text: commit(1) }, 0), { code: "ENOENT" });
+    } finally {
+      h.dispose();
+    }
+  });
+
+  it("SCN-SR-008 a temporary lock file of the same owner, or a failure after the link, leaves no lock of the store", () => {
+    const h = jsonlHarness();
+    try {
+      h.seed([commit(1)]);
+      nodeFs.writeFileSync(join(h.dir, "knowledge.jsonl.lock.a.tmp"), "left by a crash");
+      assert.throws(() => jsonlStore(h.file, { owner: "a" }).append({ seq: 2, text: commit(2) }, 1), { code: "EEXIST" });
+      assert.equal(h.current(), null);
+      nodeFs.unlinkSync(join(h.dir, "knowledge.jsonl.lock.a.tmp"));
+      let linked = false;
+      const { fs } = recording((op) => {
+        if (op === "linkSync") linked = true;
+        return op === "readdirSync" && linked
+          ? () => {
+              throw io("cannot list");
+            }
+          : undefined;
+      });
+      assert.throws(() => jsonlStore(h.file, { owner: "a", fs }).append({ seq: 2, text: commit(2) }, 1), /cannot list/);
+      assert.equal(h.current(), null);
+      assert.deepEqual(
+        nodeFs.readdirSync(h.dir).filter((n) => n.startsWith("knowledge.jsonl.lock")),
+        [],
+      );
+      assert.equal(h.raw(), commit(1) + "\n");
+    } finally {
+      h.dispose();
+    }
+  });
+});
