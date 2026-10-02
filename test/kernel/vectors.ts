@@ -126,6 +126,18 @@ export const T_REFS = mustType([
   }),
 ]);
 
+/** A child that declares a nested object `m` again, narrower and closed (SCN-KR-049). */
+export const T_MC = mustType([
+  typeRecord("test/mc", 1, { extends: "test/mp@1", schema: obj({ m: obj({ a: str({ maxLength: 2 }) }) }) }),
+  typeRecord("test/mp", 1, { schema: obj({ m: obj({ a: str(), b: str() }) }) }),
+]);
+
+/** `x` a plain string in the child and a pinned `ref` node in the parent; `y` a `ref` node in both (SCN-KR-053). */
+export const T_RC = mustType([
+  typeRecord("test/rc", 1, { extends: "test/rp@1", schema: obj({ x: str(), y: str({ ref: "std/a" }) }) }),
+  typeRecord("test/rp", 1, { schema: obj({ x: str({ ref: "std/need", pinned: true }), y: str({ ref: "std/b" }) }) }),
+]);
+
 export const T_EV = mustType([typeRecord("test/ev", 1, { schema: obj({ of: obj({ a: str(), b: str() }), v: str() }) })]);
 export const T_EV2 = mustType([typeRecord("test/ev2", 1, { schema: obj({ of: str() }) })]);
 
@@ -469,6 +481,10 @@ export const cases: Case[] = [
   },
   admitCase("SCN-KR-049", "NFC key under a schema written in NFD", '{"' + esc("00e9") + '":1}', () => T_NFD, { check: () => undefined }),
 
+  admitCase("SCN-KR-049", "nested: the child refuses", '{"m":{"a":"xyz"}}', () => T_MC, { errors: [r("too-long", "/text/m/a")] }),
+  admitCase("SCN-KR-049", "nested: closed by the child node", '{"m":{"b":"x"}}', () => T_MC, { errors: [r("unknown-field", "/text/m/b")] }),
+  admitCase("SCN-KR-049", "nested: valid", '{"m":{"a":"xy"}}', () => T_MC, { check: () => undefined }),
+
   // SCN-KR-050 — malformed chains
   { scn: "SCN-KR-050", name: "empty", fn: "typeOf", args: () => [[]], errors: [r("not-type", "")] },
   { scn: "SCN-KR-050", name: "not an array", fn: "typeOf", args: () => ["x"], errors: [r("not-type", "")] },
@@ -513,7 +529,7 @@ export const cases: Case[] = [
   admitCase(
     "SCN-KR-051",
     "schema outside the subset",
-    '{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date","maxLength":3},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string","j":{"properties":{}},"k":[]}}}',
+    '{"schema":{"type":"object","additionalProperties":false,"required":["a","z"],"properties":{"k":[],"a":{"type":"string","pattern":"x"},"b":{"type":"object"},"c":{"type":"array"},"d":{"type":"string","maxLength":-1},"e":{"type":"date","maxLength":3},"f":{"type":"string","ref":"std/x","maxLength":3},"g":{"type":"string","pinned":true},"h":{"type":"integer","enum":[1,1]},"i":"string","j":{"properties":{}}}}}',
     () => kernel.metaType,
     {
       errors: [
@@ -569,6 +585,16 @@ export const cases: Case[] = [
   }),
   admitCase("SCN-KR-053", "refused references", '{"pin":"lattice/n1","fl":"lattice/n1@1","any":"not a ref","list":["#x"]}', () => T_REFS, {
     errors: [r("bad-ref", "/text/any"), r("bad-ref", "/text/fl"), r("bad-ref", "/text/list/0"), r("bad-ref", "/text/pin")],
+  }),
+
+  admitCase("SCN-KR-053", "references across a chain", '{"y":"lattice/y","x":"lattice/n1@2"}', () => T_RC, {
+    check: (v) => {
+      const expected = [
+        { path: "/x", ref: { id: "lattice/n1", version: 2 }, target: "std/need" },
+        { path: "/y", ref: { id: "lattice/y" }, target: "std/a" },
+      ];
+      if (JSON.stringify((v as Admitted).refs) !== JSON.stringify(expected)) fail("refs " + JSON.stringify((v as Admitted).refs));
+    },
   }),
 
   // SCN-KR-055 — type bodies under the meta-type
