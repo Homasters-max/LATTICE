@@ -1,5 +1,10 @@
 # Spec Delta
 
+## RENAMED Requirements
+
+- FROM: `### Requirement: apply turns a proposal into a commit or into rejections`
+- TO: `### Requirement: apply turns a proposal into a commit, a no-op or rejections`
+
 ## MODIFIED Requirements
 
 ### Requirement: The command table
@@ -14,10 +19,11 @@ Without a command, or with a command not in the table, `lattice` SHALL write a u
 every command of the table with a one-line summary, write no file and exit with code 2. An unknown option, a missing
 option value or a wrong number of arguments of a command is a usage error with code 2.
 
-Every command SHALL exit with one of these codes: `0` — done; `1` — the proposal was rejected by apply, each rejection
-naming its rule (`apply`, REQ-LG-002), or the input was refused by the codec (`import-md`), and nothing was written;
-`2` — a usage error or a refusal of the environment: a missing or an existing store, an invalid init configuration, a
-broken ledger (REQ-CL-004), a refused export (REQ-CL-005), an unreadable or unwritable file. A refusal with code 2 is
+Every command SHALL exit with one of these codes: `0` — done; `1` — the proposal was rejected, each rejection naming
+its rule — by reading it, by apply or by the check of the tail (`apply`, REQ-LG-002) —, or the input was refused by the
+codec (`import-md`), and nothing was written; `2` — a usage error or a refusal of the environment: a missing or an
+existing store, an invalid init configuration, a broken ledger (REQ-CL-004), a store that answers that the tail moved
+while it has not (REQ-CL-004), a refused export (REQ-CL-005), an unreadable or unwritable file. A refusal with code 2 is
 decided before anything is written, except a failure of the file system during a write: the skeleton has no lock,
 `fsync` or recovery (LG-C06 comes with the store adapters of S0), so after such a failure the store may hold a partial
 write, and the message names the file. Messages of codes 1 and 2 go to standard error, except the rejections of `apply`
@@ -33,7 +39,7 @@ Implements: PL-E02, LG-S05
 - **THEN** each run exits with code 2; the standard error of the first two names `init`, `import-md`, `apply` and
   `export`; the folder stays empty
 
-### Requirement: apply turns a proposal into a commit or into rejections
+### Requirement: apply turns a proposal into a commit, a no-op or rejections
 <!-- id: REQ-CL-004 -->
 
 `lattice apply <proposal file>` SHALL accept only a file directly in `store/proposals/` (another path is a usage error,
@@ -52,15 +58,16 @@ line, when it has no readable `seq`), and nothing is written.
 REQ-LG-001.
 
 **Outcomes.**
-- `rejected` — the rejections of reading the proposal (REQ-LG-001) or of apply (REQ-LG-002): `apply` SHALL print the
-  JSON list of all rejections on standard output, in the order of REQ-LG-002; keep the proposal file; write nothing;
-  and exit with code 1.
+- `rejected` — the rejections of reading the proposal (REQ-LG-001), of apply (REQ-LG-002) or of the check of the tail
+  (REQ-LG-004): `apply` SHALL print the JSON list of all rejections on standard output, in the order of REQ-LG-002;
+  keep the proposal file; write nothing; and exit with code 1.
 - `commit` — `apply` SHALL append one line holding the commit text after the `seq` of the commit's `base`. When the
   store answers that the tail moved, it SHALL open the ledger again — refusing with code 2 if it is broken — and check
-  the commit against it (REQ-LG-004): the rejection `LG-C03` is the outcome `rejected` above; when the check gives no
-  rejection, the command refuses with code 2 naming the store. After the append it SHALL remove the proposal file,
-  print `{"outcome":"commit","seq":<seq>}` and exit with code 0; if the removal fails, the commit stays, and the
-  command exits with code 2 naming the proposal file left behind.
+  the commit against it (REQ-LG-004): `existing` is the outcome `existing` below; the rejection `LG-C03` is the outcome
+  `rejected` above; when the check gives neither, the store answered `moved` on an unmoved tail and the command
+  refuses with code 2 naming the store. After the append it SHALL remove the proposal file, print
+  `{"outcome":"commit","seq":<seq>}` and exit with code 0; if the removal fails, the commit stays, and the command
+  exits with code 2 naming the proposal file left behind.
 - `existing` (LG-C08) — `apply` SHALL write nothing to the ledger, remove the proposal file, print
   `{"outcome":"commit","seq":<seq of that commit>}` and exit with code 0, so a run interrupted between the append and
   the removal ends as it would have.
@@ -113,7 +120,8 @@ Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03
 #### Scenario: An unchanged proposal is a no-op
 <!-- id: SCN-CL-012 -->
 - **WHEN** after SCN-CL-005 `lattice apply` runs on a proposal file in `store/proposals/` holding a new session event
-  and the four entity intents of the first commit, each with `base` 1 and its body unchanged
+  and the four entity intents of the first commit, each with `base` 1, `by` the new session's `id` and its type and
+  body unchanged
 - **THEN** it exits with code 0 and prints `{"outcome":"no-op"}`; the ledger is byte for byte as before; the proposal
   file is gone
 

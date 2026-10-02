@@ -41,9 +41,9 @@ what it writes, prints and removes on each outcome. Its **Proposal** paragraph s
 REQ-CL-003 ("REQ-CL-004, **Proposal**") still resolves without touching REQ-CL-003. The CL scenarios keep their ids and
 tests; SCN-CL-007 and SCN-CL-011 change, SCN-CL-012 and SCN-CL-013 are new.
 
-REQ-AR-011 stops pinning the list in its scenario: the closed list stays in `REJECTION_RULES`, each rule is defined by
-the requirement that names it, and the fixture coverage test keeps code and folders equal. So #82 and #59, which add
-rules, do not hold `AR`.
+REQ-AR-011 stops pinning the list: the closed list is enumerated in REQ-LG-002 and checked by SCN-LG-007, REQ-AR-011
+refers to it, and the fixture coverage test keeps code and folders equal (spec review 1, F-2). So a Change that adds a
+rule to apply — #82, and #59 if it adds TR-B02 or CT-N03 as apply checks (LG-A03) — holds `LG`, not `AR`.
 
 Held AREAs: `LG`, `AR`, `CL` — the maintainer's decision of 2026-10-02 (row `I-2`), posted on umbrella #44.
 
@@ -71,7 +71,11 @@ export type Applied =
   | { readonly outcome: "no-op" }
   | { readonly outcome: "rejected"; readonly rejections: readonly Rejection[] };
 export function apply(ledger: Ledger, proposal: Proposal): Applied;
-export function checkTail(ledger: Ledger, commit: Commit): Rejection | null;            // LG-C03
+export type TailCheck =
+  | { readonly outcome: "clear" }
+  | { readonly outcome: "existing"; readonly seq: number }
+  | { readonly outcome: "rejected"; readonly rejections: readonly [Rejection] };          // LG-C03
+export function checkTail(ledger: Ledger, commit: Commit): TailCheck;
 
 // commit.ts
 export type Ledger = { readonly tail; readonly view: ReadView; readonly proposals: ReadonlyMap<Hash, number> };
@@ -84,7 +88,9 @@ export function differs(values: readonly unknown[]): readonly string[];         
   fills it in the same pass that verifies the chain. It lives in `commit.ts`, not under `projections/`, which
   s0-projections (#60) grows.
 - `differs` is pure and lives in its own file, because #82 reuses it for fact keys and uniqueness collisions.
-- `index.ts` exports `checkTail`, `Applied` and `differs` next to the existing exports.
+- `index.ts` exports `checkTail`, `Applied`, `TailCheck` and `differs` next to the existing exports.
+- The hash of a list of intents is `hash("core/proposal", orderedIntents(list))`, the same function `proposalHash` uses
+  over all intents; `apply` calls it over the held intents (D-4). `proposal.ts` is not changed.
 
 Rejected: `apply` appending through the `store` port itself (`applyTo(store, proposal)`) — apply must stay pure
 (ST-S03), and the `store` port is the skeleton's file; extra fields of a duplicate packed into `expected` / `got` —
@@ -106,40 +112,54 @@ Rejected: rejecting every intent of a duplicated `id`, which would make the reje
 prefix — LG-C07 says "a second one is rejected", and the first stays as the reference `with` points to; paths in canonical
 order instead of text order — a hand-edited proposal would point to the wrong place in its own file.
 
-### D-4. No-op (LG-C05, OM-H03)
+### D-4. No-op and held intents (LG-C05, OM-H03, LG-P04)
 
-- Order: re-apply, then rejections, then no-op (REQ-LG-003). A stale `base` with an unchanged body is `LG-P02`, not a
-  no-op: the expected revision is the concurrency guarantee (LG-P02), and SCN-CL-006 already rejects a second import.
-- An entity intent is a no-op when `view.get(id)` exists (so `base` ≥ 1 after LG-P02) with `type === intent.type` and
-  `hash === recordHash(intent.type, intent.body)`. The type is compared too, because the record hash of #54 omits `@n`
-  (design I-1 of #54): without it `type@1 → type@2` with the same body would wrongly be a no-op (OM-H01).
-- The session event is not counted; in S0 no other event can be a no-op (TR-F07 is #82). A proposal of only a session
-  event is a `no-op` — an empty commit is never written (LG-C05).
-- In a commit, a no-op intent gives no record; the `proposal` hash still covers every intent, so re-applying the same
-  proposal to the same `base` gives the same bytes (LG-P05 (2)).
+- An entity intent is a no-op when `view.get(id)` has `rev === intent.base`, `type === intent.type` and `hash ===
+  recordHash(intent.type, intent.body)`; `by` is not compared. The type is compared too, because the record hash of #54
+  omits `@n` (design I-1 of #54): without it `type@1 → type@2` with the same body would wrongly be a no-op (OM-H01).
+  `rev === base` is part of the definition, so a stale `base` with an unchanged body is not a no-op but `LG-P02` — the
+  expected revision is the concurrency guarantee (LG-P02), and SCN-CL-006 already rejects a second import.
+- The held intents are the intents that are not no-ops. The commit holds exactly them as records (LG-P04: "the commit
+  holds the intents in full") and its `proposal` is the hash of the held intents, so the header is computed from the
+  records alone and re-applying the intents of a commit to its `base` gives the same bytes (LG-P05 (2)). For a
+  proposal without no-ops this is the proposal hash, as in #54.
+- The session event is always held; in S0 no other event can be a no-op (TR-F07 is #82). A proposal whose only held
+  intent is the session event is a `no-op` — an empty commit is never written (LG-C05).
+- Classifying no-ops needs only the projection, so `apply` does it first: re-apply (D-5) needs the held intents.
+
+Rejected (spec review 1, F-1): hashing every intent while the records hold only the held ones — the header could not be
+recomputed from the commit (LG-P04, LG-P05 (2)); writing no-op intents as records that keep their `rev` — a revision
+recorded twice, against OM-H03 and OM-E01.
 
 ### D-5. Re-apply (LG-C08)
 
-`apply` looks the proposal hash up in `ledger.proposals` before any other check and answers `existing` with that `seq`.
-The CLI prints it exactly as the first apply did (`{"outcome":"commit","seq":<seq>}`) and removes the proposal file, so
-a crash between append and removal (LG-P04) is repaired by running `apply` again. A `no-op` leaves no commit, so
-re-applying a no-op proposal is decided again against the current tail.
+`apply` looks the hash of the held intents up in `ledger.proposals` before the rejections and answers `existing` with
+that `seq`. After a crash between append and removal, the proposal file is still there: its intents that were no-ops
+are still no-ops, the ones the commit wrote are not (their `rev` moved past `base`), so the held intents — and their
+hash — are those of the commit. The CLI prints the answer exactly as the first apply did
+(`{"outcome":"commit","seq":<seq>}`) and removes the proposal file. A match is the same session event among the held
+intents, so a different proposal cannot hit it. A `no-op` leaves no commit, so re-applying a no-op proposal is decided
+again against the current tail.
 
 ### D-6. Tail (LG-C03)
 
-- `checkTail(ledger, commit)` is pure: `commit.base` against `ledger.tail?.seq ?? 0`; the rejection is `{intent: null,
-  rule: "LG-C03", path: "", expected: commit.base, got: <tail seq>}`.
+- `checkTail(ledger, commit)` is pure: `existing` when `ledger.proposals` holds `commit.proposal`; `clear` when
+  `commit.base === (ledger.tail?.seq ?? 0)`; otherwise the rejection `{intent: null, rule: "LG-C03", path: "",
+  expected: commit.base, got: <tail seq>}`. The `existing` answer covers two writers applying the same proposal: the
+  one that loses the race answers the commit the other wrote, as LG-C08 asks (spec review 1, F-12).
 - `assembly` appends with `store.append({seq, text}, commit.base)` as today; on `moved` it reads the store again,
-  `openLedger` (a broken ledger is a code-2 refusal, as on the first open), and returns `checkTail`'s rejection as
-  `rejected` (exit 1). A `moved` answer on an unmoved tail is a store fault: code 2 naming the store.
+  `openLedger` (a broken ledger is a code-2 refusal, as on the first open) and acts on `checkTail`: `existing` as the
+  outcome `existing`, `rejected` (exit 1), `clear` — `moved` on an unmoved tail — a store fault, code 2 naming the
+  store.
 - No retry inside the command: LG-C03 leaves it to the caller, and a retry would reapply on a tail the user has not seen.
 - The `store` port is unchanged; the memory adapter and its "two writers" test come with #57 (LG-S02).
 
 ### D-7. The permutation test (`test/ledger/permutation.test.ts`)
 
-- Cases: every folder of `test/fixtures/rules/` (its ledger, proposal, and `moved.jsonl` when present), and the
-  proposals and ledgers of SCN-LG-001…005, built in the test from the fixture `md` with `clock-fixed` and
-  `ids-counter`.
+- Cases (REQ-LG-005): every folder of `test/fixtures/rules/` (its ledger, proposal, and `moved.jsonl` when present);
+  the fixture proposal of SCN-CL-003 on an empty ledger and on the ledger of SCN-CL-005; the proposals of SCN-LG-002 on
+  an empty ledger; the proposals of SCN-LG-003 on the ledger of SCN-CL-005 — built in the test from the fixture `md`
+  with `clock-fixed` and `ids-counter`.
 - For each case it computes the result of the text as written: `parseProposal` → `apply` → `checkTail` (against
   `ledger.jsonl` + `moved.jsonl` when present). Then for every permutation (Heap's algorithm for ≤ 7 intents; otherwise
   the reverse, every rotation and 50 Fisher–Yates permutations from a fixed-seed `mulberry32` written in the test)
@@ -163,7 +183,7 @@ SCN-CL-013 cover them.
 
 | Path | Proves |
 |---|---|
-| `test/ledger/apply.test.ts` (new) | SCN-LG-001…005 — `parseProposal`, `apply`, `checkTail`, `differs` in process |
+| `test/ledger/apply.test.ts` (new) | SCN-LG-001…005, SCN-LG-007 — `parseProposal`, `apply`, `checkTail`, `differs`, `REJECTION_RULES` in process |
 | `test/ledger/permutation.test.ts` (new) | SCN-LG-006 (D-7) |
 | `test/architecture/rules.test.ts` (changed) | SCN-AR-017 — no enumerated list; `moved.jsonl` for LG-C03 |
 | `test/fixtures/rules/LG-C07/expected.json`, `test/fixtures/rules/LG-C03/**` | SCN-AR-017 (D-8) |
@@ -180,6 +200,11 @@ test/fixtures/rules/**,openspec/changes/s0-apply-checks/**`. `src/ledger/proposa
 |---|---|---|---|
 | I-1 | Uniqueness OM-D01 / OM-D03, pinned targets OM-R03, one intent per fact key (LG-C07) and the fact no-op TR-F07 move to #82 `s0-apply-typed-checks`; #56 keeps LG-P02, LG-C03, LG-C07 per entity `id` with the permutation test, LG-C05 / OM-H03 for entities, LG-C08 and LG-A02. | They read the `unique`, reference and `key` fields of a type (OM-T02, OM-R02, TR-F01); no type exists in the ledger before #55 and #59, and `$ref` markers are not taken (NX-15). | the maintainer, 2026-10-02 (session of #56; issue #56 edited, umbrella #44 comment 5947360465) |
 | I-2 | #56 holds `LG` + `AR` + `CL` (D-1). | REQ-AR-011 pins the rule list; REQ-CL-001 and REQ-CL-004 describe the outcomes of `apply`. | the maintainer, 2026-10-02 (same) |
+| I-3 | A commit holds only its held intents and its `proposal` is their hash; LG-C08 looks up the hash of the held intents; a no-op needs `rev` = `base` (REQ-LG-003, D-4, D-5). | Spec review 1 (`EVID-01M3XRYWC0MGBDTB6RF5P4MGJZ`), F-1 (MAJOR): with a partial no-op, a hash over every intent could not be recomputed from the commit (LG-P04, LG-P05 (2)); none of the review's three options kept LG-C08 for a crash after a partial no-op. | approval of the spec-PR |
+| I-4 | The closed rule list is enumerated in REQ-LG-002 (SCN-LG-007); REQ-AR-011 refers to it, demands a non-empty `expected.json` and ledgers that open (LG-C04). | Review 1, F-2 (MAJOR), F-6, F-7: no spec pinned the list, so an extra rule with a folder passed. | approval of the spec-PR |
+| I-5 | REQ-CL-004 renamed "apply turns a proposal into a commit, a no-op or rejections"; REQ-CL-001 counts rejections of reading and of the tail check under code 1 and the store answering `moved` on an unmoved tail under code 2; REQ-LG-002 splits the rejections of apply from that of the tail check. | Review 1, F-3, F-4, F-11. | approval of the spec-PR |
+| I-6 | The check of the tail answers `existing` when the ledger already holds the commit's `proposal` (REQ-LG-004, D-6). | Review 1, F-12 (INFO): two writers of one proposal — the loser answered `LG-C03` where LG-C08 asks for the commit. | approval of the spec-PR |
+| I-7 | Wording: the hash is order-independent for intents with distinct `id`s (REQ-LG-001); SCN-LG-001 names the fixture proposal in every case; SCN-LG-003 and SCN-CL-012 give `by` the new session and say `by` is not compared; REQ-LG-005 lists its cases and the permutation of a text without a list. | Review 1, F-5, F-8, F-9, F-10. | approval of the spec-PR |
 
 ## Risks / Trade-offs
 

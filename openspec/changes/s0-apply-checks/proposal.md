@@ -20,9 +20,10 @@ own capability (AREA `LG`, SL-T08); every later Change that adds an apply check 
 ## What Changes
 
 - **New spec `ledger`**: the proposal form and its `LG-P01` rejections, the proposal hash and the canonical order
-  (moved from REQ-CL-004); the rejection shape of LG-A02 with the rules `LG-C07`, `LG-P02` and the new `LG-C03`; the
-  outcomes of apply — `commit`, `no-op` (LG-C05, OM-H03), `existing` (LG-C08) — and the commit form (moved from
-  REQ-CL-004); the tail check (LG-C03); permutation invariance with its test (LG-C07).
+  (moved from REQ-CL-004); the rejection shape of LG-A02 and the closed rule list `LG-C03`, `LG-C07`, `LG-P01`,
+  `LG-P02`; the outcomes of apply — `commit`, `no-op` (LG-C05, OM-H03), `existing` (LG-C08) — and the commit form
+  (moved from REQ-CL-004), a commit holding only the intents that are not no-ops; the tail check (LG-C03);
+  permutation invariance with its test (LG-C07).
 - **One intent per entity `id` (LG-C07)**: a duplicate rejection also names the `id` it collided with (`with`) and
   the paths where the intents naming that `id` differ (`differs`, LG-A02).
 - **No-op (LG-C05, OM-H03)**: an entity intent whose type and record hash equal the latest revision of its `id` writes
@@ -31,10 +32,11 @@ own capability (AREA `LG`, SL-T08); every later Change that adds an apply check 
   nothing.
 - **Tail (LG-C03)**: a commit whose `base` is not the tail of the ledger when it is appended is rejected with rule
   `LG-C03` instead of being refused with code 2.
-- **`cli`**: REQ-CL-004 keeps the command — the proposal file, opening the ledger (LG-C04), what it writes, prints and
-  removes on each outcome; REQ-CL-001 moves LG-C03 from the code-2 refusals to the rejections of code 1.
-- **`architecture`**: REQ-AR-011 no longer enumerates the rule IDs in its scenario — the closed list stays in code —
-  and gains an optional `moved.jsonl` in a rule fixture for LG-C03.
+- **`cli`**: REQ-CL-004, renamed "apply turns a proposal into a commit, a no-op or rejections", keeps the command —
+  the proposal file, opening the ledger (LG-C04), what it writes, prints and removes on each outcome; REQ-CL-001 moves
+  LG-C03 from the code-2 refusals to the rejections of code 1.
+- **`architecture`**: REQ-AR-011 no longer enumerates the rule IDs — it refers to the list of REQ-LG-002 — and gains
+  an optional `moved.jsonl` in a rule fixture for LG-C03.
 
 ## Capabilities
 
@@ -45,9 +47,9 @@ own capability (AREA `LG`, SL-T08); every later Change that adds an apply check 
 
 ### Modified Capabilities
 
-- `cli`: REQ-CL-001 (exit codes: LG-C03 is a rejection) and REQ-CL-004 (the command `apply` and its output on every
-  outcome; its semantics move to `ledger`).
-- `architecture`: REQ-AR-011 (the rule list is not enumerated in the scenario; `moved.jsonl` for LG-C03).
+- `cli`: REQ-CL-001 (exit codes: LG-C03 is a rejection) and REQ-CL-004, renamed (the command `apply` and its output
+  on every outcome; its semantics move to `ledger`).
+- `architecture`: REQ-AR-011 (the rule list is the one of REQ-LG-002; `moved.jsonl` for LG-C03).
 
 ## Impact
 
