@@ -2,6 +2,34 @@
   "$schema": "warrant://change-record/1",
   "change": "s0-projections",
   "change_state": "PROPOSED",
+  "classification": {
+    "profiles": [
+      "chore",
+      "feature"
+    ],
+    "risk": {
+      "data_loss": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "reversibility": {
+        "value": "EASY",
+        "from": "proposer"
+      },
+      "blast_radius": {
+        "value": "LOCAL",
+        "from": "proposer"
+      },
+      "security_impact": {
+        "value": "NONE",
+        "from": "proposer"
+      },
+      "compatibility": {
+        "value": "COMPATIBLE",
+        "from": "proposer"
+      }
+    }
+  },
   "transitions": [
     {
       "to": "PROPOSED",
