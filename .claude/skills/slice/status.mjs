@@ -10,8 +10,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  WIP_MAX, agentsBudget, areasAddedAfterInit, claimChanges, closable, collisionText, dispatch, heldText, holdersOf, isFixMain,
-  isOpenP1WithoutChange, mainState, maintainerQueue, nextAction, parseIssue, testResult, validateResult, versionMatches,
+  WIP_MAX, agentsBudget, areasAddedAfterInit, changePushRefs, claimChanges, closable, collisionText, dispatch, heldText, holdersOf, isFixMain,
+  isOpenP1WithoutChange, mainState, maintainerQueue, nextAction, parseIssue, testResult, unreadComments, validateResult, versionMatches,
 } from './rules.mjs';
 import { changeLastPush, pendingEntries } from './act-rules.mjs';
 import { JUDGE_PREFIX, STATUS_PREFIX, sweepStale } from './temp.mjs';
@@ -185,9 +185,10 @@ try { agentLogins = (JSON.parse(git('show', 'origin/main:.warrant/warrant.json')
 const umbrellaOf = (i) => repoIssues.find((u) => u.umbrella && u.milestone?.title && u.milestone.title === i.milestone?.title);
 // The last push of a Change over all its branches on origin, merged or not (changeLastPush).
 function changePush(change) {
-  const branches = KINDS.map((k) => `origin/${k}/${change}`).filter((r) => refs.has(r));
-  if (!branches.length) return null;
-  const commits = git('log', '--no-merges', '--format=%cI%x1f%cn <%ce>%x1f%s', ...branches).split(/\r?\n/).filter(Boolean)
+  const from = changePushRefs(change, refs);
+  const initAt = changeInfo(change).initAt;
+  if (!from.length || !initAt) return null;
+  const commits = git('log', '--no-merges', `--since=${initAt}`, '--format=%cI%x1f%cn <%ce>%x1f%s', ...from).split(/\r?\n/).filter(Boolean)
     .map((l) => { const [date, committer, subject] = l.split('\x1f'); return { date, committer, subject }; });
   return changeLastPush(commits, change, agentLogins);
 }
@@ -201,8 +202,7 @@ function logOf(i, open) {
     ...commentsOf(i.number).map((c) => ({ ...c, where: 'issue' })), ...prComments];
   const pending = pendingEntries({ comments, change: i.change, issue: i.number, pr: open?.number, areas: i.areas, since: null, repo: REPO });
   const since = changePush(i.change);
-  const unread = commentsOf(i.number).filter((c) => !since || Date.parse(c.createdAt) > Date.parse(since))
-    .map((c) => ({ url: c.url, createdAt: c.createdAt, line: c.body.trimStart().split(/\r?\n/)[0].slice(0, 120) }));
+  const unread = unreadComments(commentsOf(i.number), since);
   return { pending, unread, lastPush: since };
 }
 
@@ -212,7 +212,7 @@ function editsOf(numbers) {
   const q = numbers.map((n) => `i${n}: issue(number: ${n}) { userContentEdits(first: 100) { nodes { editedAt diff } } }`).join(' ');
   try {
     const data = gh('api', 'graphql', '-f', `query=query { repository(owner: "${OWNER}", name: "${NAME}") { ${q} } }`).data.repository;
-    return new Map(numbers.map((n) => [n, (data[`i${n}`]?.userContentEdits?.nodes ?? []).map((e) => ({ editedAt: e.editedAt, body: e.diff ?? '' }))]));
+    return new Map(numbers.map((n) => [n, (data[`i${n}`]?.userContentEdits?.nodes ?? []).map((e) => ({ editedAt: e.editedAt, body: e.diff ?? null }))]));
   } catch (e) { warnings.push(`issue history not read: ${e.message.split('\n')[0]}`); return new Map(); }
 }
 const skipSpecs = (change) => KINDS.flatMap((k) => [`origin/${k}/${change}`, `${k}/${change}`]).concat('origin/main').filter((r) => refs.has(r))
@@ -318,11 +318,12 @@ const queue = [...addedRows, ...maintainerQueue({
 })];
 // Open issues whose closing condition looks met (rule tracking; the coordinator judges, D-4).
 const prState = (n) => prs.find((p) => p.number === n)?.state ?? null;
-const closables = all.filter((i) => i.state === 'OPEN' && !i.umbrella)
-  .map((i) => ({ number: i.number, reason: closable(i, { archivedOnMain, prState, issueOf: (n) => { try { return issue(n); } catch { return null; } } }) }))
+const closables = [...new Set([...all, ...(slice ? repoIssues.filter((i) => !i.milestone) : [])])].filter((i) => i.state === 'OPEN' && !i.umbrella)
+  .map((i) => ({ number: i.number, reason: closable(i, { repo: REPO, archivedOnMain, prState, issueOf: (n) => { try { return issue(n); } catch { return null; } } }) }))
   .filter((x) => x.reason);
 let agentsBytes = null;
-try { agentsBytes = Buffer.byteLength(execFileSync('git', ['show', 'origin/main:AGENTS.md'], { maxBuffer: 1 << 24 })); } catch { /* none */ }
+const agentsMd = git('show', 'origin/main:AGENTS.md');
+if (agentsMd) agentsBytes = Buffer.byteLength(agentsMd, 'utf8');
 const budget = agentsBudget(agentsBytes);
 // Open bug / question P1 issues no Change takes, of this milestone and of none.
 const openP1 = repoIssues.filter((i) => isOpenP1WithoutChange(i) && (!i.milestone || (slice && i.milestone.title === slice.title)))

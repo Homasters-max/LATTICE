@@ -3,8 +3,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  agentsBudget, areasAddedAfterInit, claimChanges, closable, dependsOn, dispatch, firstSentence, holdersOf, isOpenP1WithoutChange,
-  issueKind, mainState, maintainerQueue, nextAction, parseIssue, references, section, testResult, validateResult, versionMatches,
+  agentsBudget, areasAddedAfterInit, changePushRefs, claimChanges, closable, dependsOn, dispatch, firstSentence, holdersOf, isOpenP1WithoutChange,
+  issueKind, mainState, maintainerQueue, nextAction, parseIssue, references, section, testResult, unreadComments, validateResult,
+  versionMatches,
 } from './rules.mjs';
 
 const label = (...names) => names.map((name) => ({ name }));
@@ -240,13 +241,17 @@ describe('an AREA added after init (infra-coordinator D-4)', () => {
     assert.equal(areasAddedAfterInit({ change: 'infra-x', body: revs[1].body, revisions: revs, initAt: '2026-10-02T10:00:00Z' }).length, 1);
     assert.deepEqual(areasAddedAfterInit({ change: 'x', body: where57('x', ['SR', 'CL']), revisions: [], initAt: '2026-10-02T10:00:00Z' }), []);
   });
-  it('an AREA added by a [decision] is held from that decision: an earlier holder keeps it (I-1)', () => {
+  it('an AREA added by a [decision] is held from that decision: the earlier holder keeps it, the adder waits, no collision (I-1)', () => {
     const h = holdersOf([
       { change: 'a', areas: ['CL'], initAt: '2026-10-02T08:00:00Z' },
       { change: 'b', areas: ['SR', 'CL'], initAt: '2026-10-02T07:00:00Z', areaAt: { CL: '2026-10-02T09:00:00Z' } },
     ]);
-    assert.deepEqual(h.collisions, [{ area: 'CL', first: 'a', later: ['b'] }]);
+    assert.deepEqual(h.collisions, []);
+    assert.deepEqual(h.busy.get('CL'), ['a', 'b']);
+    assert.deepEqual(h.heldFor('b', ['SR', 'CL']), [{ area: 'CL', by: 'a' }]);
     assert.deepEqual(h.busy.get('SR'), ['b']);
+    const plain = holdersOf([{ change: 'a', areas: ['CL'], initAt: '2026-10-02T08:00:00Z' }, { change: 'b', areas: ['CL'], initAt: '2026-10-02T09:00:00Z' }]);
+    assert.deepEqual(plain.collisions, [{ area: 'CL', first: 'a', later: ['b'] }]);
   });
 });
 
@@ -257,6 +262,10 @@ describe('issues: kinds, sections, closable (infra-coordinator D-4, D-7; #112)',
     assert.equal(old86.kind, 'unnamed');
     assert.deepEqual(old86.areas, []);
     assert.deepEqual(old86.declaredAreas, ['SR']);
+    const old85 = parseIssue({ number: 85, title: 's0: open checks', state: 'OPEN', labels: label('enhancement', 'P2'),
+      body: 'Why: …\n\nWhere: a small Change after #98 `s0-store-cli`, AREA `CL` (REQ-CL-004 **Opening**).\n' });
+    assert.equal(old85.kind, 'unnamed');
+    assert.deepEqual(old85.declaredAreas, ['CL']);
     assert.equal(nextAction({ ...old86, deps: [], merged: {} }, { heldFor: () => [], wipCount: 0 }).who, '👤 coordinator');
     assert.equal(issueKind(null, ['bug'], ['CL']), 'bug');
     assert.equal(issueKind(null, ['question'], ['CL']), 'question');
@@ -270,8 +279,11 @@ describe('issues: kinds, sections, closable (infra-coordinator D-4, D-7; #112)',
     assert.equal(section('Why: nothing', 'Prevention'), null);
   });
   it('references: #N and its URL are local; SRA#N and another repository are foreign', () => {
-    assert.deepEqual(references('#97, https://github.com/Homasters-max/LATTICE/pull/108 and Homasters-max/SRA#138; SRA#139'),
+    const repo = 'Homasters-max/LATTICE';
+    assert.deepEqual(references('#97, https://github.com/Homasters-max/LATTICE/pull/108 and Homasters-max/SRA#138; SRA#139', repo),
       { local: [97, 108], foreign: 2 });
+    assert.deepEqual(references('Homasters-max/LATTICE#97', repo), { local: [97], foreign: 0 });
+    assert.deepEqual(references('https://github.com/Homasters-max/LATTICE/pull/108'), { local: [], foreign: 1 });
   });
   it('closable: an archived Change, a process issue whose prevention landed, a bug fixed by a Change; never a question', () => {
     const ctx = { archivedOnMain: (c) => c === 'done-change', prState: (n) => ({ 108: 'MERGED', 109: 'OPEN' })[n] ?? null,
@@ -285,11 +297,27 @@ describe('issues: kinds, sections, closable (infra-coordinator D-4, D-7; #112)',
     assert.equal(closable(proc('a rule, some day.'), ctx), null);
     assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['bug'] }, ctx), 'fixed by done-change');
     assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['question'] }, ctx), null);
+    assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['P3'] }, ctx), null);
+    assert.equal(closable({ state: 'OPEN', change: null, refersTo: 'done-change', labels: ['enhancement'] }, ctx), 'fixed by done-change');
     assert.equal(closable({ state: 'CLOSED', change: 'done-change', labels: [] }, ctx), null);
   });
   it('the AGENTS.md budget warns above 14 336 bytes', () => {
     assert.equal(agentsBudget(11528).state, 'ok');
     assert.equal(agentsBudget(16276).state, 'warn');
     assert.equal(agentsBudget(null).state, 'unknown');
+  });
+});
+
+describe('the log of a Change: unread comments and the refs of its last push (infra-coordinator D-3, P-7)', () => {
+  const c = (id, at, body) => ({ url: `u#issuecomment-${id}`, createdAt: at, body });
+  const comments = [c(1, '2026-10-02T09:08:11Z', 'Another failure for the routine.\nmore'), c(2, '2026-10-02T15:30:00Z', '[scope] items 4–7')];
+  it('the comments of the issue newer than the last push, tagged or not; all before the first push', () => {
+    assert.deepEqual(unreadComments(comments, '2026-10-02T15:05:06.000Z').map((x) => x.url), ['u#issuecomment-2']);
+    assert.deepEqual(unreadComments(comments, null).map((x) => x.line), ['Another failure for the routine.', '[scope] items 4–7']);
+  });
+  it('the last push reads every branch of the Change on origin, merged or not, and origin/main', () => {
+    const refs = new Set(['origin/main', 'origin/spec/c', 'origin/impl/c', 'origin/spec/c-2', 'spec/c']);
+    assert.deepEqual(changePushRefs('c', refs), ['origin/spec/c', 'origin/impl/c', 'origin/main']);
+    assert.deepEqual(changePushRefs('d', new Set(['origin/main'])), ['origin/main']);
   });
 });

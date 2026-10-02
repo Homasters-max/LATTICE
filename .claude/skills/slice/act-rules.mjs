@@ -1,6 +1,6 @@
 // The rules of act.mjs and wait-pr.mjs (Change infra-merge-flow), as pure functions over plain data: no gh, git or
 // warrant here. The scripts gather the facts and act; act-rules.test.mjs checks the rules (node --test).
-import { isFixMain, testResult, versionMatches } from './rules.mjs';
+import { escapeRegExp as escape, isFixMain, testResult, versionMatches } from './rules.mjs';
 
 export const END_STATE = { spec: 'SPECIFIED', impl: 'VERIFYING', archive: 'ARCHIVED' };
 export const ENTRY_TAGS = ['[decision]', '[scope]', '[broadcast]'];
@@ -12,7 +12,6 @@ const BOOTSTRAP_ACTS = new Set(['patch', 'whoami']);
 
 const refusal = (reason, fix) => ({ reason, fix });
 const same = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
-const escape = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // `impl/s0-store-2` → { kind: 'impl', change: 's0-store-2' }; any other branch → null.
 export const CHANGE_NAME = /^[\w.-]+$/;
@@ -277,7 +276,8 @@ export function scopeFindings({ branch, files, runs = [], authorsOf = () => [], 
     && (!(r.scope ?? []).length || matchesAny(r.scope, p)));
   const byMaintainer = (p) => { const a = authorsOf(p); return a.length > 0 && a.every((x) => !isAgentIdent(x, agentLogins)); };
   const ruleChanged = files.some((f) => f.path.startsWith('.warrant/local/rules/'));
-  const caps = new Set(files.map((f) => new RegExp(`^openspec/changes/archive/[\\w.-]+-${escape(change)}/specs/([\\w.-]+)/`).exec(f.path)?.[1]).filter(Boolean));
+  const archived = new RegExp(`^openspec/changes/archive/[\\w.-]+-${escape(change)}/`);
+  const caps = new Set(files.map((f) => (archived.test(f.path) ? /\/specs\/([\w.-]+)\//.exec(f.path.replace(archived, '/'))?.[1] : null)).filter(Boolean));
   const why = (f) => {
     const p = f.path;
     if (p === `.warrant/changes/${change}.json` || p.startsWith(`.warrant/evidence/${change}/`)) return null;
@@ -288,7 +288,7 @@ export function scopeFindings({ branch, files, runs = [], authorsOf = () => [], 
     if (kind === 'spec') return p.startsWith(own) ? null : 'outside the spec of the Change';
     if (kind === 'archive') {
       if (p.startsWith(own) && f.status === 'D') return null;
-      if (new RegExp(`^openspec/changes/archive/[\\w.-]+-${escape(change)}/`).test(p)) return null;
+      if (archived.test(p)) return null;
       const cap = /^openspec\/specs\/([\w.-]+)\//.exec(p)?.[1];
       return cap && caps.has(cap) ? null : 'outside the archive of the Change';
     }

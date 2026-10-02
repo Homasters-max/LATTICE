@@ -42,8 +42,8 @@ try {
     .map((l) => { const [status, ...p] = l.split('\t'); return { status: status[0], path: p.join('\t') }; });
   const runs = files.filter((f) => /^\.warrant\/runs\/RUN-[A-Z0-9]+\.json$/.test(f.path) && f.status !== 'D')
     .map((f) => json(show(head, f.path))).filter(Boolean);
-  const waivers = Object.fromEntries(files.filter((f) => f.path.startsWith('.warrant/waivers/') && f.status !== 'D')
-    .map((f) => [f.path, json(show(head, f.path))?.change ?? null]));
+  const waivers = Object.fromEntries(files.filter((f) => f.path.startsWith('.warrant/waivers/'))
+    .map((f) => [f.path, json(show(f.status === 'D' ? 'origin/main' : head, f.path))?.change ?? null]));
   const authors = new Map();
   let current = null;
   for (const l of git('log', '--no-merges', '--format=@%an <%ae>', '--name-only', `origin/main..${head}`).split(/\r?\n/)) {

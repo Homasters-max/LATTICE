@@ -3,6 +3,15 @@
 The steps every Change session follows, as written (rule `process`). The rules in `AGENTS.md` say what must hold; this
 file says how. A `warrant` error names its fix in `hint` — follow it.
 
+One session per Change, in one worktree, where its three branches are made in turn; the session is restarted when the
+process requires it (a new phase after a long wait, a pin of WARRANT, a guard that must reload) — a restart is the
+maintainer's act, asked in the session's own chat.
+
+## Where the record is read
+
+The record of an open Change runs ahead on its branches: `main` has it only after the spec-PR merges, and then it lags,
+so its state is read from the furthest branch — archive, impl, spec, then `main` (`status.mjs` does it).
+
 ## spec-PR — branch `spec/<change>` from `main`
 
 1. `warrant init change <change>`, then `node .claude/skills/slice/status.mjs <change>`: on an AREA collision stop and
@@ -16,8 +25,11 @@ file says how. A `warrant` error names its fix in `hint` — follow it.
    a file the subagent reads — it runs no shell command but `warrant run submit`. A `NOT_PROVEN` review is taken into the
    artifacts in a new `specify` Run, then reviewed again.
 5. `status.mjs <change>`: act on and acknowledge every `pending` entry, read every `unread` comment of the issue.
-6. `warrant verify <change>`, then `warrant transition <change> SPECIFIED` as the last commit; the local judge; push;
-   only then the PR — a spec-PR is never offered for review without `SPECIFIED`.
+6. `warrant verify <change>`, then `warrant transition <change> SPECIFIED` as the last commit; the local judge
+   (`node .claude/skills/slice/judge.mjs`: push only on no violation of the PR — a spec-PR and an archive-PR pass
+   `warrant ci` outright; an impl-PR may wait only on CI and the merge: `tests-passed`, `factory-golden-passed`,
+   `evidence-complete` of a `test-report`, `human-approval`; a `note:` is no violation); push; only then the PR — a
+   spec-PR is never offered for review without `SPECIFIED`.
 7. Request the merge (Requests). The merge is the maintainer's approval; changes the review still asks for become `I-N`
    rows of the impl-PR, proposed in the spec-PR body, and the merge is the decision on them.
 
@@ -73,17 +85,19 @@ umbrella; what `warrant` and a git merge write is not an edit of the agent (I-6)
 ## archive-PR — branch `archive/<change>` from `main` with the impl-PR merged
 
 `warrant ci fetch <URL of the impl-PR>`, `warrant transition <change> MERGED --ref <URL of the impl-PR> --by
-<maintainer>` (every Change here carries the profile `human-acceptance`, whose gate `human-approval` is on
-`VERIFYING->MERGED`); `warrant archive <change>` (never `openspec archive`); the local judge; push; request the merge.
+<maintainer>` — always with `--by` (a Change with the profile `human-acceptance` has the gate `human-approval` on
+`VERIFYING->MERGED`, and `warrant` answers `USAGE` without it); `warrant archive <change>` (never `openspec archive`); the local judge; push; request the merge.
 The archive-PR carries `Closes #<issue of the Change>` (rule `tracking`).
 
 ## The decision log
 
 Before `SPECIFIED` and before requesting a merge: `status.mjs <change>`, section "Read first". Act on every `pending`
 entry, then acknowledge it by a reply on the umbrella (outside a slice: on the Change's issue) that links it and names
-the Change — one reply may acknowledge several; read every `unread` comment of the issue, untagged ones included (a
+the Change — one reply may acknowledge several; a comment in your PR that links the entry counts too, and `act.mjs
+merge` refuses a PR with an entry newer than its last push that neither acknowledges; read every `unread` comment of the issue, untagged ones included (a
 scope change may arrive as one, #97). A scope change by message from the coordinator is acknowledged by message too,
-before `SPECIFIED`. Your own `[scope]` posted after your push needs the acknowledgement too.
+before `SPECIFIED`. Your own `[scope]` posted after your push needs the acknowledgement too. An entry you post names in `Touches:` only the
+Changes that must act on it.
 
 A slice decision that changes an open PR (an AREA, an id, the order of Changes) stops its merge: the coordinator turns
 the PR to draft, turns its auto-merge off and comments `⛔ Do not merge — <decision URL>` (I-3); the owner brings the PR
@@ -92,8 +106,9 @@ again.
 
 ## Requests for the maintainer's acts
 
-An act of the maintainer (rule `maintainer-acts`) is requested by a comment on the PR or issue it concerns; never as a
-command in your own chat. Then tell the coordinator by message. The comment:
+An act of the maintainer (rule `maintainer-acts`) is requested by a comment on the PR or issue it concerns — a WARRANT
+question on the LATTICE issue that waits on it, a setting without a PR on the Change's issue; never as a command in your
+own chat. Then tell the coordinator by message. The comment:
 
 ```text
 <!-- act: <kind> <fields> -->
@@ -109,7 +124,9 @@ Markers, by group (fields carry no spaces or shell characters):
 3. repository settings — `<!-- act: setting <slug> -->`;
 4. files and git outside `act.mjs` — `<!-- act: file <branch> <path> -->` · `<!-- act: tag <name> -->`;
 5. sessions — no marker: the coordinator's chip is the request to start one; a restart is asked in that session's chat
-   (it has no command).
+   (it has no command);
+6. WARRANT (SRA) — a session working in `Homasters-max/SRA` sends its maintainer acts to the coordinator by message; they
+   show in the queue as their own group and are never run from it.
 
 The merge is requested once, when no check has failed (auto-merge waits for running ones), after `review.mjs <N>`
 passes and a PR behind `main` is updated by its owner (`gh pr update-branch <N>`, after the local judge). Read the

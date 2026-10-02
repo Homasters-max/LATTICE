@@ -2,9 +2,10 @@
 // The retro of a wave (Change infra-coordinator, D-7): the `process` issues of a slice's wave as a markdown table for
 // the umbrella — failure, root cause, prevention, proposed (left empty for the grilling), closable — and the issues that
 // miss "Root cause" or "Prevention". It writes nothing: the coordinator posts the table as `[incident] retro <slice>
-// wave <n>` and grills it with the maintainer (skill slice, "retro").
+// wave <n>`, grills it with the maintainer and posts the outcome as `[decision] retro <slice> wave <n>` — which marks
+// the end of the wave, so the next run starts after the last `[decision] retro` (skill slice, "retro").
 // Usage: node retro.mjs <slice> [--since <ISO date>] [--issues <N,…>]
-// Exit: 0 printed · 2 no such milestone · 64 usage.
+// Exit: 0 printed · 2 no such milestone, or an error of gh · 64 usage.
 import { execFileSync } from 'node:child_process';
 import { claimChanges, closable, firstSentence, parseIssue, section } from './rules.mjs';
 
@@ -26,6 +27,7 @@ const [target] = positional;
 
 const sh = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 << 20 });
 const gh = (...a) => JSON.parse(sh('gh', a));
+process.on('uncaughtException', (e) => { console.error(`retro: error: ${(e.stderr || e.message || e).toString().trim().split('\n')[0]}`); process.exit(2); });
 const git = (...a) => { try { return sh('git', a); } catch { return ''; } };
 
 git('fetch', '-q', 'origin');
@@ -47,7 +49,9 @@ since ??= milestone.created_at;
 
 const record = (change) => { try { return JSON.parse(git('show', `origin/main:.warrant/changes/${change}.json`)); } catch { return null; } };
 const archivedOnMain = (change) => record(change)?.change_state === 'ARCHIVED';
+const repo = sh('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']).trim();
 const ctx = {
+  repo,
   archivedOnMain,
   prState: (n) => prs.find((p) => p.number === n)?.state ?? null,
   issueOf: (n) => issues.find((i) => i.number === n) ?? null,

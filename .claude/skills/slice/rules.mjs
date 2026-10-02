@@ -3,6 +3,9 @@
 
 export const WIP_MAX = 3;
 
+// A literal string as a part of a RegExp (shared with act-rules.mjs).
+export const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // A fix of a red main (rule tracking): exempt from the freeze, the WIP cap and the AREA hold.
 export const isFixMain = (change) => typeof change === 'string' && change.startsWith('fix-main-');
 
@@ -21,8 +24,8 @@ export function dependsOn(body) {
 // An issue of GitHub (`gh issue list --json number,title,state,body,url,milestone,labels`) with the fields a slice reads.
 export function parseIssue(i) {
   const body = i.body ?? '';
-  const where = body.match(/^Where:(.*)$/m)?.[1] ?? '';
-  const change = where.match(/Change `([^`]+)`/)?.[1] ?? null;
+  const where = whereOf(body);
+  const change = changeOfWhere(where);
   const labels = (i.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name));
   const deps = dependsOn(body);
   const declaredAreas = areasOfWhere(where);
@@ -42,13 +45,13 @@ export function parseIssue(i) {
 
 // "AREA `TR` + `AC` + `CT`" — the "+"-joined list right after the word; trailing prose is ignored.
 export const areasOfWhere = (where) => (where.match(/AREA\s+(`?[A-Z]{2,}`?(?:\s*\+\s*`?[A-Z]{2,}`?)*)/)?.[1] ?? '').match(/[A-Z]{2,}/g) ?? [];
-const whereOf = (body) => (body ?? '').match(/^Where:(.*)$/m)?.[1] ?? '';
-const changeOfWhere = (where) => where.match(/Change `([^`]+)`/)?.[1] ?? null;
+function whereOf(body) { return (body ?? '').match(/^Where:(.*)$/m)?.[1] ?? ''; }
+function changeOfWhere(where) { return where.match(/Change `([^`]+)`/)?.[1] ?? null; }
 
 // Several issues may name one Change in `Where:` — its own issue and, say, a bug it fixes (rule tracking).
 // The Change's issue is the one whose title names it (`<prefix>: <change> — …`), else the oldest; the others
 // refer to it (`refersTo`) and are read by their labels, with no AREA.
-const namesIn = (title, change) => new RegExp(`(?<![\\w.-])${change.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`).test(title ?? '');
+const namesIn = (title, change) => new RegExp(`(?<![\\w.-])${escapeRegExp(change)}(?![\\w-])`).test(title ?? '');
 export function claimChanges(issues) {
   const byChange = new Map();
   for (const i of issues) if (i.change) byChange.set(i.change, [...(byChange.get(i.change) ?? []), i]);
@@ -117,7 +120,7 @@ export function validateResult(envelope, ref) {
 // When the order cannot be read (a time missing, or two equal), every holder that is not fix-main collides.
 export function holdersOf(holders) {
   const byArea = new Map();
-  for (const h of holders) for (const a of h.areas) byArea.set(a, [...(byArea.get(a) ?? []), { ...h, initAt: h.areaAt?.[a] ?? h.initAt }]);
+  for (const h of holders) for (const a of h.areas) byArea.set(a, [...(byArea.get(a) ?? []), { ...h, initAt: h.areaAt?.[a] ?? h.initAt, byDecision: !!h.areaAt?.[a] }]);
   const busy = new Map();       // AREA -> [change, …] in init order
   const collisions = [];        // { area, first, later: [change, …] }
   for (const [area, holdersOfArea] of byArea) {
@@ -126,7 +129,8 @@ export function holdersOf(holders) {
     const sorted = ordered ? [...holdersOfArea].sort((x, y) => (x.initAt < y.initAt ? -1 : 1)) : holdersOfArea;
     busy.set(area, sorted.map((h) => h.change));
     if (holdersOfArea.length < 2) continue;
-    const later = (ordered ? sorted.slice(1) : sorted).filter((h) => !isFixMain(h.change));
+    // A later holder whose AREA a [decision] added (Adds: …, I-1) is ordered by that decision: it waits, no collision.
+    const later = (ordered ? sorted.slice(1) : sorted).filter((h) => !isFixMain(h.change) && !(ordered && h.byDecision));
     if (later.length) collisions.push({ area, first: ordered ? sorted[0].change : null, later: later.map((h) => h.change) });
   }
   return {
@@ -221,7 +225,6 @@ export function maintainerQueue({ rows, collisions, busy, depPRs, mainState }) {
 
 // ---------- the decision log and issues (Change infra-coordinator) ----------
 
-const escapeRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const instant = (t) => Date.parse(t);
 export const INIT_GRACE_MS = 60 * 1000;
 
@@ -231,16 +234,17 @@ export const INIT_GRACE_MS = 60 * 1000;
 // Where: not in it is added — except AR on a skip_specs Change. A [decision] with a line `Adds: AREA <X> to <change>`
 // clears it (I-7), and the Change holds it from that decision (I-1). → [{ area, editedAt, decision: { url, createdAt } | null }].
 export function areasAddedAfterInit({ change, body, revisions = [], initAt, skipSpecs = false, decisions = [] }) {
-  if (!initAt || !revisions.length) return [];
+  const known = revisions.filter((r) => typeof r.body === 'string' && r.editedAt);
+  if (!initAt || !known.length) return [];
   const today = areasOfWhere(whereOf(body));
-  const sorted = [...revisions].sort((a, b) => instant(a.editedAt) - instant(b.editedAt));
+  const sorted = [...known].sort((a, b) => instant(a.editedAt) - instant(b.editedAt));
   const atInit = [...sorted].reverse().find((r) => instant(r.editedAt) <= instant(initAt) + INIT_GRACE_MS) ?? sorted[0];
   const where = whereOf(atInit.body);
   if (changeOfWhere(where) !== change) return [];
   const before = new Set(areasOfWhere(where));
   return today.filter((a) => !before.has(a) && !(skipSpecs && a === 'AR')).map((area) => {
     const first = sorted.find((r) => instant(r.editedAt) > instant(atInit.editedAt) && areasOfWhere(whereOf(r.body)).includes(area));
-    const adds = new RegExp(`^Adds: AREA \`?${escapeRe(area)}\`? to \`?${escapeRe(change)}\`?\\s*$`, 'm');
+    const adds = new RegExp(`^Adds: AREA \`?${escapeRegExp(area)}\`? to \`?${escapeRegExp(change)}\`?\\s*$`, 'm');
     const d = decisions.find((c) => c.body.trimStart().startsWith('[decision]') && adds.test(c.body));
     return { area, editedAt: first?.editedAt ?? null, decision: d ? { url: d.url, createdAt: d.createdAt } : null };
   });
@@ -250,42 +254,46 @@ export function areasAddedAfterInit({ change, body, revisions = [], initAt, skip
 // heading, bold label line or `Where:` / `Depends on:` / `Why:` / `Done when` line. → its text, or null.
 export function section(body, name) {
   const lines = (body ?? '').split(/\r?\n/);
-  const start = lines.findIndex((l) => new RegExp(`^(#{1,6}\\s*${name}\\b|\\*\\*${name}\\b|${name}:)`, 'i').test(l.trim()));
+  const n = escapeRegExp(name);
+  const start = lines.findIndex((l) => new RegExp(`^(#{1,6}\\s*${n}\\b|\\*\\*${n}\\b|${n}:)`, 'i').test(l.trim()));
   if (start < 0) return null;
   const stop = (l) => /^#{1,6}\s/.test(l.trim()) || /^\*\*[^*]+\*\*:?/.test(l.trim()) || /^(Where|Depends on|Why|Done when)\b/.test(l.trim());
   const rest = lines.slice(start + 1);
   const end = rest.findIndex(stop);
-  const first = lines[start].trim().replace(new RegExp(`^(#{1,6}\\s*|\\*\\*)?${name}(\\*\\*)?:?(\\*\\*)?\\s*`, 'i'), '');
+  const first = lines[start].trim().replace(new RegExp(`^(#{1,6}\\s*|\\*\\*)?${n}(\\*\\*)?:?(\\*\\*)?\\s*`, 'i'), '');
   return [first, ...(end < 0 ? rest : rest.slice(0, end))].join('\n').trim();
 }
 export const firstSentence = (text) => (text ?? '').replace(/\s+/g, ' ').trim().replace(/^[-*]\s+/, '').split(/(?<=[.;])\s/)[0] ?? '';
 
 // The references of a text: `#N` of this repository (not `SRA#N`, not `owner/repo#N`) and its URLs; any other
 // repository counts as foreign.
-export function references(text, repo = 'Homasters-max/LATTICE') {
+export function references(text, repo) {
   const local = new Set();
   let foreign = 0;
+  const here = (r) => !!repo && r.toLowerCase() === repo.toLowerCase();
   for (const m of (text ?? '').matchAll(/(?<![\w/-])#(\d+)(?!\d)/g)) local.add(Number(m[1]));
   for (const m of (text ?? '').matchAll(/github\.com\/([\w.-]+\/[\w.-]+)\/(?:issues|pull)\/(\d+)/g)) {
-    if (m[1].toLowerCase() === repo.toLowerCase()) local.add(Number(m[2])); else foreign++;
+    if (here(m[1])) local.add(Number(m[2])); else foreign++;
   }
-  foreign += [...(text ?? '').matchAll(/[\w.-]+\/[\w.-]+#\d+|\bSRA#\d+/g)].length;
+  for (const m of (text ?? '').matchAll(/([\w.-]+\/[\w.-]+)#(\d+)|\bSRA#\d+/g)) {
+    if (m[1] && here(m[1])) local.add(Number(m[2])); else foreign++;
+  }
   return { local: [...local].sort((a, b) => a - b), foreign };
 }
 
-// Is an open issue closable by rule tracking (a hint the coordinator judges)? ctx: { archivedOnMain(change),
+// Is an open issue closable by rule tracking (a hint the coordinator judges)? ctx: { repo, archivedOnMain(change),
 // prState(n) → MERGED | OPEN | CLOSED | null (not a PR), issueOf(n) → { state, change } | null }. → reason or null.
 export function closable(i, ctx) {
   if (i.state !== 'OPEN') return null;
   if (i.change) return ctx.archivedOnMain(i.change) ? 'archived' : null;
   if (i.labels.includes('process')) {
-    const refs = references(section(i.body, 'Prevention'));
+    const refs = references(section(i.body, 'Prevention'), ctx.repo);
     if (!refs.local.length || refs.foreign) return null;
     const done = (n) => { const pr = ctx.prState(n); if (pr) return pr === 'MERGED';
       const o = ctx.issueOf(n); return !!o && (o.change ? ctx.archivedOnMain(o.change) : o.state === 'CLOSED'); };
     return refs.local.every(done) ? 'prevention landed' : null;
   }
-  if (i.labels.includes('question')) return null;
+  if (!i.labels.includes('bug') && !i.labels.includes('enhancement')) return null;
   return i.refersTo && ctx.archivedOnMain(i.refersTo) ? `fixed by ${i.refersTo}` : null;
 }
 
@@ -297,3 +305,13 @@ export function agentsBudget(bytes) {
   const note = `AGENTS.md ${bytes} / ${AGENTS_LIMIT} bytes`;
   return bytes > AGENTS_WARN ? { state: 'warn', note: `${note} ⚠ — move procedure from the rules into the skill` } : { state: 'ok', note };
 }
+
+// The comments of a Change's issue that are newer than its last push (all of them before the first push): read, never
+// acknowledged (D-3, the #97 gap). comments: [{ url, createdAt, body }].
+export const unreadComments = (comments, since) => comments.filter((c) => !since || Date.parse(c.createdAt) > Date.parse(since))
+  .map((c) => ({ url: c.url, createdAt: c.createdAt, line: c.body.trimStart().split(/\r?\n/)[0].slice(0, 120) }));
+
+// The refs whose commits count for the last push of a Change: its branches on origin, merged or not, and origin/main
+// (a merged PR stays there even if its branch is deleted). refs: Set of short ref names.
+export const changePushRefs = (change, refs) => ['spec', 'impl', 'archive'].map((k) => `origin/${k}/${change}`)
+  .filter((r) => refs.has(r)).concat(refs.has('origin/main') ? ['origin/main'] : []);
