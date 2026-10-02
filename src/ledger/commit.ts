@@ -63,7 +63,7 @@ function readableSeq(text: string): number | null {
 export type Ledger = {
   readonly tail: { readonly seq: number; readonly hash: Hash } | null;
   readonly view: ReadView;
-  readonly proposals: ReadonlyMap<string, number>;
+  readonly proposals: ReadonlyMap<Hash, number>;
 };
 
 /** Opens a stored ledger and verifies its hash chain (LG-C04); a refusal names the first broken commit. */
@@ -71,7 +71,7 @@ export function openLedger(stored: StoredLedger): { readonly ok: true; readonly 
   const broken = (seq: number | null, line: number, why: string) =>
     ({ ok: false, message: `LG-C04: ${seq === null ? `line ${line}` : `seq ${seq}`}: ${why}` }) as const;
   const commits: Commit[] = [];
-  const proposals = new Map<string, number>();
+  const proposals = new Map<Hash, number>();
   let tail: { seq: number; hash: Hash } | null = null;
   for (const [i, { text }] of stored.commits.entries()) {
     const admitted = checkInput(text);

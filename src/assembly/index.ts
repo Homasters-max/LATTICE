@@ -189,24 +189,22 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       if (!parsed.ok) return { kind: "rejected", rejections: parsed.rejections };
       // LG-P04: the proposal file goes once the outcome is final; a file another writer of the same proposal already
       // removed counts as removed (REQ-CL-004, design D-6).
-      const removeProposal = (): string | null => {
-        if (!existsSync(path)) return null;
-        const failed = writing(path, () => unlinkSync(path));
-        return failed !== null && existsSync(path) ? failed : null;
-      };
-      const settled = (seq: number): Outcome => {
-        const removed = removeProposal();
-        if (removed !== null) return refused(`the commit seq ${seq} stays; ${removed} — the proposal file is left behind`);
-        return done(JSON.stringify({ outcome: "commit", seq }));
+      const settled = (answer: { outcome: "commit"; seq: number } | { outcome: "no-op" }): Outcome => {
+        try {
+          unlinkSync(path);
+        } catch (e) {
+          if (existsSync(path)) {
+            const stays = answer.outcome === "commit" ? `the commit seq ${answer.seq} stays; ` : "";
+            return refused(`${stays}cannot remove ${shown(path)}: ${(e as Error).message} — the proposal file is left behind`);
+          }
+        }
+        return done(JSON.stringify(answer));
       };
 
       const applied = applyProposal(ledger, parsed.proposal);
       if (applied.outcome === "rejected") return { kind: "rejected", rejections: applied.rejections };
-      if (applied.outcome === "existing") return settled(applied.seq); // LG-C08
-      if (applied.outcome === "no-op") {
-        const removed = removeProposal(); // LG-C05
-        return removed === null ? done(JSON.stringify({ outcome: "no-op" })) : refused(`${removed} — the proposal file is left behind`);
-      }
+      if (applied.outcome === "existing") return settled({ outcome: "commit", seq: applied.seq }); // LG-C08
+      if (applied.outcome === "no-op") return settled({ outcome: "no-op" }); // LG-C05
       let appended: ReturnType<Store["append"]> | undefined;
       const failed = writing(ledgerFile, () => {
         appended = s.append({ seq: applied.commit.seq, text: applied.text }, applied.commit.base);
@@ -217,11 +215,11 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
         const again = open(s);
         if (typeof again === "string") return refused(again);
         const check = checkTail(again, applied.commit);
-        if (check.outcome === "existing") return settled(check.seq);
+        if (check.outcome === "existing") return settled({ outcome: "commit", seq: check.seq });
         if (check.outcome === "rejected") return { kind: "rejected", rejections: check.rejections };
         return refused("the store answered that the tail moved, but its tail is the one the commit was built on; nothing was appended");
       }
-      return settled(applied.commit.seq);
+      return settled({ outcome: "commit", seq: applied.commit.seq });
     },
 
     exportTo(out) {

@@ -5,38 +5,39 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { canonical } from "../../src/kernel/index.ts";
 import { checkTail } from "../../src/ledger/index.ts";
 import type { Ledger, Rejection } from "../../src/ledger/index.ts";
 import {
   applyText,
+  bare,
   committed,
+  duplicateOfFirstRow,
+  editing,
   fixtureIntents,
   ledgerOf,
+  ledgerTexts,
   revisedIntents,
+  ruleText,
   rulesDir,
   sessionOnly,
   textOf,
 } from "./cases.ts";
-import type { Json } from "./cases.ts";
 
 type Case = { readonly name: string; readonly text: string; readonly ledger: Ledger; readonly after: Ledger };
-
-const lines = (file: string): string[] =>
-  existsSync(file) ? readFileSync(file, "utf8").split("\n").filter((l) => l !== "") : [];
 
 function cases(): Case[] {
   const all: Case[] = [];
   for (const folder of readdirSync(rulesDir).sort()) {
     const dir = join(rulesDir, folder);
-    const base = lines(join(dir, "ledger.jsonl"));
+    const base = ledgerTexts(join(dir, "ledger.jsonl"));
     all.push({
       name: `rule fixture ${folder}`,
       text: readFileSync(join(dir, "proposal.json"), "utf8"),
       ledger: ledgerOf(base),
-      after: ledgerOf([...base, ...lines(join(dir, "moved.jsonl"))]),
+      after: ledgerOf([...base, ...ledgerTexts(join(dir, "moved.jsonl"))]),
     });
   }
   const on = (name: string, texts: readonly string[], intents: readonly unknown[]): Case => {
@@ -44,12 +45,7 @@ function cases(): Case[] {
     return { name, text: textOf(intents), ledger, after: ledger };
   };
   const first = committed([], fixtureIntents(1));
-  const copy = (edit?: string): Json => {
-    const x = structuredClone(fixtureIntents()[1]) as Json;
-    if (edit !== undefined) x.body = { Rule: edit };
-    return x;
-  };
-  const changed = (id: string, change: (x: Json) => void) => (xs: Json[]) => change(xs.find((x) => x.id === id) as Json);
+  const copy = duplicateOfFirstRow;
   all.push(
     on("the fixture proposal on an empty ledger", [], fixtureIntents(1)),
     on("the fixture proposal on its own commit", first, fixtureIntents(1)),
@@ -57,8 +53,8 @@ function cases(): Case[] {
     on("an unchanged duplicate", [], [...fixtureIntents(), copy()]),
     on("two duplicates", [], [...fixtureIntents(), copy("changed"), copy()]),
     on("unchanged entities", first, revisedIntents(2)),
-    on("one changed body", first, revisedIntents(2, changed("lattice/fx-a02", (x) => (x.body = { Rule: "c" })))),
-    on("another type revision", first, revisedIntents(2, changed("lattice/fx-a01", (x) => (x.type = "lattice/table.rule@2")))),
+    on("one changed body", first, revisedIntents(2, ruleText("lattice/fx-a02", "c"))),
+    on("another type revision", first, revisedIntents(2, editing("lattice/fx-a01", (x) => (x.type = "lattice/table.rule@2")))),
     on("only a session", first, sessionOnly(2)),
   );
   return all;
@@ -103,8 +99,9 @@ function permutations<T>(items: readonly T[]): T[][] {
 
 const stripped = (rejections: readonly Rejection[]): string[] =>
   rejections
-    .map(({ message: _, ...rest }) => {
-      const text = canonical({ ...rest, path: rest.path.replace(/^\/intents\/\d+/, "") });
+    .map(bare)
+    .map((rest) => {
+      const text = canonical({ ...rest, path: String(rest.path).replace(/^\/intents\/\d+/, "") });
       if (!text.ok) throw new Error("rejection: not JSON");
       return text.value;
     })

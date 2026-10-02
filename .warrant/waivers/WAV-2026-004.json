@@ -1,0 +1,15 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-004",
+  "change": "s0-apply-checks",
+  "gate": "spec-approved",
+  "reason": "I-14, I-16, I-17: edits of the delta specs (REQ-LG-004, REQ-CL-004, SCN-AR-017, SCN-LG-003) planned in spec-PR #87 from spec review 3 (EVID-01M3XT5RCPWN2YENNK0SBDT4XJ) and decided by its approval",
+  "risk": "LOW",
+  "compensating_controls": [
+    "the impl-PR body lists each spec edit with its I-N row; the maintainer reads the spec diff before merge",
+    "tests SCN-AR-017, SCN-LG-003, SCN-LG-005 prove the edited scenarios"
+  ],
+  "owner": "human:Homasters-max",
+  "expires_at": "2026-10-16",
+  "waiver_state": "PROPOSED"
+}

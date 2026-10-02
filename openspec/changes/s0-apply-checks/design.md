@@ -232,6 +232,7 @@ test/fixtures/rules/**,openspec/changes/s0-apply-checks/**`. `src/ledger/proposa
 | I-16 | SCN-AR-017 runs a copy of `LG-P02` with an empty `expected.json` and one whose ledger does not open; both fail naming the folder. | Review 3, F-3: REQ-AR-011 gained both failures in I-4 without a scenario. | approval of spec-PR #87 (planned as I-16) |
 | I-17 | SCN-LG-003 says "the first proposal" in its type-change case. | Review 3, F-4. | approval of spec-PR #87 (planned as I-17) |
 | I-18 | A test helper `test/ledger/cases.ts` builds the proposals and ledgers of the ledger, permutation and CLI tests in process; SCN-CL-011 also covers `moved` on an unmoved tail (code 2); the SCN-CL-008 test changes the body of its second commit, which would otherwise be a no-op. Spec unchanged. | Implementation: one source of the fixture proposals instead of three copies; the skeleton test wrote an unchanged body at `base` 1. | implementation, this impl-PR |
+| I-19 | Implementation review: `Ledger.proposals` keyed by the branded `Hash` (D-2); one `settled` step in `assembly` removes the proposal file for every final outcome and names a failed removal "cannot remove"; the copies of test helpers moved into `test/ledger/cases.ts`; SCN-AR-017 runs the folder scan itself on a temporary rules folder. Kept: the signature of `duplicate` and the export of `differs` (D-2, reuse by #82). Spec unchanged. | `code-review` of this impl-PR — Standards S-1…S-4, Spec P-3. | implementation, this impl-PR |
 
 ## Risks / Trade-offs
 

@@ -9,10 +9,13 @@ import {
   applyText,
   bare,
   committed,
+  duplicateOfFirstRow,
+  editing,
   fixtureIntents,
   ledgerOf,
   revisedIntents,
   revisionOf,
+  ruleText,
   session,
   sessionOnly,
   textOf,
@@ -29,11 +32,6 @@ function hashOf(intents: readonly unknown[]): string {
   assert.ok(parsed.ok);
   return parsed.ok ? proposalHash(parsed.proposal) : "";
 }
-
-const changeRule = (id: string, text: string) => (intents: Json[]) => {
-  const x = intents.find((i) => i.id === id) as Json;
-  x.body = { Rule: text };
-};
 
 describe("SCN-LG-001 a proposal outside the form is rejected by LG-P01", () => {
   it("SCN-LG-001 intents not a list, a missing base, two sessions: one LG-P01 each", () => {
@@ -61,11 +59,7 @@ describe("SCN-LG-001 a proposal outside the form is rejected by LG-P01", () => {
 describe("SCN-LG-002 a duplicate names the id it collided with and the differing paths", () => {
   const empty = ledgerOf([]);
   const duplicated = (...extra: Json[]) => [...fixtureIntents(), ...extra];
-  const copy = (edit?: string): Json => {
-    const x = structuredClone(fixtureIntents()[1]) as Json;
-    if (edit !== undefined) x.body = { Rule: edit };
-    return x;
-  };
+  const copy = duplicateOfFirstRow;
   const c07 = (i: number, paths: string[]): Json => ({
     intent: "lattice/fx-a01",
     rule: "LG-C07",
@@ -116,7 +110,7 @@ describe("SCN-LG-003 unchanged entities are a no-op, a changed one a commit of o
   });
 
   it("SCN-LG-003 a changed body: a commit holding that entity at rev 2 and the session, hashed over both", () => {
-    const intents = revisedIntents(2, changeRule("lattice/fx-a02", "A changed second rule."));
+    const intents = revisedIntents(2, ruleText("lattice/fx-a02", "A changed second rule."));
     const answer = applyText(ledgerOf(first), textOf(intents));
     assert.equal(answer.outcome, "commit");
     if (answer.outcome !== "commit") return;
@@ -133,9 +127,7 @@ describe("SCN-LG-003 unchanged entities are a no-op, a changed one a commit of o
   });
 
   it("SCN-LG-003 another type revision with the same body is a commit, not a no-op (OM-H01)", () => {
-    const intents = revisedIntents(2, (xs) => {
-      (xs.find((x) => x.id === "lattice/fx-a01") as Json).type = "lattice/table.rule@2";
-    });
+    const intents = revisedIntents(2, editing("lattice/fx-a01", (x) => (x.type = "lattice/table.rule@2")));
     const answer = applyText(ledgerOf(first), textOf(intents));
     assert.equal(answer.outcome, "commit");
     if (answer.outcome !== "commit") return;
@@ -160,7 +152,7 @@ describe("SCN-LG-004 a proposal already in the ledger answers its commit", () =>
   });
 
   it("SCN-LG-004 a partly no-op proposal answers its commit, until a no-op entity is written by another commit", () => {
-    const partly = revisedIntents(2, changeRule("lattice/fx-a02", "A changed second rule."));
+    const partly = revisedIntents(2, ruleText("lattice/fx-a02", "A changed second rule."));
     const second = committed(first, partly);
     assert.deepEqual(applyText(ledgerOf(second), textOf(partly)), { outcome: "existing", seq: 2 });
     const third = committed(second, revisionOf(3, "lattice/fx-a01", "A changed first rule."));

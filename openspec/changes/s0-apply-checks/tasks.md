@@ -40,5 +40,5 @@
 
 ## 5. Close
 
-- [ ] 5.1 `npm run typecheck` and `npm test` green, the structure test (`SCN-AR-008`) included; implementation review
+- [x] 5.1 `npm run typecheck` and `npm test` green, the structure test (`SCN-AR-008`) included; implementation review
   (skill `code-review`) with its findings in the impl-PR body
