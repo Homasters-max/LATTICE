@@ -8,7 +8,8 @@
 The module `ledger` SHALL compute its projections from the commits of the ledger only (LG-J01): `rebuild(commits)`
 folds the commits in ledger order into a **read view**; nothing else is stored. A commit is folded in two steps: first
 every entity record of the commit is added to the revisions, in the order of the commit, then every projection of the
-list (REQ-PJ-004) reads the commit — so a type and blocks of that type written in one commit (LG-C07) see each other.
+list (REQ-PJ-004) reads the commit — so a type and blocks of that type written in one commit (LG-C07) see each other,
+whichever sorts first.
 
 The **revisions** of an entity `id` are its entity records in ledger order. The read view SHALL give:
 - `seq` — the `seq` of the last commit folded, `0` for no commit;
@@ -18,18 +19,21 @@ The **revisions** of an entity `id` are its entity records in ledger order. The 
 - `referrers(id)` — the edges whose target is `id` (REQ-PJ-002).
 
 Apply writes `rev` 1 first and then `base + 1` on the last revision (LG-P02), so in a ledger apply wrote the revisions
-of an `id` are `rev` 1, 2, 3, … and `get` is the one of the highest `rev`; opening a ledger (REQ-CL-004) does not
-check this, and the definitions above hold for any order.
+of an `id` are `rev` 1, 2, 3, … and `get` is the one of the highest `rev`. Opening a ledger (REQ-CL-004) checks neither
+this nor the JSON types of the fields of a record (#114); the definitions above give one answer for any order of
+`rev`, and the view assumes `id`, `type` and `by` are strings and `rev` an integer, as the commit form of REQ-LG-003
+writes them.
 
 Two views are **equal** when they have the same `seq`, the same `serialize` text (REQ-PJ-004), and the same answer of
 `revision(id, rev)` for every `id` and `rev` of the entity records of their commits.
 
 The view hands out the records it is given: the records of a ledger opened by `openLedger` (REQ-CL-004) are deeply
-frozen (SL-T02). The view of a ledger opened by `openLedger` SHALL be the view `rebuild` gives over its commits, built
-in memory every time a store opens (LG-J04); no projection is read from or written to disk. Apply and export read
-entities only through this view (REQ-LG-002, REQ-CL-005), which is built on the tail they check (LG-J03).
+frozen (SL-T02). The lists `entities()` and `referrers(id)` return are frozen. The view of a ledger opened by
+`openLedger` SHALL be the view `rebuild` gives over its commits, built in memory every time a store opens (LG-J04); no
+projection is read from or written to disk. Apply and export read entities only through this view (REQ-LG-002,
+REQ-CL-005).
 
-Implements: LG-J01, LG-J04, LG-J03
+Implements: LG-J01, LG-J04
 
 Of LG-J01 this requirement covers latest revision and referrers; uniqueness (OM-D01), in force (TR-I01) and findings
 (TR-N01) are added to the list by the Changes of their rules. A disk cache (LG-J04) is not built in S0.
@@ -37,10 +41,20 @@ Of LG-J01 this requirement covers latest revision and referrers; uniqueness (OM-
 #### Scenario: Latest revision and every revision of an entity
 <!-- id: SCN-PJ-001 -->
 - **WHEN** the reference ledger `typed` (REQ-PJ-005) is opened with `openLedger`
-- **THEN** the view has `seq` equal to the `seq` of the last commit; `get("test/n1")` is the record of `rev` 3, and
-  `revision("test/n1", 1)`, `revision("test/n1", 2)` are the records of `rev` 1 and 2; `revision("test/n1", 4)`,
-  `revision("test/absent", 1)` and `get("test/absent")` are none; `entities()` lists one record per entity `id` of the
-  ledger, each its last revision, ordered by `id`; every record handed out is deeply frozen
+- **THEN** the view has `seq` 4; `get("test/n1")` is the record of `rev` 3, and `revision("test/n1", 1)`,
+  `revision("test/n1", 2)` are the records of `rev` 1 and 2; `revision("test/n1", 4)`, `revision("test/absent", 1)` and
+  `get("test/absent")` are none; `entities()` lists one record per entity `id` of the ledger, each its last revision,
+  ordered by `id`; every record handed out, and the list `entities()` returns, are deeply frozen
+
+#### Scenario: A repeated revision is read in ledger order
+<!-- id: SCN-PJ-011 -->
+- **WHEN** the reference ledger `typed` holds `test/n8` at `rev` 1 in commit 3, naming `test/n1` in `uses`, and again at
+  `rev` 1 in commit 4, naming `test/n3`; the type `test/twice@1` in commit 1, declaring `uses` as a list of floating
+  references to `test/node`, and again at `rev` 1 in commit 4, declaring `uses` as a list of plain strings; a block
+  `test/n10` of type `test/twice@1` in commit 1 and a block `test/n9` of it in commit 4, both naming `test/n2` in `uses`
+- **THEN** `get("test/n8")` and `revision("test/n8", 1)` are the record of commit 4; `referrers("test/n1")` holds no edge
+  from `test/n8@1` and `referrers("test/n3")` holds `{from: "test/n8@1", path: "/body/uses/0", ref: "test/n3"}`;
+  `referrers("test/n2")` holds the edge from `test/n10@1` at `/body/uses/0` and none from `test/n9@1`
 
 ### Requirement: Referrers index every reference of the records in use
 <!-- id: REQ-PJ-002 -->
@@ -64,7 +78,8 @@ that is a pinned reference `P@m`, and the chain has fewer than six records, `rev
 not resolve when `T@n` is not a pinned reference, a record of the chain is none, or `typeOf` refuses the chain (a cycle,
 more than five records, a record that is not a type). A type that does not resolve, and a body that `admit` refuses
 under its type (its canonical form, REQ-KR-010, given as the text), give no edge of step 3; steps 1 and 2 still apply.
-The references of a record are read once, when its commit is folded.
+The references of a record are read once, when its commit is folded, against the revisions of that moment: a type
+revision written later changes no edge of a record folded before it.
 
 The index is a set of edges. Its **sources** are the last revision of every entity and every event (OM-R05: references
 from entities and events): folding an entity record removes every edge whose `from` is `id@rev` of the revision of the
@@ -85,18 +100,20 @@ references of earlier revisions stay readable through `revision`.
 #### Scenario: Pinned and floating references from entities and events
 <!-- id: SCN-PJ-002 -->
 - **WHEN** the reference ledger `typed` (REQ-PJ-005) is opened — a type `test/node@1` whose schema declares `uses` (a
-  list of floating references to `test/node`) and `pins` (a pinned reference to `test/node`); a type `test/leaf@1`
-  extending `test/node@1`, written in the same commit as a block of type `test/leaf@1`; blocks `test/n1`, `test/n2`,
-  `test/n3` of these types referring to each other; a type `test/note@1` whose schema declares `of` with the role
-  `subject` as a pinned reference to `test/node`; an event `test/e1` of type `test/note@1` whose `of` has the roles
-  `subject` → `test/n1@2` and `about` → `test/e0`
-- **THEN** `referrers("test/n2")` lists exactly, in this order, the edges from the last revisions of the blocks that
-  name `test/n2` in `uses` (floating, path `/body/uses/<i>`) or in `pins` (pinned, `/body/pins`); `referrers("test/n1")`
-  holds exactly one edge from `test/e1`: `{from: "test/e1", path: "/body/of/subject", ref: "test/n1@2"}`;
-  `referrers("test/e0")` is the one edge at `/body/of/about`; `referrers("test/node")` holds the `/type` edges from the
-  blocks of `test/node@1` and the edge at `/body/extends` from `test/leaf@1`; `referrers("core/type")` holds the `/type`
-  edge of every type record; the block of type `test/leaf@1` written with its type has the references its type
-  declares
+  list of floating references to `test/node`) and `pins` (a pinned reference to `test/node`); a type `test/sub@1`
+  extending `test/node@1`, written in the same commit as the block `test/n3` of type `test/sub@1` (the block sorts before
+  its type, LG-C07), naming `test/n1` in `uses`; blocks `test/n1`, `test/n2` of type `test/node@1`, `test/n1@3` naming
+  `test/n2` in `uses` and `test/n2@1` in `pins`; a type `test/note@1` whose schema declares `of` with the roles `subject`
+  (a pinned reference to `test/node`) and `about` (a floating reference to `test/note`), and `cites` (a floating
+  reference to `test/node`); an event `test/e1` of type `test/note@1` with `of` `{subject: "test/n1@2", about:
+  "test/e0"}` and `cites` `test/n2`
+- **THEN** `referrers("test/n2")` holds `{from: "test/n1@3", path: "/body/pins", ref: "test/n2@1"}`, `{from:
+  "test/n1@3", path: "/body/uses/0", ref: "test/n2"}` and `{from: "test/e1", path: "/body/cites", ref: "test/n2"}`, in
+  the order of REQ-PJ-002; `referrers("test/n1")` holds exactly one edge from `test/e1` — `{from: "test/e1", path:
+  "/body/of/subject", ref: "test/n1@2"}` — and the edge `{from: "test/n3@1", path: "/body/uses/0", ref: "test/n1"}`;
+  `referrers("test/e0")` holds exactly one edge from `test/e1`, at `/body/of/about`; `referrers("test/node")` holds the
+  `/type` edges of the blocks of `test/node@1` and `{from: "test/sub@1", path: "/body/extends", ref: "test/node@1"}`;
+  `referrers("core/type")` holds the `/type` edge of every type record
 
 #### Scenario: A new revision replaces the edges of the one before
 <!-- id: SCN-PJ-003 -->
@@ -116,21 +133,26 @@ references of earlier revisions stay readable through `revision`.
   is opened
 - **THEN** `referrers("test/ghost")` is `{from: "test/n5@1", path: "/type", ref: "test/ghost@1"}`; no edge of
   `referrers("test/n1")` comes from `test/n5@1`, `test/n6@1` or `test/n7@1`, and `referrers("test/loop-a")` holds the
-  `/type` edge of `test/n7@1`; in the view of `skeleton` the referrers of each row `id` are empty (a `$ref` marker is
-  not a reference, NX-15) and `referrers("lattice/document")` holds the `/type` edge of the document
+  `/type` edge of `test/n7@1`; in the view of `skeleton` — which holds no type record, so no record has a resolved type
+  and the `$ref` markers of a document's `rows` are found by no schema (NX-15) — every edge is at `/type`, and
+  `referrers("lattice/document")` holds the `/type` edge of the document
 
 ### Requirement: A view is extended by one commit on its tail
 <!-- id: REQ-PJ-003 -->
 
 `extend(view, commit)` SHALL return `{ok: true, view}` with a view equal (REQ-PJ-001) to the view rebuilt from the
-commits of `view` followed by `commit`, when the commit's `base` (LG-C02) is the `seq` of `view`; otherwise it SHALL
-return `{ok: false, seq, base}` — the `seq` of the view and the `base` of the commit — (LG-J03: a view that does not
-match the tail is never read as if it did). It never throws, and `view` itself stays equal to what it was. The empty
-view (`rebuild` of no commit) has `seq` 0, the `base` of the first commit.
+commits of `view` followed by `commit`, when the commit's `base` (LG-C02) is the `seq` of `view` and its `seq` is
+greater than its `base`; otherwise it SHALL return `{ok: false, tail, base, seq}` — the `seq` of the view, the `base`
+and the `seq` of the commit. It never throws on a commit, and `view` itself stays equal to what it was. The empty view
+(`rebuild` of no commit) has `seq` 0, the `base` of the first commit. `extend` and `serialize` throw on a value that is
+not a view `rebuild` or `extend` returned.
+
+The view knows the `seq` of its tail, not its hash: that a commit's `prev` is the hash of the tail is checked by the
+ledger before it appends (LG-C03, REQ-LG-004), and that the chain holds when a store opens (LG-C04). So of LG-J03 the
+view guarantees that the projections a check reads were folded up to the `seq` the commit was built on.
 
 `rebuild` does not check `base`: the equality above holds for ledgers in which every commit's `base` is the `seq` of
-the commit before it (`0` for the first), as apply writes them (LG-C03); opening a ledger does not check it
-(REQ-CL-004).
+the commit before it (`0` for the first), as apply writes them (LG-C03); opening a ledger does not check it (#114).
 
 Implements: LG-J03, LG-J02
 
@@ -138,11 +160,12 @@ Of LG-J02 this requirement gives the first of its three ways: an incremental ind
 
 #### Scenario: Extension refuses a commit off the tail
 <!-- id: SCN-PJ-005 -->
-- **WHEN** the view of the first two commits of the reference ledger `typed` is extended with its fourth commit, and
-  then with its third
-- **THEN** the first returns `{ok: false, seq: 2, base: 3}`; the second returns a view of `seq` 3 in which
-  `revision("test/n1", 2)` is the record of `rev` 2; the view of two commits still has `seq` 2, serializes
-  (REQ-PJ-004) to the same text as before both calls, and its `revision("test/n1", 2)` is none
+- **WHEN** the view of the first two commits of the reference ledger `typed` is extended with its fourth commit; then
+  with its third; then the view of three commits with a copy of the fourth commit whose `seq` is 3
+- **THEN** the first returns `{ok: false, tail: 2, base: 3, seq: 4}`; the second returns a view of `seq` 3 in which
+  `revision("test/n1", 2)` is the record of `rev` 2; the third returns `{ok: false, tail: 3, base: 3, seq: 3}`; the view
+  of two commits still has `seq` 2, serializes (REQ-PJ-004) to the same text as before the calls, and its
+  `revision("test/n1", 2)` is none
 
 #### Scenario: Incremental and from scratch give equal views
 <!-- id: SCN-PJ-006 -->
@@ -184,11 +207,14 @@ canonical texts of the commits, one per line, each ending with a line feed — a
 gives for the view of that ledger, followed by one line feed. The cases are at least:
 - `skeleton` — the ledger the commands write for the fixture `md` (REQ-CL-006: `init`, `import-md`, `apply`) followed
   by the revision of SCN-CL-009;
-- `typed` — at least four commits holding the records SCN-PJ-001…SCN-PJ-004 name.
+- `typed` — four commits, commit `k` with `seq` `k` and `base` `k − 1`, each with its session event, holding the records
+  SCN-PJ-001…SCN-PJ-004 and SCN-PJ-011 name: `test/n1` at `rev` 1 in commit 1, at `rev` 2 in commit 3 and at `rev` 3 in
+  commit 4; `test/sub@1` and `test/n3` in commit 2; `test/e0` in commit 3; `test/e1` in commit 4.
 
 For every case the ledger SHALL open (LG-C04) and the serialized view of `openLedger` SHALL equal `index.json` byte for
 byte; a folder without one of the two files, or whose ledger does not open, fails naming the folder. The index is
-**verified** by meaning: the facts SCN-PJ-001…SCN-PJ-004 assert of the view hold of the parsed `index.json` as well.
+**verified** by meaning: the facts SCN-PJ-001…SCN-PJ-004 and SCN-PJ-011 assert of the view hold of the parsed
+`index.json` as well.
 
 CI SHALL run these checks on two operating systems: Linux, in the job `test`, and Windows, in a job
 `projections-windows` of `.github/workflows/test.yml` that runs the tests of `test/projections/` on `windows-latest`.
@@ -208,11 +234,11 @@ Of LG-J02 this requirement gives the third way — two operating systems — and
 <!-- id: SCN-PJ-009 -->
 - **WHEN** `index.json` of `typed` and of `skeleton` is parsed as JSON
 - **THEN** its `latest` has exactly one member per entity `id` of the ledger, and the member of `test/n1` is `{rev: 3,
-  type, hash}` of the record of `rev` 3; its `referrers` holds the edges SCN-PJ-002…SCN-PJ-004 assert, in the same order,
-  and no member with an empty list; `seq` is the `seq` of the last commit
+  type, hash}` of the record of `rev` 3; its `referrers` holds the edges SCN-PJ-002…SCN-PJ-004 and SCN-PJ-011 assert, in
+  the same order, and no member with an empty list; `seq` is the `seq` of the last commit
 
-#### Scenario: CI runs the projection tests on Windows
+#### Scenario: The workflow runs the projection tests on Windows
 <!-- id: SCN-PJ-010 -->
 - **WHEN** `.github/workflows/test.yml` is read
 - **THEN** it has the job `test` and a job `projections-windows` whose `runs-on` is `windows-latest` and whose last step
-  runs `node --experimental-strip-types --test` on `test/projections/**/*.test.ts`; on the impl-PR that job passes
+  runs `node --experimental-strip-types --test` on `test/projections/**/*.test.ts`

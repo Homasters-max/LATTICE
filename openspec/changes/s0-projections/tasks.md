@@ -5,8 +5,8 @@
 - [ ] 1.1 `ledger/projections/projection.ts` — `Edge`, `Revisions`, `Projection<S>`; `ledger/projections/view.ts` —
   the fold step, `rebuild`, `PROJECTIONS` with the projection `latest`, the `ReadView` with `seq`, `get`, `entities`,
   `revision` by ledger order (`REQ-PJ-001`, design D-2, D-3, D-4); `ledger/projections/latest.ts` — `latest(commits) =
-  rebuild(commits)`, re-exports `ReadView` and `Edge` (design D-1); verified by tests with the token `SCN-PJ-001`
-  passing, and the apply, export and round-trip tests of `test/ledger/**` and `test/cli/**` still passing
+  rebuild(commits)`, re-exports `ReadView` and `Edge` (design D-1); verified by tests with the tokens `SCN-PJ-001` and
+  `SCN-PJ-011` passing, and the apply, export and round-trip tests of `test/ledger/**` and `test/cli/**` still passing
 
 ## 2. Referrers
 
@@ -30,7 +30,7 @@
 - [ ] 4.2 The maintainer's patch of `.github/workflows/test.yml` — the job `projections-windows` of design D-9, asked in
   the impl-PR before its last commit; `test/projections/ci.test.ts` (`REQ-PJ-005`, design D-9, D-10); verified by tests
   with the token `SCN-PJ-010` passing, and by the check `projections-windows` passing on the impl-PR with `SCN-PJ-008`
-  in its log
+  in its log before the merge is asked (design D-9)
 
 ## 5. Close
 
