@@ -6,7 +6,7 @@ import type { Id } from "../kernel/index.ts";
 import { checkInput } from "../kernel/index.ts";
 import type { Intent } from "../ledger/index.ts";
 import { SESSION_TYPE } from "../ledger/index.ts";
-import type { Element } from "./form.ts";
+import type { Deviation, Element } from "./form.ts";
 import { isDocId, localOk, parseElements } from "./form.ts";
 import type { Imported, Session } from "./import.ts";
 import { mentions } from "./references.ts";
@@ -15,17 +15,15 @@ import { columnsProblem, slug, stemOf, typeLocal } from "./table.ts";
 /** Column names a row body uses for its own fields (REQ-CD-003). */
 const RESERVED = ["refs", "table", "list"];
 
+// The local parts of the codec types in the project namespace (design D-3); export reads them back.
 export const PARAGRAPH_TYPE = "paragraph@1";
 export const EXAMPLE_TYPE = "example@1";
 export const SECTION_TYPE = "section@1";
 export const DOCUMENT_TYPE = "document@2";
 export const ROW_REVISION = 2;
 
-/** A table with IDs as an item of a composition (REQ-CD-007). */
-export type TableItem = { readonly columns: readonly string[]; readonly rows: readonly string[] };
-export type Item = string | TableItem;
-
-type Deviation = { readonly line: number; readonly message: string };
+/** An item of a composition (REQ-CD-007): the `id` of a block or a section, or a table with IDs. */
+type Item = string | { readonly columns: readonly string[]; readonly rows: readonly string[] };
 
 /** A block being built: its body, the IDs its texts mention, and the text that decides whether a field may follow. */
 type Block = {
@@ -36,6 +34,8 @@ type Block = {
   readonly lead: string | null;
 };
 
+// `build` checks its rules deep inside the walk over the elements; the first deviation leaves it as this exception,
+// caught only in `importDocument` and turned back into a refusal value, so the interface answers values as `importMd`.
 class Refused extends Error {
   readonly deviation: Deviation;
   constructor(deviation: Deviation) {

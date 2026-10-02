@@ -12,6 +12,7 @@ const SUFFIX = /^([A-Z]*)([0-9]+)$/;
 const RANGE_MARK = "…";
 const MAX_RANGE = 100;
 const MAX_DIGITS = 9;
+const MAX_ID = 128; // an ID of the document form (REQ-CD-001), the kernel's limit of a local part
 
 /** The offsets inside code spans: a run of backticks up to the next run of exactly as many (CommonMark). */
 function codeSpans(text: string): boolean[] {
@@ -92,7 +93,7 @@ export function mentions(text: string): Mentioned {
   while (i < text.length) {
     const before = i === 0 ? undefined : text[i - 1];
     const id = code[i] || (before !== undefined && WORD.test(before)) ? null : bounded(MENTION, text, i);
-    if (id === null || id.length > 128) {
+    if (id === null || id.length > MAX_ID) {
       i++;
       continue;
     }

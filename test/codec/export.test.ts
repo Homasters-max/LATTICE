@@ -22,10 +22,11 @@ describe("SCN-CD-009 a document that would not read back is refused", () => {
   const cases: [string, { id: string; type: string; body: unknown; base?: number }[]][] = [
     ["a paragraph text with a line `## x`", [{ id: L("fx-z02"), type: L("paragraph@1"), body: { ...body("fx-z02"), text: "a\n## x" } }]],
     ["a row cell ending with a space", [{ id: L("fx-r01"), type: L("table.rule@2"), body: { ...body("fx-r01"), Rule: "The first rule. " } }]],
-    ["refs that disagree with the text", [{ id: L("fx-r02"), type: L("table.rule@2"), body: { ...body("fx-r02"), refs: [] } }]],
+    ["refs of a paragraph that disagree with its text", [{ id: L("fx-z01"), type: L("paragraph@1"), body: { ...body("fx-z01"), refs: [] } }]],
+    ["refs of a row that disagree with its text", [{ id: L("fx-r02"), type: L("table.rule@2"), body: { ...body("fx-r02"), refs: [] } }]],
     [
       "a document item naming no entity",
-      [{ id: L("sections"), type: L("document@2"), body: { ...body("sections"), items: [L("fx-z99")] } }],
+      [{ id: L("sections"), type: L("document@2"), body: { ...body("sections"), items: [L("fx-z99"), ...(body("sections").items as string[]).slice(1)] } }],
     ],
   ];
   for (const [what, changes] of cases) {

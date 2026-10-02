@@ -108,6 +108,14 @@ describe("SCN-CD-010 tables, cells and IDs outside the form are refused", () => 
     });
   }
 
+  it("SCN-CD-010 the rules of a header come before a later deviation of its table", () => {
+    const lines = fixture("tables").split("\n");
+    lines.splice(9, 1, "| ID | refs | Meaning |");
+    lines.splice(11, 1);
+    assert.equal(refusedAt(lines.join("\n"), "tables.md"), 10);
+    assert.equal(refusedAt("# T\n\n| A | B |\n|---|\n", "t.md"), 3);
+  });
+
   it("SCN-CD-010 an ID equal to the stem of the file name", () => {
     assert.equal(refusedAt(fixture("tables"), "fx-r03.md"), 18);
   });

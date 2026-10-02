@@ -10,8 +10,20 @@ function blocksOf(name: string) {
   return entities(imported(fixture(name), `${name}.md`));
 }
 
+/** The entity intents of the given ids: each of type `paragraph@1` with `base` 0. */
+function paragraphs(name: string, ids: readonly string[]): void {
+  const p = imported(fixture(name), `${name}.md`);
+  for (const id of ids) {
+    const x = p.intents.find((i) => i.id === L(id));
+    assert.ok(x !== undefined && x.kind === "entity", id);
+    assert.equal(x.type, L("paragraph@1"), id);
+    assert.equal(x.base, 0, id);
+  }
+}
+
 describe("SCN-CD-002 paragraphs and prose blocks become paragraph blocks", () => {
   it("SCN-CD-002 rule paragraphs, the second of two lines", () => {
+    paragraphs("paragraphs", ["fx-r01", "fx-r02"]);
     const e = blocksOf("paragraphs");
     assert.deepEqual(e.get(L("fx-r01")), {
       type: L("paragraph@1"),
@@ -21,10 +33,20 @@ describe("SCN-CD-002 paragraphs and prose blocks become paragraph blocks", () =>
   });
 
   it("SCN-CD-002 prose paragraphs before a heading, under it and after a table", () => {
+    paragraphs("prose", ["fx-z01", "fx-z02", "fx-z03"]);
     const e = blocksOf("prose");
-    for (const id of ["fx-z01", "fx-z02", "fx-z03"]) assert.equal(e.get(L(id))?.type, L("paragraph@1"));
     assert.equal(e.get(L("fx-z01"))?.body.text, "A prose block before the first heading.");
+    assert.equal(e.get(L("fx-z02"))?.body.text, "The purpose of the fixture.");
     assert.equal(e.get(L("fx-z03"))?.body.text, "A note under the table,\nwritten on two lines.");
+  });
+
+  it("SCN-CD-002 a line separator or a paragraph separator is text of the first line", () => {
+    const text = "# T\n\nFX-R01. a\u2028b\u2029c\n";
+    const e = entities(imported(text, "t.md"));
+    assert.equal(e.get(L("fx-r01"))?.body.text, "a\u2028b\u2029c");
+    const out = roundTrip(text, "t.md");
+    assert.ok(out.ok, out.ok ? "" : out.message);
+    assert.equal(out.files[0]?.text, text);
   });
 });
 
@@ -81,7 +103,12 @@ describe("SCN-CD-006 mentions, ranges and code spans", () => {
     ]);
     assert.deepEqual(e.get(L("fx-r01"))?.body.refs, [L("fx-a02"), L("fx-a01")]);
     assert.deepEqual(e.get(L("fx-z02"))?.body.refs, [L("fx-e01")]);
-    assert.match(e.get(L("fx-z01"))?.body.text as string, /`FX-D01`, REQ-FX-001, I-JSON/);
+    const line3 = fixture("references").split("\n")[2] as string;
+    assert.equal(e.get(L("fx-z01"))?.body.text, line3.slice("FX-Z01. ".length));
+    assert.equal(e.get(L("fx-r01"))?.body.Rule, "Names FX-A02.");
+    assert.equal(e.get(L("fx-r01"))?.body.Note, "Then FX-A01.");
+    assert.equal(e.get(L("fx-z02"))?.body.text, "The last mention:");
+    assert.deepEqual(e.get(L("fx-z02"))?.body.list, ["See FX-E01."]);
   });
 });
 

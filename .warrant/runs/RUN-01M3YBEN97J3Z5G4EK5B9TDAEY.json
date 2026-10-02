@@ -18,7 +18,8 @@
   ],
   "branch": "impl/s0-codec-forms",
   "started_at": "2026-10-02T13:04:28.515Z",
-  "run_state": "RUNNING",
+  "finished_at": "2026-10-02T13:22:59.034Z",
+  "run_state": "SUCCEEDED",
   "context_hash": "sha256:905ed6740846dcaedd9673a9f24df984a67ef7ec72e13d40347064484dd2f1b3",
   "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
   "guard_events": []

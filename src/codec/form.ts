@@ -7,29 +7,28 @@ import { parseRef } from "../kernel/index.ts";
 // An ID of the document form (REQ-CD-001): `[A-Z][A-Z0-9]+-[A-Z0-9]+`, two or more characters before the hyphen; the
 // same pattern is the mention of references.ts.
 const ID = /^[A-Z][A-Z0-9]+-[A-Z0-9]+$/;
-const PARAGRAPH = /^([A-Z][A-Z0-9]+-[A-Z0-9]+)\. (.+)$/;
+const PARAGRAPH = /^([A-Z][A-Z0-9]+-[A-Z0-9]+)\. ([^]+)$/; // `[^]`: U+2028 and U+2029 are text too
 const STARTS_PARAGRAPH = /^[A-Z][A-Z0-9]+-[A-Z0-9]+\. /;
 const FENCE = /^```([A-Za-z0-9][A-Za-z0-9_+.-]*) ([A-Z][A-Z0-9]+-[A-Z0-9]+)$/;
 const TICKS = "```";
-
-export type Table = { readonly line: number; readonly header: readonly string[]; readonly rows: readonly (readonly string[])[] };
 
 export type Element =
   | { readonly kind: "title"; readonly line: number; readonly text: string }
   | { readonly kind: "heading"; readonly line: number; readonly text: string }
   | { readonly kind: "fence"; readonly line: number; readonly language: string; readonly id: string; readonly text: string }
-  | ({ readonly kind: "table" } & Table)
+  | {
+      readonly kind: "table";
+      readonly line: number;
+      readonly header: readonly string[];
+      readonly rows: readonly (readonly string[])[];
+    }
   | { readonly kind: "list"; readonly line: number; readonly items: readonly string[] }
   | { readonly kind: "paragraph"; readonly line: number; readonly id: string; readonly text: string };
 
+/** A refusal of the document form: the line of the first deviation (0 for the file name and the encoding). */
 export type Deviation = { readonly line: number; readonly message: string };
 
-/**
- * The elements of a file, read from the top, and the first deviation of its layout or of an element's lines (step 4 of
- * REQ-CD-001), or null. The elements read before a deviation are returned, the one it broke included as far as it
- * was read, so the caller can find an earlier deviation of its own rules in them.
- */
-export type Parsed = { readonly elements: readonly Element[]; readonly deviation: Deviation | null };
+type Parsed = { readonly elements: readonly Element[]; readonly deviation: Deviation | null };
 
 /** A local part `namespace/local` the kernel grammar admits (REQ-KR-012: at most 128 characters). */
 export function localOk(local: string): boolean {
@@ -43,20 +42,20 @@ export function isDocId(text: string): boolean {
 }
 
 /** A cell of the document form: no line break, `|` only as `\|`, no leading or trailing space. */
-export function cellOk(cell: string): boolean {
+function cellOk(cell: string): boolean {
   return !/[\n\r]/.test(cell) && !/(^|[^\\])\|/.test(cell) && !cell.startsWith(" ") && !cell.endsWith(" ");
 }
 
-export function renderCells(cells: readonly string[]): string {
+function renderCells(cells: readonly string[]): string {
   return "| " + cells.join(" | ") + " |";
 }
 
-export function separator(width: number): string {
+function separator(width: number): string {
   return "|" + "---|".repeat(width);
 }
 
 /** The cells of a table line, or null when the line is not one (REQ-CD-001). */
-export function splitCells(line: string): string[] | null {
+function splitCells(line: string): string[] | null {
   if (line.length < 4 || !line.startsWith("| ") || !line.endsWith(" |")) return null;
   const cells = line.slice(2, -2).split(" | ");
   return cells.every(cellOk) && renderCells(cells) === line ? cells : null;
@@ -66,6 +65,11 @@ function startsElement(line: string): boolean {
   return /^(#|\||- |```)/.test(line) || STARTS_PARAGRAPH.test(line);
 }
 
+/**
+ * The elements of a file, read from the top, and the first deviation of its layout or of an element's lines (step 4 of
+ * REQ-CD-001), or null. The elements read before a deviation are returned — the one it broke as far as it was read,
+ * a table from its header on — so the caller finds an earlier deviation of its own rules in them.
+ */
 export function parseElements(lines: readonly string[]): Parsed {
   const elements: Element[] = [];
   const stop = (line: number, message: string): Parsed => ({ elements, deviation: { line, message } });
@@ -107,39 +111,29 @@ export function parseElements(lines: readonly string[]): Parsed {
     } else if (first.startsWith("|")) {
       const header = splitCells(first);
       if (header === null) return stop(at, "the line is not | cell | … | of the document form");
+      // the table is an element from its header on, so the rules of its header are checked before a later deviation
+      const rows: string[][] = [];
+      elements.push({ kind: "table", line: at, header, rows });
       if (i + 1 >= lines.length || !(lines[i + 1] as string).startsWith("|")) return stop(at + 1, "the table has no separator line");
       if (lines[i + 1] !== separator(header.length)) return stop(at + 1, "the separator is not |---| once per header cell");
-      const rows: string[][] = [];
-      const table = { kind: "table", line: at, header, rows } as const;
       i += 2;
       while (i < lines.length && (lines[i] as string).startsWith("|")) {
         const cells = splitCells(lines[i] as string);
-        if (cells === null) {
-          elements.push(table);
-          return stop(i + 1, "the line is not | cell | … | of the document form");
-        }
-        if (cells.length !== header.length) {
-          elements.push(table);
-          return stop(i + 1, "the row has another number of cells than the header");
-        }
+        if (cells === null) return stop(i + 1, "the line is not | cell | … | of the document form");
+        if (cells.length !== header.length) return stop(i + 1, "the row has another number of cells than the header");
         rows.push(cells);
         i++;
       }
       if (rows.length === 0) return stop(at + 2, "the table has no row");
-      elements.push(table);
     } else if (first.startsWith("- ")) {
       const items: string[] = [];
-      const list = { kind: "list", line: at, items } as const;
+      elements.push({ kind: "list", line: at, items });
       while (i < lines.length && (lines[i] as string).startsWith("- ")) {
         const item = (lines[i] as string).slice(2);
-        if (item === "") {
-          elements.push(list);
-          return stop(i + 1, "an empty list item");
-        }
+        if (item === "") return stop(i + 1, "an empty list item");
         items.push(item);
         i++;
       }
-      elements.push(list);
     } else {
       const m = PARAGRAPH.exec(first);
       if (m === null || !isDocId(m[1] as string)) return stop(at, "the line is not a paragraph starting with an ID and '. '");

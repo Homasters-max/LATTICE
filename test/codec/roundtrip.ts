@@ -9,7 +9,7 @@ import { exportDocuments, importDocument } from "../../src/codec/index.ts";
 import type { Exported, Session } from "../../src/codec/index.ts";
 import type { Id } from "../../src/kernel/index.ts";
 import type { Intent, Ledger, Proposal } from "../../src/ledger/index.ts";
-import { apply, openLedger, parseProposal, proposalText } from "../../src/ledger/index.ts";
+import { apply, openLedger, parseProposal, proposalText, SESSION_TYPE } from "../../src/ledger/index.ts";
 
 export const NS = "lattice";
 export const FORMS = fileURLToPath(new URL("../fixtures/md/forms/", import.meta.url));
@@ -66,7 +66,7 @@ export function revision(entitiesAtBase: readonly { id: string; type: string; bo
   const event: Intent = {
     kind: "event",
     id: s.id,
-    type: "core/session@1",
+    type: SESSION_TYPE,
     by: s.id,
     at: s.at,
     body: { of: {}, participant: "lattice", kind: "machine", purpose: "import" },

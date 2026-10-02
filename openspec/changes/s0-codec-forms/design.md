@@ -169,9 +169,9 @@ the next import.
 
 | File | Holds |
 |---|---|
-| `src/codec/form.ts` | the lines and elements of the document form: reading a file into elements with their lines (steps 2–4 of REQ-CD-001), rendering elements back; the cell and table-line rules, the separator |
-| `src/codec/references.ts` | mentions, code spans and ranges of REQ-CD-006: `references(text) → {ids} \| {offset, message}` |
-| `src/codec/document-import.ts` | `importDocument`: elements → blocks, sections, document, the proposal |
+| `src/codec/form.ts` | the elements of the document form: reading the lines of a file into elements (step 4 of REQ-CD-001), rendering elements back; the cell and table-line rules, the separator |
+| `src/codec/references.ts` | mentions, code spans and ranges of REQ-CD-006: `mentions(text) → {ids} \| {offset, message}` |
+| `src/codec/document-import.ts` | `importDocument`: steps 1–3 of REQ-CD-001 (file name, lines, code points), then elements → blocks, sections, document, the proposal |
 | `src/codec/document-export.ts` | `exportDocuments`: the view → rendered files, with the re-import check of D-7 |
 | `src/codec/index.ts` | adds `importDocument`, `exportDocuments` to the exports |
 
@@ -254,3 +254,11 @@ reads. The codec and its tests read `src/ledger` through its index only and edit
 | I-18 | Task 4.1 no longer names the rule for one file named twice (replaced by the read-back, I-6). | Review 2, P-2. | the maintainer by the merge of #116 |
 | I-19 | Regex literals, not `new RegExp`: `RegExp` is a forbidden global of a pure module (SCN-AR-008); the ID pattern is written in `form.ts` and `references.ts`. | Implementation, `warrant check` of SCN-AR-008. | implementation |
 | I-20 | Task 4.2 result: all 13 files of `design-next/*.md` at `b597293` round-trip byte-identically through the codec, one file at a time (504 entities). | Implementation, one-off script outside the repository. | implementation |
+| I-21 | The line and cell rules of `form.ts` and steps 1–2 of `document-import.ts` repeat parts of the skeleton's `table.ts` and `import.ts`, which this Change does not touch (D-1, D-8); one copy when the skeleton form is removed — issue #121. The test helper uses `SESSION_TYPE`. | Implementation review, Standards S-1, S-2. | implementation review |
+| I-22 | D-8 names the files as built: steps 1–3 in `document-import.ts`, step 4 in `form.ts`, `mentions` in `references.ts`. | Implementation review, Standards S-3; Spec P-6. | implementation review |
+| I-23 | `document-export.ts` renders through a small `Renderer` with a module-level `fail(): never`, so the shapes narrow without casts; the exceptions `Refused` / `CannotRender` stay inside their module and are turned into refusal values at the interface (commented). | Implementation review, Standards S-4, S-5, S-8. | implementation review |
+| I-24 | `form.ts` exports only `Element`, `Deviation`, `parseElements`, `renderElements`, `isDocId`, `localOk`; `document-import.ts` uses the one `Deviation`; `references.ts` names the 128 limit. | Implementation review, Standards S-6, S-9, S-10. | implementation review |
+| I-25 | A paragraph's first line may hold U+2028 / U+2029 (`[^]+`, not `.+`); a test under SCN-CD-002. | Implementation review, Spec P-1. | implementation review |
+| I-26 | A table is an element from its header on, so the rules of its header (columns, the lead of a field) are checked before a later deviation of the same table — refused at the header line; tests under SCN-CD-010. | Implementation review, Spec P-2. | implementation review |
+| I-27 | Tests: SCN-CD-009 changes the `refs` of the paragraph `FX-Z01` (and of a row) and replaces one item of the document; SCN-CD-002 asserts the type and `base` 0 of every paragraph; SCN-CD-006 asserts every text as written. | Implementation review, Spec P-3, P-4, P-5. | implementation review |
+| I-28 | Not taken: one `qualify` / `unqualify` helper for `namespace/local` (Standards S-7) — three short uses inside the codec, and the skeleton keeps its own; revisit with #121. | Implementation review, Standards S-7. | implementation review |

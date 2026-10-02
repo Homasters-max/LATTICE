@@ -41,4 +41,4 @@
 - [x] 5.1 The skeleton form and every other test unchanged (design D-1); verified by `npm test` passing and
   `git diff main -- src/codec/import.ts src/codec/export.ts src/codec/table.ts src/cli src/assembly src/ledger src/kernel test/cli test/e2e test/architecture package.json`
   being empty
-- [ ] 5.2 `npm run typecheck`, `npm test` and `warrant verify s0-codec-forms`; verified by all three succeeding
+- [x] 5.2 `npm run typecheck`, `npm test` and `warrant verify s0-codec-forms`; verified by all three succeeding
