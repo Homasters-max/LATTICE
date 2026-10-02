@@ -68,7 +68,7 @@ docs phase: replace the Process line with "a docs PR closing #<N>, no Change".
 
 ### The coordinator's own PRs
 
-Work without a Change (docs, process) is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change (rule `tracking`). Before a push that opens or updates a PR, run `warrant ci` on the merge with fresh `origin/main` in a scratch worktree and push only on exit 0; a PR behind `main` is updated with `gh pr update-branch <N>` and waits for green checks before the merge is asked (rule `process`).
+Work without a Change (docs, process) is a commit and a PR that touches no policy path (`.warrant/local/**`, `.warrant/warrant.lock.json`, `.github/workflows/**`); one that does is a Change (rule `tracking`). Before a push that opens or updates a PR, run `warrant ci` on the merge with fresh `origin/main` in a scratch worktree and push only when it reports no violation of the PR (rule `process`); a PR behind `main` is updated with `gh pr update-branch <N>` and waits for green checks before the merge is asked (rule `process`).
 
 ### wait `<N>`
 
