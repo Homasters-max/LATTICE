@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-store",
-  "change_state": "PROPOSED",
+  "change_state": "SPECIFIED",
   "classification": {
     "profiles": [
       "chore",
@@ -35,6 +35,20 @@
       "to": "PROPOSED",
       "at": "2026-10-02T07:25:45.020Z",
       "by": "cli:local"
+    },
+    {
+      "to": "SPECIFIED",
+      "at": "2026-10-02T08:11:43.672Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+      "gates": {
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3XTP7FE36SG32MNSVDSVS1T"
+      ]
     }
   ]
 }
