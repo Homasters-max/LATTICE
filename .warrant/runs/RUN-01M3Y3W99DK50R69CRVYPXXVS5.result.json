@@ -1,0 +1,294 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y3W99DK50R69CRVYPXXVS5",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The rule `tracking` defines a red `main` as a failed `test` run on `main` OR `warrant validate` failing on `origin/main`, and 'while `main` is red ... only the fix is merged'. Goals say a PR 'reaches `main` ... never while `main` is red', and the Appendix (`process`) says the watcher 'turns auto-merge off while `main` is red'. But D-3 reads only `test.yml` ('the `warrant validate` half of a red `main` stays with `status.mjs`'), and D-7 reads only 'the last completed `test.yml` run of `main`'. So a `main` that is red by `warrant validate` alone lets `act.mjs merge` pass and leaves auto-merge on, and non-fix PRs merge into a red `main`.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#Goals",
+        "openspec/changes/infra-merge-flow/design.md#D-3",
+        "openspec/changes/infra-merge-flow/design.md#D-7",
+        "openspec/changes/infra-merge-flow/design.md#Appendix",
+        ".warrant/local/rules/tracking.json"
+      ],
+      "recommendation": "Either narrow Goals and the Appendix text to 'red by its last `test` run' and name the `warrant validate` half as a known gap the coordinator covers (e.g. it runs `--disable-auto` when `status.mjs` reports red by validate), or have `act.mjs merge` and the watcher read it too, e.g. the open `bug` `P1` issue `infra: main red — …` that rule `tracking` makes the first session open."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "D-6 says a patch may touch the paths of the profile `human-acceptance` (allowed), and also refuses `AGENTS.md`, `.warrant/warrant.lock.json` and `.warrant/waivers/**`. The profile (`.warrant/local/profiles/human-acceptance.json`) lists `**/AGENTS.md`, `.warrant/warrant.lock.json` and `.warrant/waivers/**`, so the allowed set and the refused set overlap. D-6 does not say which one wins. Read one way, a patch of `AGENTS.md`, the lock or a waiver file is applied. Read the other way, it is refused 'with the writer as the fix'. `patchRefusals` and its test (D-8) cannot be written without that answer.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-6",
+        "openspec/changes/infra-merge-flow/design.md#D-8",
+        ".warrant/local/profiles/human-acceptance.json"
+      ],
+      "recommendation": "State the precedence: the refused list wins over the profile paths. Add a `patchRefusals` test for a patch of `AGENTS.md`, one of the lock and one of `.warrant/waivers/<WAV>.json`, each refused with its writer."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-4 takes 'the last push' to be the `committedDate` of the newest non-merge commit of the PR, and claims 'the error is a refusal, never a missed entry'. The newest non-merge commit need not be the owner's, though. `act.mjs waiver` and `act.mjs patch` (D-5, D-6) push non-merge commits that the maintainer makes on the owner's branch. Example: the owner pushes `VERIFYING` at T0, an entry is posted at T1, the maintainer activates the waiver at T2, and the owner asks the merge at T3. Then `act.mjs merge` treats the entry as older than the last push and misses it, though the owner never read it. Clock skew is a second case: a local clock that runs ahead makes `committedDate` later than the real push.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-4",
+        "openspec/changes/infra-merge-flow/design.md#D-5",
+        "openspec/changes/infra-merge-flow/design.md#D-6",
+        "openspec/changes/infra-merge-flow/design.md#D-8"
+      ],
+      "recommendation": "Define 'last push' as the newest non-merge commit that is not made by `act.mjs`. The commit messages end in '(act.mjs)', and the author is not an agent identity of `identities.agents`. Add a `pendingEntries` test with an entry older than a maintainer's waiver commit but newer than the owner's last commit. Drop or qualify the 'never a missed entry' claim with respect to clock skew."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-7 changes what `wait-pr.mjs` does: it updates a `BEHIND` PR and disables auto-merge on a red `main`. The rule runs it as `node .claude/skills/slice/wait-pr.mjs <N>` from the owner's worktree, so the copy that runs is the one on disk in that branch. Unlike `act.mjs` (D-2), `wait-pr.mjs` has no copy check. A Change whose branch or local checkout predates this merge runs the old watcher. Even after `gh pr update-branch` the local files stay old until a pull. When the maintainer asks that Change's PR with `act.mjs merge`, auto-merge is turned on, the PR falls `BEHIND` after another merge and is never updated, and nobody tells the owner. The old watcher waits out 24 h and exits 3. The Change claims 'a PR is asked for merge once', which then fails for every PR open across the switch. The design says nothing about that transition.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-7",
+        "openspec/changes/infra-merge-flow/design.md#D-2",
+        "openspec/changes/infra-merge-flow/design.md#D-9",
+        "openspec/changes/infra-merge-flow/proposal.md"
+      ],
+      "recommendation": "Choose one fix. (a) The watcher checks its own copy against `origin/main` as D-2 does and exits with a usage-like code naming the fix. (b) `act.mjs merge` refuses a PR whose head does not contain this Change's `wait-pr.mjs` blob. (c) The rule tells owners to pull or merge `origin/main` and restart the watcher before asking, after this Change merges. Say which, in D-7 and the Appendix."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "D-2 refuses an `act.mjs` whose `act.mjs`, `act-rules.mjs` or `rules.mjs` on disk differs from `origin/main`, and the fix it names is 'the worktrees whose copy matches'. Two cases are not described. First, no worktree matches. Each worktree sits on its Change branch, and `gh pr update-branch` (the owner's or the watcher's) updates only the remote, so after any merge that changes one of these files every worktree is stale. #101 `infra-coordinator`, which owns `rules.mjs`, is one such merge. Second, the PR under merge changes one of these files itself. Its own worktree can never match, and when all the others lag too, the refusal names nothing. Each such refusal is one more round of asking the maintainer, the very friction the Change removes.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-2",
+        "openspec/changes/infra-merge-flow/design.md#Appendix"
+      ],
+      "recommendation": "Name the fix when no worktree matches. Options: `git -C <worktree> pull --ff-only`, done by the agent before it asks, which the `--dry-run` copy check then confirms; or `act.mjs` run from a checkout of `origin/main` such as the main checkout after `git pull`. Make the Appendix's 'a branch from fresh `origin/main`' concrete: the agent's worktree pulled after the last update of its PR. Add a `copyRefusals` test where no worktree matches."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "Design Context says '#101 owns the tag set, its acknowledgement and its reading in `status.mjs`', and the proposal Non-goals give #101 'the decision-log tags and their acknowledgement'. Yet D-4 defines the entry tags `[decision]`, `[scope]`, `[broadcast]` (Context names only `[decision]` and `[incident]` as in use) and defines acknowledgement as 'a later comment that contains the entry's URL …'. The Appendix then writes both into the rule `process`. This Change therefore fixes in a maintainer rule the taxonomy and the acknowledgement form that another Change owns. If #101 picks other tags or another acknowledgement, the rule, `act.mjs merge` and `status.mjs` disagree.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-4",
+        "openspec/changes/infra-merge-flow/design.md#Context",
+        "openspec/changes/infra-merge-flow/design.md#Appendix",
+        "openspec/changes/infra-merge-flow/proposal.md"
+      ],
+      "recommendation": "Decide who owns the tag set and the acknowledgement (see DR-1). Either this Change owns them, with the Context and Non-goals saying so and #101 told on its issue. Or the Appendix and D-4 reference the set #101 defines, with `[decision]` alone (already in use) as the interim tag."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-5 and D-6 require the worktree to be clean (`git status --porcelain` empty). An active Run leaves an untracked `.warrant/runs/RUN-….json`, which the git status of this review Run shows. The patches of D-9 (task 1.4, and the review patch of task 2.5) are asked during the `implement` Run, so `--dry-run` refuses until the agent commits the Run file. The design does not say whether committing it in the middle of a Run is the expected fix.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-5",
+        "openspec/changes/infra-merge-flow/design.md#D-6",
+        "openspec/changes/infra-merge-flow/tasks.md"
+      ],
+      "recommendation": "Say how an active Run meets the clean check: the agent commits its Run file before the `--dry-run`, or the check ignores `.warrant/runs/**`. Name it in the refusal's fix."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "D-4 matches an issue or PR as '`#<N>` not followed by a digit'. Nothing is said about what may precede it. Entries routinely cite WARRANT issues such as `SRA#139` or `Homasters-max/SRA#141`, and these would match LATTICE issue or PR #139 / #141, whose numbers lie in the same range. A false match makes an unrelated entry pending, and the owner has to acknowledge it.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-4",
+        "openspec/changes/infra-merge-flow/design.md#D-8"
+      ],
+      "recommendation": "Require no `[\\w/.-]` before `#` (a cross-repository reference is not a match), and add the `SRA#139` case to the `pendingEntries` tests."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-5 refuses a `<WAV>` found on 'another `origin/impl/*`' after `git fetch origin` (D-1 says 'refs only' and gives no `--prune`). Remote-tracking refs of impl branches that were deleted, for example of an `ABANDONED` Change or a merged branch removed from GitHub, stay in the maintainer's clone. A waiver id on such a stale ref refuses forever, and the fix 're-propose under a new id' is not needed.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-1",
+        "openspec/changes/infra-merge-flow/design.md#D-5"
+      ],
+      "recommendation": "Fetch with `--prune`, or read the open impl branches from `git ls-remote origin 'refs/heads/impl/*'`."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-5 runs `warrant waive --activate` in the maintainer's terminal, with whatever `warrant` is on that terminal's `PATH`. Nothing checks its version against `kernel` of `.warrant/warrant.json`, as `status.mjs` does with `versionMatches`. A different CLI may write a differently shaped waiver file. The verification only checks the `ACTIVE` state, so the failure would show up in CI after the push.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-5"
+      ],
+      "recommendation": "Add a refusal: `warrant --version` outside `kernel` of the worktree's `.warrant/warrant.json` (reuse `rules.mjs` `versionMatches`), with the fix naming the expected version."
+    },
+    {
+      "id": "F-11",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-9 says the tasks of `tasks.md` 'close before `VERIFYING`'. Task 2.2's passing `merge --dry-run` case falls back, when no `SPECIFIED` spec-PR is open, to 'the same on this impl-PR after its `VERIFYING` commit, pasted in the PR body'. That step can only happen after `VERIFYING`, so task 2.2 cannot be `[x]` in the commit before it.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/tasks.md",
+        "openspec/changes/infra-merge-flow/design.md#D-9"
+      ],
+      "recommendation": "Move the fallback into D-9's after-`VERIFYING` proof list (the impl-PR body), or name a passing case available before `VERIFYING` (e.g. a docs PR of the coordinator)."
+    },
+    {
+      "id": "F-12",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "In the Appendix, the `process` text first defines when an entry 'touches the PR', then says '`act.mjs merge` refuses a PR with an entry newer than its last commit that is not a merge and not acknowledged'. That sentence drops 'that touches it'. Read literally, any newer entry on the umbrella blocks every PR, whereas D-4 counts only touching entries.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#Appendix",
+        "openspec/changes/infra-merge-flow/design.md#D-4"
+      ],
+      "recommendation": "Read: '`act.mjs merge` refuses a PR with an entry that touches it, newer than its last commit that is not a merge, and not acknowledged'."
+    },
+    {
+      "id": "F-13",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-4 counts as an acknowledgement any later comment on the PR that contains the entry's URL, whoever wrote it. The rule `process` requires the author of a slice decision to comment `⛔ Do not merge — <decision URL>` in the PR, so that comment acknowledges the `[decision]` by itself. The Appendix says 'the owner acknowledges it, after acting on it', but `act.mjs merge` cannot tell whether that happened. Only the draft check stands between the two.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-4",
+        "openspec/changes/infra-merge-flow/design.md#Appendix"
+      ],
+      "recommendation": "Skip comments that start with `⛔` when looking for acknowledgements, or state that the draft and ready cycle is the control for decisions and the acknowledgement only covers `[scope]` and `[broadcast]`. Add the case to the tests."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-error-behavior",
+      "statement": "D-3 says that without an issue or a milestone 'a note line says `no umbrella read`; nothing refuses for it'. The same silent pass covers a PR of a Change `<kind>/<change>` whose issue is not found. Every Change has an issue (rule `process`: AREAs are declared in it), so a missing issue means a failed lookup: a `gh` error, `gh issue list` truncated at its default limit with more than 100 issues in the repository, or a `Where:` line that does not parse. A lookup failure then turns into a missed pending-entry check.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-3"
+      ],
+      "recommendation": "For a PR of a Change, no issue found is a refusal ('issue of Change <c> not found: check its `Where:` line'). Read the issues with an explicit `--limit`, warning at the limit as `status.mjs` does."
+    },
+    {
+      "id": "F-15",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Pending entries are checked once, when `act.mjs merge` enables auto-merge. With auto-merge on, a PR can wait for hours (CI, the watcher's updates). A `[scope]` or `[broadcast]` posted in that window that touches the PR is checked by nobody, since the watcher (D-7) reads no entries. Only a slice decision gets the author's `--disable-auto` under the Appendix.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-4",
+        "openspec/changes/infra-merge-flow/design.md#D-7",
+        "openspec/changes/infra-merge-flow/design.md#Appendix"
+      ],
+      "recommendation": "State it. Either the author of any touching entry turns auto-merge off, as for a slice decision, or the watcher reads `pendingEntries` and reports a new outcome. Otherwise list it as an accepted gap."
+    },
+    {
+      "id": "F-16",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-error-behavior",
+      "statement": "D-3 and D-9 rely on GitHub recording the user who enabled auto-merge as `mergedBy`, for the gate `human-approval` on `VERIFYING->MERGED`. This Change's own impl-PR is the first one merged this way. No fallback is named if its `mergedBy` turns out not to be `Homasters-max`, though then this Change's own archive-PR would fail `human-approval`.",
+      "targets": [
+        "openspec/changes/infra-merge-flow/design.md#D-3",
+        "openspec/changes/infra-merge-flow/design.md#D-9"
+      ],
+      "recommendation": "Name the fallback: e.g. the impl-PR is merged by a plain `gh pr merge --merge` if `mergedBy` of a test PR is not the maintainer, and the rule texts revert to it."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/infra-merge-flow/design.md",
+      "change": "Goals, D-3, D-7, Appendix: make 'red `main`' consistent with rule `tracking` (test and `warrant validate`), or narrow the claim and name the gap (F-1)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/infra-merge-flow/design.md",
+      "change": "D-6: refused list takes precedence over the profile paths; tests for `AGENTS.md`, lock, waiver (F-2). D-5/D-6: clean check versus an active Run file (F-7); `--prune` or `ls-remote` for other impl branches (F-9); `warrant` version check (F-10)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/infra-merge-flow/design.md",
+      "change": "D-4: 'last push' excludes `act.mjs` commits (F-3). Cross-repository `#N` does not match (F-8). The `⛔` comment does not acknowledge (F-13). Entries posted while auto-merge is on (F-15). The tag set and acknowledgement owned by whom (F-6). Appendix sentence 'that touches it' (F-12)."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/infra-merge-flow/design.md",
+      "change": "D-2/D-7: copy freshness for `wait-pr.mjs` and the transition of PRs open across this merge (F-4). The fix when no worktree carries a matching copy, or the PR changes the checked files (F-5)."
+    },
+    {
+      "id": "P-5",
+      "target": "openspec/changes/infra-merge-flow/design.md",
+      "change": "D-3: no issue found for a Change PR is a refusal; explicit `--limit` (F-14). D-9: fallback if `mergedBy` is not the maintainer (F-16)."
+    },
+    {
+      "id": "P-6",
+      "target": "openspec/changes/infra-merge-flow/tasks.md",
+      "change": "2.2: move the after-`VERIFYING` passing `merge --dry-run` into the D-9 after-`VERIFYING` proof, or name a case available before `VERIFYING` (F-11)."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-1",
+      "question": "Does `warrant waive --activate` touch only `.warrant/waivers/<WAV>.json` when an active Run exists in the worktree, and is committing an active Run's file mid-Run acceptable to WARRANT (F-7)?",
+      "blocking": false,
+      "impact": [
+        "design D-5",
+        "design D-6",
+        "tasks 1.4",
+        "tasks 2.5"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The Change is `skip_specs` and has no delta specs or REQ/SCN ids, so this review targets `proposal.md`, D-1…D-10, the Appendix rule texts of `design.md`, and `tasks.md`, as review 1 did."
+    },
+    {
+      "id": "A-2",
+      "statement": "Issue #111, umbrella #44 and #101 were not read (no `gh`). Their content and the scope split with #101 are taken from the proposal, the design Context and the caller's note."
+    },
+    {
+      "id": "A-3",
+      "statement": "The review-1 mapping in 'Review history' was checked item by item against D-1…D-9, the Appendix and tasks. Each F-1…F-17 is addressed in the text. The new findings F-3, F-4, F-5, F-13 and F-15 are consequences of the review-1 fixes (last push without merges, copy check, scoped acknowledgement, the watcher) and are not regressions of the mapping."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "DR-1",
+      "question": "Who owns the entry tag set (`[decision]`, `[scope]`, `[broadcast]`) and the acknowledgement form written into rule `process` (F-6)?",
+      "options": [
+        "This Change: Context and Non-goals say so; #101 reads the same set and form.",
+        "#101: this Change uses `[decision]` only and an acknowledgement interim, referenced from the rule until #101 lands."
+      ]
+    },
+    {
+      "id": "DR-2",
+      "question": "How do PRs open across this merge get the new watcher (F-4)?",
+      "options": [
+        "The watcher checks its own copy against `origin/main` and stops with a fix line.",
+        "`act.mjs merge` refuses a PR whose head lacks the new `wait-pr.mjs`.",
+        "A one-time rule step: owners pull or merge `origin/main` and restart their watchers after this Change merges."
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:c69d1429ab568394ceeda3ec930f1abb5746bf5ffe10fb85f997fd044b26af11",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T11:40:00Z",
+    "finished_at": "2026-10-02T12:10:00Z"
+  }
+}
