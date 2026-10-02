@@ -1,0 +1,24 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y01Q5BGJGYS2490E1WDJ80",
+  "change": "infra-process-rules",
+  "operation": "implement",
+  "task": "review rows, tasks",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/infra-process-rules/tasks.md",
+    "openspec/changes/infra-process-rules/design.md",
+    "openspec/changes/infra-process-rules/specs/**"
+  ],
+  "scope": [
+    "openspec/changes/infra-process-rules/**"
+  ],
+  "branch": "impl/infra-process-rules",
+  "started_at": "2026-10-02T09:45:10.107Z",
+  "finished_at": "2026-10-02T09:45:49.794Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:6083de064a4dae51a8b56f8d554fbffd30772f8f2f68d994815f1e4b7dde94e4",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": []
+}
