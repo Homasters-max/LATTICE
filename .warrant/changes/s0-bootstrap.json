@@ -5,7 +5,9 @@
   "classification": {
     "profiles": [
       "chore",
-      "feature"
+      "factory-change",
+      "feature",
+      "human-acceptance"
     ],
     "risk": {
       "data_loss": {
@@ -18,7 +20,7 @@
       },
       "blast_radius": {
         "value": "SYSTEM",
-        "from": "record"
+        "from": "floor:core-sdd:2"
       },
       "security_impact": {
         "value": "LOW",
