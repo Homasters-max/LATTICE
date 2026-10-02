@@ -1,0 +1,221 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YHBJ3VGAWX6XW6Q8X8DTXC",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "The spec now lets a maintainer's `[decision]` add an AREA after `init` (Appendix A `process` ¶3, D-4, D-9, proposal). It does not say when the hold of that added AREA begins. ¶3 says 'A Change holds its AREAs from `init`' and 'one Change holds an AREA at a time, a second waits'. `holdersOf` (rules.mjs:105-117) orders every holder of an AREA by `initAt`; the first keeps it and each later one is the collision. Take Change X, initialised at t0, that gets AREA CL by a `[decision]` at t2, and Change Y, which declared CL before its own `init` at t1 (t0 < t1 < t2). Once the decision clears X's 'added after init' flag, status.mjs makes X the holder of CL from t0 and marks Y, the lawful holder, as the collision that waits. That is the #92 race in reverse, now with the decision's approval. A literal reader of ¶3 gets the same answer, and a reader of 'a second waits' gets the opposite. The same gap applies to `AR`, which a `skip_specs` Change adds to itself after `init`.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#D-9",
+        "openspec/changes/infra-coordinator/proposal.md#What-Changes",
+        ".claude/skills/slice/rules.mjs"
+      ],
+      "recommendation": "Choose one rule and state it in ¶3 and D-4 (see decisions_required D-1). Either an AREA added after `init` is held from the time of its addition, so `holdersOf` takes the `editedAt` of the revision that added it rather than `initAt`, or a `[decision]` may add only an AREA that no other Change holds. Add a task 3.1 case: an added AREA that another Change already holds."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-actor",
+      "statement": "Review 3 F-2 is closed: a `[decision]` is 'the maintainer's, posted by the coordinator' (Appendix A ¶4, D-2 item 16, D-3). The spec gives no route for the two other ways a maintainer's decision arises. (1) The maintainer answers in a Change session. D-12 relies on exactly this case: decision 5954594643 was 'answered in the session of #101' and recorded on #44 (#133 body). (2) The maintainer posts a `[decision]` from his own login. ¶4 reads as though such a comment is not posted by the coordinator. This Change's own task 3.5 has '[decision] retro S0 wave 1' posted, and the retro grilled with the maintainer, without naming who does it. D-7 puts both in the coordinator's session, but the task is this session's proof.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/tasks.md#3.5"
+      ],
+      "recommendation": "In D-2 item 16 and `change.md`: a session that receives a maintainer's decision in its chat sends it to the coordinator, and the coordinator posts the `[decision]`, quoting it with its date. Say whether the maintainer's own `[decision]` comment counts; it is the strongest form. In task 3.5, name the coordinator session as the one that posts both entries and runs the grilling, and this session as the one that links them."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Appendix A ¶4 keeps 'A slice decision that changes an open PR stops its merge: the author of the decision turns the PR to draft, turns its auto-merge off and comments `⛔ …`'. The same paragraph now defines a `[decision]` as 'the maintainer's, posted by the coordinator', and D-2 item 16 repeats it. So 'the author of the decision' is the maintainer, but turning a PR to draft and `--disable-auto` are agent steps that the rule `maintainer-acts` does not list as maintainer acts. Under today's text the coordinator authored the slice decisions, so the actor was clear.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process"
+      ],
+      "recommendation": "Write 'the session that posts the decision (the coordinator for a `[decision]`, the session for its `[scope]`) turns the PR to draft …'."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Review 3 F-3 is closed in D-3: 'a comment whose first line starts with a tag is an entry, never an acknowledgement'. Which tags count is open. D-3 lists four tags, `[incident]` included. `ENTRY_TAGS` in act-rules.mjs:6, the code that `pendingEntries` uses, has three. An `[incident]` that links the `[decision]` a session ignored and names that Change is a likely text, and with only the three tags excluded it would acknowledge that decision for the Change. The same question applies to a PR comment that starts with a tag: `isEntry` never treats a PR comment as an entry (act-rules.mjs:136).",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/tasks.md#3.1",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "Write 'a comment whose first line starts with `[decision]`, `[scope]`, `[broadcast]` or `[incident]`, anywhere, the PR included, never acknowledges'. Add an `[incident]` case to task 3.1."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The proposal says '`status.mjs <change>` lists the entries and the comments of the Change's own issue newer than its last push'. The natural reading cuts both lists at the last push. D-3 (review 2 F-2) says `pending` has 'no time cut', and only `unread` is cut at the last push. Appendix A ¶4 gets it right ('the entries it has not acknowledged and the comments of its own issue newer than its last push').",
+      "targets": [
+        "openspec/changes/infra-coordinator/proposal.md#What-Changes",
+        "openspec/changes/infra-coordinator/design.md#D-3"
+      ],
+      "recommendation": "Proposal: 'lists every entry touching the Change that is not acknowledged, and the comments of its own issue newer than its last push'."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Review 3 F-9 is only partly closed. The exemption 'what `warrant` and a git merge write, and patches, PR bodies and envelopes outside the repository, are not edits of the agent' is in D-9 only. The binding rule text (Appendix A ¶2, which AGENTS.md will carry) says only 'In a Change, the agent edits files of the repository only inside the `write_scope` of the active Run'. A session that reads AGENTS.md has no exemption for its `warrant sync` commit (task 2.3). Resolving a merge conflict is a hand edit inside a merge, and D-9's 'what a git merge writes' does not settle it. Change.md 'Waiting' tells a session to do this on CONFLICT with no Run active, and a conflict in a record or in AGENTS.md lies in no Run's write_scope.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/design.md#D-9",
+        "openspec/changes/infra-coordinator/tasks.md#2.3"
+      ],
+      "recommendation": "Carry D-9's parenthesis into ¶2, about 80 bytes and within the budget. Say how a conflict is resolved. For example, a conflict in a file only `warrant` writes is resolved by taking one side and re-running the `warrant` command, and any other conflict is resolved inside a Run whose write_scope covers the file."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "Review 3 F-14 is only half closed. D-4 clears an 'AREA added after init' flag with any `[decision]` that names the Change and the AREA lexically (`namesChange` plus `namesArea`), posted before or after the edit. A `[decision]` that refuses the AREA ('`s0-x` does not take `CL`; it waits for …') names both, so it clears the flag of an edit that went against it. The flag then disappears exactly when the edit broke a decision.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/tasks.md#3.1"
+      ],
+      "recommendation": "Make the form a decision must take to clear the flag explicit, for example a line `Adds: AREA <X> to <change>` in the `[decision]`, which the coordinator writes. Match that line, not any mention. Add a refusing-decision case to task 3.1."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "D-5 allows, in an impl-PR, 'paths of the profile `human-acceptance` that only commits authored by a maintainer changed'. Task 1.2 verifies the patch by 'a commit … authored by the maintainer'. Neither says how a git identity becomes 'a maintainer'. `roles.maintainer` is a GitHub login. act.mjs only refuses an agent identity (`isAgentIdent`, act-rules.mjs:54-60, 75-80). It does not confirm a maintainer's identity. 'Not an agent identity' and 'GitHub resolves the author to a `roles.maintainer` login' are two different checks. Both quietly assume that every agent commit carries the `homasters` identity. The default git user of the worktrees is the maintainer's ('Kat'), and the agent identity comes from per-session variables. A session without them commits `.claude/**` as the maintainer, and review.mjs passes it.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-5",
+        "openspec/changes/infra-coordinator/tasks.md#1.2"
+      ],
+      "recommendation": "Define the check in D-5. One way: the commit's author and committer are not agent identities, its subject is `<change>: maintainer's patch …` (as act.mjs writes it), and its GitHub author login is in `roles.maintainer`. Name the limit: a session without the agent git identity is indistinguishable."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The Goal says 'no maintainer act lives only in a chat', and the rule `maintainer-acts` says that every act other than a session start or restart is requested by a marked comment. The spec still asks the maintainer for slice decisions with no request form. D-2 item 3 says 'an overlap goes to the maintainer'. D-4 says an AREA added after init 'needs a decision' and 'the maintainer queue gets a row'. An AREA collision is also 'needs a decision'. D-12 group 2 has markers only for an UNKNOWN, a `question` and an SRA decision. The rule's list of decisions is 'an UNKNOWN, a `question`, a WARRANT question'. 'The maintainer queue' in D-4 is status.mjs's 👤 maintainer queue, not the act queue of D-12, so the spec has two queues with the same name.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Goals",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-maintainer-acts"
+      ],
+      "recommendation": "Add a marker such as `<!-- act: decision slice <N> -->` (on the umbrella or the Change's issue) for an AREA, an overlap or an order, and add 'a slice decision' to the rule's list. Or say that the coordinator asks for slice decisions in its chat and narrow the Goal. Name status.mjs's block differently from the act queue."
+    },
+    {
+      "id": "F-10",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Appendix B row p26 maps 'start `wait-pr.mjs` in the background after the push' to A ¶5 only. Today's sentence also says 'unless one for the same PR still runs'. That clause is in neither ¶5 nor any row, so a resumed session that follows ¶5 ('starts its watchers again when it resumes') can run two watchers on one PR. Both would call `update-branch` and report the same outcome.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-B",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process"
+      ],
+      "recommendation": "Row p26: 'A ¶5; \"unless one for the same PR still runs\" → C \"Waiting\"'. Task 3.2 then catches it."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-boundary",
+      "statement": "With `pending` uncut (D-3), every `[broadcast]` since the Change's issue was created is pending for that Change until it is acknowledged, because a broadcast touches every PR. Superseded and obsolete broadcasts are included, for example 5953982720 'until #128 lands' once #128 has merged. A Change whose issue was opened early in the slice (#61, wave 4) starts with a backlog, and review.mjs check 4 fails until each one has a reply. The behaviour is defined and safe; the cost is not named.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "Name the cost in D-3, or let a later `[broadcast]` that links an earlier one and says it ends retire it for everyone."
+    },
+    {
+      "id": "F-12",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Closure of review 3, checked against the text. F-1 is closed. The proposal, Appendix A ¶3, D-2 item 5, D-4, D-9 and task 3.1 all say 'only a `[decision]`' (residual: F-1 of this review). F-2 is closed (residuals F-2, F-3). F-3 is closed (residual F-4). F-4 is closed; one note: D-12 still lists 'the `act-done` mark' among the results an executor reads, while Appendix A lists 'the commit, the waiver, the merge', and the mark exists only after #133. F-5, F-6, F-8, F-10, F-11, F-12 and F-13 are closed (residual of F-12: F-10). F-7 is closed for the coordinator's chat; whether «❗ Выполнить» heads a request comment in a PR is still unsaid. F-9 is partly closed (F-6). F-14 is partly closed (F-7). F-15 and F-16 are closed. #101 'Done when' is covered: task 2.3 checks the size ≤ 12 288; tasks 2.1 and 3.2 check that items 4–6 are in the rules; tasks 1.1, 3.3 and 3.4 cover the 'Coordinator' section, the log and `review` / `broadcast` / `retro` (`broadcast` only as its session list); task 3.5 covers `retro S0`; D-10 covers #119 closed by the archive-PR. The retro issues of task 3.5 come from before plan 5950269274, so they predate its 'wave 1'. The `--issues` list fixes them, and only the label 'wave 1' is loose. Appendix A size, estimated from line lengths (no shell): process ≈5 000, tracking ≈3 250, maintainer-acts ≈1 450 bytes. With env 1 825 and a 54-byte frame that is ≈11 600, against the design's 11 528 and under 12 288 by ≈700.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Review-history",
+        "openspec/changes/infra-coordinator/design.md#D-1",
+        "openspec/changes/infra-coordinator/tasks.md"
+      ],
+      "recommendation": "None beyond the findings above; task 2.3 measures the real size."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/infra-coordinator/design.md#Appendix-A",
+      "change": "process ¶3: say when the hold of an AREA added after init begins, or forbid adding an AREA that another Change holds (F-1). ¶4: 'the session that posts the decision turns the PR to draft' (F-3). ¶2: carry D-9's exemption for what `warrant` and a merge write, and say how a conflict is resolved (F-6). maintainer-acts: the form of a slice decision request (F-9)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/infra-coordinator/design.md#D-3",
+      "change": "Name the four tags, PR comments included, as never acknowledging (F-4). Name the backlog cost of uncut `pending` for broadcasts (F-11)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/infra-coordinator/design.md#D-4",
+      "change": "Clear the added-AREA flag only on an explicit `Adds:` line of a `[decision]` (F-7). `holdersOf` takes the addition time for added AREAs (F-1). Rename status.mjs's maintainer block apart from the act queue (F-9)."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/infra-coordinator/design.md#D-5",
+      "change": "Define 'authored by a maintainer' as a check and name the identity limit (F-8)."
+    },
+    {
+      "id": "P-5",
+      "target": "openspec/changes/infra-coordinator/tasks.md",
+      "change": "3.1: cases for an added AREA held by another Change, a refusing `[decision]` and an `[incident]` that links an entry. 3.5: the coordinator posts the `[incident]` and the `[decision]` and runs the grilling (F-2). Proposal: the `pending` wording (F-5). Appendix B p26: the 'unless one still runs' clause (F-10)."
+    }
+  ],
+  "unknowns": [],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The byte size of Appendix A is estimated from line lengths, since no shell was allowed. Paragraph breaks count as two bytes, and multi-byte characters (—, …, ·, ⛔, «❗ Выполнить») are counted. The frame stays at 54 bytes with four rules."
+    },
+    {
+      "id": "A-2",
+      "statement": "Agent commits carry the `homasters` identity through per-session GIT_AUTHOR_*/GIT_COMMITTER_* variables. The worktree's own git user is 'Kat' (the maintainer). This is inferred from act-rules.mjs actorRefusals and the session's git status, not checked in git log."
+    },
+    {
+      "id": "A-3",
+      "statement": "The #57 facts are those in review3-github.md: s0-store-2 was initialised at 08:49:09.533Z, after the last Where: edit at 08:46:29Z. So the real-history case of task 3.1 raises no flag for either Change."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "When a maintainer's `[decision]` adds an AREA to a Change after its `init`, from when does that Change hold the AREA (F-1)?",
+      "options": [
+        "from the time the AREA was added (the editedAt of the revision that added it): a Change that held it earlier keeps it, and the adding Change waits",
+        "a `[decision]` may add only an AREA no other Change holds; the hold then begins at the addition",
+        "from `init`, as ¶3 says today: the decision overrides an earlier holder, which becomes the collision"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:761725489d6d74857101d38d0cabd2d05c9d217ab369f0e90cc3f8c61a9335ac",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T15:40:00Z",
+    "finished_at": "2026-10-02T16:10:00Z"
+  }
+}
