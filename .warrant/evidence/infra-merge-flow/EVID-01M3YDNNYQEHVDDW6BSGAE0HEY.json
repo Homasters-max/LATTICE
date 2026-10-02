@@ -1,0 +1,43 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YDNNYQEHVDDW6BSGAE0HEY",
+  "claim": {
+    "text": "tests-passed passed for infra-merge-flow",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "7f6a78e109648353f4d900a84e4f6a0a3ef735fc",
+    "base_commit": "6136dbae2983f8458ead46e01619a70fe94f42b8",
+    "spec_revision": "openspec/changes/infra-merge-flow@7f6a78e109648353f4d900a84e4f6a0a3ef735fc",
+    "tree": "0df922420e57a56f37cef69fed65ad1cda29f5a9",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "ci",
+    "ref": "https://github.com/Homasters-max/LATTICE/actions/runs/37014810686/attempts/1"
+  },
+  "context_hash": "sha256:3e9da3325b0c052744f5fdb3ba3fc5911e1df6e904fd58057261ae1422a789ef",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T13:43:15.672Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-merge-flow/raw/tests-passed/junit.xml",
+      "sha256": "sha256:4fe7af2124ac7b6c7d73f8d4fcc02f5546568e883b678d4f1f43414ceda5c7f1"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 1,
+    "tests": 775
+  }
+}
