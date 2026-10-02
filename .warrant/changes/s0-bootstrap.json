@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "s0-bootstrap",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-02T10:38:23.311Z",
+      "by": "cli:local"
+    }
+  ]
+}
