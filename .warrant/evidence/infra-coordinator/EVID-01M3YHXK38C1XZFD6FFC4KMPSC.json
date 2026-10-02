@@ -1,0 +1,38 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3YHXK38C1XZFD6FFC4KMPSC",
+  "claim": {
+    "text": "openspec-validate passed for infra-coordinator",
+    "targets": []
+  },
+  "kind": "spec-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "5b9744160145f5c3c4139999ef599b5c49716a76",
+    "base_commit": "adaaa56ac0cc189f4cc7a885b0b13389a6c1e259",
+    "spec_revision": "openspec/changes/infra-coordinator@5b9744160145f5c3c4139999ef599b5c49716a76",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "openspec-validate",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:5009d66c5f384ccd91b19795e897752a9ce73d10ec119ca361101cc64d8f4249",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T14:57:29.193Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/infra-coordinator/raw/openspec-validate/stdout.json",
+      "sha256": "sha256:d4b9eada1c1fdabbb38a79682b0e5fdeb4f29ba2a7ae2495fbfbe9d087ac5270"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "issues": 1
+  }
+}

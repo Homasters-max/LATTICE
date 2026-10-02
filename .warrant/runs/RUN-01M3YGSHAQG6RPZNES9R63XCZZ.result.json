@@ -1,0 +1,283 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YGSHAQG6RPZNES9R63XCZZ",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "Review 2 F-4 is not closed in the rule text. Appendix A `process` ¶3 says that after init 'an AREA is added only by a maintainer's `[decision]` or `[scope]` naming the Change and the AREA'. The proposal ('Boundaries') says the same: 'only by a maintainer's `[decision]` / `[scope]`'. D-9 says 'only by a `[decision]` naming it'. D-4 says 'a `[scope]` does not clear it', and task 3.1 tests 'a `[scope]` not clearing an added-AREA flag'. D-2 item 5 has the coordinator carry a scope change of a launched Change by 'a `[scope]` or `[decision]` entry', with no exception for an AREA. So a session or the coordinator that adds an AREA under a `[scope]` acts lawfully by the rule the spec-PR merge approves. Yet status.mjs flags it 'needs a decision' and puts a row in the maintainer queue. The rule also keeps the hole F-4 named: a session can post its own `[scope]` (D-2 item 3). The review history maps F-4 only to D-4, so the binding text (Appendix A, 'the merge of this spec-PR is the decision on them') still says the opposite.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/proposal.md#What-Changes",
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#D-9",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/tasks.md#3.1"
+      ],
+      "recommendation": "Make one statement everywhere. If only a `[decision]` may add an AREA: Appendix A ¶3 'only by a `[decision]` naming the Change and the AREA', the same in the proposal, and D-2 item 5 'an AREA added to a launched Change: a `[decision]`, never a `[scope]`'. If a `[scope]` may add one, drop the D-4 exclusion and the task 3.1 case, and name how a session's own `[scope]` is told apart (see decisions_required D-1)."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-4 names the control that makes a `[decision]` trustworthy: 'the rule (only the coordinator posts a `[decision]`, the maintainer's) and the log being public'. No rule text in Appendix A says this. Appendix A ¶4 says only that a comment starting with `[decision]` binds, and ¶3 says 'a maintainer's `[decision]`' with no way to observe it. The design also contradicts its own control. D-3 defines `[decision]` as 'the maintainer's decision', but D-2 item 3 has the coordinator settle a path overlap 'by a `[decision]` … superseding its own decision by a new one'. That is the coordinator's own decision, not the maintainer's. Such an entry, naming a Change and an AREA in backticks, clears an areasAddedAfterInit flag under D-4. So the one control the design relies on is unstated in the rules, and D-2 breaks it.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process"
+      ],
+      "recommendation": "Add to Appendix A ¶4: 'Only the coordinator posts a `[decision]`, and only to record the maintainer's decision, linking or quoting it.' Change D-2 item 3 so that a path overlap is settled by the maintainer's `[decision]` or by a `[scope]`, and never by the coordinator's own `[decision]`. Or narrow D-4 so that a flag is cleared only by a `[decision]` that links a comment by a `roles.maintainer` login."
+    },
+    {
+      "id": "F-3",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "D-3 keeps acknowledgement as `pendingEntries` 'unchanged' and says the rule asks the session for 'a reply on the umbrella that links the entry and names the Change'. In act-rules.mjs:137-139, `acknowledges` accepts any later comment that links the entry and names the Change or the PR. It does not matter who posts it, or whether the comment is itself a tagged entry. Every agent posts as `homasters`. So an amending entry, or a coordinator's status comment, counts as the session's acknowledgement. A real case: [decision] 5954398284 says 'Amends …#issuecomment-5954365385 … Touches: `infra-coordinator`', and [decision] 5954594643 links 5954365385, 5954398284 and 5954536510 and names `infra-coordinator`. By the code, those three decisions are never pending for infra-coordinator, whether or not its session ever acknowledged them. With D-3's 'no time cut' the `pending` list looks complete, but entries drop out of it without the session acting.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-3",
+        ".claude/skills/slice/act-rules.mjs"
+      ],
+      "recommendation": "In `pendingEntries`, do not count as an acknowledgement a comment that itself starts with an entry tag (`[decision]`, `[scope]`, `[broadcast]`, `[incident]`). Or name the limit in D-3 ('an amending entry acknowledges the one it links') and add a task 3.1 case for an amendment. If acknowledgement changes, act.mjs merge (unchanged, Non-goals) reads the same function, so state that too."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "hidden-assumption",
+      "statement": "After the split, #101 still depends on the act queue's tools or on an unversioned stand-in, and it does not say so. (1) D-2 item 6 has every coordinator message end with the block '👤 queue (N)' 'until #133: the interim `act-ui.mjs --list`'. That tool is outside the repository. D-1 rejects exactly this for `pr` ('no project norm moves into a file the repository does not version'). The Goal also says the protocol survives a coordinator restart 'because they are … computed by its scripts', but no script in the repository lists the requests until #133 lands. (2) Appendix A `maintainer-acts` has the agent read 'the done mark'. Task 2.2 is verified by 'the done mark read by this session'. The producer of the `act-done` mark is #133 (D-12, decision 5954536510 item 2: the UI posts it from the maintainer's login). Whether the interim act-ui.mjs posts it is not stated, and the facts file does not say either. (3) D-2 item 6 still checks a patch's 'hash', which only means something against #133's review mark.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-maintainer-acts",
+        "openspec/changes/infra-coordinator/design.md#Goals",
+        "openspec/changes/infra-coordinator/tasks.md#2.2"
+      ],
+      "recommendation": "State the interim honestly. Until #133, the coordinator lists the requests by reading the marked comments (name the `gh api` query in SKILL.md, or have status.mjs list `<!-- act:` comments of the slice's open PRs and issues read-only), not through an unversioned script. Make the results the rule names valid before #133 ('the PR merged, the waiver ACTIVE, the patch commit on the branch, and once #133 lands the done mark'). Verify task 2.2 by the commit on `origin/impl/infra-coordinator`, not by a done mark. Drop 'hash' from D-2 item 6 or say what it is compared with."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Task 1.2 is verified by the `patched impl/infra-coordinator <sha>` line, and task 2.2 by 'the `patched …` line'. That line is printed by act.mjs in the maintainer's own terminal (the agent's shell is refused). The executor can see it only if the maintainer pastes it. The new rule says the agent 'reads the result itself … and never asks the maintainer whether an act is done'.",
+      "targets": [
+        "openspec/changes/infra-coordinator/tasks.md#1.2",
+        "openspec/changes/infra-coordinator/tasks.md#2.2",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-maintainer-acts"
+      ],
+      "recommendation": "Verify both tasks by facts the session reads itself: the commit on `origin/impl/infra-coordinator` with the patch's subject, a committer that is not an agent identity, and exactly the paths of the patch."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Appendix A `maintainer-acts` lists 'starting a session from a chip or restarting one' as acts the agent requests 'by a comment on the PR or issue the act concerns: first line the marker …'. It exempts only the start ('a session start is requested by the coordinator's chip'). D-12 group 5 defines no marker for a restart and says 'a message to the maintainer [is] the request to restart one'. A session that needs a restart either posts a comment with a marker that does not exist, or writes to the maintainer in a chat, which the rule otherwise reserves for the coordinator.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-maintainer-acts",
+        "openspec/changes/infra-coordinator/design.md#D-12"
+      ],
+      "recommendation": "Add the restart to the rule's exemption ('a session start is requested by the coordinator's chip, a restart by a message to the coordinator'), and name who tells the maintainer. Or give it a marker in group 5."
+    },
+    {
+      "id": "F-7",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Review 2 F-11 is only partly closed. The coordinator's exclusive chat is now stated ('Only the coordinator writes the maintainer's commands into its chat, as its queue'). But `env` stays unchanged (D-9) and still says the marker «❗ Выполнить» is 'a fixed token addressed to the maintainer, in the chat and in PRs'. Appendix B row m1 maps '«❗ Выполнить» in the chat' to the marked comment. Neither the D-12 request form nor the '👤 queue' block says whether «❗ Выполнить» still heads a request, so where the token is written is undefined.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-12",
+        "openspec/changes/infra-coordinator/design.md#Appendix-B",
+        ".warrant/local/rules/env.json"
+      ],
+      "recommendation": "Say in D-12 and in change.md where «❗ Выполнить» goes, for example as the head of each item of the coordinator's block and the line before the command in a request comment. Or edit `env` in patch 2."
+    },
+    {
+      "id": "F-8",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "Review 2 F-15 is closed in D-3 ('Without an umbrella … read on the Change's issue') but not in the rule. Appendix A `process` ¶4 still says a session acknowledges 'by a reply on the umbrella'. A Change outside a slice has no umbrella.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/design.md#D-3"
+      ],
+      "recommendation": "Write 'by a reply on the umbrella (a Change outside a slice: on its issue)'."
+    },
+    {
+      "id": "F-9",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Review 2 F-3 is closed for files outside the repository ('files of the repository'). The rule 'In a Change, files of the repository are written only inside the `write_scope` of the active Run' still has two readings for files that a command writes. Task 2.3 has the agent run `warrant sync` as its own commit, writing `AGENTS.md` and the lock. These lie outside the implement Run's scope (`openspec/changes/infra-coordinator/**`, D-10), and the 'written only by `warrant`' list of ¶2 does not include them. The archive-PR's `warrant archive`, and the CONFLICT outcome ('merge `origin/main`, resolve', moved to change.md), also write repository files with no Run active.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/tasks.md#2.3",
+        "openspec/changes/infra-coordinator/design.md#D-10"
+      ],
+      "recommendation": "Write 'files of the repository that the session edits are written only inside …; files a `warrant` command generates (`AGENTS.md`, the lock, the archive) and a merge of `origin/main` are not edits'. Or add `AGENTS.md` and the lock to the list of files written only by `warrant`."
+    },
+    {
+      "id": "F-10",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "Appendix A ¶1 says 'A session runs `warrant` commands that name a Change only on its own Change; the coordinator runs only those that write nothing'. D-5 has the coordinator run `review.mjs`, and task 3.3 has this session run it 'on an open PR of another Change'. review.mjs runs `judge.mjs origin/<head>`, which runs `warrant ci` on that other Change's branch. The S0 incident table says local `warrant ci` leaves evidence (SRA#143). `warrant ci` names no Change in its arguments, so the literal rule allows it. The incident the rule answers ('a session ran `warrant verify` on another Change') is the same act in spirit. Whether review.mjs on another Change is allowed has two readings.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-process",
+        "openspec/changes/infra-coordinator/design.md#D-5",
+        "openspec/changes/infra-coordinator/tasks.md#3.3"
+      ],
+      "recommendation": "State the exception: 'scripts of the skill `slice` that run `warrant` in a scratch worktree outside the repository (judge.mjs, review.mjs, status.mjs) may read any Change'. Or make task 3.3 run review.mjs only on this Change's own impl-PR."
+    },
+    {
+      "id": "F-11",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "D-5 does not say how review.mjs finds a PR's Change and kind. Today's `changeOfBranch` reads them from a head of the form `<kind>/<change>`, and any other head is null. A Change's PR pushed from a `claude/*` branch (the #74 failure) therefore falls under 'A PR without a Change: any policy path … is a finding; nothing else is checked'. Its evidence of another Change and its writes outside the Runs' scope pass with no finding.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-5"
+      ],
+      "recommendation": "Derive the Change from the head branch and, failing that, from `.warrant/changes/*.json` or `openspec/changes/*/` touched by the diff. A PR that touches a Change's files on a head that is not `<kind>/<change>` is a finding ('a Change's PR on a foreign branch'). Add a case to task 3.1."
+    },
+    {
+      "id": "F-12",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Review 2 F-10 is partly closed. (1) The clause 'a second one waits' (one Change holds an AREA at a time — a second one waits) is gone from Appendix A ¶3, and no row places it. (2) Rows t13 (the check of `main` before dispatch), t25 (the P1 queue) and p25 (PR ownership) name 'S \"Coordinator\"' as the new place, but none of D-2's 13 items carries them. Task 3.2 re-checks Appendix B only 'against the final rule texts and `change.md`', so nothing catches a sentence destined for SKILL.md that never arrives. (3) The meanings of the title prefixes `sw` (the switch between S0 and S1) and `infra` are dropped without a row.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Appendix-B",
+        "openspec/changes/infra-coordinator/design.md#D-2",
+        "openspec/changes/infra-coordinator/tasks.md#3.2"
+      ],
+      "recommendation": "Add 'a second one waits' to A ¶3 or give it a row. Add D-2 items for the check of `main` before dispatch and for PR ownership, or point those rows at SKILL.md's existing 'Model' and 'status' text. Extend task 3.2 to SKILL.md. Give the prefixes a row."
+    },
+    {
+      "id": "F-13",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "Review 2 F-2 is closed for tagged entries (`pending` has no time cut). The Goal still promises that a session sees 'every comment of its issue it has not read'. `unread` lists only issue comments newer than the last push, and the rule asks for status.mjs only at two checkpoints. An untagged comment on the issue posted before a later push drops out unread: for example the maintainer's own comment, which D-2 item 5 does not make tagged. That is the #97 shape after the first push.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Goals",
+        "openspec/changes/infra-coordinator/design.md#D-3"
+      ],
+      "recommendation": "Narrow the Goal to 'every comment of its issue newer than its last push', and say that a scope change is binding only as a tagged entry. Or cut `unread` at the time of the session's last status.mjs checkpoint rather than the last push."
+    },
+    {
+      "id": "F-14",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "areasAddedAfterInit compares GitHub's `editedAt` (the server clock) with the record's `transitions[0].at`, written by the local machine's clock. The deciding case of #57 is 11 s apart (07:25:34Z edit, 07:25:45.020Z init), so a clock skew above 11 s flips the result. Separately, any `[decision]` that names the Change and the AREA in backticks clears the flag, with no time order: a decision posted before the edit, or one saying the Change must NOT take the AREA, clears it too.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-4",
+        "openspec/changes/infra-coordinator/tasks.md#3.1"
+      ],
+      "recommendation": "Name a tolerance (an edit within N seconds of init counts as before it, or is flagged as 'at init'), or take init time from the push of the record's commit. Require the clearing `[decision]` to be newer than the edit, and add that case to task 3.1."
+    },
+    {
+      "id": "F-15",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "D-10 closes #119 in the archive-PR 'by the maintainer's decision 5953927808'. The new rule `tracking` has a `process` issue (#119 is labelled `process`) close 'when its prevention is in place as a rule, a test or a setting', and has `Closes #N` in an archive-PR only for a Change issue. #119 has no 'Prevention' section, so `closable` (D-4) never lists it. The decision does say 'its archive-PR closes #119', so the rule and the decision disagree, and nothing in the text reconciles them.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#D-10",
+        "openspec/changes/infra-coordinator/design.md#Appendix-A-tracking"
+      ],
+      "recommendation": "Name #119's prevention (the budget line and warning of status.mjs, and the 4 KiB margin), say it is in place when the impl-PR merges, and keep the archive-PR close as the maintainer's decision. Or add 'or as a decision names' to the rule's closing criteria."
+    },
+    {
+      "id": "F-16",
+      "marker": "FACT",
+      "severity": "INFO",
+      "category": "contradiction",
+      "statement": "The S0 plan [decision] 5950269274 puts `retro S0` at the end of the slice (wave 4, 'retro S0 closes the slice (#101 item 5)'). Task 3.5 runs it now as 'retro S0 wave 1' in the impl-PR of a wave-2 Change. #101's 'Done when' asks for one run on the listed issues, which task 3.5 satisfies. The wave numbering and the later end-of-slice retro are left to the coordinator.",
+      "targets": [
+        "openspec/changes/infra-coordinator/tasks.md#3.5"
+      ],
+      "recommendation": "Say in task 3.5 that this run covers wave 1 and that the end-of-slice retro stays as planned."
+    },
+    {
+      "id": "F-17",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Closure of review 2 checked against the text. F-5 is closed (a chip is the request to start; for restarts see F-6). F-9 is closed (the session puts the GitHub facts into the prompt; this review got them). F-14 is closed (`proposal.md` and human-acceptance paths only through maintainer-authored commits; `.claude/**` is in the profile). F-2 and F-3 are closed in substance, with residues in F-13 and F-9. F-10, F-11 and F-15 are partly closed (F-12, F-7, F-8). F-4 is not closed (F-1, F-2). #101's 'Done when' is covered: by tasks 2.3 and 3.2 (size, items 4–6), by 1.1, 3.3 and 3.4 (section, log, the three commands; broadcast only as a session list), and by 3.5 (retro). #119's close is in D-10. Appendix A measured by line-length estimate, since no shell was allowed: process ≈4 850, tracking ≈3 215, maintainer-acts ≈1 385, plus env 1 825 and frame 54, ≈11 330 bytes. That agrees with the design's 11 344 and is under 12 288.",
+      "targets": [
+        "openspec/changes/infra-coordinator/design.md#Review-history",
+        "openspec/changes/infra-coordinator/design.md#D-1"
+      ],
+      "recommendation": "None beyond the findings above. Task 2.3 measures the real size."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/infra-coordinator/design.md#Appendix-A",
+      "change": "process ¶3: AREA after init only by a `[decision]` (or decide otherwise, D-1), and the same in the proposal and D-2 item 5. ¶4: who posts a `[decision]`, and acknowledgement without an umbrella. ¶2: generated files and merges are not edits. ¶1: the scratch-worktree exception for the skill's scripts. maintainer-acts: the restart form, and the results readable before #133."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/infra-coordinator/design.md#D-3",
+      "change": "Exclude tagged entries from counting as acknowledgements (or name the limit) and add the amendment case to task 3.1. Align the Goal with `unread`."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/infra-coordinator/design.md#D-2",
+      "change": "Item 3 without the coordinator's own `[decision]`. Item 6: the interim queue read from GitHub by a versioned query, not act-ui.mjs, and without 'hash'. Items for the check of main before dispatch and PR ownership (Appendix B)."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/infra-coordinator/tasks.md",
+      "change": "1.2 and 2.2 verified by the commit on origin (committer not an agent, exact paths), not by the `patched` line or the done mark. 3.2 also against SKILL.md. 3.3 review.mjs on the own impl-PR, or the exception stated. 3.1 cases for a foreign-branch PR, a clearing `[decision]` older than the edit, and an amendment as acknowledgement."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-1",
+      "question": "Does the coordinator's interim act-ui.mjs (outside the repository) post the `<!-- act-done: … -->` mark from the maintainer's login, and where does it live so a restarted coordinator can run it? The facts file does not say.",
+      "blocking": false
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The byte count of Appendix A is estimated from line lengths (no shell allowed). The frame stays at 54 bytes with four rules, as review 2 measured."
+    },
+    {
+      "id": "A-2",
+      "statement": "Local `warrant ci` writes evidence (the S0 incident table, SRA#143 still open), so judge.mjs writes in its scratch worktree."
+    },
+    {
+      "id": "A-3",
+      "statement": "The authors of the umbrella entries are `homasters` as the facts file shows; the acknowledgement behaviour is read from act-rules.mjs on this branch (patch 1 is assumed not to change `acknowledges`, as D-3 says 'unchanged')."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "After `init`, may a `[scope]` add an AREA to a Change's `Where:`, or only a `[decision]` (F-1)?",
+      "options": [
+        "only a `[decision]` recording the maintainer's decision; the rule text, the proposal and D-2 item 5 change to match D-4",
+        "a `[decision]` or a `[scope]` posted by the coordinator; D-4 clears on both, and the trust limit (a session can post a `[scope]`) is named in the rule"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:0b1f5ffb08575eae354c63510ce68b82aef858e42b84913596289200169472d4",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T14:40:00Z",
+    "finished_at": "2026-10-02T15:20:00Z"
+  }
+}
