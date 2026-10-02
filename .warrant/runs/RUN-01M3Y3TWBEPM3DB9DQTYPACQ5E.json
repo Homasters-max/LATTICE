@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y3TWBEPM3DB9DQTYPACQ5E",
+  "change": "s0-projections",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-projections/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-projections",
+  "started_at": "2026-10-02T10:51:20.346Z",
+  "finished_at": "2026-10-02T10:54:00.864Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:cfa3ab1cf8350e355e9cbb63a3d64aba266912173c293e4201f5051fb083fa0d",
+  "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+  "guard_events": []
+}

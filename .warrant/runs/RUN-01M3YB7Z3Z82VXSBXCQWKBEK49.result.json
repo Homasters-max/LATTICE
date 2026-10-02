@@ -1,0 +1,142 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3YB7Z3Z82VXSBXCQWKBEK49",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "BLOCKER",
+      "category": "contradiction",
+      "statement": "SCN-TR-002 conflicts with REQ-TR-002 as written. The scenario's first list is the one `liveRevision` gets: three `std/live@1` events plus \"an event of type `std/other@1` with the body {\"of\":{},\"key\":{\"id\":\"lattice/setup\"},\"value\":9}\". The scenario then says \"`currentFacts` gets the bodies of the first list\" and expects `{\"id\":\"lattice/setup\"} -> 2`. REQ-TR-002 defines `currentFacts(facts)` over a list of bodies only. It has no type filter, and it skips only bodies that are not fact bodies. The `std/other` body is a fact body (an object `key` and only `value`) and comes last for that key, so a conforming `currentFacts` gives `lattice/setup -> 9`. A test written to the letter fails against a correct implementation. An implementation changed so the test passes breaks the requirement.",
+      "targets": [
+        "SCN-TR-002",
+        "REQ-TR-002"
+      ],
+      "recommendation": "Either give `currentFacts` only the bodies of the three `std/live@1` events of the first list (expected map unchanged), or keep all four bodies and expect `{\"id\":\"lattice/setup\"} -> 9` and `{\"id\":\"lattice/solve\"} -> 3`. The second also shows that `currentFacts` ignores the event type."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MAJOR",
+      "category": "missing-boundary",
+      "statement": "REQ-LG-010 opens every prefix of the genesis chain: an empty ledger, genesis only, and genesis + `std`. REQ-CL-004 applies a user proposal on whatever opened, and nothing checks that the resulting commit keeps the store on the chain or that store init finished. Three cases follow. (a) On an empty store — which the Migration Plan says still opens, an old `lattice init` store — `lattice apply` exits 0 and writes the user's commit as seq 1. Every later command then exits 2 with `LG-G01` seq 1, so one successful command leaves the store unopenable. (b) After SCN-CL-017 (`moved` on the third append) the store holds genesis + `std`. `init` refuses because `store/` exists, `apply` appends the user's proposal as commit 3, and the store opens for good without `<namespace>/namespace`, `<namespace>/setup` or its `live` fact. (c) Genesis only: apply writes commit 2, and the next open refuses `LG-G02`. None of these is described, and SCN-LG-014 and SCN-CL-016 do not cover them.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CL-004",
+        "REQ-CL-002",
+        "SCN-CL-017",
+        "SCN-LG-014"
+      ],
+      "recommendation": "Choose one and add a scenario. (1) Opening a store, run by `apply` and `export`, refuses a ledger that does not yet hold the four init commits — for example code 2 naming `LG-G04` and the store — while `init`'s in-memory steps still open the shorter prefixes. (2) Apply on a store refuses a commit that would leave the chain. Whichever you choose, say how a user recovers from a partial init (delete `store/` and run `init` again) and change the Migration Plan line about empty stores to match."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-AC-001 says \"Every adapter of the port SHALL answer, for every hash: a list of acts ... the same list, by content, on every call with the same hash\". REQ-AC-005 says the `github` adapter's `actsOn` throws when the transport throws or a page is not a list, and that the next call reads again and may answer. SCN-AC-005 expects exactly that (\"throws on its first call and answers the first answer on the second\"). So the general contract has no room for a throw, while one adapter is required to throw.",
+      "targets": [
+        "REQ-AC-001",
+        "REQ-AC-005",
+        "SCN-AC-001"
+      ],
+      "recommendation": "In REQ-AC-001 say that an adapter may throw when its source cannot be read, and that the rules (list form, frozen, same answer on every call) apply to every call that answers."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "The commit form (REQ-LG-003), which Opening checks, accepts any act whose `names` is a non-empty list of non-empty strings. Nothing ties those names to the commit's `proposal` or its held ids. REQ-AC-004 has `recordedActs` answer, for `h`, every act of every commit whose `proposal` is `h`. A ledger that opens can therefore hold a commit with proposal `H` and an act naming only `K`, and `recordedActs` then answers that act for `H`. That breaks REQ-AC-001's rule \"never an act whose names are all hashes other than the asked one\". Apply never builds such a commit, but a hand-edited ledger that keeps its hash chain opens.",
+      "targets": [
+        "REQ-AC-004",
+        "REQ-AC-001",
+        "REQ-LG-003"
+      ],
+      "recommendation": "Have `recordedActs` drop an act whose names are all hashes other than `h`, as it already drops malformed `acts`. Alternatively, make the commit form require each act name to be the commit's `proposal` or the `id` of one of its records."
+    },
+    {
+      "id": "F-5",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "REQ-CL-002 refuses when `store/` already exists, then later creates `store/` and writes `store/lattice.json`. The only concurrent case it describes is a `moved` answer to an append. If two `lattice init` runs, possibly with different `--namespace`/`--owner`, both pass the existence check, it is not said whether creating `store/` must fail when the folder now exists. The second run could overwrite the first run's `store/lattice.json`, and the first run's commits would end up beside the second run's configuration. The `moved` refusal then fires only on an append, after the configuration was already overwritten.",
+      "targets": [
+        "REQ-CL-002",
+        "REQ-CL-001"
+      ],
+      "recommendation": "State that `init` creates `store/` exclusively (it fails if the folder appeared after the check) and refuses with code 2 naming the store, writing nothing. Or list the race as a known limit beside LG-C06."
+    },
+    {
+      "id": "F-6",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "proposal.md Impact lists the new tests as `test/ledger/{genesis,init,basis}.test.ts` and does not list `test/fixtures/acts/`. design.md D-11 has no `basis.test.ts`: it binds SCN-LG-013 to `test/ledger/init.test.ts`. D-11 and D-12 also add `test/fixtures/acts/github/` and `test/ledger/permutation.test.ts`, `cases.ts`.",
+      "targets": [
+        "openspec/changes/s0-bootstrap/proposal.md",
+        "openspec/changes/s0-bootstrap/design.md"
+      ],
+      "recommendation": "Make the Impact test list match D-11 and D-12: drop `basis.test.ts` or bind SCN-LG-013 to it, and add `test/fixtures/acts/**`."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "Opening a store checks only commits 1 and 2 and the kernel version. Nothing checks that `store/lattice.json` (namespace, owner) agrees with the namespace entity of commit 3. A configuration edited after init makes `import-md` write ids into a namespace that has no namespace entity. S0 defers namespace existence (CT-N03), so this is accepted, but the spec does not say it.",
+      "targets": [
+        "REQ-LG-010",
+        "REQ-CL-002",
+        "REQ-CT-002"
+      ],
+      "recommendation": "Record the gap with the namespace-existence part of CT-N02 deferred to CT-N03 (proposal Non-goals or design D-5)."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-bootstrap/specs/trust/spec.md",
+      "change": "SCN-TR-002: replace \"and `currentFacts` gets the bodies of the first list\" with \"and `currentFacts` gets the bodies of the three `std/live@1` events of the first list\" (F-1). Alternatively, keep the four bodies and expect `{\"id\":\"lattice/setup\"} -> 9`."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-bootstrap/specs/ledger/spec.md",
+      "change": "REQ-LG-010 / REQ-CL-004: add that `apply` and `export` refuse with code 2 a store whose ledger does not hold the four commits of store init (naming `LG-G04` and the store), while `init`'s in-memory steps open the prefixes. Add a scenario: `apply` on an empty store and on the genesis + `std` store left by SCN-CL-017 both exit 2 and write nothing (F-2)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-bootstrap/specs/acts/spec.md",
+      "change": "REQ-AC-001: \"An adapter may throw when its source cannot be read (REQ-AC-005); every answer it gives keeps these rules.\" REQ-AC-004: \"an act whose names are all hashes other than `h` is not answered\" (F-3, F-4)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "In SCN-TR-002, \"the first list\" means the four events `liveRevision` first gets, including the `std/other@1` event: the scenario introduces them as one list and later says \"the same list\" and \"the first list\"."
+    },
+    {
+      "id": "A-2",
+      "statement": "Review 1's findings F-1 to F-18 were checked against the current delta specs and design row I-3, and each was found closed: Opening and Opening a store are split, the session type holds every CT-P01 member, the session is checked for validity, fact bodies and the revision range are defined, tokens are defined, no transport ships in S0, the stems `namespace` and `setup` are refused, init builds in memory, act strings must be non-empty, paging and retry are defined, dotted reserved namespaces are covered, opening repeats the exemption conditions, the readers of `recordedActs` are named, the order of `policyOf` refusals is given, the wording is fixed, D-13 is recorded, and exact logins and the synchronous transport are stated. F-4 of review 1 is closed in the requirement, but the scenario it added has the new defect F-1."
+    }
+  ],
+  "decisions_required": [
+    {
+      "id": "D-1",
+      "question": "F-2: what happens to a store that holds only a prefix of the init commits (an empty store from an older `init`, or genesis + `std` left by a `moved` init) when `apply` or `export` runs?",
+      "options": [
+        "Refuse with code 2 (naming LG-G04 and the store) unless the ledger holds the four init commits; recovery is deleting `store/` and running `init` again",
+        "Open it, but have `apply` refuse a commit that would leave the genesis chain (no user commit before commit 2 / commit 4)",
+        "Accept the current behaviour and state it as a known limit (stores are disposable before the switch, LG-G05)"
+      ]
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:498a3ca9be6e3d2999f0912c0b6a3d05f486a533a6156e157885fd3fd4834f28",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T12:00:00Z",
+    "finished_at": "2026-10-02T12:35:00Z"
+  }
+}
