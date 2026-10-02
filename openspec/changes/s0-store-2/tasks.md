@@ -9,14 +9,15 @@
   option and recovery of D-4, D-5, D-6 (`REQ-SR-001`, `REQ-SR-002`, `REQ-SR-004`, design D-2, D-6) and
   `test/store/contract.test.ts`; verified by the `[memory]` tests with the tokens `SCN-SR-001`, `SCN-SR-002`,
   `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-006`, `SCN-SR-007`, `SCN-SR-008`, `SCN-SR-009`, `SCN-SR-011`, `SCN-SR-012`,
-  `SCN-SR-013` passing, and by `SCN-AR-008` passing with the new adapter folder
+  `SCN-SR-013`, `SCN-SR-014` passing, and by `SCN-AR-008` passing with the new adapter folder
 
 ## 2. JSONL adapter hardened
 
-- [ ] 2.1 `src/adapters/store-jsonl/index.ts` — options, lock files created whole and verified (compare-and-swap), the
-  removal rules of a failed take and of a release, fencing with the margin, `append` of D-5 (`REQ-SR-001`,
+- [ ] 2.1 `src/adapters/store-jsonl/index.ts` — checked options, lock files created whole and verified
+  (compare-and-swap), removal of smaller files by a take that holds, removal of its own file by a take that does not,
+  a release that replaces its own file by an expired lock, fencing with the margin, `append` of D-5 (`REQ-SR-001`,
   `REQ-SR-002`, design D-1, D-2, D-3, D-5); verified by the `[jsonl]` tests with the tokens `SCN-SR-001`, `SCN-SR-002`,
-  `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-008`, `SCN-SR-011`, `SCN-SR-013` passing
+  `SCN-SR-003`, `SCN-SR-004`, `SCN-SR-008`, `SCN-SR-011`, `SCN-SR-013`, `SCN-SR-014` passing
 - [ ] 2.2 Recovery of a torn tail on bytes with `recover: true`, determined again under the lock and fenced before the
   cut, in `read` and in `append` (`REQ-SR-004`, design D-4); verified by the `[jsonl]` tests with the tokens
   `SCN-SR-006`, `SCN-SR-007`, `SCN-SR-009`, `SCN-SR-012` passing, and the tests with the tokens `SCN-SR-006` (the cut

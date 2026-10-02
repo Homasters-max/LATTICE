@@ -68,6 +68,10 @@ memoryLedger(): MemoryLedger;
 memoryStore(ledger: MemoryLedger, options?: StoreOptions): Store;
 ```
 
+Both constructors check the options (REQ-SR-001, review 1 of this Change, F-3, F-5): `owner` matches
+`^[A-Za-z0-9-]{1,64}$` (a `randomUUID()` does), `ttl` is a safe integer `>= 2`; otherwise they throw a `RangeError`. A
+reading of `now()` that is not a safe integer throws from the operation that read it.
+
 `assembly` keeps calling `jsonlStore(ledgerFile)`, so the CLI gets the lock, fencing and `fsync` with the defaults, and
 recovery stays off until #98 turns it on for the CLI with the `cli` delta and the tests it changes. The store's clock is
 the adapter's own `now`, not the `clock` port: a lock expiry is never recorded in the ledger, so it is not a recorded
@@ -93,47 +97,61 @@ folder (`readdirSync`, names matching `^<ledger file name>\.lock\.([1-9][0-9]*)$
   it is exactly the canonical JSON of `{"expires":<ms>,"owner":"<owner>"}` and a line feed (`JSON.parse`, two keys,
   `owner` a string, `expires` a safe integer, re-serialised text equal to the file); anything else counts as expired.
   `ENOENT` while reading the file means it was removed after the listing: look again. Any other failure is thrown.
-- Take: open `<ledger file>.lock.<owner>.tmp` with `wx` (never truncating a file of that name, which could be linked to
-  a lock), write the content, `fsync`, close; `linkSync(tmp, <ledger file>.lock.<k+1>)` where `k` is the `<n>` it looked
-  at (`0` when none) — atomic, fails with `EEXIST` when the name exists, and makes the file appear with its whole
-  content; remove the temporary file. `EEXIST` answers `moved`.
+- Take: open `<ledger file>.lock.<owner>.tmp` with `wx` — `EEXIST` (left by a crash of a store with the same owner,
+  which a fresh owner makes impossible) is a thrown failure, as is a failure while writing, after which the temporary
+  file is removed —, write the content, `fsync`, close; `linkSync(tmp, <ledger file>.lock.<k+1>)` where `k` is the
+  `<n>` it looked at (`0` when none) — atomic, fails with `EEXIST` when the name exists, and makes the file appear with
+  its whole content; remove the temporary file (a failure swallowed: the leftover is inert). `EEXIST` of the link
+  answers `moved`.
 - Verify (the second half of the compare-and-swap): look again at the whole listing; the take holds only when the
   greatest file is its own and the greatest *other* file is `{ n: k, text }` exactly as looked at (no other file when it
   looked at none). Otherwise it removes its own lock file only — never a smaller one, which may be the lock of the
-  writer that won (SCN-SR-011) — and answers `moved`.
+  writer that won (SCN-SR-011) — and answers `moved`. A take that holds removes every lock file with a smaller `<n>`
+  (failures swallowed).
 - The take runs inside a `try`: a failure thrown after the lock file was created removes the own lock file and the
   temporary file (failures of those removals swallowed), then rethrows (REQ-SR-002).
-- Fencing: look again; own when the greatest file is its own (same `owner`, the content it wrote) and
+- Fencing: look again; own when the greatest file is its own (same `<n>`, the content it wrote) and
   `now() < expires - ttl / 2` (I-21).
-- Release (after a take that held): list; remove its own file and every lock file with a smaller `<n>`; failures are
-  swallowed (REQ-SR-002). A file with a greater `<n>` is never removed.
+- Release (after a take that held): remove a leftover temporary file of its owner, write the released content
+  `{"expires":0,"owner":"<owner>"}` to the temporary file (`wx`), `fsync`, close, and `renameSync` it onto its own lock
+  file name — an atomic replacement that never removes a lock file. Failures are swallowed (REQ-SR-002); the lock then
+  expires by its TTL.
 
-Why it is safe. A lock file of a live holder H at `<n>` is removed only by H's release, by the release of a holder with a
-greater `<n>` — which took the lock only after it looked at H's lock as expired —, or never: a take that does not hold
-removes only its own file. While H's file is the greatest, another writer W either looked at H's lock (unexpired:
-`moved`), or looked at a stale listing whose greatest `<k>` is below `<n>`: then W's `<k+1>` collides with an existing
-name (`EEXIST`), or is below `<n>` and W's verify finds that its own file is not the greatest; a stale listing at or
-above `<n>` is impossible while H's file exists, and after it is gone costs only liveness. Numbers are reused after a
-release, but the verify compares the content, which carries the owner — unique per store — and the expiry, so a writer
-that looked before the reuse fails its verify (review 2 of #89, F-1, interleaving 1: SCN-SR-011). A lock file never
-appears half-written, so a fresh lock is never mistaken for an expired one (interleaving 2). Two verifies can both fail
-(each sees the other's file); both answer `moved`, which is safe. What remains is the gap between a fencing check and
-the write or the cut, closed unless that gap exceeds half the TTL (REQ-SR-002, Limits).
+Why it is safe (review 1 of this Change, F-1). Only two operations remove a lock file: a take that holds removes files
+smaller than its own, and a take that does not hold removes its own file. So the greatest file is removed only by a
+creator whose take did not hold, and a file under which a take held stays the greatest until a greater take holds;
+after that it is smaller than the greatest forever, because takers name `<k+1>` from the greatest they saw and the
+greatest is never removed. Hence a number never holds two takes, and a release — which writes only its own number —
+can never overwrite a live lock of another store (SCN-SR-014); in the case the review found, a stale writer whose lock
+was taken over released by removing "its" number, under which a third writer had meanwhile taken the lock again. While
+a live holder H's file is the greatest, another writer W either looked at H's lock (unexpired: `moved`), or looked at a
+stale listing whose greatest `<k>` is below H's `<n>`: then W's `<k+1>` collides with an existing name (`EEXIST`), or
+lands on a removed smaller name and W's verify finds that its own file is not the greatest (W then removes only that
+file). A lock file never appears half-written, so a fresh lock is never mistaken for an expired one. Two verifies can
+both fail (each sees the other's file); both answer `moved`, which is safe. The verify still compares content, so a
+lock placed under a reused number by anything outside this protocol is not taken for the one looked at (SCN-SR-011).
+What remains is the gap between a fencing check and the write or the cut, closed unless that gap exceeds half the TTL
+(REQ-SR-002, Limits).
+
+The price: one released lock file stays next to the ledger at rest (`store/knowledge.jsonl.lock.<n>` for the CLI),
+visible in `git status`; where it lives for the CLI, or a `.gitignore`, is for #98.
 
 Rejected: one lock file replaced with `renameSync` — review 1 of #89, F-1: two takers of one expired lock both "win";
 exclusive creation of the next number without a verify — review 2 of #89, F-1: numbers are reused after a release, and
-a lock created with `wx` is visible empty before its content is written; a lock number that never decreases (a marker
-left at release) — it closes the reuse but leaves a marker file behind after every command; a rename-aside of the
-expired lock — a stale rename can move a fresh lock aside; OS file locks — no portable `flock` in Node without a
-package; a lock folder (`mkdir`) — carries no owner or expiry atomically. Hard links exist on NTFS, ext4 and APFS, the
-local disks LG-C06 means; on FAT or exFAT `linkSync` throws and every append is a thrown failure (REQ-SR-002).
+a lock created with `wx` is visible empty before its content is written; a release that removes its lock file by name —
+review 1 of this Change, F-1 BLOCKER: numbers are reused and a stale writer removes a live lock; the same after a
+content check — a window between the check and the removal remains; a rename-aside of the expired lock — a stale
+rename can move a fresh lock aside; OS file locks — no portable `flock` in Node without a package; a lock folder
+(`mkdir`) — carries no owner or expiry atomically. Hard links exist on NTFS, ext4 and APFS, the local disks LG-C06
+means; on FAT or exFAT `linkSync` throws and every append is a thrown failure (REQ-SR-002).
 
 ### D-4. JSONL `read` and recovery
 
 `read` reads the file as bytes (a missing file is empty). The torn tail is the bytes after the last `0x0a`. Without a
-torn tail the bytes are decoded as strict UTF-8 and split as today. With one and recovery off, the whole file is decoded
-as strict UTF-8 (a throw when it is not) and the tail is returned as `torn`, as the skeleton does. With one and recovery
-on:
+torn tail the bytes are decoded as strict UTF-8 and split as today. With one and recovery off: look at the lock (D-3,
+read only); under an unexpired lock of another owner return the complete lines and `torn: null` (an append in
+progress, review 1 of this Change, F-2); otherwise decode the whole file as strict UTF-8 (a throw when it is not) and
+return the tail as `torn`, as the skeleton does. With one and recovery on:
 1. look at the lock (D-3); an unexpired lock of another owner → return the complete lines only (an append in progress);
 2. `pause?.("take")`; take and verify the lock (D-3); `moved` → as in 1;
 3. under the lock, read the bytes again and find the torn tail again; when there is none, nothing is moved;
@@ -155,9 +173,9 @@ an offset after which the new holder may already have appended a commit answered
 `append` that holds the lock runs steps 3–6 before its tail check.
 
 What the maintainer does with `recovered/`: it is evidence of a cut write, for the maintainer to read and delete; it is
-never read by LATTICE and never meant to be committed. A lock file that outlives its command expires by its TTL and is
-removed by the release of the next store that takes the lock. A lock file exists while an append runs or a read
-recovers a torn tail, and stays after a crash or a failed removal; a temporary lock file left by a crash is inert.
+never read by LATTICE and never meant to be committed. One released lock file stays next to the ledger at rest (D-3);
+a lock left unreleased by a crash or a failed release expires by its TTL, and the next take that holds removes it as a
+smaller file. A temporary lock file left by a crash is inert.
 Neither `init` nor this Change writes a `.gitignore`; S0 projects have only the throwaway stores of tests and of manual
 acceptance (LG-G05).
 
@@ -210,7 +228,7 @@ prove nothing about a second adapter (ST-M02).
 | Path | Proves |
 |---|---|
 | `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `lockOwner()`, `recovered()` (in order), `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
-| `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009, -011, -012, -013 on both adapters, one `describe` per adapter, test names `SCN-SR-0nn [jsonl] …` / `[memory]`; the scenarios of REQ-SR-004 with `recover: true` |
+| `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009, -011, -012, -013, -014 on both adapters, one `describe` per adapter, test names `SCN-SR-0nn [jsonl] …` / `[memory]`; SCN-SR-013 with `recover: false`, every other with `recover: true`; the option checks of D-2 |
 | `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, lock removal), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`) |
 
 `test/cli/**`, `test/e2e/**` and `test/architecture/rules.test.ts` are not edited and must pass as they are: the CLI's
@@ -255,6 +273,13 @@ spec; their evidence ids are those of #89.
 | I-26 | D-3 "Why it is safe" covers a stale listing at or above a holder's number and bases the reuse argument on the owner in the content. | Review 3 of #89, F-6 (INFO). | approval of #89 |
 | I-27 | Recovery is an option of the adapters, off by default; with it off a torn tail is handed over and an append answers `moved` while it exists (REQ-SR-001, SCN-SR-013); #98 turns it on for the CLI. | `test/cli/apply.test.ts` (SCN-CL-005, SCN-CL-008) expects the skeleton's behaviour, and #57 keeps it (maintainer's decision on #44, comment 5948469748). | maintainer's decision on #44 |
 | I-28 | The `cli` delta of #89 (REQ-CL-001, REQ-CL-004, SCN-CL-011, the CLI scenario of a recovered torn tail), the CLI's TTL and the removal of the skeleton store tests in `test/cli/apply.test.ts` are Change #98 `s0-store-cli`. | AREA `CL` is held by #56 first; the store starts on `SR` alone. | maintainer's decision on #44 |
+| I-29 | A release never removes a lock file: it replaces its own file, whole, by an expired lock; a take that holds removes the smaller files; a released lock file stays at rest. REQ-SR-002, D-3; new SCN-SR-014. | Review 1 of this Change (`EVID-01M3XXKQHGY1H0B6BTJ6SZ06D6`), F-1 BLOCKER: a stale writer's release removed by number a live lock taken again under that number. | maintainer, in this session |
+| I-30 | With recovery off, a torn tail under an unexpired lock of another owner is an append in progress: `read` returns the commits before it and no torn tail (REQ-SR-001, D-4; SCN-SR-013 extended). | Review 1 of this Change, F-2 (decision D-1 of the review). | maintainer, in this session |
+| I-31 | The owner (`[A-Za-z0-9-]{1,64}`), the TTL (a safe integer `>= 2`) and the clock readings (safe integers) are checked (REQ-SR-001, D-2). | Review 1 of this Change, F-3, F-5. | design |
+| I-32 | SCN-SR-013 runs with recovery off, every other contract scenario with recovery on (REQ-SR-001). | Review 1 of this Change, F-4. | design |
+| I-33 | The failures of the temporary lock file are specified: it already exists or cannot be written — thrown, no lock left; it cannot be removed after the link — left, not thrown (REQ-SR-002, D-3). | Review 1 of this Change, F-6. | design |
+| I-34 | `append` on complete lines that are not valid UTF-8 is a thrown failure (REQ-SR-001). | Review 1 of this Change, F-7. | design |
+| I-35 | A recovery that always exceeds half the TTL before its cut is named in the Limits of REQ-SR-002. | Review 1 of this Change, F-8 (INFO). | design |
 
 ## Risks / Trade-offs
 
@@ -274,6 +299,8 @@ spec; their evidence ids are those of #89.
   the message "the tail of the ledger moved" until #86 adds a reason.
 - [Until #98, the CLI does not recover a torn tail] → it refuses the ledger naming LG-C04, as today; the store is
   disposable before the switch (LG-G05).
+- [A released lock file stays next to the ledger at rest (I-29)] → for the CLI `store/knowledge.jsonl.lock.<n>` shows in
+  `git status`; #98 decides its place or a `.gitignore`; S0 stores are throwaway (LG-G05).
 
 ## Migration Plan
 

@@ -58,10 +58,11 @@ None. The `cli` spec is unchanged here; its changes are #98.
   `src/ledger/ports/store.ts`, the module matrix, the CLI entry and command table, `src/assembly/index.ts`,
   `package.json`. Every test under `test/cli/**` keeps passing unchanged: `assembly` calls `jsonlStore(file)` with the
   defaults, so the CLI gets the lock, fencing and `fsync`, and recovery stays off. No new dependency.
-- Files on disk: a lock file `<ledger>.lock.<n>` exists while an append runs or a read recovers a torn tail; after a
-  crash or a failed removal it stays until the next store that takes the lock, once it has expired, removes it; a
-  temporary lock file `<ledger>.lock.<owner>.tmp` exists for the moment of a take and may be left by a crash;
-  `recovered/` appears only after a torn tail was recovered.
+- Files on disk: one lock file `<ledger>.lock.<n>` stays next to the ledger file after the first append, released
+  (expired) at rest — lock numbers are never reused, so the greatest one is kept (maintainer's decision on review 1 of
+  this Change); for the CLI that is `store/knowledge.jsonl.lock.<n>`, which shows in `git status` until #98 decides its
+  place or a `.gitignore`. A temporary lock file `<ledger>.lock.<owner>.tmp` exists for the moment of a take and may be
+  left by a crash; `recovered/` appears only after a torn tail was recovered.
 - AREA `SR` only (decision above).
 - Follow-ups: #98 (`s0-store-cli`), #86 (the port comment on `torn`, a `locked` reason for `append`).
 
