@@ -14,14 +14,14 @@
 - [x] 1.4 `2-merge-flow-rules.patch` (`.warrant/local/rules/{maintainer-acts,process,env}.json`, the Appendix), applied
   by the maintainer with `act.mjs patch infra-merge-flow <file>` after the agent's `--dry-run` prints `would patch`;
   verified by the commit naming exactly the three paths and the `patched impl/infra-merge-flow <sha>` line
-- [ ] 1.5 `warrant sync`: `AGENTS.md`, `.warrant/warrant.lock.json`; verified by `warrant validate` and
+- [x] 1.5 `warrant sync`: `AGENTS.md`, `.warrant/warrant.lock.json`; verified by `warrant validate` and
   `warrant sync --check` green, `AGENTS.md` carrying the sentences of the Appendix
 
 ## 2. Checks
 
-- [ ] 2.1 `node --test .claude/skills/slice/act-rules.test.mjs` green, output pasted in the impl-PR body: the cases of
+- [x] 2.1 `node --test .claude/skills/slice/act-rules.test.mjs` green, output pasted in the impl-PR body: the cases of
   design D-8
-- [ ] 2.2 `act.mjs` on the real repository in the agent's shell, outputs pasted in the impl-PR body:
+- [x] 2.2 `act.mjs` on the real repository in the agent's shell, outputs pasted in the impl-PR body:
   - `merge <N>` without `--dry-run` → `refused: … CLAUDECODE …` and `refused: … acts as homasters …`;
   - `merge 109 --dry-run` (merged) → `refused: … not OPEN …`;
   - `merge <N> --dry-run` on this Change's impl-PR before `VERIFYING` → `refused: … record … IMPLEMENTING, not
@@ -32,8 +32,8 @@
   - `patch infra-merge-flow D:/tmp/infra-merge-flow/2-merge-flow-rules.patch --dry-run` before 1.4 → `would patch
     impl/infra-merge-flow: …` with the three paths; the same with a patch touching `src/**` → `refused: … implement
     Run …`
-- [ ] 2.3 `wait-pr.mjs` on a real PR: usage errors exit 64; a merged PR prints `MERGED` and exits 0
-- [ ] 2.4 `warrant check infra-merge-flow tests-passed` `PROVEN` (the rule-delivery block of `pin.test.ts` sees the
+- [x] 2.3 `wait-pr.mjs` on a real PR: usage errors exit 64; a merged PR prints `MERGED` and exits 0
+- [x] 2.4 `warrant check infra-merge-flow tests-passed` `PROVEN` (the rule-delivery block of `pin.test.ts` sees the
   new texts); `npm run typecheck` green
-- [ ] 2.5 Implementation review (rule `process`, skill `code-review`), result in the impl-PR body; a patch it needs
+- [x] 2.5 Implementation review (rule `process`, skill `code-review`), result in the impl-PR body; a patch it needs
   applied with `act.mjs patch`; `warrant verify infra-merge-flow`
