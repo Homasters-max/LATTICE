@@ -1,0 +1,105 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3XSVYSCVSJ6VA7D9JNBPJ8E",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "hidden-assumption",
+      "statement": "REQ-LG-004 defines the tail a commit was built on by two values, `seq` = `base` and commit hash = `prev`, 'so the appended commit keeps the hash chain (LG-C04)'. It also says the writer 'SHALL append it only after the `seq` of its `base`; when the ledger has moved since it was opened, the writer reads it again and checks the commit against it'. In REQ-CL-004 the command runs that check only 'When the store answers that the tail moved', and the `store` port stays unchanged (proposal.md Impact; `append(commit, after: number)` compares `seq` only). Suppose the tail is replaced at the same `seq` between opening and appending, for example by a git checkout or rebase of `store/knowledge.jsonl` onto another branch's ledger, or by a hand edit. The store does not answer `moved`, the commit is appended, and the chain breaks. The next opening then refuses the ledger with LG-C04, code 2. So 'moved' means a `seq` change for the writer and a `seq` or hash change for the check. Design D-6 says 'a tail replaced at the same `seq` cannot pass and break the chain'. That holds for the pure `checkTail`, not for the command. I-12 closes review 2 F-6 only at the level of the pure check.",
+      "targets": [
+        "REQ-LG-004",
+        "REQ-CL-004",
+        "openspec/changes/s0-apply-checks/design.md"
+      ],
+      "recommendation": "Say in REQ-LG-004 or REQ-CL-004 that the writer learns that the tail moved only from the store's `moved` answer, which compares `seq`. Say that until the store adapters of #57 (LG-C06), a tail rewritten at the same `seq` is not caught at append and is refused by LG-C04 at the next opening. Narrow the claim in D-6 to `checkTail`."
+    },
+    {
+      "id": "F-2",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "proposal.md, What Changes, 'Tail (LG-C03)': 'a commit whose `base` is not the tail of the ledger when it is appended is rejected with rule `LG-C03`'. REQ-LG-004, after I-6 and I-12, answers `existing` and not LG-C03 when the moved ledger already holds the commit's `proposal`. SCN-CL-014 and the third case of SCN-LG-005 pin that answer, exit 0 with `{\"outcome\":\"commit\",\"seq\":1}`. REQ-LG-004 also rejects a tail whose `seq` matches but whose hash is not the commit's `prev`. The bullet says the opposite of the spec for two writers of one proposal and leaves out the hash.",
+      "targets": [
+        "openspec/changes/s0-apply-checks/proposal.md",
+        "REQ-LG-004",
+        "SCN-CL-014",
+        "SCN-LG-005"
+      ],
+      "recommendation": "Rewrite the Tail bullet: 'a commit whose `base` and `prev` are not the `seq` and hash of the tail when it is appended is rejected with rule `LG-C03` instead of being refused with code 2, unless the ledger already holds a commit of the same proposal, which is then answered (LG-C08)'."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "I-4 added two obligations to REQ-AR-011. First, 'a fixture whose ledger does not open fails the test, naming the folder', where the ledger is `ledger.jsonl`, or `ledger.jsonl` followed by `moved.jsonl`. Second, `expected.json` holds at least one rejection. SCN-AR-017, the only scenario of the requirement, still exercises only a missing folder and an extra folder. A test carrying the token SCN-AR-017 can omit both new failure modes and still satisfy the scenario, so these clauses have no verifying scenario. tasks.md 3.2 lists them, but the spec does not pin them.",
+      "targets": [
+        "REQ-AR-011",
+        "SCN-AR-017"
+      ],
+      "recommendation": "Extend SCN-AR-017. WHEN: the test also runs with a fixture folder whose `ledger.jsonl` followed by `moved.jsonl` does not open, and with a fixture folder whose `expected.json` is `[]`. THEN: each is reported with the name of its folder."
+    },
+    {
+      "id": "F-4",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "SCN-LG-003 reads: 'apply runs on a proposal of a new session event and the four entity intents …; then on the same proposal with the body of `lattice/fx-a02` changed; then on the same proposal with the type of `lattice/fx-a01` changed to `lattice/table.rule@2`'. In the third case, 'the same proposal' can mean the one just modified, with fx-a02 changed. On that reading the commit holds fx-a01, fx-a02 and the session event. The THEN clause, 'records are `lattice/fx-a01` at `rev` 2 … and the session event', fits only the first proposal. REQ-LG-005 and design D-7 build 'each proposal of SCN-LG-003' from this text. This is the same pattern as review 1 F-9, which was fixed in SCN-LG-001.",
+      "targets": [
+        "SCN-LG-003",
+        "REQ-LG-005"
+      ],
+      "recommendation": "Write 'then on the first proposal with …' in the second and third cases, or name the proposals (P1…P4) and refer to them by name in SCN-LG-004 ('the second proposal of SCN-LG-003')."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-apply-checks/specs/ledger/spec.md",
+      "change": "REQ-LG-004: say that the writer learns that the tail moved from the store's `moved` answer, which compares `seq`, and that a tail rewritten at the same `seq` is caught by LG-C04 at the next opening until #57 (F-1). SCN-LG-003: 'then on the first proposal with …' in its second and third cases (F-4)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-apply-checks/proposal.md",
+      "change": "Tail bullet: name `prev` as well as `base`, and add the `existing` answer for a ledger that already holds a commit of the same proposal (F-2)."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-apply-checks/specs/architecture/spec.md",
+      "change": "SCN-AR-017: add a fixture folder whose ledger does not open and one whose `expected.json` is empty, each reported with its folder name (F-3)."
+    },
+    {
+      "id": "P-4",
+      "target": "openspec/changes/s0-apply-checks/design.md",
+      "change": "D-6: limit 'a tail replaced at the same `seq` cannot pass and break the chain' to the pure `checkTail`. The command sees only the store's `moved` answer, which compares `seq` (F-1)."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "I read issue #56 from the scratchpad copy i56.md (typed checks moved to #82) and the review 1 and 2 envelopes from the scratchpad. The guard of the review Run allows no shell command except `warrant run submit`, so I did not use `gh`."
+    },
+    {
+      "id": "A-2",
+      "statement": "Sources the spec must agree with: design-next/03-ledger.md (LG-C02, LG-C03, LG-C05, LG-C07, LG-C08, LG-P01, LG-P04, LG-P05, LG-A02, LG-A03) and 02-object-model.md (OM-E01, OM-H01, OM-H03). Baseline of the MODIFIED requirements: the merged openspec/specs/{cli,architecture}. I checked the current code (src/ledger/**, src/assembly/index.ts, src/adapters/store-jsonl, test/architecture/rules.test.ts, test/cli/apply.test.ts, test/fixtures/rules/**) only as context."
+    },
+    {
+      "id": "A-3",
+      "statement": "The closures of review 2 hold. I-8: REQ-LG-003 item 1 and REQ-CL-004 `existing` state the limit. I worked through SCN-LG-004 by hand. The re-run on the ledger holding seq 2 has held intents {fx-a02, S2} and answers `existing` with seq 2. After fx-a01 is written at rev 2, the held intents are {fx-a01, fx-a02, S2} and the answer is LG-P02 for exactly those two ids. I-9: a proposal file already gone counts as removed, and SCN-CL-014 covers it. I-10: proposal.md No-op and Re-apply, and REQ-LG-001's split between the proposal hash and the commit's `proposal`. I-11: 'Unless it answers `existing`' in REQ-LG-002. I-12: `{seq, hash}` in REQ-LG-002 and REQ-LG-004, SCN-LG-005 and SCN-CL-011; it is closed for the pure check, and the residual gap at the command level is F-1. I-13: the type-change case in SCN-LG-003; its wording is F-4."
+    },
+    {
+      "id": "A-4",
+      "statement": "I checked by hand the paths and counts in SCN-LG-001, SCN-LG-002, SCN-CL-007 and SCN-CL-011 against the canonical order of the fixture proposal: fixture, fx-a01, fx-a02, fx-a03, session. I also checked that LG-C07, LG-P01 and LG-P02 rejections with the `/intents/<i>` prefix stripped do not change under permutation, duplicates of three or more intents and no-op duplicates included. I found no defect there."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:b9b75c1b611105e6cd5a590a167634c6dd54e0902e86a5534650cae7d8d3abfb",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T13:30:00Z",
+    "finished_at": "2026-10-02T14:10:00Z"
+  }
+}
