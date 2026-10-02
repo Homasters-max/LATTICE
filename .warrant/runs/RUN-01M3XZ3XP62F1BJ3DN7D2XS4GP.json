@@ -1,0 +1,26 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XZ3XP62F1BJ3DN7D2XS4GP",
+  "change": "s0-store-2",
+  "operation": "implement",
+  "write_scope": [
+    "src/**",
+    "test/**",
+    "openspec/changes/s0-store-2/tasks.md",
+    "openspec/changes/s0-store-2/design.md",
+    "openspec/changes/s0-store-2/specs/**"
+  ],
+  "scope": [
+    "src/adapters/store-jsonl/**",
+    "src/adapters/store-memory/**",
+    "test/store/**",
+    "openspec/changes/s0-store-2/**"
+  ],
+  "branch": "impl/s0-store-2",
+  "started_at": "2026-10-02T09:28:53.767Z",
+  "finished_at": "2026-10-02T09:43:36.993Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:2990b14363766ca1dc65206479a10c9ffb7037855b07e499c759e99d64b10ce7",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}

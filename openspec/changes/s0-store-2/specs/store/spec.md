@@ -36,8 +36,8 @@ lines that are not valid UTF-8, are thrown failures. A failure of the file syste
 
 A store is made with an owner, a TTL and a clock. The owner is 1 to 64 characters of `A`–`Z`, `a`–`z`, `0`–`9` and
 `-`, unique to the store (a fresh one unless given); the TTL is a safe integer of at least 2 milliseconds; the clock
-gives integer UTC milliseconds. Making a store with another owner or TTL is refused by throwing; a clock reading that
-is not a safe integer is a thrown failure of the operation that read it.
+gives integer UTC milliseconds, never below 0. Making a store with another owner or TTL is refused by throwing; a clock
+reading that is not a safe integer of at least 0 is a thrown failure of the operation that read it.
 
 One set of contract tests SHALL run every scenario of REQ-SR-001, REQ-SR-002 and REQ-SR-004 on both adapters with the
 same test code, each test named with its scenario token and its adapter (ST-T01); the cases that need bytes no string
@@ -99,11 +99,12 @@ with the same content (none when it looked at none). A take that holds SHALL the
 own lock file and its temporary file, and no other file. When the temporary file already exists, or writing it fails,
 the take is a thrown failure that leaves no lock file of its own; a failure to remove the temporary file after the
 lock file was created is not thrown, and the file is left. A temporary file is never read by another store and never
-taken for a lock. A lock file that disappears while the store looks at it is looked at again; any other failure of the
-file system while looking at the lock is thrown, never taken for an expired lock. In the memory adapter the lock is a
+taken for a lock. A lock file that disappears while the store looks at it — or, on Windows, cannot be read because
+another process is replacing it — is looked at again; any other failure of the file system while looking at the lock
+is thrown, never taken for an expired lock. A take whose expiry would not be a safe integer is a thrown failure. In the memory adapter the lock is a
 value of the shared ledger, and the compare-and-swap compares the lock value itself.
 
-Fencing: right before it writes, the append SHALL check that the current lock is still its own and that at least half
+Fencing: right before it writes, the append SHALL check that the current lock is still its own and that more than half
 of its TTL is left (its clock reads before the expiry minus half the TTL); if not, it answers `moved` and writes
 nothing.
 
@@ -120,7 +121,10 @@ detected — it needs the time from the fencing check to the end of the write or
 that always takes longer than that never cuts its tail and adds a copy to `recovered/` at every opening. An expiry
 written by one process is compared with the clock of another, so a clock that jumps forward can expire a live lock
 early. Only a local disk whose file system has hard links is supported (LG-C06); on another file system taking the
-lock is a thrown failure.
+lock is a thrown failure. Lock files belong to the store: removing or restoring them from outside (by hand, `git clean`,
+`git stash --include-untracked`, a checkout) while a store may run is outside this contract and can let two writers
+write. Lock files are found by the ledger file name as given; two spellings of one file on a case-insensitive file
+system, or a link to the ledger file, have separate lock files and are outside this contract too.
 
 Implements: LG-C06, LG-S02
 
@@ -137,8 +141,8 @@ Implements: LG-C06, LG-S02
 <!-- id: SCN-SR-004 -->
 - **WHEN** on a ledger holding commit `seq` 1, store A with TTL 100 takes the lock at time 0 to append its commit `seq`
   2 after 1, and between A's tail check and A's write: store B, at time 100, appends its commit `seq` 2 after 1; then,
-  on a fresh ledger holding commit 1, A takes the lock at time 0 and its clock reads 50 — half of its TTL left —
-  between its tail check and its write, no other writer acting
+  on a fresh ledger holding commit 1, A takes the lock at time 0 and its clock reads 50 — exactly half of its TTL
+  left, not more — between its tail check and its write, no other writer acting
 - **THEN** B answers `ok` and A answers `moved`; the ledger holds commit 1 and B's commit 2, and no lock is left; in
   the second case A answers `moved`, the ledger holds commit 1 only, and no lock is left
 
@@ -153,9 +157,9 @@ Implements: LG-C06, LG-S02
 #### Scenario: A lock replaced in its place is not taken over
 <!-- id: SCN-SR-011 -->
 - **WHEN** a ledger holds commit `seq` 1 and an expired lock of owner `other`; store A looks at that lock to append its
-  commit `seq` 2 after 1, and between A's look and A's taking of the lock every lock of the ledger is removed and a
-  writer `c` takes a new lock that has not expired, in the place of the first one (in the JSONL adapter, the file with
-  the same `<n>`)
+  commit `seq` 2 after 1, and between A's look and A's taking of the lock every lock of the ledger is removed and a lock
+  of `c` that has not expired is put in the place of the first one (in the JSONL adapter, the file with the same `<n>`)
+  — something only an actor outside the store does (Limits), against which the take still holds nothing
 - **THEN** A answers `moved`; the ledger holds commit 1 only; the lock of `c` is unchanged and is the current lock; no
   lock of A is left
 
@@ -205,7 +209,7 @@ other owner holds an unexpired lock, it SHALL take the lock (REQ-SR-002)
 and read the ledger again: the torn tail is what then follows the last commit end marker, and when nothing does — the
 append that was writing it has completed — nothing is moved. Otherwise it SHALL copy the torn tail out of the ledger,
 holding exactly its bytes, and flush the copy to the disk; then, right before cutting, check that the lock is still its
-own with at least half of its TTL left and that the ledger is still exactly what it read under the lock (fencing,
+own with more than half of its TTL left and that the ledger is still exactly what it read under the lock (fencing,
 REQ-SR-002); then cut the
 ledger at the offset found under the lock — right after the last line feed —, flush it, release its lock, and return the
 commits before the tail. When that check fails it cuts nothing and returns the commits before the tail as it read
