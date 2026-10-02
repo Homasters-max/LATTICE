@@ -220,7 +220,15 @@ reads. The codec and its tests read `src/ledger` through its index only and edit
   of one file can equal the document `id` of another (`a.md` with `## B` against `a.b.md`); one ID defined in two files
   gives two intents for one `id` (rejected by apply, LG-C07); a block no document references is never exported; a
   block referenced by two documents is written twice. Each document is checked on its own here; none of these occurs
-  in the corpus, and the corpus import of #61 decides them.
+  in the corpus, and the corpus import of #61 decides them. Also for #61 (review 2, F-9): "one type per distinct header"
+  is checked within one file; `Rule` in one file and `rule` in another give one row type with two field names.
+- **A type id with two body shapes in tests** (review 2, F-1): the synthetic test type `lattice/table.rule@2` of
+  SCN-LG-003 (ledger) holds the skeleton body `{Rule}`, the codec's `table.rule@2` holds `{Rule, refs}`. Nothing reads
+  both today; when #82 admits bodies against their type, test types need entities anyway, and #113 decides the codec
+  types. Noted on #113.
+- **Entity ids equal to type ids** (review 2, F-8): a file `document.md`, or `table.md` with a heading `## Rule`, gives
+  an entity `id` equal to a codec type `id` (types are entities, OM-T01). Harmless while no type entity is written;
+  #113 decides it with the type entities.
 
 ## Decisions on implementation (I-N)
 
@@ -235,3 +243,14 @@ reads. The codec and its tests read `src/ledger` through its index only and edit
 | I-7 | Two headers of one file with the same slugs must have the same cells (REQ-CD-003). | Review 1, F-8. | spec review 1 |
 | I-8 | Mentions are searched per cell and per list item; a line `<ID>. …` cannot continue a paragraph. | Review 1, F-9, F-10. | spec review 1 |
 | I-9 | Cases of several documents in one store are left to #61 (Risks). `Implements:` no longer names OM-R05, OM-C02. | Review 1, F-12, F-13 (INFO). | spec review 1 |
+| I-10 | The synthetic `lattice/table.rule@2` of SCN-LG-003 has another body than the codec's `table.<slugs>@2`; recorded in Risks and on #113, no change of either. | Spec review 2 (`EVID-01M3YB2J8M5387N6WGB8PRK5XP`), F-1 MAJOR; spec-PR #116 body. | the maintainer by the merge of #116 |
+| I-11 | The skeleton form keeps writing `document@1` / `table.<slugs>@1` (REQ-CL-003) next to the `@2` of this form until #61 removes it — a transitional exception to "new writes use the latest revision" (OM-T05); no spec edit. | Review 2, F-2. | the maintainer by the merge of #116 |
+| I-12 | A header `\| ID \|` without columns is refused at its line (step 5 of REQ-CL-003: at least two cells; `columnsProblem`); a case of SCN-CD-010. | Review 2, F-3. | the maintainer by the merge of #116 |
+| I-13 | Export orders documents by `file`, then by `id` (UTF-16 code units). | Review 2, F-4. | the maintainer by the merge of #116 |
+| I-14 | A byte order mark is refused at line 0 (step 2, as SCN-CD-001 states). | Review 2, F-5. | the maintainer by the merge of #116 |
+| I-15 | A range end, after its hyphen, is letters then digits only (`FX-A1B01…` is refused), as "split into letters and a final run of digits" reads; unit cases in `test/codec/references.test.ts`. | Review 2, F-6. | the maintainer by the merge of #116 |
+| I-16 | `sections.md` has `FX-Z01` and `FX-R02` mentioning `FX-R01`, for the refs case of SCN-CD-009. | Review 2, F-7. | the maintainer by the merge of #116 |
+| I-17 | Entity ids equal to codec type ids and header slugs across files go to Risks, #113 and #61. | Review 2, F-8, F-9 (INFO). | the maintainer by the merge of #116 |
+| I-18 | Task 4.1 no longer names the rule for one file named twice (replaced by the read-back, I-6). | Review 2, P-2. | the maintainer by the merge of #116 |
+| I-19 | Regex literals, not `new RegExp`: `RegExp` is a forbidden global of a pure module (SCN-AR-008); the ID pattern is written in `form.ts` and `references.ts`. | Implementation, `warrant check` of SCN-AR-008. | implementation |
+| I-20 | Task 4.2 result: all 13 files of `design-next/*.md` at `b597293` round-trip byte-identically through the codec, one file at a time (504 entities). | Implementation, one-off script outside the repository. | implementation |
