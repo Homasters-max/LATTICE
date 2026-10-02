@@ -1,0 +1,42 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3Y003APQ9C7RSHRJZPAZNZQ",
+  "claim": {
+    "text": "tests-passed passed for s0-store-2",
+    "targets": []
+  },
+  "kind": "test-report",
+  "level": "L1",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "0fd020c90bba25df5169b07af4d13a78fbcf701b",
+    "base_commit": "97adb2928129a6c5021b685dd6a8faebc0f25d9f",
+    "spec_revision": "openspec/changes/s0-store-2@0fd020c90bba25df5169b07af4d13a78fbcf701b",
+    "tree": "fc24222e14dc01d0b945ec9cf8081e3cd9c50bed",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "check",
+    "id": "tests-passed",
+    "version": "1.0.0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:b43f50b87dcaaa82e8f5e1e6fe8b3dcfd272997b8655585684a7345775344e30",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "created_at": "2026-10-02T09:44:16.983Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/evidence/s0-store-2/raw/tests-passed/junit.xml",
+      "sha256": "sha256:15ed92e523597bc73082b7941a6b1e14006d860959e96371656d44ac451f960b"
+    }
+  ],
+  "limitations": [],
+  "metrics": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 723
+  }
+}

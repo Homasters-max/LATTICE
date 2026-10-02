@@ -217,7 +217,8 @@ frozen lock object, and the compare-and-swap compares identities: `ledger.lock =
 moved`; so a lock removed and taken again by another writer is a different object even with the same owner and expiry
 (SCN-SR-011). Fencing is `ledger.lock === mine && now() < mine.expires - ttl / 2`; release sets `lock = null` when
 `ledger.lock === mine`; with recovery on, recovery pushes `torn` onto `recovered`, fences, then sets `torn` to `null`;
-with recovery off, `read` returns `torn` as it is; the write pushes the text onto `lines`. `seq` is read from each text
+with recovery off, `read` returns `torn` as it is unless another owner holds an unexpired lock (I-30), in which case it
+returns no torn tail; the write pushes the text onto `lines`. `seq` is read from each text
 as the JSONL adapter does (`JSON.parse`, `NaN` otherwise).
 
 Rejected: the memory adapter as a JSONL adapter over an in-memory file system — it would test the same code twice and
@@ -227,9 +228,9 @@ prove nothing about a second adapter (ST-M02).
 
 | Path | Proves |
 |---|---|
-| `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `lockOwner()`, `recovered()` (in order), `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
+| `test/store/harness.ts` | one harness per adapter: `make(options)`, `seed(texts)`, `tear(text)`, `completeTorn()`, `lock(owner, expires)`, `unreadableLock()`, `replaceLock(owner, expires)`, `removeLocks()`, `current()`, `held(t)`, `recovered()` (in order), `raw()`, `dispose()`; JSONL on a temporary folder, memory on a `MemoryLedger` |
 | `test/store/contract.test.ts` | SCN-SR-001, -002, -003, -004, -006 (text tails), -007, -008, -009, -011, -012, -013, -014 on both adapters, one `describe` per adapter, test names `SCN-SR-0nn [jsonl] …` / `[memory]`; SCN-SR-013 with `recover: false`, every other with `recover: true`; the option checks of D-2 |
-| `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, lock removal), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`) |
+| `test/store/jsonl.test.ts` | SCN-SR-005 (a recording `fs`, a failing write, `fsync`, release), SCN-SR-006 (the cut UTF-8 character), SCN-SR-010 (a failing `ftruncateSync`); the thrown failures of REQ-SR-001 (bytes that are not UTF-8, a missing folder) and REQ-SR-002 (a temporary lock file left, a failure after the link) under the tokens SCN-SR-001 and SCN-SR-008 |
 
 `test/cli/**`, `test/e2e/**` and `test/architecture/rules.test.ts` are not edited and must pass as they are: the CLI's
 default store keeps recovery off, and the frozen `ledger.jsonl` fixtures of the rule test have no torn tail.
@@ -280,6 +281,16 @@ spec; their evidence ids are those of #89.
 | I-33 | The failures of the temporary lock file are specified: it already exists or cannot be written — thrown, no lock left; it cannot be removed after the link — left, not thrown (REQ-SR-002, D-3). | Review 1 of this Change, F-6. | design |
 | I-34 | `append` on complete lines that are not valid UTF-8 is a thrown failure (REQ-SR-001). | Review 1 of this Change, F-7. | design |
 | I-35 | A recovery that always exceeds half the TTL before its cut is named in the Limits of REQ-SR-002. | Review 1 of this Change, F-8 (INFO). | design |
+| I-36 | Lock files removed or restored from outside the store while it may run are outside the contract (Limits of REQ-SR-002); SCN-SR-011 reworded as a lock put outside the protocol. Spec edited. | Review 2 of this Change (`EVID-01M3XYNJWA3QHQ0PTQG8AVT0HC`), F-1 MAJOR; the recommended option of spec-PR #106. | approval of #106 |
+| I-37 | With recovery off (and before a take with it on), `read` looks at the lock, reads the bytes again and looks again; when the lock or the bytes changed it reads anew, so an append that finished meanwhile is never handed over as a torn tail. Code only (REQ-SR-001 already says it). | Review 2, F-2 MAJOR. | approval of #106 |
+| I-38 | "More than half of its TTL left" in REQ-SR-002 and REQ-SR-004; SCN-SR-004 says "exactly half, not more". Spec edited. | Review 2, F-3. | approval of #106 |
+| I-39 | Stale wording after I-29/I-30 fixed in D-6, D-7 and Risks. In proposal.md — outside the `implement` write scope — two sentences stay for the maintainer's edit: What Changes "as today" (the off mode hands a torn tail over except under a live lock) and Impact "for the moment of a take" (the temporary file also exists for a release); "one released lock file at rest" holds after the next take. | Review 2, F-4, F-5. | approval of #106 |
+| I-40 | Task 3.2 plants the foreign lock before the first `apply` and expects one released lock file at rest; the refusal is the code 2 of REQ-LG-004 (a `moved` answer on an unmoved tail), as `assembly` now reads it after #56. | Review 2, F-6. | approval of #106 |
+| I-41 | A clock reading below 0 and an expiry that is not a safe integer are thrown failures (REQ-SR-001, REQ-SR-002). Spec edited. | Review 2, F-7. | approval of #106 |
+| I-42 | On Windows an `EPERM` while reading a lock file is looked at again, like `ENOENT`, at most 50 times (REQ-SR-002, D-3). Spec edited. | Review 2, F-8. | approval of #106 |
+| I-43 | Lock files are found by the ledger file name as given; two spellings or a link are outside the contract (Limits of REQ-SR-002). Spec edited. | Review 2, F-9. | approval of #106 |
+| I-44 | Retries are bounded: a look retries a lock file that disappears (or, on Windows, is being replaced) at most 50 times, then throws; a `read` whose lock or bytes keep changing for 50 rounds counts the torn tail as an append in progress (no torn tail, nothing moved), the conservative answer of REQ-SR-001. Spec unchanged. | Implementation review (Spec), finding (b): the spec says "looked at again" without a bound. | implementation, this impl-PR |
+| I-45 | A temporary lock file left by a crash of a store with the same owner makes every take of that owner a thrown failure (REQ-SR-002, I-33), kept as specified: an owner is unique per store, and the default is a fresh UUID. | Implementation review (Standards), finding 2. | implementation, this impl-PR |
 
 ## Risks / Trade-offs
 
@@ -293,8 +304,11 @@ spec; their evidence ids are those of #89.
 - [Windows cannot flush a folder] → a power loss right after a recovery on Windows may lose the new entry of
   `recovered/`; NTFS journals its metadata, and the cut follows only after the copy itself is flushed (REQ-SR-004).
 - [Windows: a lock file or the ledger held open by another process (antivirus, indexer) makes an operation fail with
-  `EPERM` or `EBUSY`] → the failure is thrown, and the CLI refuses with code 2 naming the ledger file; a failed lock
-  removal is swallowed and expires by TTL.
+  `EPERM` or `EBUSY`] → the failure is thrown, and the CLI refuses with code 2 naming the ledger file; a failed release
+  is swallowed and the lock expires by TTL; an `EPERM` while reading a lock file being replaced is looked at again
+  (I-42).
+- [Lock files removed or restored from outside while a store runs (`git clean`, `git stash --include-untracked`, a
+  checkout)] → outside the contract, stated in the Limits of REQ-SR-002 (I-36); the memory adapter is not affected.
 - [A stale lock blocks for up to the TTL after a crash] → 10 s; the CLI answers code 2 naming LG-C03 meanwhile, with
   the message "the tail of the ledger moved" until #86 adds a reason.
 - [Until #98, the CLI does not recover a torn tail] → it refuses the ledger naming LG-C04, as today; the store is

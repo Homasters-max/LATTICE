@@ -1,32 +1,34 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-store-2",
-  "change_state": "SPECIFIED",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
-      "feature"
+      "factory-change",
+      "feature",
+      "human-acceptance"
     ],
     "risk": {
       "data_loss": {
         "value": "LOW",
-        "from": "proposer"
+        "from": "record"
       },
       "reversibility": {
         "value": "EASY",
-        "from": "proposer"
+        "from": "record"
       },
       "blast_radius": {
-        "value": "LOCAL",
-        "from": "proposer"
+        "value": "SYSTEM",
+        "from": "floor:core-sdd:2"
       },
       "security_impact": {
         "value": "NONE",
-        "from": "proposer"
+        "from": "record"
       },
       "compatibility": {
         "value": "COMPATIBLE",
-        "from": "proposer"
+        "from": "record"
       }
     }
   },
@@ -49,6 +51,44 @@
       "evidence": [
         "EVID-01M3XYSS6K2061M1XEAE52ZSH3"
       ]
+    },
+    {
+      "to": "APPROVED",
+      "at": "2026-10-02T09:28:33.116Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+      "gates": {
+        "adversarial-review": "PASS",
+        "blocking-unknowns-resolved": "PASS",
+        "human-approval": "PASS",
+        "ids-valid": "PASS",
+        "required-artifacts-present": "PASS",
+        "spec-valid": "PASS"
+      },
+      "evidence": [
+        "EVID-01M3XYNJWA3QHQ0PTQG8AVT0HC",
+        "EVID-01M3XZ2JNCHQVY3NX2MPK4KHGY",
+        "EVID-01M3XZ31QHJ152A88MX9BG2GVT"
+      ],
+      "ref": "https://github.com/Homasters-max/LATTICE/pull/106"
+    },
+    {
+      "to": "IMPLEMENTING",
+      "at": "2026-10-02T09:28:37.895Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+      "gates": {
+        "branch-isolated": "PASS"
+      },
+      "evidence": []
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T09:44:00.033Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+      "gates": {},
+      "evidence": []
     }
   ]
 }

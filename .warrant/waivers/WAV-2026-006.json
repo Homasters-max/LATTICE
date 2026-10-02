@@ -1,0 +1,16 @@
+{
+  "$schema": "warrant://waiver/1",
+  "id": "WAV-2026-006",
+  "change": "s0-store-2",
+  "gate": "spec-approved",
+  "reason": "I-36…I-43: the delta spec store is edited after the approval of spec-PR #106 with the changes its review 2 asked for (EVID-01M3XYNJWA3QHQ0PTQG8AVT0HC) — Limits on lock files touched from outside and on two spellings of the ledger name, 'more than half of the TTL', clock >= 0 and safe expiry, EPERM on Windows looked at again, SCN-SR-004/011 wording; the merge of #106 is the decision on them",
+  "risk": "LOW",
+  "compensating_controls": [
+    "the spec diff after #106 is listed row by row in design.md I-36…I-43 and in the impl-PR body",
+    "the contract suite runs every changed scenario on both adapters"
+  ],
+  "owner": "human:Homasters-max",
+  "approved_by": "human:Homasters-max",
+  "expires_at": "2026-10-31",
+  "waiver_state": "ACTIVE"
+}
