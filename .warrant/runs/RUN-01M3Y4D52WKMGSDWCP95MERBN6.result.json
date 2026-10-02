@@ -1,0 +1,149 @@
+{
+  "$schema": "warrant://skill-result/1",
+  "skill": "specification/adversarial-review@0.2.0",
+  "run": "RUN-01M3Y4D52WKMGSDWCP95MERBN6",
+  "run_state": "SUCCEEDED",
+  "findings": [
+    {
+      "id": "F-1",
+      "marker": "FACT",
+      "severity": "MAJOR",
+      "category": "contradiction",
+      "statement": "The `@2` fix for review 1 F-2 rests on the claim that no type id has two body shapes (design D-3, I-2). The main spec breaks that claim. SCN-LG-003 (openspec/specs/ledger/spec.md) writes `lattice/fx-a01` with type `lattice/table.rule@2` and the skeleton body `{\"Rule\": ...}`, which has no `refs`. REQ-CD-003 defines `<namespace>/table.<slugs>@2` as the columns plus `refs`, plus the field when there is one. So `lattice/table.rule@2` already carries two body shapes: the ledger fixture's and the codec's. Nothing observable conflicts today, because apply admits no body against its type. Once #82 admits bodies against their type, one of the two shapes is refused.",
+      "targets": [
+        "REQ-CD-003",
+        "SCN-CD-003",
+        "SCN-LG-003"
+      ],
+      "recommendation": "State the conflict in design (Risks or an I-N row), and name it in #113/#82 so the Change that brings admission aligns SCN-LG-003. That Change owns AREA LG. Alternatively, choose a revision for the codec rows that no main spec uses. Do not keep the sentence 'no type id has two body shapes' while it is false."
+    },
+    {
+      "id": "F-2",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "contradiction",
+      "statement": "REQ-CD-003 and REQ-CD-007 call `document@2` and `table.<slugs>@2` 'revision 2 of' the skeleton types and cite OM-T05. OM-T05 also says 'New writes must use the latest revision of the type'. REQ-CL-003 stays unchanged and in force until #61, and it keeps writing `document@1` and `table.<slugs>@1`. So the delta cites OM-T05 for the type ids, yet both specs together break OM-T05 for the whole period in which both forms exist. 'Latest revision' is not even defined, because no type entity is written. The spec does not state this exception.",
+      "targets": [
+        "REQ-CD-003",
+        "REQ-CD-007",
+        "REQ-CL-003"
+      ],
+      "recommendation": "Add one sentence to REQ-CD-007 (or REQ-CD-003): until #61 removes the skeleton form, each form writes its own revision. No type entity exists, so OM-T05's 'latest revision' is not checked. After #61, `@2` is the only revision written."
+    },
+    {
+      "id": "F-3",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CD-003 requires the columns of a table with IDs to 'satisfy step 5 of REQ-CL-003', and then glosses step 5 in parentheses (non-empty, distinct, ...). The gloss leaves out step 5's 'the header has at least two cells'. A header `| ID |` with rows `| FX-R01 |` can therefore be read as accepted, with zero columns, a type `table.@2` and a body `{refs}`. It can also be read as refused. The two readings differ observably.",
+      "targets": [
+        "REQ-CD-003"
+      ],
+      "recommendation": "Write 'at least one column after `ID`' in REQ-CD-003, and give the refusal line, the header line."
+    },
+    {
+      "id": "F-4",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "The I-6 fix orders documents 'in the order of their `file` (UTF-16 code units)' and answers the first refused one. Two documents can have exactly the same `file`, for example `lattice/other` with `file` `sections.md` next to `lattice/sections`. Their order is then undefined. When both are refused, which document the refusal names depends on iteration order. SCN-CD-009 avoids the tie by using `Sections.md`.",
+      "targets": [
+        "REQ-CD-008",
+        "SCN-CD-009"
+      ],
+      "recommendation": "Break ties by `id` (UTF-16 code units): 'in the order of their `file`, then of their `id`'."
+    },
+    {
+      "id": "F-5",
+      "marker": "FACT",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CD-001 gives line 0 'for the file name and the encoding'. It lists the byte order mark under step 2, together with line ends, and says that 'decoding the bytes as strict UTF-8 is the caller's'. From the requirement alone, a BOM can be refused at line 1, where it sits, or at line 0. Only SCN-CD-001 fixes line 0.",
+      "targets": [
+        "REQ-CD-001",
+        "SCN-CD-001"
+      ],
+      "recommendation": "Write 'line 0 for the file name and the byte order mark'."
+    },
+    {
+      "id": "F-6",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "ambiguity",
+      "statement": "REQ-CD-006 splits the start and the end of a range 'after the hyphen, into letters and a final run of digits'. The ID grammar allows `[A-Z0-9]+` after the hyphen, so a start such as `FX-A1B01` or `FX-1A01` has no split into letters and digits. `FX-A1B01…FX-A1B03` can be read as a valid range, with prefix `A1B`, or as an invalid range that is refused at its line.",
+      "targets": [
+        "REQ-CD-006"
+      ],
+      "recommendation": "State that a range is valid only when the part after the hyphen of both its start and its end matches `[A-Z]*[0-9]+`. Otherwise it is refused, as an invalid range."
+    },
+    {
+      "id": "F-7",
+      "marker": "INFERENCE",
+      "severity": "MINOR",
+      "category": "missing-boundary",
+      "statement": "One case of SCN-CD-009 sets 'the `refs` of a paragraph to `[]` while its text mentions an ID'. This needs a paragraph of `sections.md` that mentions an ID. The description of `sections.md` in SCN-CD-007 and SCN-CD-001 names no such mention. If the fixture is written as SCN-CD-007 describes it, this case cannot run.",
+      "targets": [
+        "SCN-CD-009",
+        "SCN-CD-007"
+      ],
+      "recommendation": "Name the mention in the description of `sections.md`, for example 'the paragraph under `## Purpose` mentions `FX-R01`'. Alternatively, run that case on `references.md`."
+    },
+    {
+      "id": "F-8",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "hidden-assumption",
+      "statement": "OM-T01 makes a type an entity, so the type `lattice/document@2` is revision 2 of the entity `lattice/document`. The document of a file `document.md` also has the entity id `lattice/document`. The same holds for `paragraph.md`, `section.md` and `example.md`. A section of `table.md` with the heading `Rule` gets the id `lattice/table.rule`, which is the entity of the row type `lattice/table.rule@2`. No type entity is written now, and the corpus has no such file, so nothing breaks yet. When #113 writes type entities, these ids collide.",
+      "targets": [
+        "REQ-CD-007",
+        "REQ-CD-002",
+        "REQ-CD-005"
+      ],
+      "recommendation": "Name the collision in #113, or refuse stems that equal a codec type's local part."
+    },
+    {
+      "id": "F-9",
+      "marker": "INFERENCE",
+      "severity": "INFO",
+      "category": "missing-boundary",
+      "statement": "The I-7 fix makes 'one type per distinct header' hold within one file only. Two files with `| ID | Rule |` and `| ID | rule |` give one type `table.rule@2` with the fields `Rule` and `rule`. The several-documents cases that design Risks leaves to #61 do not list this one.",
+      "targets": [
+        "REQ-CD-003"
+      ],
+      "recommendation": "Add this case to design Risks and to #61."
+    }
+  ],
+  "proposals": [
+    {
+      "id": "P-1",
+      "target": "openspec/changes/s0-codec-forms/specs/codec/spec.md",
+      "change": "REQ-CD-008: 'Export takes the documents in the order of their `file` (UTF-16 code units), then of their `id`' (F-4). REQ-CD-001: 'line 0 for the file name and the byte order mark' (F-5). REQ-CD-003: 'at least one column after `ID`' (F-3)."
+    },
+    {
+      "id": "P-2",
+      "target": "openspec/changes/s0-codec-forms/tasks.md",
+      "change": "Task 4.1 still names 'the refusal for one `file` named twice'. I-6 replaced that rule with the read-back of D-7. Reword the task as 'the re-import check (which also refuses two documents naming one file)'."
+    },
+    {
+      "id": "P-3",
+      "target": "openspec/changes/s0-codec-forms/design.md",
+      "change": "D-3: replace 'So no type id has two body shapes' with a note that SCN-LG-003 already writes `lattice/table.rule@2` with a skeleton body, and add an issue or I-N row for alignment under #82/#113 (F-1). Add the cross-file header case of F-9 to Risks."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-1",
+      "statement": "The fixtures do not exist yet, so the scenario line numbers were checked against the layouts the scenarios describe, and they are consistent. sections.md: title 1, paragraph 3, `## Purpose` 5. tables.md: line 3 a heading, header 5, separator 6, rows 7 and 8, the Term header 10, its one row 12, a heading 14, header 16, row FX-R03 18. fields.md: FX-Z01 3, its one-row field table 5-7, FX-Z02 9, list 11. references.md: paragraph 3. Every expected refusal line follows from REQ-CD-001 … REQ-CD-007. These layouts are implied, not stated; the fixtures must follow them."
+    },
+    {
+      "id": "A-2",
+      "statement": "Review 1 fixes checked. F-1: the section id uses the lower-case stem, and SCN-CD-007 imports `Sections.md`. F-2: `@2` (see F-1, F-2 of this review). F-3: a range names at most 100 IDs with numbers of at most 9 digits, and SCN-CD-006 refuses `FX-B001…B999`. F-4: SCN-CD-010 and the empty list item of SCN-CD-004. F-5 … F-13: done as I-5 … I-9 state. No fix introduced a BLOCKER."
+    }
+  ],
+  "provenance": {
+    "context_hash": "sha256:df5159785f26e17122bab2be23b4399f7bda1b02e4d25ca4ad2a7bc12238f0a3",
+    "model": "claude-opus-5-5",
+    "started_at": "2026-10-02T11:30:00Z",
+    "finished_at": "2026-10-02T12:20:00Z"
+  }
+}
