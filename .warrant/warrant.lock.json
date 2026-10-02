@@ -40,7 +40,7 @@
     ".warrant/schemas/run.1.schema.json": "sha256:dd65e195d4056af6302cbd4b782910feb8b3b7d04692ab41835b366bab55dc08",
     ".warrant/schemas/skill-result.1.schema.json": "sha256:1c055fb0139ab1294e624477422cfb4cffeb8be4df70b3facab118d8de85b5f4",
     ".warrant/schemas/waiver.1.schema.json": "sha256:427d12eff01e3a2f4c1a37e61a02a839d59835b710a9afff74ccee0f67f0d1ea",
-    "AGENTS.md": "sha256:ee2c436549948921fc61f63e045bb4de5879509f82f3ea69931a4935324a7e34",
+    "AGENTS.md": "sha256:a3ccbabb5fc45d824a03e3567bfee47d45321e805a7f6ec8c5b36303e2280d2c",
     "openspec/config.yaml": "sha256:46402a3e3f0415c1836f9aaa970db5f4634143db32955df2eaf7763402980cca",
     "openspec/schemas/warrant-sdd/schema.yaml": "sha256:b608edc3b6b8532fc4a9d3f5cdbc0b702e8882a6999f75ae9453a8fb4ad05189",
     "openspec/schemas/warrant-sdd/templates/design.md": "sha256:6ccc87f5017fb190e69e8759dd4e20d5ac3320cc4dabf152708bf8f2aa5205f8",
