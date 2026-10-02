@@ -1,7 +1,7 @@
 {
   "$schema": "warrant://change-record/1",
   "change": "s0-codec-forms",
-  "change_state": "IMPLEMENTING",
+  "change_state": "VERIFYING",
   "classification": {
     "profiles": [
       "chore",
@@ -92,6 +92,14 @@
       "to": "IMPLEMENTING",
       "at": "2026-10-02T13:29:32.783Z",
       "by": "cli:local"
+    },
+    {
+      "to": "VERIFYING",
+      "at": "2026-10-02T13:30:44.023Z",
+      "by": "cli:local",
+      "effective_policy_hash": "sha256:da2c3beea975bbe6642517bc1fa67677a20986e887968cc36e1142dd560d6d31",
+      "gates": {},
+      "evidence": []
     }
   ]
 }
