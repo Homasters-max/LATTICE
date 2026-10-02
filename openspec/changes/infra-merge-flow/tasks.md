@@ -6,12 +6,12 @@
   `.claude/skills/slice/{act.mjs,act-rules.mjs,act-rules.test.mjs,wait-pr.mjs,SKILL.md}`, drafted outside the
   repository; verified by `git apply --check` on `impl/infra-merge-flow` and `node --test` of `act-rules.test.mjs` on a
   scratch checkout with the patch applied
-- [ ] 1.2 The maintainer applies and commits patch 1 (`git -C <worktree> apply --index`, `git -C <worktree> commit`);
+- [x] 1.2 The maintainer applies and commits patch 1 (`git -C <worktree> apply --index`, `git -C <worktree> commit`);
   verified by the commit naming exactly the five paths of 1.1, authored by the maintainer
-- [ ] 1.3 The maintainer runs `act.mjs whoami` from the run button; verified by its line `ok` with the login
+- [x] 1.3 The maintainer runs `act.mjs whoami` from the run button; verified by its line `ok` with the login
   `Homasters-max` — or, when it refuses for the agent's environment, by the same line from a terminal of the
   maintainer's own, which then becomes the place of every `act.mjs` command (an `I-N` row)
-- [ ] 1.4 `2-merge-flow-rules.patch` (`.warrant/local/rules/{maintainer-acts,process,env}.json`, the Appendix), applied
+- [x] 1.4 `2-merge-flow-rules.patch` (`.warrant/local/rules/{maintainer-acts,process,env}.json`, the Appendix), applied
   by the maintainer with `act.mjs patch infra-merge-flow <file>` after the agent's `--dry-run` prints `would patch`;
   verified by the commit naming exactly the three paths and the `patched impl/infra-merge-flow <sha>` line
 - [ ] 1.5 `warrant sync`: `AGENTS.md`, `.warrant/warrant.lock.json`; verified by `warrant validate` and
