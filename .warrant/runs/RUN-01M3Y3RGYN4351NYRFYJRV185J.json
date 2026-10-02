@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3Y3RGYN4351NYRFYJRV185J",
+  "change": "infra-merge-flow",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/infra-merge-flow/**"
+  ],
+  "scope": [],
+  "branch": "spec/infra-merge-flow",
+  "started_at": "2026-10-02T10:50:03.136Z",
+  "finished_at": "2026-10-02T10:51:59.598Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:8cafa8b4637850f3e5df17ae284831d48759bb931c6a254837e620ee69bfdfee",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "guard_events": []
+}

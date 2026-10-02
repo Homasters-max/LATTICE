@@ -1,0 +1,45 @@
+{
+  "$schema": "warrant://evidence/1",
+  "id": "EVID-01M3Y3NVZYQKM515MK2AJ4GWY1",
+  "claim": {
+    "text": "specification/adversarial-review@0.2.0 reviewed the spec of infra-merge-flow: 0 BLOCKER, 8 MAJOR, 8 MINOR, 1 INFO",
+    "targets": []
+  },
+  "kind": "review",
+  "level": "L2",
+  "evidence_status": "PROVEN",
+  "subject": {
+    "commit": "79911c07da34a60fe1c6d5a2080e64dca447c9c9",
+    "spec_revision": "openspec/changes/infra-merge-flow@79911c07da34a60fe1c6d5a2080e64dca447c9c9",
+    "spec_tree": "sha256:db920dbcac5f3ee21e3e8d349b29fc546f47b22fcaa4118cf2fddc03d8a82b55",
+    "dataset_snapshot": null
+  },
+  "produced_by": {
+    "type": "skill",
+    "id": "specification/adversarial-review",
+    "version": "0.2.0",
+    "run": "RUN-01M3Y3D1BTZWS06FKRAKZGDVW0"
+  },
+  "attestation": {
+    "type": "none"
+  },
+  "context_hash": "sha256:cf83cf53ca20c9e3d296b2b9f7d90785f8d4e1cc76a639b574d28dffdd5041ee",
+  "effective_policy_hash": "sha256:0975648ef97c5f46279e163d015f5e4df38196ffc5d5ec45f2f0ca4141590829",
+  "created_at": "2026-10-02T10:48:36.095Z",
+  "artifacts": [
+    {
+      "uri": ".warrant/runs/RUN-01M3Y3D1BTZWS06FKRAKZGDVW0.result.json",
+      "sha256": "sha256:b9a1485125cf1ec040d63232d948f7151ae5bb766628b8f40efaa04751626d36"
+    }
+  ],
+  "limitations": [
+    "produced locally, unattested",
+    "same model family as author"
+  ],
+  "metrics": {
+    "BLOCKER": 0,
+    "INFO": 1,
+    "MAJOR": 8,
+    "MINOR": 8
+  }
+}
