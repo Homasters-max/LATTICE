@@ -70,11 +70,13 @@ REQ-LG-001.
   exits with code 2 naming the proposal file left behind.
 - `existing` (LG-C08) — `apply` SHALL write nothing to the ledger, remove the proposal file, print
   `{"outcome":"commit","seq":<seq of that commit>}` and exit with code 0, so a run interrupted between the append and
-  the removal ends as it would have.
+  the removal ends as it would have (within the limit REQ-LG-003 states).
 - `no-op` (LG-C05) — `apply` SHALL write nothing to the ledger, remove the proposal file, print `{"outcome":"no-op"}`
   and exit with code 0.
 
-A removal that fails after `existing` or `no-op` is refused with code 2 naming the proposal file.
+A proposal file that is already gone when the command removes it counts as removed — another writer of the same
+proposal removed it. Any other failed removal after `existing` or `no-op` is refused with code 2 naming the proposal
+file.
 
 Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03
 
@@ -109,7 +111,8 @@ Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03
 - **WHEN** `apply` runs on the fixture proposal against a store whose ledger gains a commit of another proposal
   between opening and appending, so the store answers that the tail moved
 - **THEN** it exits with code 1 and prints exactly one rejection `LG-C03` with `intent` `null`, `path` `""`, `expected`
-  0 and `got` 1; it appends nothing — the ledger holds only the other writer's commit — and the proposal file stays
+  `{"seq": 0, "hash": null}` and `got` the `seq` 1 and the hash of the other writer's commit; it appends nothing — the
+  ledger holds only the other writer's commit — and the proposal file stays
 
 #### Scenario: A broken hash chain is refused
 <!-- id: SCN-CL-008 -->
@@ -131,3 +134,10 @@ Implements: LG-A01, LG-A02, LG-C03, LG-C04, LG-C05, LG-C08, LG-P04, LG-J03
   bytes and `lattice apply` runs on it
 - **THEN** it exits with code 0 and prints `{"outcome":"commit","seq":1}`; the ledger is byte for byte as before; the
   proposal file is gone
+
+#### Scenario: Two writers of one proposal both answer its commit
+<!-- id: SCN-CL-014 -->
+- **WHEN** `apply` runs on the fixture proposal of SCN-CL-003 against a store in which, between opening and appending,
+  another writer appends the commit of the same proposal and removes the proposal file
+- **THEN** it exits with code 0 and prints `{"outcome":"commit","seq":1}`; the ledger holds only the other writer's
+  commit; the proposal file is gone

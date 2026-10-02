@@ -28,11 +28,12 @@ Reading a proposal SHALL give either the proposal or its `LG-P01` rejections (RE
 
 The **canonical order** of intents is: entity intents by `id`, then event intents by `id`, both by UTF-16 code units
 (LG-C07). The **hash of a list of intents** is the kernel hash — 64 lowercase hex digits of `sha256(JCS({"body":
-<value>, "type": <type id>}))` — of type id `core/proposal` over the list in canonical order; the **proposal hash** is
-the hash of all intents of the proposal (LG-C02). So, for intents with distinct `id`s, neither depends on the order of
-the intents in the text.
+<value>, "type": <type id>}))` — of type id `core/proposal` over the list in canonical order. The **proposal hash** is
+the hash of all intents of the proposal; it names a proposal file (REQ-CL-003). The `proposal` field of a commit
+(LG-C02) is the hash of the intents the commit holds (REQ-LG-003); the two are equal for a proposal without no-ops.
+For intents with distinct `id`s, neither depends on the order of the intents in the text.
 
-Implements: LG-P01, LG-C02, LG-C07
+Implements: LG-P01, LG-C07
 
 #### Scenario: A proposal outside the form is rejected by LG-P01
 <!-- id: SCN-LG-001 -->
@@ -54,9 +55,9 @@ collided with, and `differs`, the paths where the colliding intents differ.
 The closed list of rule IDs (REQ-AR-011) SHALL be exactly `LG-C03`, `LG-C07`, `LG-P01`, `LG-P02`. A Change that adds a
 rule to apply changes this list and adds the rule's fixture.
 
-`LG-P01` is found by reading the proposal (REQ-LG-001). Apply (REQ-LG-003) SHALL find, against one state — the
-latest-revision projection (LG-J01) of the opened ledger (LG-J03) and the whole proposal —, every rejection of these
-rules, never only the first:
+`LG-P01` is found by reading the proposal (REQ-LG-001). Unless it answers `existing` (REQ-LG-003), apply SHALL find,
+against one state — the latest-revision projection (LG-J01) of the opened ledger (LG-J03) and the whole proposal —,
+every rejection of these rules, never only the first:
 
 | Rule | When | `intent` | `path` | `expected` | `got` | Also |
 |---|---|---|---|---|---|---|
@@ -67,7 +68,7 @@ The check of a commit against the ledger it is appended to (REQ-LG-004) finds:
 
 | Rule | When | `intent` | `path` | `expected` | `got` |
 |---|---|---|---|---|---|
-| `LG-C03` | the tail of the ledger is not the one the commit was built on | `null` | `""` | the commit's `base` | the `seq` of the tail, `0` for an empty ledger |
+| `LG-C03` | the tail of the ledger is not the one the commit was built on | `null` | `""` | `{"seq": <the commit's base>, "hash": <the commit's prev>}` | `{"seq": <the seq of the tail>, "hash": <the commit hash of the tail>}`, `{"seq": 0, "hash": null}` for an empty ledger |
 
 `differs` is a list of JSON pointers relative to an intent, ordered by UTF-16 code units, computed over the values of
 all intents naming that `id` from the empty pointer: when the values are all equal (as canonical JSON) nothing is
@@ -110,7 +111,9 @@ Apply answers exactly one of these outcomes, decided in this order:
 
 1. **`existing` (LG-C08)**: when the hash of the held intents (REQ-LG-001) equals the `proposal` of a commit of the
    ledger, apply answers the `seq` of the first such commit and finds nothing else. So a proposal applied again after
-   its commit — even one whose other intents were no-ops — answers that commit.
+   its commit — even one whose other intents were no-ops — answers that commit, as long as no intent that was a no-op
+   for it has been written since: then that intent is held, the hash matches no commit, and the proposal is checked
+   as any other (its intents meet `LG-P02`).
 2. **`rejected`**: the rejections of `LG-C07` and `LG-P02` (REQ-LG-002), when there is at least one.
 3. **`no-op` (LG-C05)**: when the session event is the only held intent.
 4. **`commit` (LG-C01, LG-C02)**: otherwise one commit, built on the tail of the opened ledger: `{"seq", "prev",
@@ -132,26 +135,29 @@ Implements: LG-A01, LG-C01, LG-C02, LG-C05, LG-C08, OM-H03, LG-P01, LG-P04
 <!-- id: SCN-LG-003 -->
 - **WHEN** after the commit of SCN-CL-005 apply runs on a proposal of a new session event and the four entity intents
   of that commit, each with `base` 1, `by` the new session's `id` and its type and body unchanged; then on the same
-  proposal with the body of `lattice/fx-a02` changed; then on a proposal holding only a new session event
+  proposal with the body of `lattice/fx-a02` changed; then on the same proposal with the type of `lattice/fx-a01`
+  changed to `lattice/table.rule@2` and its body unchanged; then on a proposal holding only a new session event
 - **THEN** the first answers `no-op`; the second a commit with `seq` 2 and `base` 1 whose records are
   `lattice/fx-a02` at `rev` 2 and the session event, and whose `proposal` is the hash of those two intents; the third
-  `no-op`
+  a commit whose records are `lattice/fx-a01` at `rev` 2 of type `lattice/table.rule@2` and the session event (OM-H01:
+  another type revision is never a no-op); the fourth `no-op`
 
 #### Scenario: A proposal already in the ledger answers its commit
 <!-- id: SCN-LG-004 -->
 - **WHEN** apply runs with the fixture proposal of SCN-CL-003 on the ledger of SCN-CL-005, then on that ledger after
   the commit of `lattice/fx-a02` at `rev` 2 of SCN-CL-009; and the second proposal of SCN-LG-003 runs again on the
-  ledger holding its commit
-- **THEN** the first two answer `existing` with `seq` 1 and find no rejection `LG-P02`; the last answers `existing`
-  with `seq` 2
+  ledger holding its commit, then on that ledger after one more commit writes `lattice/fx-a01` at `rev` 2
+- **THEN** the first two answer `existing` with `seq` 1 and find no rejection `LG-P02`; the third answers `existing`
+  with `seq` 2; the last answers rejections `LG-P02` for `lattice/fx-a01` and `lattice/fx-a02`
 
 ### Requirement: A commit is appended only on the tail it was built on
 <!-- id: REQ-LG-004 -->
 
 A commit names the `seq` it is written after: its `base` (LG-C03). Checking a commit against a ledger SHALL answer, in
 this order: `existing` with the `seq` of the first commit of the ledger whose `proposal` equals the commit's
-`proposal` (LG-C08), when there is one; no rejection when the `seq` of the ledger's tail (`0` for an empty ledger)
-equals the commit's `base`; otherwise exactly one rejection `LG-C03` (REQ-LG-002). The writer of a commit SHALL append
+`proposal` (LG-C08), when there is one; no rejection when the ledger's tail is the one the commit was built on — its
+`seq` equals the commit's `base` and its commit hash the commit's `prev` (`0` and `null` for an empty ledger), so the
+appended commit keeps the hash chain (LG-C04); otherwise exactly one rejection `LG-C03` (REQ-LG-002). The writer of a commit SHALL append
 it only after the `seq` of its `base`; when the ledger has moved since it was opened, the writer reads it again and
 checks the commit against it. There are no locks and no automatic merge at this level; after `LG-C03` the caller
 applies the proposal again on the new tail (LG-C03).
@@ -164,7 +170,8 @@ Implements: LG-C03, LG-C08
   empty ledger, then against a ledger that gained one commit of another proposal, then against a ledger that gained
   the commit of the same proposal
 - **THEN** the first gives no rejection; the second exactly one rejection `LG-C03` with `intent` `null`, `path` `""`,
-  `expected` 0 and `got` 1; the third answers `existing` with `seq` 1
+  `expected` `{"seq": 0, "hash": null}` and `got` `{"seq": 1, "hash": <the hash of that other commit>}`; the third
+  answers `existing` with `seq` 1
 
 ### Requirement: The result of apply does not depend on the order of intents
 <!-- id: REQ-LG-005 -->

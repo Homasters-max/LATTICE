@@ -26,10 +26,11 @@ own capability (AREA `LG`, SL-T08); every later Change that adds an apply check 
   permutation invariance with its test (LG-C07).
 - **One intent per entity `id` (LG-C07)**: a duplicate rejection also names the `id` it collided with (`with`) and
   the paths where the intents naming that `id` differ (`differs`, LG-A02).
-- **No-op (LG-C05, OM-H03)**: an entity intent whose type and record hash equal the latest revision of its `id` writes
-  no record; when every intent but the session event is a no-op, apply answers `no-op` and writes nothing.
-- **Re-apply (LG-C08)**: a proposal whose hash is already the `proposal` of a commit answers that commit and writes
-  nothing.
+- **No-op (LG-C05, OM-H03)**: an entity intent whose `base` is the latest revision of its `id` and whose type and
+  record hash equal that revision writes no record; when every intent but the session event is a no-op, apply answers
+  `no-op` and writes nothing. A commit holds only the intents that are not no-ops, and its `proposal` is their hash.
+- **Re-apply (LG-C08)**: a proposal whose held intents hash to the `proposal` of a commit answers that commit and
+  writes nothing.
 - **Tail (LG-C03)**: a commit whose `base` is not the tail of the ledger when it is appended is rejected with rule
   `LG-C03` instead of being refused with code 2.
 - **`cli`**: REQ-CL-004, renamed "apply turns a proposal into a commit, a no-op or rejections", keeps the command —

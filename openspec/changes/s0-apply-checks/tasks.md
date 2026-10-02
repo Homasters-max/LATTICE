@@ -27,7 +27,8 @@
 
 - [ ] 3.1 `assembly/index.ts` — the `apply` operation: `existing` and `no-op` remove the proposal file and print their
   outcome; on `moved` the ledger is read again and `checkTail` gives `existing`, the rejection or a store fault
-  (`REQ-CL-004`, `REQ-CL-001`, design D-6); verified by tests with the tokens `SCN-CL-011`, `SCN-CL-012`, `SCN-CL-013` passing, and `SCN-CL-005`,
+  and a proposal file already gone counts as removed (`REQ-CL-004`, `REQ-CL-001`, design D-6); verified by tests with
+  the tokens `SCN-CL-011`, `SCN-CL-012`, `SCN-CL-013`, `SCN-CL-014` passing, and `SCN-CL-005`,
   `SCN-CL-006`, `SCN-CL-008` still passing
 - [ ] 3.2 `test/architecture/rules.test.ts` — no enumerated list; `moved.jsonl` checked through `checkTail`; a
   fixture whose ledger does not open or whose `expected.json` is empty fails (`REQ-AR-011`); verified by tests with the token `SCN-AR-017` passing

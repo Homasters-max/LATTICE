@@ -1,0 +1,17 @@
+{
+  "$schema": "warrant://run/1",
+  "id": "RUN-01M3XSQGQRX6V044NF839ZJ51Z",
+  "change": "s0-apply-checks",
+  "operation": "specify",
+  "write_scope": [
+    "openspec/changes/s0-apply-checks/**"
+  ],
+  "scope": [],
+  "branch": "spec/s0-apply-checks",
+  "started_at": "2026-10-02T07:54:44.402Z",
+  "finished_at": "2026-10-02T07:57:07.948Z",
+  "run_state": "SUCCEEDED",
+  "context_hash": "sha256:bd9d8f68f6b76dae4dfe5d5a4d431c1a93ef9017a1f126de85ca01a3ed0a094c",
+  "effective_policy_hash": "sha256:8028e12369f4d213ebfebf99da0cdf5b62c7fd286b991f6be2cc9a852bd30ffb",
+  "guard_events": []
+}
