@@ -29,6 +29,12 @@ export const SESSION_TYPE_BODY = frozen({
 /** The body of every session of store init and of genesis: `machine`, purpose `init` (LG-G01, LG-G02, TR-B02). */
 export const INIT_SESSION_BODY = frozen({ of: {}, participant: "lattice", kind: "machine", purpose: "init" });
 
+/** A session body of `machine` / `init` — genesis, the `std` load and store init (TR-B02, the LG-G02 exemption). */
+export function isInitSession(body: unknown): boolean {
+  const b = body as { kind?: unknown; purpose?: unknown } | null;
+  return typeof b === "object" && b !== null && b.kind === "machine" && b.purpose === "init";
+}
+
 export const TYPE_TYPE = "core/type@1";
 const SESSION = "core/00000000000000000000000000" as Id;
 const AT = "1970-01-01T00:00:00.000Z";

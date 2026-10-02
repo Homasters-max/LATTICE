@@ -78,7 +78,13 @@ function cases(): Case[] {
   const act = (names: string[], ref: string): Act => ({ login: "Homasters-max", names, ref });
   all.push({
     ...on("the fixture proposal with acts", [], fixtureIntents(1)),
-    acts: [act(["lattice/zzz"], "u4"), act(["lattice/fx-a02", "lattice/fx-a01"], "u2"), act([fixtureHash], "u1")],
+    acts: [
+      act(["lattice/zzz"], "u4"),
+      act(["f".repeat(64)], "u3"),
+      act(["lattice/fx-a02", "lattice/fx-a01"], "u2"),
+      act([fixtureHash], "u1"),
+      act([fixtureHash], "u1"),
+    ],
   });
   const init = initTexts();
   for (const [i, proposal] of initCase().entries()) {

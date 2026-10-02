@@ -155,8 +155,9 @@ export function lattice(root: string, ports: Ports = {}): Lattice {
       }
       const std = readStd(stdText);
       if (!std.ok) return refused(std.message);
-      const at = formatAt(clock.now());
-      if (!at.ok) return refused(`the clock gave a time the kernel refuses: ${clock.now()}`);
+      const now = clock.now();
+      const at = formatAt(now);
+      if (!at.ok) return refused(`the clock gave a time the kernel refuses: ${now}`);
       const built = initProposals({
         namespace,
         owner,

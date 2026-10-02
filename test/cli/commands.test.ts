@@ -2,12 +2,12 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync } from "node:fs";
+import { copyFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { jsonlStore } from "../../src/adapters/store-jsonl/index.ts";
 import type { Store } from "../../src/ledger/ports/store.ts";
 import { initTexts, stdText } from "../ledger/cases.ts";
-import { initialised, onlyProposal, project } from "./project.ts";
+import { FIXTURE, initialised, onlyProposal, project } from "./project.ts";
 
 describe("SCN-CL-001 an unknown command prints the usage", () => {
   it("SCN-CL-001 no command, an unknown one and export without --out exit 2 and write nothing", () => {
@@ -114,7 +114,7 @@ describe("SCN-CL-017 a store that moves during init is refused", () => {
       assert.match(r.err.join("\n"), /knowledge\.jsonl.*tail moved/);
       assert.deepEqual(r.out, []);
       assert.equal(p.file("store/knowledge.jsonl"), initTexts().slice(0, 2).map((t) => t + "\n").join(""));
-      p.write("fixture.md", "| ID | Rule |\n| --- | --- |\n| FX-A01 | x |\n");
+      copyFileSync(FIXTURE, join(p.dir, "fixture.md"));
       assert.equal(p.lattice("import-md", "fixture.md").code, 0);
       const a = p.lattice("apply", onlyProposal(p));
       assert.equal(a.code, 2);

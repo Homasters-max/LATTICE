@@ -21,6 +21,10 @@ function factOf(body: unknown): { key: string; value: unknown; revoked: boolean 
   return { key: key.value, value: hasValue ? body.value : undefined, revoked: hasRevoked };
 }
 
+const readOnly = (): never => {
+  throw new TypeError("the current facts are frozen");
+};
+
 /** The current value of every key (TR-F02): the latest fact body of the key wins; a cancellation removes the key. */
 export function currentFacts(bodies: readonly unknown[]): ReadonlyMap<string, unknown> {
   const current = new Map<string, unknown>();
@@ -30,6 +34,8 @@ export function currentFacts(bodies: readonly unknown[]): ReadonlyMap<string, un
     if (fact.revoked) current.delete(fact.key);
     else current.set(fact.key, fact.value);
   }
+  // Object.freeze alone leaves a Map writable: its own set, delete and clear refuse.
+  Object.defineProperties(current, { set: { value: readOnly }, delete: { value: readOnly }, clear: { value: readOnly } });
   return Object.freeze(current);
 }
 

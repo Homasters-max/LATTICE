@@ -37,6 +37,11 @@ describe("SCN-TR-002 the latest fact of a key wins and a cancellation removes it
   it("SCN-TR-002 currentFacts of the three live bodies is a frozen map of two keys", () => {
     const facts = currentFacts(first.slice(0, 3).map((e) => e.body));
     assert.ok(Object.isFrozen(facts));
+    const writable = facts as Map<string, unknown>;
+    assert.throws(() => writable.set("x", 1));
+    assert.throws(() => writable.delete('{"id":"lattice/setup"}'));
+    assert.throws(() => writable.clear());
+    assert.equal(facts.size, 2);
     assert.deepEqual([...facts.entries()], [
       ['{"id":"lattice/setup"}', 2],
       ['{"id":"lattice/solve"}', 3],

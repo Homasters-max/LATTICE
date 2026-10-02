@@ -49,7 +49,7 @@ function itemOf(raw: unknown, urlKey: string, suffix: string, logins: ReadonlySe
 }
 
 /** What a text names for the hash `hash`: the hash first, then the identifiers in order of first appearance. */
-export function namesIn(body: string, hash: string): readonly string[] {
+function namesIn(body: string, hash: string): readonly string[] {
   let named = false;
   const ids: string[] = [];
   for (const raw of body.split(/\s+/u)) {

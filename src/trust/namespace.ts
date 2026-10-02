@@ -41,7 +41,12 @@ export function policyOf(body: unknown): PolicyOf {
     .filter((k) => !KEYS.includes(k))
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[0];
   if (extra !== undefined) return refused("/" + extra.replace(/~/g, "~0").replace(/\//g, "~1"));
-  return { ok: true, policy: { owner: body.owner, writers: writers as Writer[], owner_acts: acts as string[] } };
+  const policy: Policy = {
+    owner: body.owner,
+    writers: Object.freeze((writers as Writer[]).map((w) => Object.freeze({ ...w }))),
+    owner_acts: Object.freeze([...(acts as string[])]),
+  };
+  return { ok: true, policy: Object.freeze(policy) };
 }
 
 /** The logins of the writers listed by name, each once, by UTF-16 code units: only they can act (CT-A05). */

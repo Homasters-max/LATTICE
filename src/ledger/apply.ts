@@ -1,6 +1,6 @@
 // Apply (LG-A01, REQ-LG-003, design D-2…D-6): the only path into `knowledge`. Pure — it assigns only `seq`, `rev` and
 // `hash` (LG-P01) and reads entities through the latest-revision projection of the opened ledger (LG-J03). A proposal
-// that passed the form of LG-P01 answers, in this order: `existing` (LG-C08), the rejections of LG-C07 and LG-P02,
+// that passed the form of LG-P01 answers, in this order: `existing` (LG-C08), the rejections of CT-N02, LG-C07, LG-P02,
 // `no-op` (LG-C05, OM-H03), or one commit of its held intents. `checkTail` checks a commit against the ledger it is
 // appended to (LG-C03).
 
@@ -8,14 +8,14 @@ import { canonical } from "../kernel/index.ts";
 import type { Ledger } from "./commit.ts";
 import { KERNEL_VERSION, recordHash } from "./commit.ts";
 import { differs } from "./differs.ts";
-import { GENESIS_HASH, GENESIS_PROPOSAL } from "./genesis.ts";
+import { GENESIS_HASH, GENESIS_PROPOSAL, isInitSession } from "./genesis.ts";
 import type { Act } from "./ports/acts.ts";
 import type { EntityIntent, Intent, Proposal } from "./proposal.ts";
 import { orderedIntents, proposalHash, SESSION_TYPE } from "./proposal.ts";
 import type { Commit, LedgerRecord } from "./records.ts";
-import { byCodeUnits } from "./records.ts";
+import { byCodeUnits, isAct } from "./records.ts";
 import type { Rejection, RuleId } from "./rules.ts";
-import { duplicate, reject, sortRejections } from "./rules.ts";
+import { duplicate, EXEMPTIONS, reject, sortRejections } from "./rules.ts";
 import { packageHash, STD_HASH } from "./std.ts";
 
 export type Applied =
@@ -50,16 +50,23 @@ function reserved(id: string): boolean {
   return RESERVED.has(id.slice(0, id.indexOf("/")).split(".")[0] as string);
 }
 
-/** The exemption `CT-N02` by `LG-G01` or by `LG-G02` (LG-A07, REQ-LG-002), from the proposal and the ledger as a whole. */
+/** The condition of each granting rule of `EXEMPTIONS` (LG-A07, REQ-LG-002): the proposal and the ledger as a whole. */
+const GRANTS: Readonly<Record<string, (ledger: Ledger, proposal: Proposal) => boolean>> = {
+  // the genesis proposal on an empty ledger
+  "LG-G01": (ledger, proposal) => ledger.tail === null && proposalHash(proposal) === GENESIS_PROPOSAL,
+  // the std package right after genesis, in a machine / init session, with no other event
+  "LG-G02": (ledger, proposal) =>
+    ledger.tail !== null &&
+    ledger.tail.seq === 1 &&
+    ledger.tail.hash === GENESIS_HASH &&
+    isInitSession(proposal.session.body) &&
+    proposal.intents.filter((x) => x.kind === "event").length === 1 &&
+    packageHash(orderedIntents(proposal.intents).filter((x): x is EntityIntent => x.kind === "entity")) === STD_HASH,
+};
+
+/** Whether an exemption of `EXEMPTIONS` lifts `rule` for this proposal on this ledger. */
 function exempt(ledger: Ledger, proposal: Proposal, rule: RuleId): boolean {
-  if (rule !== "CT-N02") return false;
-  if (ledger.tail === null) return proposalHash(proposal) === GENESIS_PROPOSAL; // LG-G01
-  if (ledger.tail.seq !== 1 || ledger.tail.hash !== GENESIS_HASH) return false; // LG-G02 from here
-  const body = proposal.session.body as { kind?: unknown; purpose?: unknown } | null;
-  if (typeof body !== "object" || body === null || body.kind !== "machine" || body.purpose !== "init") return false;
-  if (proposal.intents.filter((x) => x.kind === "event").length !== 1) return false;
-  const entities = orderedIntents(proposal.intents).filter((x): x is EntityIntent => x.kind === "entity");
-  return packageHash(entities) === STD_HASH;
+  return EXEMPTIONS.some((e) => e.rule === rule && (GRANTS[e.by]?.(ledger, proposal) ?? false));
 }
 
 /** CT-N02 (reserved namespaces), LG-C07 (one intent per entity `id`, with `with` and `differs`) and LG-P02, all of them. */
@@ -94,8 +101,6 @@ function rejectionsOf(ledger: Ledger, proposal: Proposal): Rejection[] {
   return found;
 }
 
-const nonEmpty = (v: unknown): v is string => typeof v === "string" && v !== "";
-
 /**
  * The act record of a commit (LG-A05, REQ-LG-003): every act of the form of an act that names the proposal hash as
  * read, the hash of the held intents or a held `id`, its `names` the check result; equal records once, ordered by their
@@ -104,7 +109,7 @@ const nonEmpty = (v: unknown): v is string => typeof v === "string" && v !== "";
 function actRecord(acts: readonly Act[], readHash: string, heldHash: string, heldIds: ReadonlySet<string>): Act[] {
   const kept = new Map<string, Act>();
   for (const a of acts) {
-    if (!nonEmpty(a.login) || !nonEmpty(a.ref) || !Array.isArray(a.names) || a.names.length === 0 || !a.names.every(nonEmpty)) continue;
+    if (!isAct(a)) continue; // an act in another form is not recorded
     const names = a.names.includes(readHash) || a.names.includes(heldHash)
       ? [heldHash]
       : [...new Set(a.names.filter((n) => heldIds.has(n)))].sort(byCodeUnits);

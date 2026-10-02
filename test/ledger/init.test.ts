@@ -24,10 +24,10 @@ describe("SCN-LG-011 the four commits of store init", () => {
       ["std/setup", 1],
       ["std/00000000000000000000000001", undefined],
     ]);
-    assert.deepEqual(setup.records.map((r) => [r.id, r.type]), [
-      ["lattice/setup", "std/setup@1"],
-      ["lattice/00000000000000000000000003", "core/session@1"],
-      ["lattice/00000000000000000000000004", "std/live@1"],
+    assert.deepEqual(setup.records.map((r) => [r.id, "rev" in r ? r.rev : undefined, r.type]), [
+      ["lattice/setup", 1, "std/setup@1"],
+      ["lattice/00000000000000000000000003", undefined, "core/session@1"],
+      ["lattice/00000000000000000000000004", undefined, "std/live@1"],
     ]);
     assert.deepEqual((setup.records[0] as { body: unknown }).body, {
       ports: Object.fromEntries(["clock", "ids", "judge", "llm", "source"].map((p) => [p, { memo: false, mode: "fixture" }])),
@@ -54,7 +54,7 @@ describe("SCN-CT-002 the namespace commit of a new store", () => {
     assert.deepEqual(body, { owner: "Homasters-max", owner_acts: [], writers: [{ login: "Homasters-max" }] });
     assert.ok(policyOf(body).ok);
     assert.deepEqual(c.acts, ownerAct(c));
-    assert.equal(bases(c).get("lattice/namespace" as never), "derived");
+    assert.equal(bases(c)["lattice/namespace"], "derived");
   });
 });
 
@@ -71,7 +71,7 @@ describe("SCN-LG-013 bases of the init commits and of acted and unacted records"
     if (answer.outcome !== "commit") throw new Error(answer.outcome);
     return answer.commit;
   };
-  const basesOf = (c: Commit) => [...bases(c).entries()];
+  const basesOf = (c: Commit) => Object.entries(bases(c));
 
   it("SCN-LG-013 genesis records are inferred, the records of commits 2–4 derived", () => {
     const [genesis, ...rest] = commits(texts);

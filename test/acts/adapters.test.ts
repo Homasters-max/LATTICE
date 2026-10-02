@@ -115,7 +115,7 @@ describe("SCN-AC-005 comments and reviews become acts by author, text and pull r
     };
     const acts = githubActs(options(flaky));
     assert.throws(() => acts.actsOn(H), /offline/);
-    assert.equal(acts.actsOn(H).length, 4);
+    assert.deepEqual(acts.actsOn(H), githubActs(options(pr7Transport())).actsOn(H));
     const notList = githubActs(options((path) => (path.includes("/reviews") ? {} : [])));
     assert.throws(() => notList.actsOn(H), /not a list/);
   });

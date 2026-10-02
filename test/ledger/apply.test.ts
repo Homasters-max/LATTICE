@@ -286,7 +286,8 @@ describe("SCN-LG-012 acts that confirm intents become the act record", () => {
   const a = act([h], "u1");
 
   it("SCN-LG-012 kept acts carry the check result, once, in order of canonical JSON", () => {
-    const acts = [act(["lattice/zzz"], "u4"), act(["f".repeat(64)], "u3"), act(["lattice/fx-a02", "lattice/fx-a01"], "u2"), a, a];
+    const extraKey = { ...act([h], "u5"), extra: 1 } as unknown as ReturnType<typeof act>; // not the form of an act
+    const acts = [act(["lattice/zzz"], "u4"), act(["f".repeat(64)], "u3"), act(["lattice/fx-a02", "lattice/fx-a01"], "u2"), a, a, extraKey];
     const answer = apply(ledgerOf([]), proposal, acts);
     assert.equal(answer.outcome, "commit");
     if (answer.outcome !== "commit") return;

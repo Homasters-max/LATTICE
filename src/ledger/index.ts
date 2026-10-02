@@ -13,7 +13,7 @@ export { differs } from "./differs.ts";
 export type { ReadView } from "./projections/latest.ts";
 export type { Rejection } from "./rules.ts";
 export { EXEMPTIONS, REJECTION_RULES } from "./rules.ts";
-export { GENESIS, GENESIS_HASH, GENESIS_PROPOSAL, INIT_SESSION_BODY, SESSION_TYPE_BODY } from "./genesis.ts";
+export { GENESIS, GENESIS_HASH, GENESIS_PROPOSAL, SESSION_TYPE_BODY } from "./genesis.ts";
 export type { ReadStd, StdEntity } from "./std.ts";
 export { packageHash, readStd, STD_HASH, stdProposal } from "./std.ts";
 export type { InitInput, InitProposals } from "./init.ts";

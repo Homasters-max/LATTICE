@@ -3,7 +3,7 @@
 
 import type { Act, Acts } from "../../ledger/ports/acts.ts";
 
-export const INIT_REF = "store/lattice.json";
+const INIT_REF = "store/lattice.json";
 
 export function initActs(owner: string): Acts {
   return {
