@@ -1,21 +1,14 @@
-// The latest-revision projection (LG-J01, design D-5): a fold of the commits in ledger order — the last record of each
-// entity `id` wins. It is computed, never stored, and is the only way apply and the codec read entities (LG-J03,
-// PL-K05).
+// The entry of the projections (LG-J01, LG-J04, design D-1 of s0-projections): `openLedger` builds the read view of an
+// opened ledger with `latest(commits)` — the view at the latest commit: latest revision, every revision and referrers,
+// rebuilt in memory on every opening. It is the only way apply and the codec read entities (LG-J03, PL-K05).
 
-import type { Commit, EntityRecord } from "../records.ts";
-import { byCodeUnits, isEntityRecord } from "../records.ts";
+import type { Commit } from "../records.ts";
+import type { ReadView } from "./view.ts";
+import { rebuild } from "./view.ts";
 
-export type ReadView = {
-  get(id: string): EntityRecord | undefined;
-  /** Every entity at its latest revision, ordered by `id` (UTF-16 code units). */
-  entities(): readonly EntityRecord[];
-};
+export type { Edge } from "./projection.ts";
+export type { ReadView } from "./view.ts";
 
 export function latest(commits: readonly Commit[]): ReadView {
-  const byId = new Map<string, EntityRecord>();
-  for (const commit of commits) {
-    for (const record of commit.records) if (isEntityRecord(record)) byId.set(record.id, record);
-  }
-  const sorted = [...byId.values()].sort((a, b) => byCodeUnits(a.id, b.id));
-  return { get: (id) => byId.get(id), entities: () => sorted };
+  return rebuild(commits);
 }
