@@ -1,0 +1,12 @@
+{
+  "$schema": "warrant://change-record/1",
+  "change": "s0-codec-forms",
+  "change_state": "PROPOSED",
+  "transitions": [
+    {
+      "to": "PROPOSED",
+      "at": "2026-10-02T10:39:35.297Z",
+      "by": "cli:local"
+    }
+  ]
+}
